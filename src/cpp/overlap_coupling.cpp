@@ -201,9 +201,9 @@ namespace overlap{
         std::vector< double > vec(3, 0);
         vec[0] = local_coordinates[node](0)*tmp(1)*tmp(2);
         vec[1] = tmp(0)*local_coordinates[node](1)*tmp(2);
-        vec[2] = tmp(0)*tmp(1)*local_coordinates[node](1);
+        vec[2] = tmp(0)*tmp(1)*local_coordinates[node](2);
 
-        Vector result = Vector(tmp)/8;
+        Vector result = Vector(vec)/8;
         return result; 
 
     }

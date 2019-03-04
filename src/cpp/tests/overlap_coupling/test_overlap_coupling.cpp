@@ -346,6 +346,74 @@ void test_Hex8(std::ofstream &results){
         return;
     }
 
+    //!Check the grad_shape_function function
+    vec = std::vector< double > (3, 0);
+    position = overlap::Vector(position);
+    vec[0] = -1./8;
+    vec[1] = -1./8;
+    vec[2] = -1./8;
+    Vec_answer = overlap::Vector(vec);
+    Vec_result = element.grad_shape_function(0, position);
+
+    if (!(Vec_answer == Vec_result)){
+        results << "test_Hex8 (grad_shape_function 1) & False\n";
+        return;
+    }
+
+    vec = std::vector< double > (3, 0);
+    position = overlap::Vector(position);
+    vec[0] =  1./8;
+    vec[1] = -1./8;
+    vec[2] = -1./8;
+    Vec_answer = overlap::Vector(vec);
+    Vec_result = element.grad_shape_function(1, position);
+
+    if (!(Vec_answer == Vec_result)){
+        results << "test_Hex8 (grad_shape_function 2) & False\n";
+        return;
+    }
+
+    //!Check the local_gradient function
+    std::vector< std::vector< double > > grad_function(3);
+    for (int i=0; i<3; i++){
+    grad_function[i].resize(4);
+    }
+
+    grad_function[0][0] = -1.8583;
+    grad_function[0][1] = -4.1747;
+    grad_function[0][2] = 2.3261;
+    grad_function[0][3] = -3.5381;
+    grad_function[1][0] = 3.8931;
+    grad_function[1][1] = -0.8074;
+    grad_function[1][2] = 1.7585;
+    grad_function[1][3] = -2.3336;
+    grad_function[2][0] = 2.3168;
+    grad_function[2][1] = 0.3805;
+    grad_function[2][2] = -2.0692;
+    grad_function[2][3] = 0.03384;
+    
+    std::vector< overlap::Vector > nodal_values(8);
+    for (unsigned int n=0; n<nodal_values.size(); n++){
+        for (int i=0; i<3; i++){
+            vec[i] = grad_function[i][0]*element.get_local_coordinates(n)(0)
+                   + grad_function[i][1]*element.get_local_coordinates(n)(1)
+                   + grad_function[i][2]*element.get_local_coordinates(n)(2)
+                   + grad_function[i][3];
+        }
+        nodal_values[n] = overlap::Vector(vec);
+    }
+
+    std::vector< overlap::Vector > grad_result;
+    element.local_gradient(nodal_values, position, grad_result);
+    
+    for (int i=0; i<3; i++){
+        for (int j=0; j<3; j++){
+            if (!overlap::fuzzy_compare(grad_function[i][j], grad_result[i](j))){
+                results << "test_Hex8 (local_gradient) & False\n";
+            }
+        }
+    }
+
     results << "test_Hex8 & True\n";
 }
 
