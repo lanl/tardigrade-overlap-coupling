@@ -16,7 +16,7 @@
 #include<assert.h>
 
 
-namespace elementlib{
+namespace elementLib{
     //!===
     //! | Function definitions
     //!===

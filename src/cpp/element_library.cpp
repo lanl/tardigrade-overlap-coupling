@@ -9,7 +9,7 @@
 
 #include "element_library.h"
 
-namespace elementlib{
+namespace elementLib{
 
     //!===
     //! | Function definitions
@@ -140,8 +140,8 @@ namespace elementlib{
         /*!
         Compute the gradient of the global (current) coordinates w.r.t. the local coordinates.
 
-        :param elementlib::Vector Position: The current position in local coordinates.
-        :param std::vector< elementlib::Vector > result: The derivative of the current coordinates (rows) w.r.t. the local coordinates (columns)
+        :param elementLib::Vector Position: The current position in local coordinates.
+        :param std::vector< elementLib::Vector > result: The derivative of the current coordinates (rows) w.r.t. the local coordinates (columns)
         */
 
         local_gradient(global_coordinates, Position, result);
