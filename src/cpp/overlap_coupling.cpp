@@ -1,19 +1,15 @@
 /*!
 ===============================================================================
-|                            overlap_coupling.cpp                             |
+|                             element_library.cpp                             |
 ===============================================================================
-| Header file for the overlap coupling classes and functions. These will      |
-| compute the required weights and other values for the multi-scale overlap   |
-| coupling. The current strategy is to only explicitly support a linear hex   |
-| element. This is not considered to be a major restriction as the            |
-| micromorphic continuum is relatively costly. Furthermore, hex elements are  |
-| generally preferred over tetrahedral elements for mechanics applications.   |
+| Source file for the element library. Provides classes for element types and |
+| related support classes which can be useful for finite element modeling.    |
 ===============================================================================
 */
 
-#include "overlap_coupling.h"
+#include "element_library.h"
 
-namespace overlap{
+namespace elementlib{
 
     //!===
     //! | Function definitions
@@ -36,26 +32,66 @@ namespace overlap{
 
     //! > BaseElement
 
-    BaseElement::BaseElement(const std::vector< std::vector< double > > &_global_nodes){
+    BaseElement::BaseElement(const stdCoordinates &_global_nodes){
         /*!
         Generic constructor for an isoparametric element.
         */
 
         //Add the global nodes
         global_coordinates.resize(_global_nodes.size());
+        reference_coordinates.resize(_global_nodes.size());
         for (unsigned int i=0; i<_global_nodes.size(); i++){
             global_coordinates[i] = Vector(_global_nodes[i]);
+            reference_coordinates[i] = Vector(_global_nodes[i]);
         }
     }
 
-    BaseElement::BaseElement(const std::vector< Vector > & _global_nodes){
+    BaseElement::BaseElement(const VectorCoordinates & _global_nodes){
         /*!
         Generic constructor for an isoparametric element.
         */
 
         global_coordinates.resize(_global_nodes.size());
+        reference_coordinates.resize(_global_nodes.size());
         for (unsigned int i=0; i<_global_nodes.size(); i++){
             global_coordinates[i] = _global_nodes[i];
+            reference_coordinates[i] = _global_nodes[i];
+        }
+    }
+
+    BaseElement::BaseElement(const stdCoordinates & _global_nodes, const stdCoordinates &_reference_nodes){
+        /*!
+        Generic constructor for an isoparametric element.
+        */
+
+        if (_global_nodes.size() != _reference_nodes.size()){
+            std::cout << "Error: global nodes and reference nodes must have the same length.\n";
+            assert(1==0);
+        }
+
+        global_coordinates.resize(_global_nodes.size());
+        reference_coordinates.resize(_global_nodes.size());
+        for (unsigned int i=0; i<_global_nodes.size(); i++){
+            global_coordinates[i] = Vector(_global_nodes[i]);
+            reference_coordinates[i] = Vector(_reference_nodes[i]);
+        }
+    }
+
+    BaseElement::BaseElement(const VectorCoordinates & _global_nodes, const VectorCoordinates &_reference_nodes){
+        /*!
+        Generic constructor for an isoparametric element.
+        */
+
+        if (_global_nodes.size() != _reference_nodes.size()){
+            std::cout << "Error: global nodes and reference nodes must have the same length.\n";
+            assert(1==0);
+        }
+
+        global_coordinates.resize(_global_nodes.size());
+        reference_coordinates.resize(_global_nodes.size());
+        for (unsigned int i=0; i<_global_nodes.size(); i++){
+            global_coordinates[i] = _global_nodes[i];
+            reference_coordinates[i] = _reference_nodes[i];
         }
     }
 
@@ -100,6 +136,18 @@ namespace overlap{
         }
     }
 
+    void BaseElement::compute_dxdxi(const Vector &Position, std::vector< Vector > &result){
+        /*!
+        Compute the gradient of the global (current) coordinates w.r.t. the local coordinates.
+
+        :param elementlib::Vector Position: The current position in local coordinates.
+        :param std::vector< elementlib::Vector > result: The derivative of the current coordinates (rows) w.r.t. the local coordinates (columns)
+        */
+
+        local_gradient(global_coordinates, Position, result);
+        return;
+    }
+
     void BaseElement::print() const{
         /*!
         Print output related to the element.
@@ -108,6 +156,11 @@ namespace overlap{
         std::cout << "Global coordinates:\n";
         for (unsigned int i=0; i<global_coordinates.size(); i++){
             std::cout << "node " << i << ": ", global_coordinates[i].print();
+        }
+
+        std::cout << "Reference coordinates:\n";
+        for (unsigned int i=0; i<global_coordinates.size(); i++){
+            std::cout << "node " << i << ": ", reference_coordinates[i].print();
         }
 
         std::cout << "\nlocal coordinates:\n";

@@ -1,18 +1,14 @@
 /*!
 ===============================================================================
-|                             overlap_coupling.h                              |
+|                              element_library.h                              |
 ===============================================================================
-| Header file for the overlap coupling classes and functions. These will      |
-| compute the required weights and other values for the multi-scale overlap   |
-| coupling. The current strategy is to only explicitly support a linear hex   |
-| element. This is not considered to be a major restriction as the            |
-| micromorphic continuum is relatively costly. Furthermore, hex elements are  |
-| generally preferred over tetrahedral elements for mechanics applications.   |
+| Header file for the element library. This contains definitions for elements |
+| and supporting classes which help construct finite element based solutions. |
 ===============================================================================
 */
 
-#ifndef OVERLAP_COUPLING_H
-#define OVERLAP_COUPLING_H
+#ifndef ELEMENT_LIBRARY_H
+#define ELEMENT_LIBRARY_H
 
 #include<iostream>
 #include<vector>
@@ -20,7 +16,7 @@
 #include<assert.h>
 
 
-namespace overlap{
+namespace elementlib{
     //!===
     //! | Function definitions
     //!===
@@ -42,10 +38,9 @@ namespace overlap{
 
     class BaseElement{
         /*!
-        The base for the element class used in the micromorphic overlap coupling.
-        this class implements the basic functions required to compute the weights 
-        and other required terms for the construction of the shape function 
-        matrices.
+        The base for the element class. This class implements the basic 
+        functions required to compute the weights and other required 
+        terms for the construction of the shape function matrices.
 
         Inheriting classes are required to define:
 
@@ -60,6 +55,8 @@ namespace overlap{
             BaseElement(){};
             BaseElement(const stdCoordinates &global_nodes);
             BaseElement(const VectorCoordinates &global_nodes);
+            BaseElement(const stdCoordinates &global_nodes, const stdCoordinates &reference_nodes);
+            BaseElement(const VectorCoordinates &global_nodes, const VectorCoordinates &reference_nodes);
 
             //! > Virtual methods
 
@@ -79,6 +76,8 @@ namespace overlap{
 
             void local_gradient(const std::vector< Vector > &nodal_values, const Vector &Position, std::vector< Vector > &result);
 
+            void compute_dxdxi(const Vector &Position, std::vector< Vector > &result);
+
             Vector get_local_coordinates(const int &n) const;
 
             void print() const;
@@ -90,6 +89,9 @@ namespace overlap{
             
             //!The global coordinates of the nodes
             VectorCoordinates global_coordinates;
+
+            //!The reference coordinates of the nodes
+            VectorCoordinates reference_coordinates;
 
             //!The local coordinates of the gauss points
             VectorCoordinates gauss_points;
@@ -108,6 +110,8 @@ namespace overlap{
 
             Hex8(const stdCoordinates &global_coordinates): BaseElement(global_coordinates){initialize();}
             Hex8(const VectorCoordinates &global_coordinates): BaseElement(global_coordinates){initialize();}
+            Hex8(const stdCoordinates &global_coordinates, const stdCoordinates &reference_coordinates): BaseElement(global_coordinates, reference_coordinates){initialize();}
+            Hex8(const VectorCoordinates &global_coordinates, const VectorCoordinates &reference_coordinates): BaseElement(global_coordinates, reference_coordinates){initialize();}
 
             void initialize() override;
 
