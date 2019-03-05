@@ -10,8 +10,8 @@
 include ../../../../config.mk
 
 # List of executables
-EXECUTABLES=test_overlap_coupling
-OBJECTS=overlap_coupling.o test_overlap_coupling.o
+EXECUTABLES=test_element_library
+OBJECTS=element_library.o test_element_library.o
 
 INC=-I../..
 LOCAL_CFLAGS=-ggdb#-fprofile-arcs -ftest-coverage
@@ -19,13 +19,13 @@ LOCAL_CFLAGS=-ggdb#-fprofile-arcs -ftest-coverage
 # Makefile rules
 all: $(EXECUTABLES)
 
-test_overlap_coupling: $(OBJECTS)
+test_element_library: $(OBJECTS)
 	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) $^ -o $@ -lvoro++
 
-test_overlap_coupling.o: test_overlap_coupling.cpp ../../overlap_coupling.h
+test_element_library.o: test_element_library.cpp ../../element_library.h
 	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -o $@ -c $< -lvoro++
 
-overlap_coupling.o: ../../overlap_coupling.cpp ../../overlap_coupling.h
+element_library.o: ../../element_library.cpp ../../element_library.h
 	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -o $@ -c $< -lvoro++
 
 clean:
