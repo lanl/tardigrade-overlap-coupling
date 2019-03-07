@@ -83,6 +83,8 @@ namespace elementLib{
             void print() const;
 
         protected:
+            //!The spatial dimension of the element
+            unsigned int dim = 0;
 
             //!The local coordinates of the nodes
             VectorCoordinates local_coordinates;
@@ -132,7 +134,9 @@ namespace elementLib{
 
         public:
 
-            Vector(){}
+            Vector(){
+                _value.resize(0);
+            }
 
             template< typename T >
             Vector(const std::vector< T > &vec){
@@ -314,7 +318,17 @@ namespace elementLib{
                 return result;
             }
 
+            unsigned int dim() const{
+                /*!
+                Compute the dimension of the vector.
+                */
+
+                return this->_value.size();
+            }
+
         protected:
+
+            //!The values of the vector
             std::vector< double > _value;
         
     };

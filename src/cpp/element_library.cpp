@@ -37,10 +37,17 @@ namespace elementLib{
         Generic constructor for an isoparametric element.
         */
 
+        //Set the dimension
+        dim = _global_nodes[0].size();
+
         //Add the global nodes
         global_coordinates.resize(_global_nodes.size());
         reference_coordinates.resize(_global_nodes.size());
         for (unsigned int i=0; i<_global_nodes.size(); i++){
+            if (dim != _global_nodes[i].size()){
+                std::cout << "Error: An element's nodes must all have the same spatial dimension\n";
+                assert(1==0);
+            }
             global_coordinates[i] = Vector(_global_nodes[i]);
             reference_coordinates[i] = Vector(_global_nodes[i]);
         }
@@ -51,9 +58,17 @@ namespace elementLib{
         Generic constructor for an isoparametric element.
         */
 
+        //Set the dimension
+        dim = _global_nodes[0].dim();
+
+        //Add the global nodes
         global_coordinates.resize(_global_nodes.size());
         reference_coordinates.resize(_global_nodes.size());
         for (unsigned int i=0; i<_global_nodes.size(); i++){
+            if (dim != _global_nodes[i].dim()){
+                std::cout << "Error: An element's nodes must all have the same spatial dimension\n";
+                assert(1==0);
+            }
             global_coordinates[i] = _global_nodes[i];
             reference_coordinates[i] = _global_nodes[i];
         }
@@ -69,9 +84,16 @@ namespace elementLib{
             assert(1==0);
         }
 
+        //Set the dimension
+        dim = _global_nodes[0].size();
+
         global_coordinates.resize(_global_nodes.size());
         reference_coordinates.resize(_global_nodes.size());
         for (unsigned int i=0; i<_global_nodes.size(); i++){
+            if ((dim != _global_nodes[i].size()) || (dim != _reference_nodes[i].size())){
+                std::cout << "Error: An element's nodes must all have the same spatial dimension\n";
+                assert(1==0);
+            }
             global_coordinates[i] = Vector(_global_nodes[i]);
             reference_coordinates[i] = Vector(_reference_nodes[i]);
         }
@@ -87,9 +109,16 @@ namespace elementLib{
             assert(1==0);
         }
 
+        //Set the dimension
+        dim = _global_nodes[0].dim();
+
         global_coordinates.resize(_global_nodes.size());
         reference_coordinates.resize(_global_nodes.size());
         for (unsigned int i=0; i<_global_nodes.size(); i++){
+            if ((dim != _global_nodes[i].dim()) || (dim != _reference_nodes[i].dim())){
+                std::cout << "Error: An element's nodes must all have the same spatial dimension\n";
+                assert(1==0);
+            }
             global_coordinates[i] = _global_nodes[i];
             reference_coordinates[i] = _reference_nodes[i];
         }
