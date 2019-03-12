@@ -10,13 +10,13 @@
 include ../../config.mk
 
 # List of executables
-OBJECTS=element_library.o
+OBJECTS=overlap_coupling.o
 LOCAL_CFLAGS=-ggdb
 
 # Makefile rules
 all: $(OBJECTS)
 
-element_library.o: element_library.cpp element_library.h
+overlap_coupling.o: overlap_coupling.cpp overlap_coupling.h
 	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< -lvoro++
 
 clean:

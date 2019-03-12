@@ -13,13 +13,21 @@
 #define OVERLAP_COUPLING_H
 
 #include<iostream>
+#include<fstream>
 #include<vector>
 #include<math.h>
 #include<assert.h>
+#include<string.h>
 
-#include "element_library.h"
+#include "quickhull.h"
+
+typedef std::vector< std::vector< double > > vecOfvec;
 
 namespace overlap{
+
+    //!===
+    //! | Classes
+    //!===
 
     class OverlapCoupling{
         /*!
@@ -27,16 +35,47 @@ namespace overlap{
         object will return the integration weights for volume integrals, area  
         weighted normal vectors for surface integrals, and also constructs 
         the shape function matrix which can be used to construct the projectors.
-
-        The overlap coupling currently assumes that a gauss domain (i.e. the 
-        volume associated with a gauss point) cannot be partially filled with 
-        DNS. If a node is in a gauss domain, that full gauss domain is treated 
-        as the container for the Voronoi tessellation. 
         */
 
 
     };
 
+    class ParsedData{
+        /*!
+        Class which stores data read from an input file. Used for testing.
+        */
+
+        public:
+            vecOfvec global_nodes;
+            vecOfvec local_nodes;
+            std::vector< unsigned int > node_numbers;
+            std::vector< double > volumes;
+            std::vector< double > densities;
+            vecOfvec coordinates;
+
+            //! > Constructors
+            ParsedData(){}
+
+            ParsedData(vecOfvec _global_nodes, vecOfvec _local_nodes,
+                       std::vector< unsigned int > _node_numbers, std::vector< double > _volumes,
+                       std::vector< double > _densities, vecOfvec _coordinates){
+                global_nodes = _global_nodes;
+                local_nodes = _local_nodes;
+                node_numbers = _node_numbers;
+                volumes = _volumes;
+                densities = _densities;
+                coordinates = _coordinates;
+            }
+    };
+    
+   //!===
+   //! | Functions
+   //!===
+
+    ParsedData read_data_from_file(std::string filename);
+    std::vector< std::string > split(std::string s, char delimiter);
+    template<typename Out>
+    void split(const std::string &s, char delimiter, Out result);
 }
 
 #endif
