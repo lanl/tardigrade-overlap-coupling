@@ -21,3 +21,6 @@ VPPINC=-I/projects/nathanm/micromorphic/voro++/voro++-0.4.6/src
 
 # The python command
 PYTHON=/apps/anaconda3/bin/python
+
+# Additional includes
+INC=-I/projects/nathanm/micromorphic/micromorphic_library/external_repositories/3d-quickhull
