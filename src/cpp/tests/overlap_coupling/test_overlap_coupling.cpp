@@ -7,6 +7,15 @@
 
 #include "overlap_coupling.h"
 
+bool fuzzy_equals(double a, double b, double tolr=1e-6, double tola=1e-6){
+    /*!
+    Compare two doubles to determine if they are equal.
+    */
+
+    double tol = fmin(tolr*fabs(a) + tola, tolr*fabs(b) + tola);
+    return fabs(a-b)<tol;
+}
+
 template<typename T>
 void print_vector(std::vector< T > vector){
     /*!
@@ -29,6 +38,341 @@ void print_matrix(std::vector< std::vector< T > > matrix){
     }
 }
 
+void test_map_vector_to_quickhull(std::ofstream &results){
+    /*!
+    Test mapping a std::vector to a 3D-quickhull vertex.
+    */
+
+    std::vector< double > a(3,0);
+    a[1] = 1;
+    a[2] = 2;
+
+    overlap::OverlapCoupling oc;
+    qh_vertex_t result = oc.map_vector_to_quickhull(a);
+
+    if (!((result.x == a[0]) && (result.y == a[1]) && (result.z == a[2]))){
+        results << "test_map_vector_to_quickhull & False\n";
+    }
+    else{
+        results << "test_map_vector_to_quickhull & True\n";
+    }
+}
+
+void test_map_quickhull_to_vector(std::ofstream &results){
+    /*!
+    Test mapping a 3D-quickhull vertex to a std::vector
+    */
+
+    qh_vertex_t v;
+    v.x = 1.2;
+    v.y = 3.7;
+    v.z = -1.2;
+
+    overlap::OverlapCoupling oc;
+    std::vector< double > result = oc.map_quickhull_to_vector(v);
+
+    if (!(fuzzy_equals(result[0],v.x) && (fuzzy_equals(result[1],v.y)) && (fuzzy_equals(result[2], v.z)))){
+        results << "test_map_quickhull_to_vector & False\n";
+        return;
+    }
+
+    results << "test_map_quickhull_to_vector & True\n";
+    return;
+}
+
+void test_map_vectors_to_quickhull(std::ofstream &results){
+    /*!
+    Test mapping a collection of std::vectors to a 3D-quickhull vertex.
+    */
+
+    std::vector< double > a(3,0), b(3,-1);
+    a[1] = 1;
+    a[2] = 2;
+    b[1] = .32;
+    b[2] = 7.8;
+
+    vecOfvec in;
+    in.push_back(a);
+    in.push_back(b);
+
+    overlap::OverlapCoupling oc;
+    std::vector< qh_vertex_t > result;
+    oc.map_vectors_to_quickhull(in, result);
+
+    for (unsigned int i=0; i<in.size(); i++){
+        if (!fuzzy_equals(in[i][0], result[i].x) || !fuzzy_equals(in[i][1], result[i].y) || !fuzzy_equals(in[i][2], result[i].z)){
+            print_vector(in[i]);
+            std::cout << result[i].x << " " << result[i].y << " " << result[i].z << "\n";
+            results << "test_map_vectors_to_quickhull & False\n";
+            return;
+        }
+    }
+
+    results << "test_map_vectors_to_quickhull & True\n";
+    return;
+}
+
+void test_map_quickhull_to_vectors(std::ofstream &results){
+    /*!
+    Test mapping a collection of 3D-quickhull vertices to a vector of std::vectors
+    */
+
+    qh_vertex_t v1, v2;
+    v1.x = 1.;
+    v1.y = 2.;
+    v1.z = 3.;
+
+    v2.x = .27;
+    v2.y = 1.23;
+    v2.z = -2.1;
+
+    std::vector< qh_vertex_t > in;
+    in.push_back(v1);
+    in.push_back(v2);
+
+    overlap::OverlapCoupling oc;
+    vecOfvec result;
+    oc.map_quickhull_to_vectors(in, result);
+
+    for (unsigned int i=0; i<in.size(); i++){
+        if (!(fuzzy_equals(result[i][0], in[i].x) && fuzzy_equals(result[i][1], in[i].y) && fuzzy_equals(result[i][2], in[i].z))){
+            results << "test_map_quickhull_to_vectors & False\n";
+            return;
+        }
+    }
+
+    results << "test_map_quickhull_to_vectors & True\n";
+    return;
+}
+
+void test_dot(std::ofstream &results){
+    /*!
+    Test the computation of the dot product of two vectors.
+    */
+
+    std::vector< double > a(3,0), b(3,-1);
+    a[1] = 1;
+    a[2] = 2;
+    b[1] = 0.32;
+    b[2] = 7.8;
+
+    double result = overlap::dot(a, b);
+    
+    double answer = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+
+    if (!fuzzy_equals(result, answer)){
+        results << "test_dot & False\n";
+        return;
+    }
+    results << "test_dot & True\n";
+    return;
+    
+}
+
+void test_cross(std::ofstream &results){
+    /*!
+    Test the computation of the cross product of two vectors.
+    */
+
+    std::vector< double > a(3,0), b(3,-1);
+    a[1] = 1;
+    a[2] = 2;
+    b[1] = 0.32;
+    b[2] = 7.8;
+
+    std::vector< double > result = overlap::cross(a, b);
+
+    if ((!fuzzy_equals(overlap::dot(result, a), 0)) || (!fuzzy_equals(overlap::dot(result, b), 0))){
+        results << "test_cross & False\n";
+        return;
+    }
+    results << "test_cross & True\n";
+    return;
+}
+
+void test_fuzzy_equals(std::ofstream &results){
+    /*!
+    Test the comparison of two values using the fuzzy (tolerant) comparison.
+    */
+
+    double a = 1;
+    double b = 1;
+
+    if (!overlap::fuzzy_equals(a, b)){
+        results << "test_fuzzy_equals (test 1) & False\n";
+        return;
+    }
+
+    a += 1e-3;
+    if (overlap::fuzzy_equals(a, b)){
+        results << "test_fuzzy_equals (test 2) & False\n";
+        return;
+    }
+
+    a = -1;
+    b = -1;
+
+    if (!overlap::fuzzy_equals(a, b)){
+        results << "test_fuzzy_equals (test 3) & False\n";
+        return;
+    }
+
+    results << "test_fuzzy_equals & True\n";
+    return;
+}
+
+void test_compare_vector_directions(std::ofstream &results){
+    /*!
+    Test the comparison of two vector directions for equality.
+    */
+
+    std::vector< double > a(3, 1), b(3, 3);
+    
+    if (!overlap::compare_vector_directions(a, b)){
+        results << "test_compare_vector_directions (test 1) & False\n";
+        return;
+    }
+
+    a[0] += 1;
+    if (overlap::compare_vector_directions(a, b)){
+        results << "test_compare_vector_directions (test 2) & False\n";
+        return;
+    }
+
+    a[0] = 1;
+    a[1] = 2;
+    a[2] = 3;
+    b[0] = -1;
+    b[1] = -2;
+    b[2] = -3;
+
+    if (overlap::compare_vector_directions(a, b)){
+        results << "test_compare_vector_directions (test 3) & False\n";
+        assert(1==0);
+        return;
+    }
+
+    results << "test_compare_vector_directions & True\n";
+    return;
+}
+
+void test_compute_element_bounds(std::ofstream &results){
+    /*!
+    Test the computation of the element bounds (also tests compute_unique_planes)
+    */
+    overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
+    overlap::OverlapCoupling oc(data.local_nodes);
+    planeMap element_planes;
+    oc.get_element_planes(element_planes);
+
+    if (element_planes.size()!=6){
+        results << "test_compute_element_bounds (test 1)& False\n";
+        return;
+    }
+
+    //!Assumes the underlying element is a hex
+    planeMap::iterator it;
+    for (it=element_planes.begin(); it!=element_planes.end(); it++){
+        for (unsigned int i=0; i<it->first.size(); i++){
+            if (fuzzy_equals(fabs(it->first[i]), 1)){
+                if (!fuzzy_equals(it->first[i], it->second[i])){
+                    results << "test_compute_element_bounds (test 2) & False\n";
+                    return;
+                }
+            }
+        }
+    }
+
+    results << "test_compute_element_bounds & True\n";
+    return;
+}
+
+void test_compute_node_bounds(std::ofstream &results){
+    /*!
+    Test the computation of the node bounds.
+    */
+
+    overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
+    overlap::OverlapCoupling oc(data.local_nodes);
+    planeMap dns_planes;
+    oc.compute_node_bounds(data.coordinates, dns_planes, 1e-2, 1e-2);
+
+    std::vector< double > xbnds(2), ybnds(2), zbnds(2);
+    xbnds[0] = xbnds[1] = data.coordinates[0][0];
+    ybnds[0] = ybnds[1] = data.coordinates[0][1];
+    zbnds[0] = zbnds[1] = data.coordinates[0][2];
+
+    for (unsigned int i=0; i<data.coordinates.size(); i++){
+        xbnds[0] = fmin(xbnds[0], data.coordinates[i][0]);
+        xbnds[1] = fmax(xbnds[1], data.coordinates[i][0]);
+        ybnds[0] = fmin(ybnds[0], data.coordinates[i][1]);
+        ybnds[1] = fmax(ybnds[1], data.coordinates[i][1]);
+        zbnds[0] = fmin(zbnds[0], data.coordinates[i][2]);
+        zbnds[1] = fmax(zbnds[1], data.coordinates[i][2]);
+    }
+
+    std::cout << "dns bounds:\n";
+    std::cout << "xbnds: "; print_vector(xbnds);
+    std::cout << "ybnds: "; print_vector(ybnds);
+    std::cout << "zbnds: "; print_vector(zbnds);
+
+    planeMap::iterator it;
+    for (it=dns_planes.begin(); it!=dns_planes.end(); it++){
+        std::cout << "normal: "; print_vector(it->first);
+        std::cout << "point:  "; print_vector(it->second);
+    }
+}
+
+void test_extract_mesh_info(std::ofstream &results){
+    /*!
+    Test the extraction of the mesh information
+    */
+
+    overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
+    overlap::OverlapCoupling oc;
+
+    std::vector< qh_vertex_t > vertices;
+    oc.map_vectors_to_quickhull(data.local_nodes, vertices);
+
+    qh_mesh_t mesh = qh_quickhull3d(&vertices[0], vertices.size());
+
+    vecOfvec normals;
+    vecOfvec points;
+
+    oc.extract_mesh_info(mesh, normals, points);
+
+    if (mesh.nnormals != normals.size()){
+        results << "test_extract_mesh_info (test 1) & False\n";
+        return;
+    }
+    if (mesh.nnormals != points.size()){
+        results << "test_extract_mesh_info (test 2) & False\n";
+        return;
+    }
+
+    unsigned int index = 0;
+    qh_vertex_t temp_vertex;
+    for (unsigned int i=0; i<normals.size(); i++){
+        if (!(fuzzy_equals(normals[i][0], mesh.normals[i].x) && fuzzy_equals(normals[i][1], mesh.normals[i].y) && fuzzy_equals(normals[i][2], mesh.normals[i].z))){
+            results << "test_extract_mesh_info (test 3) & False\n";
+            return;
+        }
+        temp_vertex = mesh.vertices[mesh.indices[index]];
+
+        if (!(fuzzy_equals(points[i][0], temp_vertex.x) && fuzzy_equals(points[i][1], temp_vertex.y) && fuzzy_equals(points[i][2], temp_vertex.z))){
+            results << "test_extract_mesh_info (test 4) & False\n";
+            return;
+        }
+
+
+        index += 3;
+
+    }
+
+    results << "test_extract_mesh_info & True\n";
+    return;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -42,12 +386,23 @@ int main(){
     results.open("results.tex");
 
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
-    print_matrix(data.global_nodes);
-    print_matrix(data.local_nodes);
-    print_vector(data.node_numbers);
-    print_vector(data.volumes);
-    print_vector(data.densities);
-    print_matrix(data.coordinates);
+
+    //Tests for the interface to 3D-quickhull
+    test_map_vector_to_quickhull(results);
+    test_map_vectors_to_quickhull(results);
+    test_map_quickhull_to_vector(results);
+    test_map_quickhull_to_vectors(results);
+
+    //Test for the computations of the bounds
+    test_extract_mesh_info(results);
+//    test_compute_element_bounds(results);
+    test_compute_node_bounds(results);
+
+    //Test misc. functions
+    test_dot(results);
+    test_cross(results);
+    test_fuzzy_equals(results);
+    test_compare_vector_directions(results);
 
     //Close the results file
     results.close();
