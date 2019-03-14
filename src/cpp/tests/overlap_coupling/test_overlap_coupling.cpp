@@ -5,6 +5,7 @@
 #include<fstream>
 #include<math.h>
 
+#include "occonfiguration.h"
 #include "overlap_coupling.h"
 
 bool fuzzy_equals(double a, double b, double tolr=1e-6, double tola=1e-6){
@@ -14,6 +15,24 @@ bool fuzzy_equals(double a, double b, double tolr=1e-6, double tola=1e-6){
 
     double tol = fmin(tolr*fabs(a) + tola, tolr*fabs(b) + tola);
     return fabs(a-b)<tol;
+}
+
+bool fuzzy_equals(std::vector< double > a, std::vector< double > b, double tolr=1e-6, double tola=1e-6){
+    /*!
+    Compare two vectors to determine if they are equal
+    */
+
+    if (a.size() != b.size()){
+        std::cout << "Error: vectors must have the same size.\n";
+        assert(1==0);
+    }
+
+    for (unsigned int i=0; i<a.size(); i++){
+        if (!fuzzy_equals(a[i], b[i], tolr, tola)){
+            return false;
+        }
+    }
+    return true;
 }
 
 template<typename T>
@@ -48,7 +67,7 @@ void test_map_vector_to_quickhull(std::ofstream &results){
     a[2] = 2;
 
     overlap::OverlapCoupling oc;
-    qh_vertex_t result = oc.map_vector_to_quickhull(a);
+    vertex_t result = oc.map_vector_to_quickhull(a);
 
     if (!((result.x == a[0]) && (result.y == a[1]) && (result.z == a[2]))){
         results << "test_map_vector_to_quickhull & False\n";
@@ -63,7 +82,7 @@ void test_map_quickhull_to_vector(std::ofstream &results){
     Test mapping a 3D-quickhull vertex to a std::vector
     */
 
-    qh_vertex_t v;
+    vertex_t v;
     v.x = 1.2;
     v.y = 3.7;
     v.z = -1.2;
@@ -96,7 +115,7 @@ void test_map_vectors_to_quickhull(std::ofstream &results){
     in.push_back(b);
 
     overlap::OverlapCoupling oc;
-    std::vector< qh_vertex_t > result;
+    std::vector< vertex_t > result;
     oc.map_vectors_to_quickhull(in, result);
 
     for (unsigned int i=0; i<in.size(); i++){
@@ -117,7 +136,7 @@ void test_map_quickhull_to_vectors(std::ofstream &results){
     Test mapping a collection of 3D-quickhull vertices to a vector of std::vectors
     */
 
-    qh_vertex_t v1, v2;
+    vertex_t v1, v2;
     v1.x = 1.;
     v1.y = 2.;
     v1.z = 3.;
@@ -126,7 +145,7 @@ void test_map_quickhull_to_vectors(std::ofstream &results){
     v2.y = 1.23;
     v2.z = -2.1;
 
-    std::vector< qh_vertex_t > in;
+    std::vector< vertex_t > in;
     in.push_back(v1);
     in.push_back(v2);
 
@@ -295,31 +314,11 @@ void test_compute_node_bounds(std::ofstream &results){
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc(data.local_nodes);
     planeMap dns_planes;
-    oc.compute_node_bounds(data.coordinates, dns_planes, 1e-2, 1e-2);
+    oc.compute_node_bounds(data.coordinates, dns_planes, 1e-9, 1e-9);
 
-    std::vector< double > xbnds(2), ybnds(2), zbnds(2);
-    xbnds[0] = xbnds[1] = data.coordinates[0][0];
-    ybnds[0] = ybnds[1] = data.coordinates[0][1];
-    zbnds[0] = zbnds[1] = data.coordinates[0][2];
-
-    for (unsigned int i=0; i<data.coordinates.size(); i++){
-        xbnds[0] = fmin(xbnds[0], data.coordinates[i][0]);
-        xbnds[1] = fmax(xbnds[1], data.coordinates[i][0]);
-        ybnds[0] = fmin(ybnds[0], data.coordinates[i][1]);
-        ybnds[1] = fmax(ybnds[1], data.coordinates[i][1]);
-        zbnds[0] = fmin(zbnds[0], data.coordinates[i][2]);
-        zbnds[1] = fmax(zbnds[1], data.coordinates[i][2]);
-    }
-
-    std::cout << "dns bounds:\n";
-    std::cout << "xbnds: "; print_vector(xbnds);
-    std::cout << "ybnds: "; print_vector(ybnds);
-    std::cout << "zbnds: "; print_vector(zbnds);
-
-    planeMap::iterator it;
-    for (it=dns_planes.begin(); it!=dns_planes.end(); it++){
-        std::cout << "normal: "; print_vector(it->first);
-        std::cout << "point:  "; print_vector(it->second);
+    if (dns_planes.size() != 6){
+        results << "test_compute_element_bounds & False\n";
+        return;
     }
 }
 
@@ -330,39 +329,73 @@ void test_extract_mesh_info(std::ofstream &results){
 
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc;
-
-    std::vector< qh_vertex_t > vertices;
+    std::vector< vertex_t > vertices;
     oc.map_vectors_to_quickhull(data.local_nodes, vertices);
-
-    qh_mesh_t mesh = qh_quickhull3d(&vertices[0], vertices.size());
+    #if CONVEXLIB == QUICKHULL
+        mesh_t mesh = qh_quickhull3d(&vertices[0], vertices.size());
+    #elif CONVEXLIB == CONVHULL_3D
+        mesh_t mesh;
+        int *faceIndices = NULL;
+        int nFaces;
+        convhull_3d_build(&vertices[0], vertices.size(), &faceIndices, &nFaces);
+        mesh.first.assign(faceIndices, faceIndices + nFaces);
+        mesh.second = vertices;
+    #endif
 
     vecOfvec normals;
     vecOfvec points;
 
     oc.extract_mesh_info(mesh, normals, points);
 
-    if (mesh.nnormals != normals.size()){
-        results << "test_extract_mesh_info (test 1) & False\n";
-        return;
-    }
-    if (mesh.nnormals != points.size()){
-        results << "test_extract_mesh_info (test 2) & False\n";
-        return;
-    }
+    #if CONVEXLIB == QUICKHULL
+
+        if (mesh.nnormals != normals.size()){
+            results << "test_extract_mesh_info (test 1) & False\n";
+            return;
+        }
+        if (mesh.nnormals != points.size()){
+            results << "test_extract_mesh_info (test 2) & False\n";
+            return;
+        }
+
+    #elif CONVEXLIB == CONVHULL_3D
+        if (mesh.first.size()/3 != normals.size()){
+            results << "test_extract_mesh_info (test 1) & False\n";
+            return;
+        }
+        if (mesh.first.size()/3 != points.size()){
+            results << "test_extract_mesh_info (test 2) & False\n";
+            return;
+        }
+    #endif
 
     unsigned int index = 0;
-    qh_vertex_t temp_vertex;
+    vertex_t temp_vertex;
     for (unsigned int i=0; i<normals.size(); i++){
-        if (!(fuzzy_equals(normals[i][0], mesh.normals[i].x) && fuzzy_equals(normals[i][1], mesh.normals[i].y) && fuzzy_equals(normals[i][2], mesh.normals[i].z))){
-            results << "test_extract_mesh_info (test 3) & False\n";
-            return;
-        }
-        temp_vertex = mesh.vertices[mesh.indices[index]];
+        #if CONVEXLIB == QUICKHULL
+            if (!(fuzzy_equals(normals[i][0], mesh.normals[i].x) && fuzzy_equals(normals[i][1], mesh.normals[i].y) && fuzzy_equals(normals[i][2], mesh.normals[i].z))){
+                results << "test_extract_mesh_info (test 3) & False\n";
+                return;
+            }
+            temp_vertex = mesh.vertices[mesh.indices[index]];
 
-        if (!(fuzzy_equals(points[i][0], temp_vertex.x) && fuzzy_equals(points[i][1], temp_vertex.y) && fuzzy_equals(points[i][2], temp_vertex.z))){
-            results << "test_extract_mesh_info (test 4) & False\n";
-            return;
-        }
+            if (!(fuzzy_equals(points[i][0], temp_vertex.x) && fuzzy_equals(points[i][1], temp_vertex.y) && fuzzy_equals(points[i][2], temp_vertex.z))){
+                results << "test_extract_mesh_info (test 4) & False\n";
+                return;
+            }
+//        #elif CONVEXLIB == CONVHULL_3D
+//            if (!(fuzzy_equals(normals[i][0], mesh.normals[i].x) && fuzzy_equals(normals[i][1], mesh.normals[i].y) && fuzzy_equals(normals[i][2], mesh.normals[i].z))){
+//                results << "test_extract_mesh_info (test 3) & False\n";
+//                return;
+//            }
+//            temp_vertex = mesh.vertices[mesh.indices[index]];
+//
+//            if (!(fuzzy_equals(points[i][0], temp_vertex.x) && fuzzy_equals(points[i][1], temp_vertex.y) && fuzzy_equals(points[i][2], temp_vertex.z))){
+//                results << "test_extract_mesh_info (test 4) & False\n";
+//                return;
+//            }
+
+        #endif
 
 
         index += 3;
@@ -370,6 +403,38 @@ void test_extract_mesh_info(std::ofstream &results){
     }
 
     results << "test_extract_mesh_info & True\n";
+    return;
+}
+
+void test_normal_from_vertices(std::ofstream &results){
+    /*!
+    Test the computation of a normal from a set of three vertices that 
+    define a plane.
+    */
+
+    vertex_t v1, v2, v3;
+    v1.x = 1;
+    v1.y = 0;
+    v1.z = 0;
+
+    v2.x = 0;
+    v2.y = 1;
+    v2.z = 0;
+
+    v3.x = 0;
+    v3.y = 0;
+    v3.z = 1;
+
+    std::vector< double > result = overlap::normal_from_vertices(v1, v2, v3);
+
+    std::vector< double > answer(3, 1./sqrt(3));
+
+    if (!fuzzy_equals(answer, result)){
+        results << "test_normal_from_vertices & False\n";
+        return;
+    }
+
+    results << "test_normal_from_vertices & True\n";
     return;
 }
 
@@ -395,7 +460,7 @@ int main(){
 
     //Test for the computations of the bounds
     test_extract_mesh_info(results);
-//    test_compute_element_bounds(results);
+    test_compute_element_bounds(results);
     test_compute_node_bounds(results);
 
     //Test misc. functions
@@ -403,6 +468,7 @@ int main(){
     test_cross(results);
     test_fuzzy_equals(results);
     test_compare_vector_directions(results);
+    test_normal_from_vertices(results);
 
     //Close the results file
     results.close();

@@ -21,10 +21,10 @@ all: $(EXECUTABLES)
 test_overlap_coupling: $(OBJECTS)
 	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) $^ -o $@ -lvoro++
 
-test_overlap_coupling.o: test_overlap_coupling.cpp ../../overlap_coupling.h
+test_overlap_coupling.o: test_overlap_coupling.cpp ../../overlap_coupling.h ../../occonfiguration.h
 	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< -lvoro++
 
-overlap_coupling.o: ../../overlap_coupling.cpp ../../overlap_coupling.h
+overlap_coupling.o: ../../overlap_coupling.cpp ../../overlap_coupling.h ../../occonfiguration.h
 	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< -lvoro++
 
 clean:

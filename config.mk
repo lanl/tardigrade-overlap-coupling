@@ -24,3 +24,4 @@ PYTHON=/apps/anaconda3/bin/python
 
 # Additional includes
 INC=-I/projects/nathanm/micromorphic/micromorphic_library/external_repositories/3d-quickhull
+INC+=-I/projects/nathanm/micromorphic/micromorphic_library/external_repositories/convhull_3d/

@@ -20,11 +20,21 @@
 #include<assert.h>
 #include<string.h>
 
-#include "quickhull.h"
-
 typedef std::vector< std::vector< double > > vecOfvec;
 
 typedef std::map< std::vector< double >, std::vector< double > > planeMap;
+
+#if CONVEXLIB == QUICKHULL
+    #include "quickhull.h"
+    typedef qh_vertex_t vertex_t;
+    typedef qh_mesh_t mesh_t;
+#elif CONVEXLIB == CONVHULL_3D
+    #include "convhull_3d.h"
+    typedef ch_vertex vertex_t;
+    typedef std::pair< std::vector< int >, std::vector< vertex_t > > mesh_t;
+#else
+    #error CONVEXLIB must be defined. If defined, check that the value is supported.
+#endif
 
 namespace overlap{
 
@@ -45,11 +55,11 @@ namespace overlap{
             OverlapCoupling(const vecOfvec &local_coordinates);
 
             //! > Interface to 3D-quickhull
-            qh_vertex_t map_vector_to_quickhull(const std::vector< double > &vector) const;
-            std::vector< double > map_quickhull_to_vector(const qh_vertex_t &vertex) const;
-            void map_vectors_to_quickhull(const vecOfvec &vectors, std::vector< qh_vertex_t > &vertices) const;
-            void map_quickhull_to_vectors(const std::vector< qh_vertex_t > &vertices, vecOfvec &vectors) const;
-            void extract_mesh_info(const qh_mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;
+            vertex_t map_vector_to_quickhull(const std::vector< double > &vector) const;
+            std::vector< double > map_quickhull_to_vector(const vertex_t &vertex) const;
+            void map_vectors_to_quickhull(const vecOfvec &vectors, std::vector< vertex_t > &vertices) const;
+            void map_quickhull_to_vectors(const std::vector< vertex_t > &vertices, vecOfvec &vectors) const;
+            void extract_mesh_info(const mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;
             void compute_node_bounds(const vecOfvec &coordinates, planeMap &planes, const double tolr=1e-6, const double tola=1e-6) const;
 
             //! > Interface to defined quantities
@@ -113,6 +123,8 @@ namespace overlap{
     bool fuzzy_equals(const double a, const double b, const double tolr=1e-6, const double tola=1e-6);
 
     bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr=1e-6, const double tola=1e-6);
+
+    std::vector< double > normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3);
 }
 
 #endif

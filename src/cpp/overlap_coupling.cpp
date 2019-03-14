@@ -12,7 +12,14 @@
 #include<sstream>
 #include<iterator>
 
-#define QUICKHULL_IMPLEMENTATION
+#include "occonfiguration.h"
+
+#if CONVEXLIB == QUICKHULL
+    #define QUICKHULL_IMPLEMENTATION
+#elif CONVEXLIB == CONVHULL_3D
+    #define CONVHULL_3D_ENABLE
+#endif
+
 #include "overlap_coupling.h"
 
 namespace overlap{
@@ -33,24 +40,24 @@ namespace overlap{
 
     //! > Interface to 3D-quickhull
 
-    qh_vertex_t OverlapCoupling::map_vector_to_quickhull(const std::vector< double > &vector) const{
+    vertex_t OverlapCoupling::map_vector_to_quickhull(const std::vector< double > &vector) const{
         /*!
         Map a vector to a vertex which can be read using 3d-quickhull.
 
         :param std::vector< double > vector: The incoming vector to be mapped.
         */
-        qh_vertex_t vertex;
+        vertex_t vertex;
         vertex.x = vector[0];
         vertex.y = vector[1];
         vertex.z = vector[2];
         return vertex;
     }
 
-    std::vector< double > OverlapCoupling::map_quickhull_to_vector(const qh_vertex_t &vertex) const{
+    std::vector< double > OverlapCoupling::map_quickhull_to_vector(const vertex_t &vertex) const{
         /*!
         Map a quickhull vertex to std::vector
 
-        :param qh_vertex_t vertex: The quickhull vertex type.
+        :param vertex_t vertex: The quickhull vertex type.
         */
 
         std::vector< double > vector(3,0);
@@ -60,12 +67,12 @@ namespace overlap{
         return vector;
     }
 
-    void OverlapCoupling::map_vectors_to_quickhull(const vecOfvec &vectors, std::vector< qh_vertex_t > &vertices) const{
+    void OverlapCoupling::map_vectors_to_quickhull(const vecOfvec &vectors, std::vector< vertex_t > &vertices) const{
         /*!
         Map a collection of vectors to a vertex which can be read by 3D-quickhull
         
         :param vecOfvec vectors: a vector of std::vector< double > representing the vector values
-        :param std::vector< qh_vertex_t > vertices: The output in a format readable by 3D-quickhull
+        :param std::vector< vertex_t > vertices: The output in a format readable by 3D-quickhull
         */
 
         vertices.reserve(vectors.size());
@@ -75,11 +82,11 @@ namespace overlap{
         return;
     }
 
-    void OverlapCoupling::map_quickhull_to_vectors(const std::vector< qh_vertex_t > &vertices, vecOfvec &vectors) const{
+    void OverlapCoupling::map_quickhull_to_vectors(const std::vector< vertex_t > &vertices, vecOfvec &vectors) const{
         /*!
         Map a collection of 3D-quickhull vertices to std::vectors
 
-        :param std::vector< qh_vertex_t > vertices: The incoming quickhull vertices
+        :param std::vector< vertex_t > vertices: The incoming quickhull vertices
         :param vecOfvec vectors: The outgoing vector of std::vectors
         */
 
@@ -89,31 +96,52 @@ namespace overlap{
         }
     }
 
-    void OverlapCoupling::extract_mesh_info(const qh_mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const{
+    void OverlapCoupling::extract_mesh_info(const mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const{
         /*!
         Extract the required information from the quickhull mesh
 
-        :param qh_mesh_t mesh: The output from qh_quickhull3d
+        :param mesh_t mesh: The output from the convex hull generating algorithm
         :param vecOfvec normals: The normal vectors of the hull's facets
         :param vecOfvec points: Points on the hull's facets
         */
 
-        //!Extract the normal information
-        std::vector< qh_vertex_t > _normals(mesh.normals, mesh.normals+mesh.nnormals);
+        #if CONVEXLIB == QUICKHULL
+            //!Extract the normal information
+            std::vector< vertex_t > _normals(mesh.normals, mesh.normals+mesh.nnormals);
 
-        //!Get a single point of each facet corresponding to the normal.
-        std::vector< qh_vertex_t > _points;
-        _points.reserve(_normals.size());
+            //!Get a single point of each facet corresponding to the normal.
+            std::vector< vertex_t > _points;
+            _points.reserve(_normals.size());
 
-        unsigned int index = 0;
-        for (unsigned int i=0; i<mesh.nindices/3; i++){
-            _points.push_back(mesh.vertices[mesh.indices[index]]);
-            index += 3;
-        }
+            unsigned int index = 0;
+            for (unsigned int i=0; i<mesh.nindices/3; i++){
+                _points.push_back(mesh.vertices[mesh.indices[index]]);
+                index += 3;
+            }
 
-        //!Map the quickhull representations to vectors
-        map_quickhull_to_vectors(_normals, normals);
-        map_quickhull_to_vectors(_points, points);
+            //!Map the convexhull representations to vectors
+            map_quickhull_to_vectors(_normals, normals);
+            map_quickhull_to_vectors(_points, points);
+
+        #elif CONVEXLIB == CONVHULL_3D
+            //!Extract the normal information and assign points
+            normals.reserve(mesh.first.size()/3);
+            points.reserve(mesh.first.size()/3);
+            int i1, i2, i3, index;
+            index = 0;
+            for (unsigned int i=0; i<mesh.first.size()/3; i++){
+                //Get the indices of the vertices which form a face
+                i1 = mesh.first[index+0];
+                i2 = mesh.first[index+1];
+                i3 = mesh.first[index+2];
+
+                //Construct the normal and get a point on the face.
+                normals.push_back(normal_from_vertices(mesh.second[i1], mesh.second[i2], mesh.second[i3]));
+                points.push_back(map_quickhull_to_vector(mesh.second[i1]));
+                index += 3;
+            }
+        #endif
+
     }
 
     void OverlapCoupling::compute_element_bounds(){
@@ -133,14 +161,21 @@ namespace overlap{
         :param vecOfvec coordinates: A vector of std::vectors of the nodal coordinates.
         :param planeMap planes: The resulting planes which bound the coordinates.
         */
-        std::cout << "derp\n";
         //!Map the coordinates to 3D-quickhull vertices
-        std::vector< qh_vertex_t > vertices;
+        std::vector< vertex_t > vertices;
         map_vectors_to_quickhull(coordinates, vertices);
         
         //!Construct the mesh
-        qh_mesh_t mesh = qh_quickhull3d(&vertices[0], vertices.size());
-        qh_mesh_export(&mesh, "tmp2.obj");
+        #if CONVEXLIB == QUICKHULL
+            mesh_t mesh = qh_quickhull3d(&vertices[0], vertices.size());
+        #elif CONVEXLIB == CONVHULL_3D
+            int *faceIndices = NULL;
+            int nFaces;
+            mesh_t mesh;
+            convhull_3d_build(&vertices[0], vertices.size(), &faceIndices, &nFaces);
+            mesh.first.assign(faceIndices, faceIndices + 3*nFaces);
+            mesh.second = vertices;
+        #endif
 
         //!Extract the relevant information
         vecOfvec normals, points;
@@ -341,6 +376,33 @@ namespace overlap{
 
         double tol = fmin(tolr*fabs(a) + tola, tolr*fabs(b) + tola);
         return fabs(a-b)<tol;
+    }
+
+    std::vector< double > normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3){
+        /*!
+        Compute the normal vector from three vertices.
+
+        :param vertex_t p1: The center vertex of the triangle
+        :param vertex_t p2: The first vertex CCW from the center vertex
+        :param vertex_t p3: the second vertex CCW from the center vertex
+        */
+
+        std::vector< double > v1(3), v2(3), normal;
+        v1[0] = p2.x - p1.x;
+        v1[1] = p2.y - p1.y;
+        v1[2] = p2.z - p1.z;
+
+        v2[0] = p3.x - p1.x;
+        v2[1] = p3.y - p1.y;
+        v2[2] = p3.z - p1.z;
+
+        //Compute the normal
+        normal = cross(v1, v2);
+
+        //Normalize the normal vector
+        double mag = sqrt(dot(normal, normal));
+        for (unsigned int i=0; i<normal.size(); i++){normal[i]/=mag;}
+        return normal;
     }
 
 
