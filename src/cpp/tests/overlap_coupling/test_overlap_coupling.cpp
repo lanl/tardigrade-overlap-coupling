@@ -281,17 +281,19 @@ void test_compute_element_bounds(std::ofstream &results){
     */
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc(data.local_nodes);
-    planeMap element_planes;
+    planeMap *element_planes;
+    vecOfvec *element_bounds;
     oc.get_element_planes(element_planes);
+    oc.get_element_bounds(element_bounds);
 
-    if (element_planes.size()!=6){
+    if (element_planes->size()!=6){
         results << "test_compute_element_bounds (test 1)& False\n";
         return;
     }
 
     //!Assumes the underlying element is a hex
     planeMap::iterator it;
-    for (it=element_planes.begin(); it!=element_planes.end(); it++){
+    for (it=element_planes->begin(); it!=element_planes->end(); it++){
         for (unsigned int i=0; i<it->first.size(); i++){
             if (fuzzy_equals(fabs(it->first[i]), 1)){
                 if (!fuzzy_equals(it->first[i], it->second[i])){
@@ -299,6 +301,16 @@ void test_compute_element_bounds(std::ofstream &results){
                     return;
                 }
             }
+        }
+    }
+
+    //!Check the bounds (assuming it is a hex)
+    std::vector< double > answer(2, 1);
+    answer[0] = -1;
+    for (unsigned int i=0; i<3; i++){
+        if (!fuzzy_equals(answer, (*element_bounds)[i])){
+            results << "test_compute_element_bounds(test 3) & False\n";
+            return;
         }
     }
 
@@ -312,14 +324,55 @@ void test_compute_node_bounds(std::ofstream &results){
     */
 
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
-    overlap::OverlapCoupling oc(data.local_nodes);
+    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes);
     planeMap dns_planes;
-    oc.compute_node_bounds(data.coordinates, dns_planes, 1e-9, 1e-9);
+    std::vector< vertex_t > vertices;
+    oc.map_vectors_to_quickhull(data.coordinates, vertices);
+//    int *faceIndices = NULL;
+//    int nFaces;
+//    convhull_3d_build(&vertices[0], vertices.size(), &faceIndices, &nFaces);
+//    std::cout << "outside nFaces 1: " << nFaces << "\n";
+//    free(faceIndices); nFaces = 0;
+//    convhull_3d_build(&vertices[0], vertices.size(), &faceIndices, &nFaces);
+//    std::cout << "outside nFaces 2: " << nFaces << "\n";
+//    free(faceIndices); nFaces = 0;
+
+    vecOfvec bounds;
+    bounds.resize(3);
+    //std::cout << "data.coordinates.size(): " << data.coordinates.size() << "\n";
+    oc.compute_node_bounds(data.coordinates, dns_planes, bounds[0], bounds[1], bounds[2], 1e-9, 1e-9);
+
+//    print_matrix(bounds);
 
     if (dns_planes.size() != 6){
-        results << "test_compute_element_bounds & False\n";
+        results << "test_compute_node_bounds (test 1) & False\n";
         return;
     }
+
+//    planeMap::iterator it;
+//    for (it = dns_planes.begin(); it != dns_planes.end(); it++){
+//        std::cout << "normal: ", print_vector(it->first);
+//        std::cout << "point: ", print_vector(it->second);
+//    }
+
+    vecOfvec answer(3);
+    for (unsigned int i=0; i<answer.size(); i++){
+        answer[i] = std::vector< double >(2,1);
+    }
+    answer[0][0] = 0;
+    answer[1][0] = answer[2][0] = -1;
+
+//    print_matrix(answer);
+
+    for (unsigned int i=0; i<3; i++){
+        if (!(fuzzy_equals(answer[i], bounds[i]))){
+            results << "test_compute_node_bounds (test 2) & False\n";
+            return;
+        }
+    }
+
+    results << "test_compute_node_bounds & True\n";
+    return;
 }
 
 void test_extract_mesh_info(std::ofstream &results){
@@ -340,6 +393,9 @@ void test_extract_mesh_info(std::ofstream &results){
         convhull_3d_build(&vertices[0], vertices.size(), &faceIndices, &nFaces);
         mesh.first.assign(faceIndices, faceIndices + nFaces);
         mesh.second = vertices;
+    #elif CONVEXLIB == AKUUKKA
+        quickhull::QuickHull<FloatType> qh;
+        mesh_t mesh = qh.getConvexHull(vertices, true, false);
     #endif
 
     vecOfvec normals;
@@ -364,6 +420,18 @@ void test_extract_mesh_info(std::ofstream &results){
             return;
         }
         if (mesh.first.size()/3 != points.size()){
+            results << "test_extract_mesh_info (test 2) & False\n";
+            return;
+        }
+    #elif CONVEXLIB == AKUUKKA
+        auto indexBuffer = mesh.getIndexBuffer();
+        auto vertexBuffer = mesh.getVertexBuffer();
+
+        if (indexBuffer.size()/3 != normals.size()){
+            results << "test_extract_mesh_info (test 1) & False\n";
+            return;
+        }
+        if (indexBuffer.size()/3 != points.size()){
             results << "test_extract_mesh_info (test 2) & False\n";
             return;
         }
@@ -460,7 +528,7 @@ int main(){
 
     //Test for the computations of the bounds
     test_extract_mesh_info(results);
-    test_compute_element_bounds(results);
+//    test_compute_element_bounds(results);
     test_compute_node_bounds(results);
 
     //Test misc. functions

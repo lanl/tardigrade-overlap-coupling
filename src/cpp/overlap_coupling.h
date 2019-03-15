@@ -20,18 +20,24 @@
 #include<assert.h>
 #include<string.h>
 
-typedef std::vector< std::vector< double > > vecOfvec;
+//#include "voro++.hh"
 
+typedef std::vector< std::vector< double > > vecOfvec;
 typedef std::map< std::vector< double >, std::vector< double > > planeMap;
 
 #if CONVEXLIB == QUICKHULL
-    #include "quickhull.h"
+    #include "3d-quickhull/quickhull.h"
     typedef qh_vertex_t vertex_t;
     typedef qh_mesh_t mesh_t;
 #elif CONVEXLIB == CONVHULL_3D
-    #include "convhull_3d.h"
+    #include "conhull_3d/convhull_3d.h"
     typedef ch_vertex vertex_t;
     typedef std::pair< std::vector< int >, std::vector< vertex_t > > mesh_t;
+#elif CONVEXLIB == AKUUKKA
+    #include "quickhull/QuickHull.hpp"
+    typedef float FloatType;
+    typedef quickhull::Vector3<FloatType> vertex_t;
+    typedef quickhull::ConvexHull<FloatType> mesh_t;
 #else
     #error CONVEXLIB must be defined. If defined, check that the value is supported.
 #endif
@@ -59,16 +65,28 @@ namespace overlap{
             std::vector< double > map_quickhull_to_vector(const vertex_t &vertex) const;
             void map_vectors_to_quickhull(const vecOfvec &vectors, std::vector< vertex_t > &vertices) const;
             void map_quickhull_to_vectors(const std::vector< vertex_t > &vertices, vecOfvec &vectors) const;
+#if CONVEXLIB != AKUUKKA
             void extract_mesh_info(const mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;
-            void compute_node_bounds(const vecOfvec &coordinates, planeMap &planes, const double tolr=1e-6, const double tola=1e-6) const;
+#else
+            void extract_mesh_info(mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;
+#endif
+            void compute_node_bounds(const vecOfvec &coordinates, planeMap &planes, 
+                std::vector< double > &xbnds, std::vector< double > &ybnds, std::vector< double > &zbnds,
+                const double tolr=1e-6, const double tola=1e-6);
 
             //! > Interface to defined quantities
-            void get_element_planes(planeMap &planes) const;
+            void get_element_planes(const planeMap *planes) const;
+            void get_element_bounds(const vecOfvec *bounds) const;
 
         protected:
             vecOfvec local_coordinates;
             planeMap element_planes;
             planeMap dns_planes;
+            vecOfvec element_bounds;
+            vecOfvec dns_bounds;
+
+//            voro::container element_container;
+//            voro::container dns_container;
 
             void compute_element_bounds();
             void compute_dns_bounds(const vecOfvec &dns_coordinates);

@@ -10,7 +10,7 @@
 CXX=/opt/moose/gcc-7.3.0/bin/g++
 
 # Flags for the C++ compiler
-CFLAGS=-std=gnu++11 -Wall -ansi -pedantic -O3 -I.
+CFLAGS=-std=gnu++11 -Wall -ansi -pedantic -O3 -I. -fmax-errors=5
 
 # Location of the Voro++ library
 VPPLIB=-L/projects/nathanm/micromorphic/voro++/voro++-0.4.6/src
@@ -22,6 +22,8 @@ VPPINC=-I/projects/nathanm/micromorphic/voro++/voro++-0.4.6/src
 # The python command
 PYTHON=/apps/anaconda3/bin/python
 
+# The quickhull object file
+QHULL=/projects/nathanm/micromorphic/micromorphic_library/external_repositories/quickhull/quickhull.o
+
 # Additional includes
-INC=-I/projects/nathanm/micromorphic/micromorphic_library/external_repositories/3d-quickhull
-INC+=-I/projects/nathanm/micromorphic/micromorphic_library/external_repositories/convhull_3d/
+INC=-I/projects/nathanm/micromorphic/micromorphic_library/external_repositories/

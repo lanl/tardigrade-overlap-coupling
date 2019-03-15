@@ -19,13 +19,13 @@ LOCAL_CFLAGS=-ggdb
 all: $(EXECUTABLES)
 
 test_overlap_coupling: $(OBJECTS)
-	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) $^ -o $@ -lvoro++
+	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) $^ -o $@ $(QHULL) $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
 
 test_overlap_coupling.o: test_overlap_coupling.cpp ../../overlap_coupling.h ../../occonfiguration.h
-	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< -lvoro++
+	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
 
 overlap_coupling.o: ../../overlap_coupling.cpp ../../overlap_coupling.h ../../occonfiguration.h
-	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< -lvoro++
+	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
 
 clean:
 	rm -f $(EXECUTABLES)

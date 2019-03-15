@@ -95,8 +95,11 @@ namespace overlap{
             vectors.push_back(map_quickhull_to_vector(vertices[i]));
         }
     }
-
+#if CONVEXLIB != AKUUKKA
     void OverlapCoupling::extract_mesh_info(const mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const{
+#else
+    void OverlapCoupling::extract_mesh_info(mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const{
+#endif
         /*!
         Extract the required information from the quickhull mesh
 
@@ -140,6 +143,26 @@ namespace overlap{
                 points.push_back(map_quickhull_to_vector(mesh.second[i1]));
                 index += 3;
             }
+        #elif CONVEXLIB == AKUUKKA
+            //!Extract the normal information and assign points
+            auto indexBuffer = mesh.getIndexBuffer();
+            auto vertexBuffer = mesh.getVertexBuffer();
+
+            normals.reserve(indexBuffer.size()/3);
+            points.reserve(indexBuffer.size()/3);
+
+            int i1, i2, i3;
+            for (unsigned int i=0; i<indexBuffer.size()/3; i++){
+                //Get the indices of the vertices which form a face
+                i1 = indexBuffer[i*3+0];
+                i2 = indexBuffer[i*3+1];
+                i3 = indexBuffer[i*3+2];
+
+                //Construct the normal and get a point on the face.
+                normals.push_back(normal_from_vertices(vertexBuffer[i1], vertexBuffer[i2], vertexBuffer[i3]));
+                points.push_back(map_quickhull_to_vector(vertexBuffer[i1]));
+            }
+            
         #endif
 
     }
@@ -149,17 +172,25 @@ namespace overlap{
         Compute the bounds of the element by constructing its convex hull.
         */
 
-        compute_node_bounds(local_coordinates, element_planes);
+        //!Compute the bounding planes
+        element_bounds.resize(3);
+        compute_node_bounds(local_coordinates, element_planes, element_bounds[0], element_bounds[1], element_bounds[2]);
 
         return;
     }
 
-    void OverlapCoupling::compute_node_bounds(const vecOfvec &coordinates, planeMap &planes, const double tolr, const double tola) const{
+    void OverlapCoupling::compute_node_bounds(const vecOfvec &coordinates, planeMap &planes,
+        std::vector< double > &xbnds, std::vector< double > &ybnds, std::vector< double > &zbnds, const double tolr, const double tola){
         /*!
         Compute the bounding planes for the provided coordinates.
 
         :param vecOfvec coordinates: A vector of std::vectors of the nodal coordinates.
         :param planeMap planes: The resulting planes which bound the coordinates.
+        :param std::vector< double > xbnds: The bounds of the nodes in the x direction
+        :param std::vector< double > ybnds: The bounds of the nodes in the y direction
+        :param std::vector< double > zbnds: The bounds of the nodes in the z direction
+        :param double tolr: The relative tolerance
+        :param double tola: The absolute tolerance
         */
         //!Map the coordinates to 3D-quickhull vertices
         std::vector< vertex_t > vertices;
@@ -173,16 +204,48 @@ namespace overlap{
             int nFaces;
             mesh_t mesh;
             convhull_3d_build(&vertices[0], vertices.size(), &faceIndices, &nFaces);
-            mesh.first.assign(faceIndices, faceIndices + 3*nFaces);
+            std::cout << "nFaces: " << nFaces << "\n";
+            mesh.first.reserve(3*nFaces);
+            for (int *it = faceIndices; it != faceIndices + 3*nFaces; it++){
+                mesh.first.push_back(*it);
+            }
+            free(faceIndices);
+//            mesh.first.assign(faceIndices, faceIndices + 3*nFaces);
             mesh.second = vertices;
+            std::cout << "mesh.first.size(): " << mesh.first.size() << "\n";
+            std::cout << "mesh.second.size(): " << mesh.second.size() << "\n";
+        #elif CONVEXLIB == AKUUKKA
+            quickhull::QuickHull<FloatType> qh;
+            mesh_t mesh = qh.getConvexHull(&vertices[0].x, vertices.size(), true, false);
         #endif
 
         //!Extract the relevant information
         vecOfvec normals, points;
         extract_mesh_info(mesh, normals, points);
 
+//        std::cout << "normals.size(): " << normals.size() << "\n";
+//        std::cout << "points.size(): " << points.size() << "\n";
+
         //!Form the planes
         planes = compute_unique_planes(normals, points);
+
+        //!Find the bounding box
+        xbnds.resize(2); ybnds.resize(2); zbnds.resize(2);
+        xbnds[0] = xbnds[1] = planes.begin()->second[0];
+        ybnds[0] = ybnds[1] = planes.begin()->second[1];
+        zbnds[0] = zbnds[1] = planes.begin()->second[2];
+        planeMap::iterator it;
+        for (it = planes.begin(); it != planes.end(); it++){
+            xbnds[0] = fmin(xbnds[0], it->second[0]);
+            xbnds[1] = fmax(xbnds[1], it->second[0]);
+            ybnds[0] = fmin(ybnds[0], it->second[1]);
+            ybnds[1] = fmax(ybnds[1], it->second[1]);
+            zbnds[0] = fmin(zbnds[0], it->second[2]);
+            zbnds[1] = fmax(zbnds[1], it->second[2]);
+        }
+//        std::cout << "xbnds: " << xbnds[0] << " " << xbnds[1] << "\n";
+//        std::cout << "ybnds: " << ybnds[0] << " " << ybnds[1] << "\n";
+//        std::cout << "zbnds: " << zbnds[0] << " " << zbnds[1] << "\n";
 
         return;
     }
@@ -211,13 +274,34 @@ namespace overlap{
         return _planes;
     }
 
-    void OverlapCoupling::get_element_planes(planeMap &planes) const{
+    void OverlapCoupling::get_element_planes(const planeMap *planes) const{
         /*!
         Extract the element planes
+
+        :param planeMap planes: The returned element planes.
         */
 
-        planes = element_planes;
+        planes = &element_planes;
     }
+
+    void OverlapCoupling::get_element_bounds(const vecOfvec *bounds) const{
+        /*!
+        Extract the element planes
+
+        :param planeMap planes: The returned element planes.
+        */
+
+        bounds = &element_bounds;
+    }
+
+
+//    void OverlapCoupling::construct_element_container(){
+//        /*!
+//        Construct the element container. Filling it with the gauss points.
+//        */
+//
+//        element_container = 
+//    }
 
     void compute_distances(const vecOfvec &normals, const vecOfvec &points, std::vector< double > &distances){
         /*!
@@ -244,20 +328,6 @@ namespace overlap{
         }
     }
 
-    bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr, const double tola){
-        /*!
-        Compare vectors to determine if they are in the same direction.
-
-        :param std::vector< double > v1: The first vector
-        :param std::vector< double > v2: The second vector
-
-        The dot product is computed and checked if it is nearly equal to 1.
-        */
-
-        double factor = sqrt(dot(v1, v1)*dot(v2, v2));
-        double result = dot(v1, v2)/factor;
-        return fuzzy_equals(result, 1, tolr, tola);
-    }
 
     //!===
     //! | Functions
@@ -405,5 +475,18 @@ namespace overlap{
         return normal;
     }
 
+    bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr, const double tola){
+        /*!
+        Compare vectors to determine if they are in the same direction.
 
+        :param std::vector< double > v1: The first vector
+        :param std::vector< double > v2: The second vector
+
+        The dot product is computed and checked if it is nearly equal to 1.
+        */
+
+        double factor = sqrt(dot(v1, v1)*dot(v2, v2));
+        double result = dot(v1, v2)/factor;
+        return fuzzy_equals(result, 1, tolr, tola);
+    }
 }
