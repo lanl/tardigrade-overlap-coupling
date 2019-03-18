@@ -59,7 +59,7 @@ namespace overlap{
 
         public:
             OverlapCoupling();
-            OverlapCoupling(const vecOfvec &local_coordinates);
+            OverlapCoupling(const vecOfvec &local_coordinates, const vecOfvec &gauss_points);
 
             //! > Interface to 3D-quickhull
             vertex_t map_vector_to_quickhull(const std::vector< double > &vector) const;
@@ -86,6 +86,8 @@ namespace overlap{
 
         protected:
             vecOfvec local_coordinates;
+            vecOfvec gauss_points;
+
             planeMap element_planes;
             planeMap dns_planes;
             vecOfvec element_bounds;

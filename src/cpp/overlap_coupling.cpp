@@ -29,12 +29,13 @@ namespace overlap{
 
     OverlapCoupling::OverlapCoupling(){}
 
-    OverlapCoupling::OverlapCoupling(const vecOfvec &_local_coordinates){
+    OverlapCoupling::OverlapCoupling(const vecOfvec &_local_coordinates, const vecOfvec &_gauss_points){
         /*!
         The constructor for the filter.
         */
 
         local_coordinates = _local_coordinates;
+        gauss_points = _gauss_points;
         compute_element_bounds();
     }
 
@@ -412,8 +413,8 @@ namespace overlap{
             densities.push_back(::atof(split_line[2].c_str()));
             coordinates.push_back({});
             for (unsigned int i=3; i<6; i++){coordinates.back().push_back(::atof(split_line[i].c_str()));}
-            
         }
+
         return ParsedData(global_nodes, local_nodes, local_gpts, node_numbers, volumes, densities, coordinates);
     }
 

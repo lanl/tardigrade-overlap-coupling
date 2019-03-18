@@ -282,7 +282,7 @@ void test_compute_element_bounds(std::ofstream &results){
     */
 //    std::cout << "Testing the computation of the element bounds...\n";
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
-    overlap::OverlapCoupling oc(data.local_nodes);
+    overlap::OverlapCoupling oc(data.local_nodes, data.local_gpts);
     const planeMap *element_planes = oc.get_element_planes();
     const vecOfvec *element_bounds = oc.get_element_bounds();
 
@@ -327,7 +327,7 @@ void test_compute_node_bounds(std::ofstream &results){
 //    std::cout << "Testing the computation of the node bounds...\n";
 
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
-    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes);
+    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
     planeMap dns_planes;
     std::vector< vertex_t > vertices;
     oc.map_vectors_to_quickhull(data.coordinates, vertices);
@@ -498,7 +498,7 @@ void test_compute_dns_bounds(std::ofstream &results){
 //    std::cout << "Testing the computation of the dns bounds...\n";
 
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
-    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes);
+    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
     oc.compute_dns_bounds(data.coordinates);
     const planeMap *dns_planes = oc.get_dns_planes();
     const vecOfvec *dns_bounds = oc.get_dns_bounds();
