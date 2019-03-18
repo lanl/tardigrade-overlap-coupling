@@ -160,6 +160,7 @@ namespace overlap{
 
                 //Construct the normal and get a point on the face.
                 normals.push_back(normal_from_vertices(vertexBuffer[i1], vertexBuffer[i2], vertexBuffer[i3]));
+//                std::cout << "n: ";print_vector(normals[i]);
                 points.push_back(map_quickhull_to_vector(vertexBuffer[i1]));
             }
             
@@ -177,6 +178,18 @@ namespace overlap{
         compute_node_bounds(local_coordinates, element_planes, element_bounds[0], element_bounds[1], element_bounds[2]);
 
         return;
+    }
+
+    void OverlapCoupling::compute_dns_bounds(const vecOfvec &DNScoordinates){
+        /*!
+        Compute the bounds of the DNS.
+
+        :param vecOfvec DNScoordinates: A vector of std::vectors of the DNS point coordinates
+        */
+
+        //!Compute the bounding planes
+        dns_bounds.resize(3);
+        compute_node_bounds(DNScoordinates, dns_planes, dns_bounds[0], dns_bounds[1], dns_bounds[2]);
     }
 
     void OverlapCoupling::compute_node_bounds(const vecOfvec &coordinates, planeMap &planes,
@@ -216,15 +229,12 @@ namespace overlap{
             std::cout << "mesh.second.size(): " << mesh.second.size() << "\n";
         #elif CONVEXLIB == AKUUKKA
             quickhull::QuickHull<FloatType> qh;
-            mesh_t mesh = qh.getConvexHull(&vertices[0].x, vertices.size(), true, false);
+            mesh_t mesh = qh.getConvexHull(&vertices[0].x, vertices.size(), false, false);
         #endif
 
         //!Extract the relevant information
         vecOfvec normals, points;
         extract_mesh_info(mesh, normals, points);
-
-//        std::cout << "normals.size(): " << normals.size() << "\n";
-//        std::cout << "points.size(): " << points.size() << "\n";
 
         //!Form the planes
         planes = compute_unique_planes(normals, points);
@@ -271,29 +281,49 @@ namespace overlap{
                 _planes.insert(it, std::pair< std::vector< double >, std::vector< double > >(normals[i], points[i]));
             }
         }
+
         return _planes;
     }
 
-    void OverlapCoupling::get_element_planes(const planeMap *planes) const{
+    const planeMap* OverlapCoupling::get_element_planes() const{
         /*!
         Extract the element planes
 
-        :param planeMap planes: The returned element planes.
+        :param planeMap* planes: A pointer to the element planes.
         */
 
-        planes = &element_planes;
+        return &element_planes;
     }
 
-    void OverlapCoupling::get_element_bounds(const vecOfvec *bounds) const{
+    const vecOfvec* OverlapCoupling::get_element_bounds() const{
         /*!
-        Extract the element planes
+        Extract the element bounds
 
-        :param planeMap planes: The returned element planes.
+        :param vecOfvec* bounds: A pointer to the element bounds.
         */
 
-        bounds = &element_bounds;
+        return &element_bounds;
     }
 
+    const planeMap* OverlapCoupling::get_dns_planes() const{
+        /*!
+        Extract the dns planes
+
+        :param planeMap* planes: A pointer to the dns planes.
+        */
+
+        return &dns_planes;
+    }
+
+    const vecOfvec* OverlapCoupling::get_dns_bounds() const{
+        /*!
+        Extract the dns bounds
+
+        :param vecOfvec* bounds: A pointer to the dns planes.
+        */
+
+        return &dns_bounds;
+    }
 
 //    void OverlapCoupling::construct_element_container(){
 //        /*!
@@ -457,6 +487,10 @@ namespace overlap{
         :param vertex_t p3: the second vertex CCW from the center vertex
         */
 
+//        std::cout << "p1: ", print_vertex(p1);
+//        std::cout << "p2: ", print_vertex(p2);
+//        std::cout << "p3: ", print_vertex(p3);
+
         std::vector< double > v1(3), v2(3), normal;
         v1[0] = p2.x - p1.x;
         v1[1] = p2.y - p1.y;
@@ -488,5 +522,49 @@ namespace overlap{
         double factor = sqrt(dot(v1, v1)*dot(v2, v2));
         double result = dot(v1, v2)/factor;
         return fuzzy_equals(result, 1, tolr, tola);
+    }
+
+    void print_vertex(const vertex_t &vertex){
+        /*!
+        Print the value of a vertex to the terminal (debugging tool)
+
+        :param vertex_t vertex: The vertex to print
+        */
+
+        printf("%1.6f %1.6f %1.6f", vertex.x, vertex.y, vertex.z);
+    }
+
+    void print_vector(const std::vector< FloatType > &vector){
+        /*!
+        Print the value of a vector to the terminal (debugging tool)
+
+        :param std::vector< FloatType > vector: The vector to print
+        */
+
+        printf("%1.6f %1.6f %1.6f", vector[0], vector[1], vector[2]);
+    }
+
+    void print_planeMap(const planeMap &planes){
+        /*!
+        Print the value of a planeMap to the terminal (debugging tool)
+
+        :param planeMap planes: The planemap to print
+
+        */
+        planeMap::const_iterator it;
+        int padlen = 30;
+        std::string str1 = "normals";
+        std::string str2 = "points";
+        int prel1 = std::ceil(0.5*(padlen - str1.length()));
+        int postl1 = std::floor(0.5*(padlen - str1.length()));
+        int prel2 = std::ceil(0.5*(padlen - str2.length()));
+        int postl2 = std::floor(0.5*(padlen - str2.length()));
+
+        printf("%*s%s%*s|%*s%s%*s\n", prel1, "", "normals", postl1, "", prel2, "", "points", postl2, "");
+        for (it = planes.begin(); it != planes.end(); it++){
+            printf("%+1.6f %+1.6f %+1.6f | %+1.6f %+1.6f %+1.6f\n",
+                   it->first[0], it->first[1], it->first[2],
+                   it->second[0], it->second[1], it->second[2]);
+        }
     }
 }

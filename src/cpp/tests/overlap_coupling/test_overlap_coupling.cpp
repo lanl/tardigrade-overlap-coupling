@@ -331,32 +331,15 @@ void test_compute_node_bounds(std::ofstream &results){
     planeMap dns_planes;
     std::vector< vertex_t > vertices;
     oc.map_vectors_to_quickhull(data.coordinates, vertices);
-//    int *faceIndices = NULL;
-//    int nFaces;
-//    convhull_3d_build(&vertices[0], vertices.size(), &faceIndices, &nFaces);
-//    std::cout << "outside nFaces 1: " << nFaces << "\n";
-//    free(faceIndices); nFaces = 0;
-//    convhull_3d_build(&vertices[0], vertices.size(), &faceIndices, &nFaces);
-//    std::cout << "outside nFaces 2: " << nFaces << "\n";
-//    free(faceIndices); nFaces = 0;
 
     vecOfvec bounds;
     bounds.resize(3);
-    //std::cout << "data.coordinates.size(): " << data.coordinates.size() << "\n";
     oc.compute_node_bounds(data.coordinates, dns_planes, bounds[0], bounds[1], bounds[2], 1e-9, 1e-9);
-
-//    print_matrix(bounds);
 
     if (dns_planes.size() != 6){
         results << "test_compute_node_bounds (test 1) & False\n";
         return;
     }
-
-//    planeMap::iterator it;
-//    for (it = dns_planes.begin(); it != dns_planes.end(); it++){
-//        std::cout << "normal: ", print_vector(it->first);
-//        std::cout << "point: ", print_vector(it->second);
-//    }
 
     vecOfvec answer(3);
     for (unsigned int i=0; i<answer.size(); i++){
@@ -364,8 +347,6 @@ void test_compute_node_bounds(std::ofstream &results){
     }
     answer[0][0] = 0;
     answer[1][0] = answer[2][0] = -1;
-
-//    print_matrix(answer);
 
     for (unsigned int i=0; i<3; i++){
         if (!(fuzzy_equals(answer[i], bounds[i]))){
@@ -519,7 +500,8 @@ void test_compute_dns_bounds(std::ofstream &results){
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes);
     oc.compute_dns_bounds(data.coordinates);
-    const vecOfvec *result = oc.get_dns_bounds();
+    const planeMap *dns_planes = oc.get_dns_planes();
+    const vecOfvec *dns_bounds = oc.get_dns_bounds();
 
     //!Compare bounds to expected values
     vecOfvec answer(3);
@@ -528,12 +510,28 @@ void test_compute_dns_bounds(std::ofstream &results){
     }
 
     answer[0][0] = 0;
-    answer[1][0] = answer[1][1] = -1;
+    answer[1][0] = answer[2][0] = -1;
 
     for (unsigned int i=0; i<answer.size(); i++){
-        if (!fuzzy_equals(answer[i], result->operator[](i))){
-            results << "test_compute_dns_bounds & False\n";
+        if (!fuzzy_equals(answer[i], dns_bounds->operator[](i))){
+            results << "test_compute_dns_bounds (test 1) & False\n";
             return;
+        }
+    }
+    //!Assumes the underlying dns has a hexahedral domain
+    planeMap::const_iterator it;
+    for (it=dns_planes->begin(); it!=dns_planes->end(); it++){
+        for (unsigned int i=0; i<it->first.size(); i++){
+            if (fuzzy_equals(fabs(it->first[i]), 1)){
+                if (fuzzy_equals(it->first[i], 1) && !fuzzy_equals(it->second[i], (*dns_bounds)[i][1])){
+                    results << "test_compute_dns_bounds (test 2) & False\n";
+                    return;
+                }
+                else if (fuzzy_equals(it->first[i], -1) && !fuzzy_equals(it->second[i], (*dns_bounds)[i][0])){
+                    results << "test_compute_dns_bounds (test 2) & False\n";
+                    return;
+                }
+            }
         }
     }
 
@@ -564,7 +562,8 @@ int main(){
     //Test for the computations of the bounds
     test_extract_mesh_info(results);
     test_compute_element_bounds(results);
-//    test_compute_node_bounds(results);
+    test_compute_node_bounds(results);
+    test_compute_dns_bounds(results);
 
     //Test misc. functions
     test_dot(results);

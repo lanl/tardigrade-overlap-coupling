@@ -12,6 +12,7 @@
 #ifndef OVERLAP_COUPLING_H
 #define OVERLAP_COUPLING_H
 
+#include<stdio.h>
 #include<iostream>
 #include<fstream>
 #include<vector>
@@ -150,6 +151,7 @@ namespace overlap{
 
     void print_vertex(const vertex_t &vertex);
     void print_vector(const std::vector< FloatType > &vector);
+    void print_planeMap(const planeMap &planes);
 }
 
 #endif
