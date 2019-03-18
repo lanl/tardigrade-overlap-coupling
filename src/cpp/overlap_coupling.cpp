@@ -372,8 +372,9 @@ namespace overlap{
         std::string line;
         std::vector<std::string> split_line;
         std::vector< double > tmp;
-        std::vector< std::vector< double > > global_nodes;
-        std::vector< std::vector< double > > local_nodes;
+        vecOfvec global_nodes;
+        vecOfvec local_nodes;
+        vecOfvec local_gpts;
         std::vector< unsigned int > node_numbers;
         std::vector< double > volumes;
         std::vector< double > densities;
@@ -395,6 +396,14 @@ namespace overlap{
             for (unsigned int j=3; j<6; j++){local_nodes[i].push_back(::atof(split_line[j].c_str()));}
         }
 
+        //Read in the gauss points of the element
+        for (unsigned int i=0; i<8; i++){
+            std::getline(file, line);
+            split_line = split(line, ' ');
+            local_gpts.push_back({});
+            for (unsigned int j=0; j<3; j++){local_gpts[i].push_back(::atof(split_line[j].c_str()));}
+        }
+
         //Split the strings
         while (std::getline(file, line)){
             split_line = split(line, ' ');
@@ -405,7 +414,7 @@ namespace overlap{
             for (unsigned int i=3; i<6; i++){coordinates.back().push_back(::atof(split_line[i].c_str()));}
             
         }
-        return ParsedData(global_nodes, local_nodes, node_numbers, volumes, densities, coordinates);
+        return ParsedData(global_nodes, local_nodes, local_gpts, node_numbers, volumes, densities, coordinates);
     }
 
     //!String parsing techniques from https://stackoverflow.com/questions/236129/how-do-i-iterate-over-the-words-of-a-string
@@ -567,4 +576,6 @@ namespace overlap{
                    it->second[0], it->second[1], it->second[2]);
         }
     }
+
+    
 }

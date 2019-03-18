@@ -21,7 +21,7 @@
 #include<assert.h>
 #include<string.h>
 
-//#include "voro++.hh"
+#include "voro++.hh"
 
 typedef std::vector< std::vector< double > > vecOfvec;
 typedef std::map< std::vector< double >, std::vector< double > > planeMap;
@@ -108,6 +108,7 @@ namespace overlap{
         public:
             vecOfvec global_nodes;
             vecOfvec local_nodes;
+            vecOfvec local_gpts;
             std::vector< unsigned int > node_numbers;
             std::vector< double > volumes;
             std::vector< double > densities;
@@ -116,11 +117,12 @@ namespace overlap{
             //! > Constructors
             ParsedData(){}
 
-            ParsedData(vecOfvec _global_nodes, vecOfvec _local_nodes,
+            ParsedData(vecOfvec _global_nodes, vecOfvec _local_nodes, vecOfvec _local_gpts,
                        std::vector< unsigned int > _node_numbers, std::vector< double > _volumes,
                        std::vector< double > _densities, vecOfvec _coordinates){
                 global_nodes = _global_nodes;
                 local_nodes = _local_nodes;
+                local_gpts = _local_gpts;
                 node_numbers = _node_numbers;
                 volumes = _volumes;
                 densities = _densities;
