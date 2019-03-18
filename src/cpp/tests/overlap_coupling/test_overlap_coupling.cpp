@@ -120,8 +120,8 @@ void test_map_vectors_to_quickhull(std::ofstream &results){
 
     for (unsigned int i=0; i<in.size(); i++){
         if (!fuzzy_equals(in[i][0], result[i].x) || !fuzzy_equals(in[i][1], result[i].y) || !fuzzy_equals(in[i][2], result[i].z)){
-            print_vector(in[i]);
-            std::cout << result[i].x << " " << result[i].y << " " << result[i].z << "\n";
+//            print_vector(in[i]);
+//            std::cout << result[i].x << " " << result[i].y << " " << result[i].z << "\n";
             results << "test_map_vectors_to_quickhull & False\n";
             return;
         }
@@ -244,6 +244,7 @@ void test_compare_vector_directions(std::ofstream &results){
     /*!
     Test the comparison of two vector directions for equality.
     */
+//    std::cout << "Testing the comparision of vector directions...\n";
 
     std::vector< double > a(3, 1), b(3, 3);
     
@@ -279,12 +280,11 @@ void test_compute_element_bounds(std::ofstream &results){
     /*!
     Test the computation of the element bounds (also tests compute_unique_planes)
     */
+//    std::cout << "Testing the computation of the element bounds...\n";
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc(data.local_nodes);
-    planeMap *element_planes;
-    vecOfvec *element_bounds;
-    oc.get_element_planes(element_planes);
-    oc.get_element_bounds(element_bounds);
+    const planeMap *element_planes = oc.get_element_planes();
+    const vecOfvec *element_bounds = oc.get_element_bounds();
 
     if (element_planes->size()!=6){
         results << "test_compute_element_bounds (test 1)& False\n";
@@ -292,9 +292,11 @@ void test_compute_element_bounds(std::ofstream &results){
     }
 
     //!Assumes the underlying element is a hex
-    planeMap::iterator it;
+    planeMap::const_iterator it;
     for (it=element_planes->begin(); it!=element_planes->end(); it++){
         for (unsigned int i=0; i<it->first.size(); i++){
+//            print_vector(it->first);
+//            print_vector(it->second);
             if (fuzzy_equals(fabs(it->first[i]), 1)){
                 if (!fuzzy_equals(it->first[i], it->second[i])){
                     results << "test_compute_element_bounds (test 2) & False\n";
@@ -322,6 +324,7 @@ void test_compute_node_bounds(std::ofstream &results){
     /*!
     Test the computation of the node bounds.
     */
+//    std::cout << "Testing the computation of the node bounds...\n";
 
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes);
@@ -379,6 +382,7 @@ void test_extract_mesh_info(std::ofstream &results){
     /*!
     Test the extraction of the mesh information
     */
+//    std::cout << "Testing the extraction of the mesh information...\n";
 
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc;
@@ -395,7 +399,7 @@ void test_extract_mesh_info(std::ofstream &results){
         mesh.second = vertices;
     #elif CONVEXLIB == AKUUKKA
         quickhull::QuickHull<FloatType> qh;
-        mesh_t mesh = qh.getConvexHull(vertices, true, false);
+        mesh_t mesh = qh.getConvexHull(vertices, false, false);
     #endif
 
     vecOfvec normals;
@@ -479,7 +483,7 @@ void test_normal_from_vertices(std::ofstream &results){
     Test the computation of a normal from a set of three vertices that 
     define a plane.
     */
-
+//    std::cout << "Testing normal from vertices...\n";
     vertex_t v1, v2, v3;
     v1.x = 1;
     v1.y = 0;
@@ -506,6 +510,37 @@ void test_normal_from_vertices(std::ofstream &results){
     return;
 }
 
+void test_compute_dns_bounds(std::ofstream &results){
+    /*!
+    Test the computation of the bounding planes for the DNS point positions.
+    */
+//    std::cout << "Testing the computation of the dns bounds...\n";
+
+    overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
+    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes);
+    oc.compute_dns_bounds(data.coordinates);
+    const vecOfvec *result = oc.get_dns_bounds();
+
+    //!Compare bounds to expected values
+    vecOfvec answer(3);
+    for (unsigned int i=0; i<answer.size(); i++){
+        answer[i] = std::vector< double >(2,1);
+    }
+
+    answer[0][0] = 0;
+    answer[1][0] = answer[1][1] = -1;
+
+    for (unsigned int i=0; i<answer.size(); i++){
+        if (!fuzzy_equals(answer[i], result->operator[](i))){
+            results << "test_compute_dns_bounds & False\n";
+            return;
+        }
+    }
+
+    results << "test_compute_dns_bounds & True\n";
+    return;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -528,8 +563,8 @@ int main(){
 
     //Test for the computations of the bounds
     test_extract_mesh_info(results);
-//    test_compute_element_bounds(results);
-    test_compute_node_bounds(results);
+    test_compute_element_bounds(results);
+//    test_compute_node_bounds(results);
 
     //Test misc. functions
     test_dot(results);

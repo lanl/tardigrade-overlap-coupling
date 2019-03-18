@@ -35,7 +35,7 @@ typedef std::map< std::vector< double >, std::vector< double > > planeMap;
     typedef std::pair< std::vector< int >, std::vector< vertex_t > > mesh_t;
 #elif CONVEXLIB == AKUUKKA
     #include "quickhull/QuickHull.hpp"
-    typedef float FloatType;
+    typedef double FloatType;
     typedef quickhull::Vector3<FloatType> vertex_t;
     typedef quickhull::ConvexHull<FloatType> mesh_t;
 #else
@@ -74,9 +74,14 @@ namespace overlap{
                 std::vector< double > &xbnds, std::vector< double > &ybnds, std::vector< double > &zbnds,
                 const double tolr=1e-6, const double tola=1e-6);
 
+            void compute_dns_bounds(const vecOfvec &dns_coordinates);
+
             //! > Interface to defined quantities
-            void get_element_planes(const planeMap *planes) const;
-            void get_element_bounds(const vecOfvec *bounds) const;
+            const planeMap* get_element_planes() const;
+            const vecOfvec* get_element_bounds() const;
+            
+            const planeMap* get_dns_planes() const;
+            const vecOfvec* get_dns_bounds() const;
 
         protected:
             vecOfvec local_coordinates;
@@ -89,7 +94,6 @@ namespace overlap{
 //            voro::container dns_container;
 
             void compute_element_bounds();
-            void compute_dns_bounds(const vecOfvec &dns_coordinates);
             planeMap compute_unique_planes(const vecOfvec &normals, const vecOfvec &points, const double tolr=1e-6, const double tola=1e-6) const;
 
 
@@ -143,6 +147,9 @@ namespace overlap{
     bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr=1e-6, const double tola=1e-6);
 
     std::vector< double > normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3);
+
+    void print_vertex(const vertex_t &vertex);
+    void print_vector(const std::vector< FloatType > &vector);
 }
 
 #endif
