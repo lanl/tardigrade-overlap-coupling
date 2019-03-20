@@ -35,6 +35,11 @@ bool fuzzy_equals(std::vector< double > a, std::vector< double > b, double tolr=
     return true;
 }
 
+//!From voro++ documentation
+// This function returns a random double between 0 and 1
+double rnd() {return double(rand())/RAND_MAX;}
+//!End from voro++ documentation
+
 template<typename T>
 void print_vector(std::vector< T > vector){
     /*!
@@ -539,6 +544,128 @@ void test_compute_dns_bounds(std::ofstream &results){
     return;
 }
 
+void test_construct_container(std::ofstream &results){
+    /*!
+    Tests the construction of a voro++ container class object. Also tests add_planes_to_container
+    */
+
+    //Set the number of particles
+    const int particles=64;
+
+    const double x_min=-2, x_max=2;
+    const double y_min=-2, y_max=2;
+    const double z_min=-2, z_max=2;
+
+    //Set the bounds
+    vecOfvec bounds;
+    bounds.resize(3);
+    for (unsigned int i=0; i<bounds.size(); i++){
+        bounds[i].resize(2);
+        bounds[i][0] = -2;
+        bounds[i][1] =  2;
+    }
+
+    //Build the bounding planes (tetrahedron)
+    planeMap planes;
+    planes.insert(std::pair< std::vector< double >, std::vector< double > >({ 1, 1, 1}, { 1, 0, 0}));
+    planes.insert(std::pair< std::vector< double >, std::vector< double > >({-1,-1, 1}, {-1, 0, 0}));
+    planes.insert(std::pair< std::vector< double >, std::vector< double > >({ 1,-1,-1}, { 0, 0,-1}));
+    planes.insert(std::pair< std::vector< double >, std::vector< double > >({-1, 1,-1}, { 0, 1, 0}));
+
+    //Construct voro++ planes from the definitions
+    std::vector< voro::wall_plane > vplanes;
+    vplanes.reserve(planes.size());
+    double distance;
+    planeMap::iterator it;
+    int j=1;
+    for (it=planes.begin(); it!=planes.end(); it++){
+        distance = overlap::dot(it->first, it->second);
+        vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -j));
+        j++;
+    }
+
+    //Define the point coordinates
+    std::vector< unsigned int > point_numbers;
+    vecOfvec point_coords;
+
+    point_numbers.reserve(particles);
+    point_coords.reserve(particles);
+
+    double x, y, z;
+    for (unsigned int i=0; i<particles; i++){
+        point_numbers.push_back(i);
+        x = x_min + rnd()*(x_max - x_min);
+        y = y_min + rnd()*(y_max - y_min);
+        z = z_min + rnd()*(z_max - z_min);
+        point_coords.push_back({x, y, z});
+    }
+
+    //Construct the container
+    voro::container* container = overlap::construct_container(point_numbers, point_coords, bounds, vplanes);
+    double result_d = container->sum_cell_volumes();
+    double answer_d = 8./3;
+
+    //Check that the volume is what was expected    
+    if (!fuzzy_equals(result_d, answer_d)){
+        results << "test_construct_container (test 1) & False\n";
+        delete(container);
+        return;
+    }
+
+    voro::voronoicell_neighbor c;
+    voro::c_loop_all cl(*container);
+    std::vector< int > neighbors;
+    std::vector< double > face_areas;
+
+//    std::cout << "cell id, volume, neighbors\n";
+    //Check that all of the sub-volumes add up to the expected volume and that the 
+    //Sum of the sub-surface areas adds up to the expected surface area
+    double sub_volume = 0;
+    std::vector< double > sub_surface_areas(4, 0);
+    std::vector< int >::iterator viit;
+    std::vector< double >::iterator vdit;
+    if(cl.start()) do if(container->compute_cell(c, cl)){
+
+        c.neighbors( neighbors);
+        c.face_areas( face_areas);
+//        printf("%3d, %1.6f, ", cl.pid(), c.volume());
+//        print_vector(neighbors);
+
+        sub_volume += c.volume();
+
+        viit = neighbors.begin();
+        vdit = face_areas.begin();
+        while (viit != neighbors.end()){
+            if (*viit < 0){
+                sub_surface_areas[-(*viit+1)] += *vdit;
+            }
+
+            viit++;
+            vdit++;
+        }
+
+    } while (cl.inc());
+
+    if (!fuzzy_equals(sub_volume, answer_d)){
+        results << "test_construct_container (test 2) & False\n";
+        return;
+    }
+
+    answer_d = sqrt(12);
+    vdit = sub_surface_areas.begin();
+    while (vdit != sub_surface_areas.end()){
+        if (!fuzzy_equals(*vdit, answer_d)){
+            results << "test_construct_container (test 3) & False\n";
+            return;
+        }
+        vdit++;
+    }
+
+    results << "test_construct_container & True\n";
+    delete(container);
+    return;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -553,7 +680,7 @@ int main(){
 
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
 
-    //Tests for the interface to 3D-quickhull
+    //Tests for the interface to the hull building routines
     test_map_vector_to_quickhull(results);
     test_map_vectors_to_quickhull(results);
     test_map_quickhull_to_vector(results);
@@ -564,6 +691,9 @@ int main(){
     test_compute_element_bounds(results);
     test_compute_node_bounds(results);
     test_compute_dns_bounds(results);
+
+    //Tests for the interface to Voro++
+    test_construct_container(results);
 
     //Test misc. functions
     test_dot(results);

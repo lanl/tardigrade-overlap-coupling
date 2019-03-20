@@ -156,6 +156,11 @@ namespace overlap{
     void print_vertex(const vertex_t &vertex);
     void print_vector(const std::vector< FloatType > &vector);
     void print_planeMap(const planeMap &planes);
+
+    void add_planes_to_container(std::vector< voro::wall_plane > &planes, voro::container &container);
+
+    voro::container* construct_container(const std::vector< unsigned int > &point_numbers, const vecOfvec &point_coords,
+                                         const vecOfvec &bounds, std::vector< voro::wall_plane> &planes, double expand=1);
 }
 
 #endif

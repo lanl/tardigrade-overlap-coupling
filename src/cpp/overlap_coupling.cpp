@@ -578,5 +578,61 @@ namespace overlap{
         }
     }
 
-    
+    void add_planes_to_container(std::vector< voro::wall_plane > &planes, voro::container &container){
+        /*!
+        Add the planes as defined to the voro::container object
+
+        :param std::vector< voro::wall_plane > planes: The planes to be added to the container
+        :param voro::container container: The voro++ container object.
+        */
+
+        for (unsigned int i = 0; i<planes.size(); i++){
+            container.add_wall(planes[i]);
+        }
+    }
+
+    voro::container* construct_container(const std::vector< unsigned int > &point_numbers, const vecOfvec &point_coords,
+                                         const vecOfvec &bounds, std::vector< voro::wall_plane > &planes, double expand){
+        /*!
+        Returns the pointer to a new voro::container formed by the walls in planes and containing the points in point_coords.
+
+        NOTE: delete this memory after using!
+
+        :param std::vector< unsigned int > point_numbers: The point id numbers
+        :param vecOfvec point_coords: The coordinates of the points
+        :param vecOfvec bounds: The bounds of the domains
+        :param std::vector< voro::wall_plane > planes: The definitions of the bounding planes.
+        :param double expand: The amount to expand the bounds by. Ensures that points on the surface aren't id'd as being outside
+        */
+
+        //Set up the pre-container class. This will try to optimize the fitting process
+        int nx, ny, nz;
+        voro::pre_container pcontainer(bounds[0][0]-expand, bounds[0][1]+expand,
+                                       bounds[1][0]-expand, bounds[1][1]+expand,
+                                       bounds[2][0]-expand, bounds[2][1]+expand,
+                                       false, false, false);
+
+        //Add the points to the pre-container
+        if (point_numbers.size() != point_coords.size()){
+            std::cout << "Error: The point indices and coordinates must have the same length\n";
+            assert(1==0);
+        }
+        for (unsigned int i=0; i<point_numbers.size(); i++){
+            pcontainer.put(point_numbers[i], point_coords[i][0], point_coords[i][1], point_coords[i][2]);
+        }
+        pcontainer.guess_optimal(nx, ny, nz);
+
+        //Set up the container using the guess as to the best options from the pre-container
+        voro::container* container = new voro::container(bounds[0][0]-expand, bounds[0][1]+expand,
+                                                         bounds[1][0]-expand, bounds[1][1]+expand,
+                                                         bounds[2][0]-expand, bounds[2][1]+expand,
+                                                         nx, ny, nz, false, false, false, 8);
+        pcontainer.setup(*container);
+
+        //Add the additional bounding planes to the container
+        std::vector< voro::wall_plane > ps;
+        add_planes_to_container(planes, *container);
+
+        return container;
+    }
 }
