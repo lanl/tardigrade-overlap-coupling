@@ -286,6 +286,21 @@ namespace overlap{
         return _planes;
     }
 
+    void OverlapCoupling::construct_gauss_domains(){
+        /*!
+        Construct the Gauss domains by using a Voronoi cell representation of the volumes associated with a Gauss point.
+        */
+
+        //Map the planes to voro::wall_plane objects
+        std::vector< voro::wall_plane > vplanes;
+        map_planes_to_voro(element_planes, vplanes);
+
+        //Construct the container
+        std::vector< int > gpt_nums(gauss_points.size());
+        for (unsigned int i=0; i<gpt_nums.size(); i++){gpt_nums[i] = i;}
+        voro::container *container = construct_container(gpt_nums, gauss_points, element_bounds, vplanes);
+    }
+
     const planeMap* OverlapCoupling::get_element_planes() const{
         /*!
         Extract the element planes
@@ -810,5 +825,26 @@ namespace overlap{
         std::cout << dot(normal, {centroid[0]-vertices[l0+0], centroid[1]-vertices[l0+1], centroid[2]-vertices[l0+2]});
         std::cout << "\n";
 */
+    }
+    
+    void map_planes_to_voro(const planeMap &planes, std::vector< voro::wall_plane > &vplanes){
+        /*!
+        Map planes to voro::wall_plane objects.
+
+        :param planeMap planes: The planeMap object which stores the plane information (normal, point on plane)
+        :param std::vector< voro::wall_plane > vplanes: The vector of Voro++ plane objects.
+        */
+
+        //Map the planes to voro::wall_plane objects
+        vplanes.reserve(planes.size());
+        planeMap::const_iterator it;
+        double distance;
+        int j=1;
+
+        for (it=planes.begin(); it!=planes.end(); it++){
+            distance = sqrt(overlap::dot(it->first, it->second));
+            vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -j));
+            j++;
+        }
     }
 }

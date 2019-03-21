@@ -98,6 +98,7 @@ namespace overlap{
 
             void compute_element_bounds();
             planeMap compute_unique_planes(const vecOfvec &normals, const vecOfvec &points, const double tolr=1e-6, const double tola=1e-6) const;
+            void construct_gauss_domains();
 
 
     };
@@ -229,6 +230,7 @@ namespace overlap{
 
     void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices, const int &index, std::vector< double > &centroid);
 
+    void map_planes_to_voro(const planeMap &planes, std::vector< voro::wall_plane > &vplanes);
 }
 
 #endif

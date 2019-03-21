@@ -547,7 +547,7 @@ void test_compute_dns_bounds(std::ofstream &results){
 void test_construct_container(std::ofstream &results){
     /*!
     Tests the construction of a voro++ container class object. Also tests add_planes_to_container,
-    evaluate_container_information, and find_face_centroid
+    evaluate_container_information, find_face_centroid, and map_planes_to_voro.
     */
 
     //Set the number of particles
@@ -575,15 +575,16 @@ void test_construct_container(std::ofstream &results){
 
     //Construct voro++ planes from the definitions
     std::vector< voro::wall_plane > vplanes;
-    vplanes.reserve(planes.size());
-    double distance;
-    planeMap::iterator it;
-    int j=1;
-    for (it=planes.begin(); it!=planes.end(); it++){
-        distance = sqrt(overlap::dot(it->first, it->second));
-        vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -j));
-        j++;
-    }
+    overlap::map_planes_to_voro(planes, vplanes);
+//    vplanes.reserve(planes.size());
+//    double distance;
+//    planeMap::iterator it;
+//    int j=1;
+//    for (it=planes.begin(); it!=planes.end(); it++){
+//        distance = sqrt(overlap::dot(it->first, it->second));
+//        vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -j));
+//        j++;
+//    }
 
     //Define the point coordinates
     std::vector< unsigned int > point_numbers;
@@ -637,6 +638,7 @@ void test_construct_container(std::ofstream &results){
     }
 
     //Check that the normals for each plane are consistent with expectations and that the centroids are on the plane
+    planeMap::iterator it;
     std::vector< overlap::MicroPoint >::iterator pit;
     std::vector< double > normal(3);
     for (pit=points.begin(); pit!=points.end(); pit++){
