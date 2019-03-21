@@ -546,7 +546,8 @@ void test_compute_dns_bounds(std::ofstream &results){
 
 void test_construct_container(std::ofstream &results){
     /*!
-    Tests the construction of a voro++ container class object. Also tests add_planes_to_container
+    Tests the construction of a voro++ container class object. Also tests add_planes_to_container,
+    evaluate_container_information, and find_face_centroid
     */
 
     //Set the number of particles
@@ -579,7 +580,7 @@ void test_construct_container(std::ofstream &results){
     planeMap::iterator it;
     int j=1;
     for (it=planes.begin(); it!=planes.end(); it++){
-        distance = overlap::dot(it->first, it->second);
+        distance = sqrt(overlap::dot(it->first, it->second));
         vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -j));
         j++;
     }
@@ -602,7 +603,12 @@ void test_construct_container(std::ofstream &results){
 
     //Construct the container
     voro::container* container = overlap::construct_container(point_numbers, point_coords, bounds, vplanes);
-    double result_d = container->sum_cell_volumes();
+    std::vector< overlap::MicroPoint > points;
+    overlap::evaluate_container_information( container, points);
+    double result_d = 0;
+    for (unsigned int i=0; i<points.size(); i++){
+        result_d += points[i].volume;
+    }
     double answer_d = 8./3;
 
     //Check that the volume is what was expected    
@@ -612,54 +618,50 @@ void test_construct_container(std::ofstream &results){
         return;
     }
 
-    voro::voronoicell_neighbor c;
-    voro::c_loop_all cl(*container);
-    std::vector< int > neighbors;
-    std::vector< double > face_areas;
-
-//    std::cout << "cell id, volume, neighbors\n";
-    //Check that all of the sub-volumes add up to the expected volume and that the 
-    //Sum of the sub-surface areas adds up to the expected surface area
-    double sub_volume = 0;
+    //Check that the surface areas are what was expected
     std::vector< double > sub_surface_areas(4, 0);
-    std::vector< int >::iterator viit;
-    std::vector< double >::iterator vdit;
-    if(cl.start()) do if(container->compute_cell(c, cl)){
-
-        c.neighbors( neighbors);
-        c.face_areas( face_areas);
-//        printf("%3d, %1.6f, ", cl.pid(), c.volume());
-//        print_vector(neighbors);
-
-        sub_volume += c.volume();
-
-        viit = neighbors.begin();
-        vdit = face_areas.begin();
-        while (viit != neighbors.end()){
-            if (*viit < 0){
-                sub_surface_areas[-(*viit+1)] += *vdit;
-            }
-
-            viit++;
-            vdit++;
+    for (unsigned int i=0; i<points.size(); i++){
+        for (unsigned int j=0; j<points[i].areas.size(); j++){
+            sub_surface_areas[points[i].planes[j]] += points[i].areas[j];
         }
-
-    } while (cl.inc());
-
-    if (!fuzzy_equals(sub_volume, answer_d)){
-        results << "test_construct_container (test 2) & False\n";
-        return;
     }
 
     answer_d = sqrt(12);
-    vdit = sub_surface_areas.begin();
+    std::vector< double >::iterator vdit = sub_surface_areas.begin();
     while (vdit != sub_surface_areas.end()){
         if (!fuzzy_equals(*vdit, answer_d)){
-            results << "test_construct_container (test 3) & False\n";
+            results << "test_construct_container (test 2) & False\n";
             return;
         }
         vdit++;
     }
+
+    //Check that the normals for each plane are consistent with expectations and that the centroids are on the plane
+    std::vector< overlap::MicroPoint >::iterator pit;
+    std::vector< double > normal(3);
+    for (pit=points.begin(); pit!=points.end(); pit++){
+        for (unsigned int i=0; i<pit->planes.size(); i++){
+//            std::cout << "planes:\n";
+            it = planes.begin();
+            for (int j=0; j<pit->planes[i]; j++){it++;}
+            normal = it->first;
+            for (unsigned int j=0; j<normal.size(); j++){normal[j] /= sqrt(overlap::dot(it->first, it->first));}
+            if (!fuzzy_equals(normal, pit->normals[i])){
+                results << "test_construct_container (test 3) & False\n";
+                return;
+            }
+//            print_vector(normal);
+//            print_vector(it->second);
+//            print_vector(pit->face_centroids[i]);
+//            std::cout << overlap::dot(normal, it->second) << " ";
+//            std::cout << overlap::dot(normal, pit->face_centroids[i]) << "\n";
+            if (!fuzzy_equals(overlap::dot(normal, it->second), overlap::dot(normal, pit->face_centroids[i]))){
+                results << "test_construct_container (test 4) & False\n";
+                return;
+           }
+        }
+    }
+
 
     results << "test_construct_container & True\n";
     delete(container);

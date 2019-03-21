@@ -131,6 +131,68 @@ namespace overlap{
                 coordinates = _coordinates;
             }
     };
+
+   class MicroPoint{
+        /*!
+        Class which stores micro-point information.
+        */
+
+        public:
+            //! > Constructors
+            MicroPoint(){}
+            MicroPoint( double ivolume, std::vector< double > icoordinates,
+                        std::vector< int > iplanes, std::vector< double > iareas,
+                        vecOfvec inormals, vecOfvec iface_centroids){
+                          /*!
+                          Constructor for MicroPoint;
+
+                          :param double ivolume: The volume of the voronoi cell
+                          :param std::vector< double > icoordinates: The coordinates of the centroid of the voronoi cell
+                          :param std::vector< int > iplanes: The exterior planes cutting the cell
+                          :param std::vector< double > iareas: Areas of the surfaces corresponding to iplanes
+                          :param vecOfvec inormals: The normals corresponding to iplanes
+                          :param vecOfvec iface_centroids: The centroids of the faces corresponding to iplanes
+                          */
+
+                          volume = ivolume;
+
+                          coordinates.reserve(icoordinates.size());
+                          for (unsigned int i=0; i<icoordinates.size(); i++){coordinates.push_back(icoordinates[i]);}
+
+                          planes.reserve(iplanes.size());
+                          for (unsigned int i=0; i<iplanes.size(); i++){planes.push_back(iplanes[i]);}
+
+                          areas.reserve(iareas.size());
+                          for (unsigned int i=0; i<iareas.size(); i++){areas.push_back(iareas[i]);}
+
+                          normals.resize(inormals.size());
+                          for (unsigned int i=0; i<inormals.size(); i++){
+                              normals[i].reserve(inormals[i].size());
+                              for (unsigned int j=0; j<inormals[i].size(); j++){
+                                  normals[i].push_back(inormals[i][j]);
+                              }
+                          }
+
+                          face_centroids.resize(iface_centroids.size());
+                          for (unsigned int i=0; i<iface_centroids.size(); i++){
+                              face_centroids[i].reserve(iface_centroids[i].size());
+                              for (unsigned int j=0; j<iface_centroids[i].size(); j++){
+                                  face_centroids[i].push_back(iface_centroids[i][j]);
+                              }
+                          }
+                      }
+
+            //! > Methods
+            void print() const;
+
+            //! > Attributes
+            double volume;
+            std::vector< double > coordinates;
+            std::vector< int > planes;
+            std::vector< double > areas;
+            vecOfvec normals;
+            vecOfvec face_centroids;
+   };
     
    //!===
    //! | Functions
@@ -155,12 +217,18 @@ namespace overlap{
 
     void print_vertex(const vertex_t &vertex);
     void print_vector(const std::vector< FloatType > &vector);
+    void print_matrix(const std::vector< std::vector< FloatType > > &matrix);
     void print_planeMap(const planeMap &planes);
 
     void add_planes_to_container(std::vector< voro::wall_plane > &planes, voro::container &container);
 
     voro::container* construct_container(const std::vector< unsigned int > &point_numbers, const vecOfvec &point_coords,
                                          const vecOfvec &bounds, std::vector< voro::wall_plane> &planes, double expand=1);
+
+    void evaluate_container_information(voro::container *container, std::vector< MicroPoint > &points);
+
+    void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices, const int &index, std::vector< double > &centroid);
+
 }
 
 #endif

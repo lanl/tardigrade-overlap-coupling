@@ -359,6 +359,41 @@ namespace overlap{
         }
     }
 
+    void MicroPoint::print() const{
+        /*!
+        Print the contents of the MicroPoint to the terminal (debugging tool)
+        */
+
+        std::cout << "MicroPoint:\n";
+
+        std::cout << "  volume: " << volume << "\n";
+
+        std::cout << "  coordinates: "; print_vector(coordinates);
+
+        std::cout << "  planes:";
+        for (unsigned int i=0; i<planes.size(); i++){
+            printf("%10d", planes[i]);
+        }
+        std::cout << "\n";
+
+        std::cout << "  areas: ";
+        for (unsigned int i=0; i<areas.size(); i++){
+            printf("  %1.6f", areas[i]);
+        }
+        std::cout << "\n";
+
+        std::cout << "  normals:\n";
+        for (unsigned int i=0; i<normals.size(); i++){
+            std::cout << "          ";
+            print_vector(normals[i]);
+        }
+
+        std::cout << "  face centroids:\n";
+        for (unsigned int i=0; i<face_centroids.size(); i++){
+            std::cout << "          ";
+            print_vector(face_centroids[i]);
+        }
+    }
 
     //!===
     //! | Functions
@@ -541,7 +576,7 @@ namespace overlap{
         :param vertex_t vertex: The vertex to print
         */
 
-        printf("%1.6f %1.6f %1.6f", vertex.x, vertex.y, vertex.z);
+        printf("%+1.6f %+1.6f %+1.6f", vertex.x, vertex.y, vertex.z);
     }
 
     void print_vector(const std::vector< FloatType > &vector){
@@ -551,7 +586,16 @@ namespace overlap{
         :param std::vector< FloatType > vector: The vector to print
         */
 
-        printf("%1.6f %1.6f %1.6f", vector[0], vector[1], vector[2]);
+        printf("%+1.6f %+1.6f %+1.6f\n", vector[0], vector[1], vector[2]);
+    }
+
+    void print_matrix(const std::vector< std::vector< FloatType > > &matrix){
+        /*!
+        Print the value of a matrix to the terminal (debugging tool)
+        */
+        for (unsigned int i=0; i<matrix.size(); i++){
+            print_vector(matrix[i]);
+        }
     }
 
     void print_planeMap(const planeMap &planes){
@@ -634,5 +678,137 @@ namespace overlap{
         add_planes_to_container(planes, *container);
 
         return container;
+    }
+
+    void evaluate_container_information(voro::container* container, std::vector< MicroPoint > &points){
+        /*!
+        Compute required container information (volumes, surface areas, etc.) and return them.
+
+        The planes which describe the container's bounds are desired to have negative id numbers starting 
+        at -1 and progressing onwards. It will be assumed that any negative number for a neighboring point 
+        is actually a surface on the outside of the domain. The planes will be id'd by adding 1 and taking 
+        the negative.
+
+        :param voro::container* container: A pointer to the Voro++ container class to be investigated
+        :param std::vector< MicroPoint > points: A vector of point information containers.
+        */
+
+        voro::voronoicell_neighbor c;
+        voro::c_loop_all cl(*container);
+        
+        std::vector< int > neighbors;
+        std::vector< double > face_areas;
+        std::vector< double > cell_normals;
+        std::vector< int > face_orders;
+        std::vector< int > face_vertices;
+        double x, y, z;
+        std::vector< double > vertices;
+        std::vector< double > centroid(3);
+
+        std::vector< int > planes; 
+        std::vector< double > areas;
+        vecOfvec normals;
+        vecOfvec face_centroids;
+        unsigned int index = 0;
+        unsigned int index_order = 0;
+
+        //Define the iterators
+        std::vector< int >::iterator viit;
+        std::vector< double >::iterator vdit;
+
+        //Set the initial size of points
+        points.resize(0);
+
+        //Loop over the contained points
+        if (cl.start()) do if (container->compute_cell(c, cl)){
+            cl.pos(x, y, z);
+            c.neighbors( neighbors );
+            c.face_areas( face_areas );
+            c.normals( cell_normals );
+            c.face_vertices( face_vertices );
+            c.vertices(x, y, z, vertices);
+
+//            std::cout << "face_vertices: ";
+//            for (unsigned int i=0; i<face_vertices.size(); i++){printf("%4d",face_vertices[i]);}
+//            std::cout << "\n";
+
+            planes.resize(0);
+            areas.resize(0);
+            normals.resize(0);
+            face_centroids.resize(0);
+
+            viit = neighbors.begin();
+            vdit = face_areas.begin();
+
+            index = 0;
+            index_order = 0;
+
+            while (viit != neighbors.end()){
+//                std::cout << "index_order: " << index_order << "\n";
+                if (*viit < 0){
+                    planes.push_back(-(*viit+1));
+                    areas.push_back(*vdit);
+                    normals.push_back({cell_normals[index+0],
+                                       cell_normals[index+1],
+                                       cell_normals[index+2]});
+                    find_face_centroid(face_vertices, vertices, index_order, centroid);
+                    face_centroids.push_back({centroid[0], centroid[1], centroid[2]});
+
+                }
+                viit++;
+                vdit++;
+                index += 3;
+                index_order += face_vertices[index_order]+1;
+            }
+
+            c.centroid(centroid[0], centroid[1], centroid[2]);
+            points.push_back(MicroPoint(c.volume(), centroid, planes, areas, normals, face_centroids));
+
+        } while (cl.inc());
+    }
+
+    void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices, const int &index, std::vector< double > &centroid){
+        /*!
+        Find the centroid of the given face
+
+        :param std::vector< int > face_vertices: The indices of the vertices for the faces of the cell
+        :param std::vector< double > vertices: The coordinates of the vertices for the given cell
+        :param int index: The index corresponding to the desired face
+        :param std::vector< double > centroid: The centroid of the face
+        */
+
+        int k, l, n = face_vertices[index];
+        centroid[0] = centroid[1] = centroid[2] = 0;
+        for (k=0; k<n; k++){
+            l = 3*face_vertices[index+k+1];
+//            printf("%+1.6f %+1.6f %+1.6f\n", vertices[l+0], vertices[l+1], vertices[l+2]);
+            centroid[0] += vertices[l+0]/n;
+            centroid[1] += vertices[l+1]/n;
+            centroid[2] += vertices[l+2]/n;
+        }
+
+/*        vecOfvec edges;
+        edges.reserve(n);
+        int l0, l1;
+        for (k=1; k<n; k++){
+            l0 = 3*face_vertices[index+1];
+            l1 = 3*face_vertices[index+k+1];
+            edges.push_back({vertices[l1+0]-vertices[l0+0],
+                             vertices[l1+1]-vertices[l0+1],
+                             vertices[l1+2]-vertices[l0+2]});
+        }
+
+        std::cout << "distances:\n";
+        std::vector< double > normal = cross(edges[1], edges[0]);
+        for (unsigned int i=0; i<edges.size(); i++){
+            l1 = 3*face_vertices[index+k+1];
+            std::cout << dot(normal, edges[i]) << "\n";
+        }
+
+        std::cout << "centroid distance: ";
+        l0 = 3*face_vertices[index+1];
+        std::cout << dot(normal, {centroid[0]-vertices[l0+0], centroid[1]-vertices[l0+1], centroid[2]-vertices[l0+2]});
+        std::cout << "\n";
+*/
     }
 }
