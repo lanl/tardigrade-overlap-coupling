@@ -115,7 +115,7 @@ void test_map_vectors_to_quickhull(std::ofstream &results){
     b[1] = .32;
     b[2] = 7.8;
 
-    vecOfvec in;
+    overlap::vecOfvec in;
     in.push_back(a);
     in.push_back(b);
 
@@ -155,7 +155,7 @@ void test_map_quickhull_to_vectors(std::ofstream &results){
     in.push_back(v2);
 
     overlap::OverlapCoupling oc;
-    vecOfvec result;
+    overlap::vecOfvec result;
     oc.map_quickhull_to_vectors(in, result);
 
     for (unsigned int i=0; i<in.size(); i++){
@@ -288,8 +288,8 @@ void test_compute_element_bounds(std::ofstream &results){
 //    std::cout << "Testing the computation of the element bounds...\n";
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc(data.local_nodes, data.local_gpts);
-    const planeMap *element_planes = oc.get_element_planes();
-    const vecOfvec *element_bounds = oc.get_element_bounds();
+    const overlap::planeMap *element_planes = oc.get_element_planes();
+    const overlap::vecOfvec *element_bounds = oc.get_element_bounds();
 
     if (element_planes->size()!=6){
         results << "test_compute_element_bounds (test 1)& False\n";
@@ -297,7 +297,7 @@ void test_compute_element_bounds(std::ofstream &results){
     }
 
     //!Assumes the underlying element is a hex
-    planeMap::const_iterator it;
+    overlap::planeMap::const_iterator it;
     for (it=element_planes->begin(); it!=element_planes->end(); it++){
         for (unsigned int i=0; i<it->first.size(); i++){
 //            print_vector(it->first);
@@ -333,11 +333,11 @@ void test_compute_node_bounds(std::ofstream &results){
 
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
-    planeMap dns_planes;
+    overlap::planeMap dns_planes;
     std::vector< vertex_t > vertices;
     oc.map_vectors_to_quickhull(data.coordinates, vertices);
 
-    vecOfvec bounds;
+    overlap::vecOfvec bounds;
     bounds.resize(3);
     oc.compute_node_bounds(data.coordinates, dns_planes, bounds[0], bounds[1], bounds[2], 1e-9, 1e-9);
 
@@ -346,7 +346,7 @@ void test_compute_node_bounds(std::ofstream &results){
         return;
     }
 
-    vecOfvec answer(3);
+    overlap::vecOfvec answer(3);
     for (unsigned int i=0; i<answer.size(); i++){
         answer[i] = std::vector< double >(2,1);
     }
@@ -388,8 +388,8 @@ void test_extract_mesh_info(std::ofstream &results){
         mesh_t mesh = qh.getConvexHull(vertices, false, false);
     #endif
 
-    vecOfvec normals;
-    vecOfvec points;
+    overlap::vecOfvec normals;
+    overlap::vecOfvec points;
 
     oc.extract_mesh_info(mesh, normals, points);
 
@@ -504,11 +504,11 @@ void test_compute_dns_bounds(std::ofstream &results){
     overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
     overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
     oc.compute_dns_bounds(data.coordinates);
-    const planeMap *dns_planes = oc.get_dns_planes();
-    const vecOfvec *dns_bounds = oc.get_dns_bounds();
+    const overlap::planeMap *dns_planes = oc.get_dns_planes();
+    const overlap::vecOfvec *dns_bounds = oc.get_dns_bounds();
 
     //!Compare bounds to expected values
-    vecOfvec answer(3);
+    overlap::vecOfvec answer(3);
     for (unsigned int i=0; i<answer.size(); i++){
         answer[i] = std::vector< double >(2,1);
     }
@@ -523,7 +523,7 @@ void test_compute_dns_bounds(std::ofstream &results){
         }
     }
     //!Assumes the underlying dns has a hexahedral domain
-    planeMap::const_iterator it;
+    overlap::planeMap::const_iterator it;
     for (it=dns_planes->begin(); it!=dns_planes->end(); it++){
         for (unsigned int i=0; i<it->first.size(); i++){
             if (fuzzy_equals(fabs(it->first[i]), 1)){
@@ -557,7 +557,7 @@ void test_construct_container(std::ofstream &results){
     const double z_min=-2, z_max=2;
 
     //Set the bounds
-    vecOfvec bounds;
+    overlap::vecOfvec bounds;
     bounds.resize(3);
     for (unsigned int i=0; i<bounds.size(); i++){
         bounds[i].resize(2);
@@ -566,7 +566,7 @@ void test_construct_container(std::ofstream &results){
     }
 
     //Build the bounding planes (tetrahedron)
-    planeMap planes;
+    overlap::planeMap planes;
     planes.insert(std::pair< std::vector< double >, std::vector< double > >({ 1, 1, 1}, { 1, 0, 0}));
     planes.insert(std::pair< std::vector< double >, std::vector< double > >({-1,-1, 1}, {-1, 0, 0}));
     planes.insert(std::pair< std::vector< double >, std::vector< double > >({ 1,-1,-1}, { 0, 0,-1}));
@@ -577,7 +577,7 @@ void test_construct_container(std::ofstream &results){
     overlap::map_planes_to_voro(planes, vplanes);
 //    vplanes.reserve(planes.size());
 //    double distance;
-//    planeMap::iterator it;
+//    overlap::planeMap::iterator it;
 //    int j=1;
 //    for (it=planes.begin(); it!=planes.end(); it++){
 //        distance = sqrt(overlap::dot(it->first, it->second));
@@ -587,7 +587,7 @@ void test_construct_container(std::ofstream &results){
 
     //Define the point coordinates
     std::vector< unsigned int > point_numbers;
-    vecOfvec point_coords;
+    overlap::vecOfvec point_coords;
 
     point_numbers.reserve(particles);
     point_coords.reserve(particles);
@@ -603,11 +603,12 @@ void test_construct_container(std::ofstream &results){
 
     //Construct the container
     voro::container* container = overlap::construct_container(point_numbers, point_coords, bounds, vplanes);
-    std::vector< overlap::MicroPoint > points;
+    overlap::integrateMap points;
+    overlap::integrateMap::iterator itiM;
     overlap::evaluate_container_information( container, points);
     double result_d = 0;
-    for (unsigned int i=0; i<points.size(); i++){
-        result_d += points[i].volume;
+    for (itiM=points.begin(); itiM!=points.end(); itiM++){
+        result_d += itiM->second.volume;
     }
     double answer_d = 8./3;
 
@@ -620,9 +621,9 @@ void test_construct_container(std::ofstream &results){
 
     //Check that the surface areas are what was expected
     std::vector< double > sub_surface_areas(4, 0);
-    for (unsigned int i=0; i<points.size(); i++){
-        for (unsigned int j=0; j<points[i].areas.size(); j++){
-            sub_surface_areas[points[i].planes[j]] += points[i].areas[j];
+    for (itiM=points.begin(); itiM!=points.end(); itiM++){
+        for (unsigned int j=0; j<itiM->second.areas.size(); j++){
+            sub_surface_areas[itiM->second.planes[j]] += itiM->second.areas[j];
         }
     }
 
@@ -631,38 +632,33 @@ void test_construct_container(std::ofstream &results){
     while (vdit != sub_surface_areas.end()){
         if (!fuzzy_equals(*vdit, answer_d)){
             results << "test_construct_container (test 2) & False\n";
+            delete(container);
             return;
         }
         vdit++;
     }
 
     //Check that the normals for each plane are consistent with expectations and that the centroids are on the plane
-    planeMap::iterator it;
-    std::vector< overlap::MicroPoint >::iterator pit;
+    overlap::planeMap::iterator it;
     std::vector< double > normal(3);
-    for (pit=points.begin(); pit!=points.end(); pit++){
-        for (unsigned int i=0; i<pit->planes.size(); i++){
-//            std::cout << "planes:\n";
+    for (itiM=points.begin(); itiM!=points.end(); itiM++){
+        for (unsigned int i=0; i<itiM->second.planes.size(); i++){
             it = planes.begin();
-            for (int j=0; j<pit->planes[i]; j++){it++;}
+            for (int j=0; j<itiM->second.planes[i]; j++){it++;}
             normal = it->first;
             for (unsigned int j=0; j<normal.size(); j++){normal[j] /= sqrt(overlap::dot(it->first, it->first));}
-            if (!fuzzy_equals(normal, pit->normals[i])){
+            if (!fuzzy_equals(normal, itiM->second.normals[i])){
                 results << "test_construct_container (test 3) & False\n";
+                delete(container);
                 return;
             }
-//            print_vector(normal);
-//            print_vector(it->second);
-//            print_vector(pit->face_centroids[i]);
-//            std::cout << overlap::dot(normal, it->second) << " ";
-//            std::cout << overlap::dot(normal, pit->face_centroids[i]) << "\n";
-            if (!fuzzy_equals(overlap::dot(normal, it->second), overlap::dot(normal, pit->face_centroids[i]))){
+            if (!fuzzy_equals(overlap::dot(normal, it->second), overlap::dot(normal, itiM->second.face_centroids[i]))){
                 results << "test_construct_container (test 4) & False\n";
+                delete(container);
                 return;
-           }
+            }
         }
     }
-
 
     results << "test_construct_container & True\n";
     delete(container);
@@ -727,6 +723,19 @@ void test_construct_gauss_domains(std::ofstream &results){
 
     results << "test_construct_gauss_domains & True\n";
     return;
+}
+
+void test_compute_weights(std::ofstream &results){
+    /*!
+    Test to make sure that the computation of weights and other required quantities is performed correctly.
+
+    Also tests OverlapCoupling::map_domain_to_voro.
+    */
+
+    overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
+    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
+    std::vector< overlap::integrateMap > points;
+    oc.compute_weights(data.node_numbers, data.coordinates, points);
 }
 
 int main(){

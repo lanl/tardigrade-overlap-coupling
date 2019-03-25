@@ -23,8 +23,6 @@
 
 #include "voro++.hh"
 
-typedef std::vector< std::vector< double > > vecOfvec;
-typedef std::map< std::vector< double >, std::vector< double > > planeMap;
 
 #if CONVEXLIB == QUICKHULL
     #include "3d-quickhull/quickhull.h"
@@ -54,6 +52,11 @@ namespace overlap{
     class ParsedData;
     class MicroPoint;
 
+    //Typedefs
+    typedef std::vector< std::vector< double > > vecOfvec;
+    typedef std::map< std::vector< double >, std::vector< double > > planeMap;
+    typedef std::map< unsigned int, MicroPoint > integrateMap;
+
     class OverlapCoupling{
         /*!
         The primary class for performing the overlap coupling operation. This 
@@ -81,6 +84,9 @@ namespace overlap{
                 const double tolr=1e-6, const double tola=1e-6);
 
             void compute_dns_bounds(const vecOfvec &dns_coordinates);
+
+            void compute_weights(const std::vector< unsigned int > &numbers, const vecOfvec &positions,
+                                 std::vector< integrateMap > &points) const;
 
             //! > Interface to defined quantities
             const planeMap* get_element_planes() const;
@@ -189,13 +195,36 @@ namespace overlap{
                               }
                           }
 
-//                          std::cout << "MicroPoint sizes:\n";
-//                          std::cout << "    coordinates.size(): " << coordinates.size() << "\n";
-//                          std::cout << "    planes.size(): " << planes.size() << "\n";
-//                          std::cout << "    areas.size(): " << areas.size() << "\n";
-//                          std::cout << "    normals.size(): " << normals.size() << "\n";
-//                          std::cout << "    face_centroids.size(): " << face_centroids.size() << "\n";
                       }
+//            MicroPoint(const MicroPoint &p){
+//                /*!
+//                Copy constructor
+//                :param MicroPoint p: The point to copy from
+//                */
+//
+//                volume = p.volume;
+//                coordinates = p.coordinates;
+//
+//                planes.reserve(p.planes.size());
+//                for (unsigned int i=0; i<p.planes.size(); i++){
+//                    planes.push_back( p.planes[i]);
+//                }
+//
+//                areas.reserve(p.areas.size());
+//                for (unsigned int i=0; i<p.areas.size(); i++){
+//                    areas.push_back(p.areas[i]);
+//                }
+//
+//                normals.reserve(p.normals.size());
+//                for (unsigned int i=0; i<p.normals.size(); i++){
+//                    normals.push_back(p.normals[i]);
+//                }
+//
+//                face_centroids.reserve(p.face_centroids.size());
+//                for (unsigned int i=0; i<face_centroids.size(); i++){
+//                    face_centroids.push_back(p.face_centroids[i]);
+//                }
+//            }
 
             //! > Methods
             void print() const;
@@ -240,11 +269,12 @@ namespace overlap{
     voro::container* construct_container(const std::vector< unsigned int > &point_numbers, const vecOfvec &point_coords,
                                          const vecOfvec &bounds, std::vector< voro::wall_plane> &planes, double expand=1);
 
-    void evaluate_container_information(voro::container *container, std::vector< MicroPoint > &points);
+    void evaluate_container_information(voro::container *container, integrateMap &points);
 
     void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices, const int &index, std::vector< double > &centroid);
 
     void map_planes_to_voro(const planeMap &planes, std::vector< voro::wall_plane > &vplanes);
+    void map_domain_to_voro(const MicroPoint &domains, std::vector< voro::wall_plane > &vplanes);
 }
 
 #endif

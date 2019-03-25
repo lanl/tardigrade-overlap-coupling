@@ -326,54 +326,82 @@ namespace overlap{
         gauss_domains.resize(gauss_points.size());
 
         if (cl.start()) do if (container->compute_cell(c, cl)){
+            //Extract the required values from the point
             cl.pos(x, y, z);
             c.normals( cell_normals );
             c.face_vertices( face_vertices );
             c.face_areas( areas );
             c.vertices(x, y, z, vertices);
 
+            //Prepare to populate the required values
             ifv = 0;
             normals.resize(cell_normals.size()/3);
             points.resize(cell_normals.size()/3);
             planes.resize(cell_normals.size()/3);
+            //Loop over the domain's faces
             for (unsigned int i=0; i<cell_normals.size()/3; i++){
+                //Extract the normal
                 normals[i] = {cell_normals[3*i+0],
                               cell_normals[3*i+1],
                               cell_normals[3*i+2]};
 
+                //Find the centroid of each of the face
                 find_face_centroid(face_vertices, vertices, ifv, points[i]);
 
+                //Set the face number
                 planes[i] = i;
 
                 ifv += face_vertices[ifv]+1;
             }
 
+            //Compute the centroid of the domain
             c.centroid(centroid[0], centroid[1], centroid[2]);
             centroid[0] += x;
             centroid[1] += y;
             centroid[2] += z;
 
-//            std::cout << "normals:\n";
-//            print_matrix(normals);
-//            std::cout << "points:\n";
-//            print_matrix(points);
-//            std::cout << "planes:\n";
-//            for (unsigned int i=0; i<planes.size(); i++){std::cout << planes[i] << " ";}
-//            std::cout <<"\n";
-//            std::cout << "areas:\n";
-//            print_vector(areas);
-
+            //Add the point
             gauss_domains[index] = MicroPoint(c.volume(), centroid, planes, 
                                               areas, normals, points);
             index++;
 
         } while (cl.inc());
 
-        //Extract the gauss domain information
-        std::vector< MicroPoint > gauss_domain_info;
-        evaluate_container_information(container, gauss_domain_info);
-
+        //Free the memory associated with the container
         delete(container);
+    }
+
+    void OverlapCoupling::compute_weights(const std::vector< unsigned int > &numbers, const vecOfvec &positions,
+                                          std::vector< integrateMap > &points) const{
+        /*!
+        Compute the weights of the DNS points for their integration of the gauss domains along with other quantities which 
+        will be required.
+
+        :param std::vector< unsigned int > numbers: The number (index) of the DNS point.
+        :param vecOfvec positions: The positions of the DNS points in local coordinates.
+        :param std::vector< std::vector< MicroPoint > > points: The outgoing weights and other required quantities.
+        */
+
+        const MicroPoint* mp;
+        voro::container* container;
+        std::vector< voro::wall_plane > planes;
+
+        //Iterate through the gauss domains
+        points.resize(gauss_domains.size());
+        for (unsigned int gd=0; gd< gauss_domains.size(); gd++){
+
+            //Construct the Voro++ planes from the gauss domain
+            mp = &gauss_domains[gd];
+            map_domain_to_voro(*mp, planes);
+
+            //Construct the container
+            container = construct_container(numbers, positions, element_bounds, planes);
+            
+            //Evaluate the point information
+            evaluate_container_information(container, points[gd]);
+
+            delete(container);
+        }
     }
 
     const std::vector< MicroPoint >* OverlapCoupling::get_gauss_domains() const{
@@ -780,7 +808,7 @@ namespace overlap{
         return container;
     }
 
-    void evaluate_container_information(voro::container* container, std::vector< MicroPoint > &points){
+    void evaluate_container_information(voro::container* container, integrateMap &points){
         /*!
         Compute required container information (volumes, surface areas, etc.) and return them.
 
@@ -790,7 +818,7 @@ namespace overlap{
         the negative.
 
         :param voro::container* container: A pointer to the Voro++ container class to be investigated
-        :param std::vector< MicroPoint > points: A vector of point information containers.
+        :param std::vector< integrateMap > points: A vector of point information containers.
         */
 
         voro::voronoicell_neighbor c;
@@ -816,8 +844,7 @@ namespace overlap{
         std::vector< int >::iterator viit;
         std::vector< double >::iterator vdit;
 
-        //Set the initial size of points
-        points.resize(0);
+//        double vtot = 0;
 
         //Loop over the contained points
         if (cl.start()) do if (container->compute_cell(c, cl)){
@@ -865,9 +892,13 @@ namespace overlap{
             centroid[0] += x;
             centroid[1] += y;
             centroid[2] += z;
-            points.push_back(MicroPoint(c.volume(), centroid, planes, areas, normals, face_centroids));
+//            std::cout << "cl.pid(): " << cl.pid() << "\n";
+            points.insert(std::pair< unsigned int, MicroPoint>(cl.pid(), MicroPoint(c.volume(), centroid, planes, areas, normals, face_centroids)));
+//            points[cl.pid()].print();
+//            vtot += c.volume();
 
         } while (cl.inc());
+//        std::cout << "vtot: " << vtot << "\n";
     }
 
     void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices, const int &index, std::vector< double > &centroid){
@@ -933,6 +964,25 @@ namespace overlap{
         for (it=planes.begin(); it!=planes.end(); it++){
             distance = sqrt(overlap::dot(it->first, it->second));
             vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -j));
+            j++;
+        }
+    }
+
+    void map_domain_to_voro(const MicroPoint &domain, std::vector< voro::wall_plane > &vplanes){
+        /*!
+        Map a domain (here represented by a MicroPoint) to a std::vector of Voro++ wall_plane objects
+    
+        :param MicroPoint domain: The MicroPoint representation of a domain.
+        :param std::vector< voro::wall_plane > vplanes: A std::vector of voro::wall_plane objects which can be added to a voro::container
+        */
+
+        unsigned int j=1, n = domain.normals.size();
+        double distance;
+        vplanes.reserve(n);
+
+        for (unsigned int i=0; i<n; i++){
+            distance = sqrt(overlap::dot(domain.normals[i], domain.face_centroids[i]));
+            vplanes.push_back(voro::wall_plane(domain.normals[i][0], domain.normals[i][1], domain.normals[i][2], distance, -j));
             j++;
         }
     }
