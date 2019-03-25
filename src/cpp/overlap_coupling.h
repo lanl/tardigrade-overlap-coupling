@@ -49,6 +49,11 @@ namespace overlap{
     //! | Classes
     //!===
 
+    //Forward declarations
+    class OverlapCoupling;
+    class ParsedData;
+    class MicroPoint;
+
     class OverlapCoupling{
         /*!
         The primary class for performing the overlap coupling operation. This 
@@ -83,6 +88,7 @@ namespace overlap{
             
             const planeMap* get_dns_planes() const;
             const vecOfvec* get_dns_bounds() const;
+            const std::vector< MicroPoint >* get_gauss_domains() const;
 
         protected:
             vecOfvec local_coordinates;
@@ -93,6 +99,7 @@ namespace overlap{
             vecOfvec element_bounds;
             vecOfvec dns_bounds;
 
+            std::vector< MicroPoint > gauss_domains;
 //            voro::container element_container;
 //            voro::container dns_container;
 
@@ -181,6 +188,13 @@ namespace overlap{
                                   face_centroids[i].push_back(iface_centroids[i][j]);
                               }
                           }
+
+//                          std::cout << "MicroPoint sizes:\n";
+//                          std::cout << "    coordinates.size(): " << coordinates.size() << "\n";
+//                          std::cout << "    planes.size(): " << planes.size() << "\n";
+//                          std::cout << "    areas.size(): " << areas.size() << "\n";
+//                          std::cout << "    normals.size(): " << normals.size() << "\n";
+//                          std::cout << "    face_centroids.size(): " << face_centroids.size() << "\n";
                       }
 
             //! > Methods

@@ -415,7 +415,6 @@ void test_extract_mesh_info(std::ofstream &results){
         }
     #elif CONVEXLIB == AKUUKKA
         auto indexBuffer = mesh.getIndexBuffer();
-        auto vertexBuffer = mesh.getVertexBuffer();
 
         if (indexBuffer.size()/3 != normals.size()){
             results << "test_extract_mesh_info (test 1) & False\n";
@@ -670,6 +669,66 @@ void test_construct_container(std::ofstream &results){
     return;
 }
 
+void test_construct_gauss_domains(std::ofstream &results){
+    /*!
+    Test the construction of the gauss domains.
+    */
+
+    overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
+    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
+    const std::vector< overlap::MicroPoint > *gauss_domains = oc.get_gauss_domains();
+    std::vector< double > pos(3,0);
+
+    //Macro-element assumed to be a fully integrated linear hex
+    for (unsigned int i=0; i<gauss_domains->size(); i++){
+    
+        //See if the volume is 1 as expected    
+        if (!fuzzy_equals((*gauss_domains)[i].volume, 1.)){
+            results << "test_construct_gauss_domains (test 1) & False\n";
+            return;
+        }
+
+        //Make sure that the centroids are located where they are expected to be
+        for (unsigned int j=0; j<(*gauss_domains)[i].coordinates.size(); j++){
+            if (!fuzzy_equals(fabs((*gauss_domains)[i].coordinates[j]), 0.5)){
+                results << "test_construct_gauss_domains (test 2) & False\n";
+                return;
+            }
+
+            if (!fuzzy_equals((*gauss_domains)[i].coordinates[j]/fabs((*gauss_domains)[i].coordinates[j]),
+                              data.local_gpts[i][j]/fabs(data.local_gpts[i][j]))){
+                results << "test_construct_gauss_domains (test 2) & False\n";
+                return;
+            }
+        }
+
+        //Make sure the surface areas are all 1
+        for (unsigned int j=0; j<(*gauss_domains)[i].areas.size(); j++){
+            if (!fuzzy_equals((*gauss_domains)[i].areas[j], 1.)){
+                results << "test_construct_gauss_domains (test 3) & False\n";
+                return;
+            }
+        }
+
+        //Make sure the centroid is contained within the surfaces
+        for (unsigned int j=0; j<(*gauss_domains)[i].normals.size(); j++){
+            pos[0] = (*gauss_domains)[i].coordinates[0] - (*gauss_domains)[i].face_centroids[j][0];
+            pos[1] = (*gauss_domains)[i].coordinates[1] - (*gauss_domains)[i].face_centroids[j][1];
+            pos[2] = (*gauss_domains)[i].coordinates[2] - (*gauss_domains)[i].face_centroids[j][2];
+
+            if (overlap::dot((*gauss_domains)[i].normals[j], pos)>0){
+                results << "test_constructed_gauss_domains (test 4) & False\n";
+                return;
+            }
+        }
+
+    
+    }
+
+    results << "test_construct_gauss_domains & True\n";
+    return;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -695,6 +754,7 @@ int main(){
     test_compute_element_bounds(results);
     test_compute_node_bounds(results);
     test_compute_dns_bounds(results);
+    test_construct_gauss_domains(results);
 
     //Tests for the interface to Voro++
     test_construct_container(results);

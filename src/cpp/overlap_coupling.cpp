@@ -37,6 +37,7 @@ namespace overlap{
         local_coordinates = _local_coordinates;
         gauss_points = _gauss_points;
         compute_element_bounds();
+        construct_gauss_domains();
     }
 
     //! > Interface to 3D-quickhull
@@ -293,12 +294,93 @@ namespace overlap{
 
         //Map the planes to voro::wall_plane objects
         std::vector< voro::wall_plane > vplanes;
+//        std::cout << "element_planes:\n";
+//        print_planeMap(element_planes);
         map_planes_to_voro(element_planes, vplanes);
 
         //Construct the container
-        std::vector< int > gpt_nums(gauss_points.size());
+        std::vector< unsigned int > gpt_nums(gauss_points.size());
         for (unsigned int i=0; i<gpt_nums.size(); i++){gpt_nums[i] = i;}
+//        std::cout << "gauss_points:\n";
+//        print_matrix(gauss_points);
+//        std::cout << "element_bounds:\n";
+//        print_matrix(element_bounds);
         voro::container *container = construct_container(gpt_nums, gauss_points, element_bounds, vplanes);
+
+        //Iterate over the gauss points
+        voro::voronoicell_neighbor c;
+        voro::c_loop_all cl(*container);
+
+        //Loop over the contained points
+        std::vector< double > cell_normals;
+        std::vector< int > face_vertices;
+        std::vector< int > planes;
+        std::vector< double > vertices;
+        std::vector< double > centroid(3);
+        std::vector< double > areas;
+        double x, y, z;
+        int ifv = 0, index=0;
+        vecOfvec normals;
+        vecOfvec points;
+
+        gauss_domains.resize(gauss_points.size());
+
+        if (cl.start()) do if (container->compute_cell(c, cl)){
+            cl.pos(x, y, z);
+            c.normals( cell_normals );
+            c.face_vertices( face_vertices );
+            c.face_areas( areas );
+            c.vertices(x, y, z, vertices);
+
+            ifv = 0;
+            normals.resize(cell_normals.size()/3);
+            points.resize(cell_normals.size()/3);
+            planes.resize(cell_normals.size()/3);
+            for (unsigned int i=0; i<cell_normals.size()/3; i++){
+                normals[i] = {cell_normals[3*i+0],
+                              cell_normals[3*i+1],
+                              cell_normals[3*i+2]};
+
+                find_face_centroid(face_vertices, vertices, ifv, points[i]);
+
+                planes[i] = i;
+
+                ifv += face_vertices[ifv]+1;
+            }
+
+            c.centroid(centroid[0], centroid[1], centroid[2]);
+            centroid[0] += x;
+            centroid[1] += y;
+            centroid[2] += z;
+
+//            std::cout << "normals:\n";
+//            print_matrix(normals);
+//            std::cout << "points:\n";
+//            print_matrix(points);
+//            std::cout << "planes:\n";
+//            for (unsigned int i=0; i<planes.size(); i++){std::cout << planes[i] << " ";}
+//            std::cout <<"\n";
+//            std::cout << "areas:\n";
+//            print_vector(areas);
+
+            gauss_domains[index] = MicroPoint(c.volume(), centroid, planes, 
+                                              areas, normals, points);
+            index++;
+
+        } while (cl.inc());
+
+        //Extract the gauss domain information
+        std::vector< MicroPoint > gauss_domain_info;
+        evaluate_container_information(container, gauss_domain_info);
+
+        delete(container);
+    }
+
+    const std::vector< MicroPoint >* OverlapCoupling::get_gauss_domains() const{
+        /*
+        Get a pointer to the gauss domains
+        */
+        return &gauss_domains;
     }
 
     const planeMap* OverlapCoupling::get_element_planes() const{
@@ -601,7 +683,10 @@ namespace overlap{
         :param std::vector< FloatType > vector: The vector to print
         */
 
-        printf("%+1.6f %+1.6f %+1.6f\n", vector[0], vector[1], vector[2]);
+        for (unsigned int i=0; i<vector.size(); i++){
+            printf("%+1.6f ",vector[i]);
+        }
+        std::cout << "\n";
     }
 
     void print_matrix(const std::vector< std::vector< FloatType > > &matrix){
@@ -777,6 +862,9 @@ namespace overlap{
             }
 
             c.centroid(centroid[0], centroid[1], centroid[2]);
+            centroid[0] += x;
+            centroid[1] += y;
+            centroid[2] += z;
             points.push_back(MicroPoint(c.volume(), centroid, planes, areas, normals, face_centroids));
 
         } while (cl.inc());
@@ -793,6 +881,7 @@ namespace overlap{
         */
 
         int k, l, n = face_vertices[index];
+        centroid.resize(3);
         centroid[0] = centroid[1] = centroid[2] = 0;
         for (k=0; k<n; k++){
             l = 3*face_vertices[index+k+1];
