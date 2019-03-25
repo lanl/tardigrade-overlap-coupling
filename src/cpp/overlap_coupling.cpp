@@ -372,7 +372,7 @@ namespace overlap{
     }
 
     void OverlapCoupling::compute_weights(const std::vector< unsigned int > &numbers, const vecOfvec &positions,
-                                          std::vector< integrateMap > &points) const{
+                                          std::vector< integrateMap > &points){
         /*!
         Compute the weights of the DNS points for their integration of the gauss domains along with other quantities which 
         will be required.
@@ -384,15 +384,20 @@ namespace overlap{
 
         const MicroPoint* mp;
         voro::container* container;
-        std::vector< voro::wall_plane > planes;
+
+        //Compute the bounds of the DNS
+        compute_dns_bounds(positions);
 
         //Iterate through the gauss domains
         points.resize(gauss_domains.size());
-        for (unsigned int gd=0; gd< gauss_domains.size(); gd++){
+        for (unsigned int gd=0; gd<gauss_domains.size(); gd++){
 
             //Construct the Voro++ planes from the gauss domain
             mp = &gauss_domains[gd];
+            std::vector< voro::wall_plane > planes;
             map_domain_to_voro(*mp, planes);
+            map_planes_to_voro(dns_planes, planes);
+            std::cout << "planes.size(): " << planes.size() << "\n";
 
             //Construct the container
             container = construct_container(numbers, positions, element_bounds, planes);
@@ -962,7 +967,7 @@ namespace overlap{
         int j=1;
 
         for (it=planes.begin(); it!=planes.end(); it++){
-            distance = sqrt(overlap::dot(it->first, it->second));
+            distance = overlap::dot(it->first, it->second);
             vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -j));
             j++;
         }
@@ -981,7 +986,7 @@ namespace overlap{
         vplanes.reserve(n);
 
         for (unsigned int i=0; i<n; i++){
-            distance = sqrt(overlap::dot(domain.normals[i], domain.face_centroids[i]));
+            distance = overlap::dot(domain.normals[i], domain.face_centroids[i]);
             vplanes.push_back(voro::wall_plane(domain.normals[i][0], domain.normals[i][1], domain.normals[i][2], distance, -j));
             j++;
         }

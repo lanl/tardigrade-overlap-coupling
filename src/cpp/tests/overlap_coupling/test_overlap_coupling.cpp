@@ -736,6 +736,17 @@ void test_compute_weights(std::ofstream &results){
     overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
     std::vector< overlap::integrateMap > points;
     oc.compute_weights(data.node_numbers, data.coordinates, points);
+
+    overlap::integrateMap::iterator it;
+    double total_volume;
+    for (unsigned int gp = 0; gp<points.size(); gp++){
+        total_volume = 0;
+        std::cout << "points[" << gp << "].size(): " << points[gp].size() << "\n";
+        for (it=points[gp].begin(); it!=points[gp].end(); it++){
+            total_volume += it->second.volume;
+        }
+        std::cout << "gp, total_volume: " << gp << ", " << total_volume << "\n";
+    }
 }
 
 int main(){
@@ -767,6 +778,9 @@ int main(){
 
     //Tests for the interface to Voro++
     test_construct_container(results);
+
+    //Tests for the computation of the weights
+    test_compute_weights(results);
 
     //Test misc. functions
     test_dot(results);

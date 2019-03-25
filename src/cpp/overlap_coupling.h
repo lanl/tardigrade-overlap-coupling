@@ -86,7 +86,7 @@ namespace overlap{
             void compute_dns_bounds(const vecOfvec &dns_coordinates);
 
             void compute_weights(const std::vector< unsigned int > &numbers, const vecOfvec &positions,
-                                 std::vector< integrateMap > &points) const;
+                                 std::vector< integrateMap > &points);
 
             //! > Interface to defined quantities
             const planeMap* get_element_planes() const;
