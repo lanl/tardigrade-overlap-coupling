@@ -1,2 +1,5 @@
 *.o
 *.swp
+*.so*
+*.gnu
+python_plot.py*
