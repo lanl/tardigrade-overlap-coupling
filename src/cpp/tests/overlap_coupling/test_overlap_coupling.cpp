@@ -736,17 +736,35 @@ void test_compute_weights(std::ofstream &results){
     overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
     std::vector< overlap::integrateMap > points;
     oc.compute_weights(data.node_numbers, data.coordinates, points);
+    const std::vector< overlap::MicroPoint >* gauss_domains = oc.get_gauss_domains();
 
     overlap::integrateMap::iterator it;
     double total_volume;
     for (unsigned int gp = 0; gp<points.size(); gp++){
         total_volume = 0;
-        std::cout << "points[" << gp << "].size(): " << points[gp].size() << "\n";
         for (it=points[gp].begin(); it!=points[gp].end(); it++){
             total_volume += it->second.volume;
         }
-        std::cout << "gp, total_volume: " << gp << ", " << total_volume << "\n";
+
+        //Make sure that the gauss domains are centered at the correct points
+        if (!fuzzy_equals(fabs((*gauss_domains)[gp].coordinates[0]), 0.5)){
+            results << "test_compute_weights (test 1) & False\n";
+            return;
+        }
+
+        //Make sure that the gauss points have the expected overlapped volume
+        if (((*gauss_domains)[gp].coordinates[0]<0) && (!fuzzy_equals(total_volume, 0))){
+            results << "test_compute_weights (test 2) & False\n";
+            return;
+        }
+        else if (((*gauss_domains)[gp].coordinates[0]>0) && (!fuzzy_equals(total_volume, 1))){
+            results << "test_compute_weights (test 2) & False\n";
+            return;
+        }
     }
+
+    results << "test_compute_weights & True\n";
+    return;
 }
 
 int main(){

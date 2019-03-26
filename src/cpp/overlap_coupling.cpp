@@ -397,7 +397,6 @@ namespace overlap{
             std::vector< voro::wall_plane > planes;
             map_domain_to_voro(*mp, planes);
             map_planes_to_voro(dns_planes, planes);
-            std::cout << "planes.size(): " << planes.size() << "\n";
 
             //Construct the container
             container = construct_container(numbers, positions, element_bounds, planes);
