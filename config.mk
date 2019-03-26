@@ -23,7 +23,8 @@ VPPINC=-I/projects/nathanm/micromorphic/voro++/voro++-0.4.6/src
 PYTHON=/apps/anaconda3/bin/python
 
 # The quickhull object file
-QHULL=/projects/nathanm/micromorphic/micromorphic_library/external_repositories/quickhull/quickhull.o
+QHULL=/projects/nathanm/micromorphic/micromorphic_library/external_repositories/quickhull
 
 # Additional includes
 INC=-I/projects/nathanm/micromorphic/micromorphic_library/external_repositories/
+INC+=-I$(QHULL)

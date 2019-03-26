@@ -10,16 +10,29 @@
 include ../../config.mk
 
 # List of executables
-OBJECTS=overlap_coupling.o
-LOCAL_CFLAGS=-ggdb
+OBJECTS=overlap_coupling.o quickhull.o
+LOCAL_CFLAGS=-I. -O3 -flto -fpic -Wall
+
+#Define the library name
+SONAME=liboverlap.so
+SOVERSION=liboverlap.so.1
 
 # Makefile rules
-all: $(OBJECTS)
+all: $(SONAME)
+
+$(SONAME): $(SOVERSION)
+	ln -s $(SOVERSION) $@
+
+$(SOVERSION): $(OBJECTS)
+	$(CC) $(STD) -shared -Wl,-soname,$(SOVERSION) -o $@ $^ $(CFLAGS) $(LOCAL_CFLAGS) $(ERRORFLG) $(DBG) $(VPPLIB) $(VPPINC) -std=gnu++11 -lvoro++
+
+quickhull.o: $(QHULL)/QuickHull.cpp $(QHULL)/*.hpp
+	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(INC) -c -o $@ $< -std=gnu++11
 
 overlap_coupling.o: overlap_coupling.cpp overlap_coupling.h
-	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< -lvoro++
+	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< -std=gnu++11 -lvoro++
 
 clean:
-	rm $(OBJECTS)
+	rm $(OBJECTS) $(SOVERSION) $(SONAME)
 
 .PHONY: all clean

@@ -11,7 +11,7 @@ include ../../../../config.mk
 
 # List of executables
 EXECUTABLES=test_overlap_coupling
-OBJECTS=overlap_coupling.o test_overlap_coupling.o
+OBJECTS=overlap_coupling.o test_overlap_coupling.o quickhull.o
 INC+=-I../..
 LOCAL_CFLAGS=-ggdb
 
@@ -19,10 +19,13 @@ LOCAL_CFLAGS=-ggdb
 all: $(EXECUTABLES)
 
 test_overlap_coupling: $(OBJECTS)
-	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) $^ -o $@ $(QHULL) $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
+	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) $^ -o $@ $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
 
 test_overlap_coupling.o: test_overlap_coupling.cpp ../../overlap_coupling.h ../../occonfiguration.h
 	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
+
+quickhull.o: $(QHULL)/QuickHull.cpp $(QHULL)/*.hpp
+	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(INC) -c -o $@ $< -std=gnu++11
 
 overlap_coupling.o: ../../overlap_coupling.cpp ../../overlap_coupling.h ../../occonfiguration.h
 	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
