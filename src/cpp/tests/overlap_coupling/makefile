@@ -15,20 +15,29 @@ OBJECTS=overlap_coupling.o test_overlap_coupling.o quickhull.o
 INC+=-I../..
 LOCAL_CFLAGS=-ggdb
 
+#Set the mode due to the method variable
+DBG =
+ifeq ($(METHOD),dbg)
+  DBG = -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -g
+endif
+ifeq ($(METHOD),oprof)
+  DBG = -pg
+endif
+
 # Makefile rules
 all: $(EXECUTABLES)
 
 test_overlap_coupling: $(OBJECTS)
-	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) $^ -o $@ $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
+	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) $^ -o $@ $(CFLAGS) -lstdc++ -std=gnu++11 -lvoro++
 
 test_overlap_coupling.o: test_overlap_coupling.cpp ../../overlap_coupling.h ../../occonfiguration.h
-	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
+	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11 -lvoro++
 
 quickhull.o: $(QHULL)/QuickHull.cpp $(QHULL)/*.hpp
-	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(INC) -c -o $@ $< -std=gnu++11
+	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(INC) $(LIB) $(DBG) -c -o $@ $< -std=gnu++11
 
 overlap_coupling.o: ../../overlap_coupling.cpp ../../overlap_coupling.h ../../occonfiguration.h
-	$(CXX) $(LOCAL_CFLAGS) $(VPPLIB) $(VPPINC) $(EIGEN) $(INC) -c -o $@ $< $(CFLAGS) -lvoro++ -lstdc++ -std=gnu++11
+	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11 -lvoro++
 
 clean:
 	rm -f $(EXECUTABLES)
