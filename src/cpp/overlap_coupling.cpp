@@ -1051,8 +1051,9 @@ namespace overlap{
         nda.resize(3);
 
         for (unsigned int i=0; i<3; i++){
+            nda[i] = 0;
             for (unsigned int j=0; j<3; j++){
-                nda[i] = JdA*N[j]*Finv[j][i];
+                nda[i] += JdA*N[j]*Finv[j][i];
             }
         }
     }

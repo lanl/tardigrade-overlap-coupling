@@ -285,6 +285,7 @@ namespace overlap{
 
     void map_planes_to_voro(const planeMap &planes, std::vector< voro::wall_plane > &vplanes);
     void map_domain_to_voro(const MicroPoint &domains, std::vector< voro::wall_plane > &vplanes);
+    void apply_nansons_relation(const std::vector< double > &N, const double &JdA, const vecOfvec &Finv, std::vector< double > &nda);
 }
 
 #endif

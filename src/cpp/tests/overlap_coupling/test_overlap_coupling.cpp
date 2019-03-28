@@ -35,6 +35,24 @@ bool fuzzy_equals(std::vector< double > a, std::vector< double > b, double tolr=
     return true;
 }
 
+bool fuzzy_equals(overlap::vecOfvec A, overlap::vecOfvec B, double tolr=1e-6, double tola=1e-6){
+    /*!
+    Compare two matrices to determine if they are equal
+    */
+
+    if (A.size() != B.size()){
+        std::cout << "Error: matrices must have the same size.\n";
+        assert(1==0);
+    }
+
+    for (unsigned int i=0; i<A.size(); i++){
+        if (!fuzzy_equals(A[i], B[i], tolr, tola)){
+            return false;
+        }
+    }
+    return true;
+}
+
 //!From voro++ documentation
 // This function returns a random double between 0 and 1
 double rnd() {return double(rand())/RAND_MAX;}
@@ -769,6 +787,151 @@ void test_compute_weights(std::ofstream &results){
     return;
 }
 
+void test_apply_nansons_relation(std::ofstream &results){
+    /*!
+    Test to make sure that the implementation of Nanson's relation is computed correctly.
+    */
+
+    overlap::vecOfvec Qx, Qy, Qz, Q;
+    overlap::vecOfvec I;
+    overlap::vecOfvec U;
+
+    double theta_x = 30*(3.14159/180);
+    double theta_y = 13*(3.14159/180);
+    double theta_z = 68*(3.14159/180);
+
+    //Set the size of the matrices
+    Qx.resize(3); Qy.resize(3); Qz.resize(3);
+    Q.resize(3);
+    I.resize(3);
+    U.resize(3);
+    std::vector< double > zeros(3,0);
+    for (unsigned int i=0; i<3; i++){
+        Qx[i] = zeros; Qy[i]=zeros; Qz[i] = zeros;
+        Q[i] = zeros;
+        I[i] = zeros;
+        U[i] = zeros;
+    }
+    
+    //Set the terms of the identity matrix
+    I[0][0] = I[1][1] = I[2][2] = 1.;
+
+    //Set the terms of the rotation matrices
+    //Qx
+    Qx[0][0] = 1;
+    Qx[1][1] = cos(theta_x); Qx[1][2] = -sin(theta_x);
+    Qx[2][1] = sin(theta_x); Qx[2][2] =  cos(theta_x);
+    //Qy
+    Qy[0][0] = cos(theta_y); Qy[0][2] = sin(theta_y);
+    Qy[1][1] = 1;
+    Qy[2][0] = -sin(theta_y); Qy[2][2] = cos(theta_y);
+    //Qz
+    Qz[0][0] = cos(theta_z); Qz[0][1] = -sin(theta_z);
+    Qz[1][0] = sin(theta_z); Qz[1][1] =  cos(theta_z);
+    Qz[2][2] = 1;
+
+    for (unsigned int i=0; i<3; i++){
+        for (unsigned int j=0; j<3; j++){
+            double tmp = 0;
+            for (unsigned int k=0; k<3; k++){
+                for (unsigned int l=0; l<3; l++){
+                    tmp += Qz[i][k]*Qy[k][l]*Qx[l][j];
+                }
+            }
+            Q[i][j] = tmp;
+        }
+    }
+
+    //Test to make sure Q is orthogonal
+    overlap::vecOfvec Qcheck(3);
+    for (unsigned int i=0; i<3; i++){Qcheck[i] = zeros;}
+    for (unsigned int i=0; i<3; i++){
+        for (unsigned int j=0; j<3; j++){
+            double tmp = 0;
+            for (unsigned int k=0; k<3; k++){
+                tmp += Q[k][i]*Q[k][j];
+            }
+            Qcheck[i][j] = tmp;
+        }
+    }
+
+//    std::cout << "Q:\n";
+//    print_matrix(Q);
+//    std::cout << "Qcheck:\n";
+//    print_matrix(Qcheck);
+//    std::cout << "det Q: " << Q[0][0]*(Q[1][1]*Q[2][2] - Q[1][2]*Q[2][1]) - Q[0][1]*(Q[1][0]*Q[2][2] - Q[2][0]*Q[1][2]) + Q[0][2]*(Q[1][0]*Q[2][1] - Q[2][0]*Q[1][1]) << "\n";
+
+    if (!fuzzy_equals(Qcheck, I)){
+        results << "test_apply_nansons_relation (Q not orthogonal!) & False\n";
+        return;
+    }
+
+    //Make sure that a vector transformed by a pure rotation has the same area
+    std::vector< double > dA = {.812, -.352, 1.45};
+    double A = sqrt(overlap::dot(dA, dA));
+    std::vector< double > N(dA.size(), 0);
+    for (unsigned int i=0; i<N.size(); i++){N[i] = dA[i]/A;}
+    std::vector< double > result1;
+
+    overlap::vecOfvec Qinv(3);
+    for (unsigned int i=0; i<3; i++){
+        Qinv[i] = zeros;
+        for (unsigned int j=0; j<3; j++){
+            Qinv[i][j] = Q[j][i];
+        }
+    }
+
+    overlap::apply_nansons_relation(N, 1.*A, Qinv, result1);
+    double a1 = sqrt(overlap::dot(result1, result1));
+
+    if (!fuzzy_equals(a1, A)){
+        results << "test_apply_nansons_relation (test 1) & False\n";
+        return;
+    }
+
+    //Check that a transformation which induces a deformation is computed correctly
+    U[0][0] = .5;
+    U[1][1] = 3.76;
+    U[2][2] = 1.4;
+
+    overlap::vecOfvec Uinv(3);
+    overlap::vecOfvec Finv(3);
+    for (unsigned int i=0; i<Finv.size(); i++){
+        Uinv[i] = zeros;
+        Finv[i] = zeros;
+        Uinv[i][i] = 1./U[i][i];
+        for (unsigned int j=0; j<3; j++){
+            for (unsigned int k=0; k<3; k++){
+                Finv[i][j] += Uinv[i][k]*Qinv[k][j];
+            }
+        }
+    }
+
+    double det_Finv = Finv[0][0]*(Finv[1][1]*Finv[2][2] - Finv[1][2]*Finv[2][1])
+                    - Finv[0][1]*(Finv[1][0]*Finv[2][2] - Finv[2][0]*Finv[1][2])
+                    + Finv[0][2]*(Finv[1][0]*Finv[2][1] - Finv[2][0]*Finv[1][1]);
+
+    if (!fuzzy_equals(det_Finv, Uinv[0][0]*Uinv[1][1]*Uinv[2][2])){
+        results << "test_apply_nansons_relation (Finv doesn't have the correct determinant!) & False\n";
+        return;
+    }
+
+    std::vector< double > result2;
+    overlap::apply_nansons_relation(N, A/det_Finv, Finv, result2);
+
+    std::vector< double > answer2 = {3.2103297, 3.73771722, 1.21871407};
+
+
+    if (!fuzzy_equals(result2, answer2)){
+        results << "test_apply_nansons_relation (test 2) & False\n";
+        return;
+    }
+
+    //All tests passed
+    results << "test_apply_nansons_relation & True\n";
+    return;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -808,6 +971,7 @@ int main(){
     test_fuzzy_equals(results);
     test_compare_vector_directions(results);
     test_normal_from_vertices(results);
+    test_apply_nansons_relation(results);
 
     //Close the results file
     results.close();
