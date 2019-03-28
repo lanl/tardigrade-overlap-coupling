@@ -622,8 +622,8 @@ void test_construct_container(std::ofstream &results){
     //Check that the surface areas are what was expected
     std::vector< double > sub_surface_areas(4, 0);
     for (itiM=points.begin(); itiM!=points.end(); itiM++){
-        for (unsigned int j=0; j<itiM->second.areas.size(); j++){
-            sub_surface_areas[itiM->second.planes[j]] += itiM->second.areas[j];
+        for (unsigned int j=0; j<itiM->second.das.size(); j++){
+            sub_surface_areas[itiM->second.planes[j]] += itiM->second.area(j);
         }
     }
 
@@ -647,7 +647,9 @@ void test_construct_container(std::ofstream &results){
             for (int j=0; j<itiM->second.planes[i]; j++){it++;}
             normal = it->first;
             for (unsigned int j=0; j<normal.size(); j++){normal[j] /= sqrt(overlap::dot(it->first, it->first));}
-            if (!fuzzy_equals(normal, itiM->second.normals[i])){
+            std::vector< double > it_normal = itiM->second.normal(i);
+            
+            if (!fuzzy_equals(normal, it_normal)){
                 results << "test_construct_container (test 3) & False\n";
                 delete(container);
                 return;
@@ -699,20 +701,20 @@ void test_construct_gauss_domains(std::ofstream &results){
         }
 
         //Make sure the surface areas are all 1
-        for (unsigned int j=0; j<(*gauss_domains)[i].areas.size(); j++){
-            if (!fuzzy_equals((*gauss_domains)[i].areas[j], 1.)){
+        for (unsigned int j=0; j<(*gauss_domains)[i].das.size(); j++){
+            if (!fuzzy_equals(1, (*gauss_domains)[i].area(j))){
                 results << "test_construct_gauss_domains (test 3) & False\n";
                 return;
             }
         }
 
         //Make sure the centroid is contained within the surfaces
-        for (unsigned int j=0; j<(*gauss_domains)[i].normals.size(); j++){
+        for (unsigned int j=0; j<(*gauss_domains)[i].das.size(); j++){
             pos[0] = (*gauss_domains)[i].coordinates[0] - (*gauss_domains)[i].face_centroids[j][0];
             pos[1] = (*gauss_domains)[i].coordinates[1] - (*gauss_domains)[i].face_centroids[j][1];
             pos[2] = (*gauss_domains)[i].coordinates[2] - (*gauss_domains)[i].face_centroids[j][2];
 
-            if (overlap::dot((*gauss_domains)[i].normals[j], pos)>0){
+            if (overlap::dot((*gauss_domains)[i].normal(j), pos)>0){
                 results << "test_constructed_gauss_domains (test 4) & False\n";
                 return;
             }

@@ -505,16 +505,22 @@ namespace overlap{
         }
         std::cout << "\n";
 
-        std::cout << "  areas: ";
-        for (unsigned int i=0; i<areas.size(); i++){
-            printf("  %1.6f", areas[i]);
-        }
-        std::cout << "\n";
+//        std::cout << "  areas: ";
+//        for (unsigned int i=0; i<areas.size(); i++){
+//            printf("  %1.6f", areas[i]);
+//        }
+//        std::cout << "\n";
+//
+//        std::cout << "  normals:\n";
+//        for (unsigned int i=0; i<normals.size(); i++){
+//            std::cout << "          ";
+//            print_vector(normals[i]);
+//        }
 
-        std::cout << "  normals:\n";
-        for (unsigned int i=0; i<normals.size(); i++){
+        std::cout << "  das:\n";
+        for (unsigned int i=0; i<das.size(); i++){
             std::cout << "          ";
-            print_vector(normals[i]);
+            print_vector(das[i]);
         }
 
         std::cout << "  face centroids:\n";
@@ -523,6 +529,31 @@ namespace overlap{
             print_vector(face_centroids[i]);
         }
     }
+
+    std::vector< double > MicroPoint::normal(unsigned int i) const{
+        /*
+        Return the normal vector of the external face
+
+        :param unsigned int i: The index of the face to compute the normal for
+        */
+
+        std::vector< double > n = das[i];
+        double area = sqrt(dot(n, n));
+        for (unsigned int j=0; j<n.size(); j++){n[j]/=area;}
+        return n;
+    }
+
+    double MicroPoint::area(unsigned int i) const{
+        /*
+        Compute the area of the external face
+
+        :param unsigned int i: The index of the face to compute the area for
+        */
+
+        std::vector< double > n = das[i];
+        return sqrt(dot(n, n));
+    }
+
 
     //!===
     //! | Functions
@@ -980,14 +1011,49 @@ namespace overlap{
         :param std::vector< voro::wall_plane > vplanes: A std::vector of voro::wall_plane objects which can be added to a voro::container
         */
 
-        unsigned int j=1, n = domain.normals.size();
+        unsigned int j=1, n = domain.das.size();
         double distance;
+        std::vector< double > normal(3);
         vplanes.reserve(n);
 
         for (unsigned int i=0; i<n; i++){
-            distance = overlap::dot(domain.normals[i], domain.face_centroids[i]);
-            vplanes.push_back(voro::wall_plane(domain.normals[i][0], domain.normals[i][1], domain.normals[i][2], distance, -j));
+            normal = domain.normal(i);
+            distance = overlap::dot(normal, domain.face_centroids[i]);
+            vplanes.push_back(voro::wall_plane(normal[0], normal[1], normal[2], distance, -j));
             j++;
+        }
+    }
+
+    void apply_nansons_relation(const std::vector< double > &N, const double &JdA, const vecOfvec &Finv, std::vector< double > &nda){
+        /*!
+        Apply Nanson's relation to the differential areas.
+
+        Assumes 3D
+
+        :param std::vector< double > N: The normal in the reference configuration
+        :param double JdA: The Jacobian of transformation times the differential area in the reference configuration
+        :param vecOfvec Finv: The inverse of the deformation gradient which transforms between the reference and current configurations
+        :param std::vector< double > nda: The normal vector in the current configuration weighted by the area
+        */
+
+        if ((N.size() != 3) || (Finv.size() != 3)){
+            std::cout << "Error: This implementation only works for 3D\n";
+            assert(1==0);
+        }
+
+        for (unsigned int i=0; i<Finv.size(); i++){
+            if (Finv[i].size() != 3){
+                std::cout << "Error: This implementation only works for 3D\n";
+                assert(1==0);
+            }
+        }
+
+        nda.resize(3);
+
+        for (unsigned int i=0; i<3; i++){
+            for (unsigned int j=0; j<3; j++){
+                nda[i] = JdA*N[j]*Finv[j][i];
+            }
         }
     }
 }

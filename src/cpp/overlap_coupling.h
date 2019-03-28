@@ -176,14 +176,21 @@ namespace overlap{
                           planes.reserve(iplanes.size());
                           for (unsigned int i=0; i<iplanes.size(); i++){planes.push_back(iplanes[i]);}
 
-                          areas.reserve(iareas.size());
-                          for (unsigned int i=0; i<iareas.size(); i++){areas.push_back(iareas[i]);}
-
-                          normals.resize(inormals.size());
+//                          areas.reserve(iareas.size());
+//                          for (unsigned int i=0; i<iareas.size(); i++){areas.push_back(iareas[i]);}
+//
+//                          normals.resize(inormals.size());
+//                          for (unsigned int i=0; i<inormals.size(); i++){
+//                              normals[i].reserve(inormals[i].size());
+//                              for (unsigned int j=0; j<inormals[i].size(); j++){
+//                                  normals[i].push_back(inormals[i][j]);
+//                              }
+//                          }
+                          das.resize(inormals.size());
                           for (unsigned int i=0; i<inormals.size(); i++){
-                              normals[i].reserve(inormals[i].size());
+                              das[i].reserve(inormals[i].size());
                               for (unsigned int j=0; j<inormals[i].size(); j++){
-                                  normals[i].push_back(inormals[i][j]);
+                                  das[i].push_back(iareas[i]*inormals[i][j]);
                               }
                           }
 
@@ -228,13 +235,16 @@ namespace overlap{
 
             //! > Methods
             void print() const;
+            std::vector< double > normal(unsigned int i) const;
+            double area(unsigned int i) const;
 
             //! > Attributes
             double volume;
             std::vector< double > coordinates;
             std::vector< int > planes;
-            std::vector< double > areas;
-            vecOfvec normals;
+//            std::vector< double > areas;
+//            vecOfvec normals;
+            vecOfvec das;
             vecOfvec face_centroids;
    };
     
