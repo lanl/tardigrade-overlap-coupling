@@ -396,7 +396,7 @@ namespace overlap{
             mp = &gauss_domains[gd];
             std::vector< voro::wall_plane > planes;
             map_domain_to_voro(*mp, planes);
-            map_planes_to_voro(dns_planes, planes);
+            map_planes_to_voro(dns_planes, planes, planes.size());
 
             //Construct the container
             container = construct_container(numbers, positions, element_bounds, planes);
@@ -982,23 +982,23 @@ namespace overlap{
 */
     }
     
-    void map_planes_to_voro(const planeMap &planes, std::vector< voro::wall_plane > &vplanes){
+    void map_planes_to_voro(const planeMap &planes, std::vector< voro::wall_plane > &vplanes, int j){
         /*!
         Map planes to voro::wall_plane objects.
 
         :param planeMap planes: The planeMap object which stores the plane information (normal, point on plane)
         :param std::vector< voro::wall_plane > vplanes: The vector of Voro++ plane objects.
+        :param int j: The initial value of the planes to use
         */
 
         //Map the planes to voro::wall_plane objects
         vplanes.reserve(planes.size());
         planeMap::const_iterator it;
         double distance;
-        int j=1;
 
         for (it=planes.begin(); it!=planes.end(); it++){
             distance = overlap::dot(it->first, it->second);
-            vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -j));
+            vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -(j+1)));
             j++;
         }
     }
@@ -1128,6 +1128,104 @@ namespace overlap{
                 }
                 for (unsigned int i=0; i<result[gp].size(); i++){
                     result[gp][i] += itv->second[i]*itiM->second.volume;
+                }
+            }
+        }
+    }
+
+    void perform_surface_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, double > > &result){
+        /*!
+        Perform the surface integration of a scalar value. Returns the integrated value at each of the surface of the gauss points
+
+        :param std::map< unsigned int, double > &values: The values at each of the micro-points
+        :param std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point
+        :param std::vector< std::map< unsigned int, double > > result: The result of the integration over each of the faces
+        */
+
+        //Set up an iterator for the value map
+        std::map< unsigned int, double >::const_iterator itv;
+        integrateMap::const_iterator itiM;
+        std::map< unsigned int, double >::iterator itr;
+
+        //Initialize the result vector
+        result.resize(weights.size());
+
+        //Loop over the gauss points
+        for (unsigned int gp=0; gp<weights.size(); gp++){
+        
+            //Loop over the micro-node weights    
+            for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
+
+                //Find the value of the function at the node
+                itv = values.find(itiM->first);
+                if (itv == values.end()){
+                    std::cout << "Error: node " << itiM->first << " not found in values\n";
+                    assert(1==0);
+                }
+
+                //Loop over the planes
+                for (unsigned int j=0; j<itiM->second.planes.size(); j++){
+                    itr = result[gp].find(itiM->second.planes[j]);
+
+                    //Insert the plane if new
+                    if (itr == result[gp].end()){
+                        result[gp].insert( std::pair< unsigned int, double >(itiM->second.planes[j], itv->second*itiM->second.area(j)));
+                    }
+                    //Add to the plane if it exists already
+                    else{
+                        itr->second += itv->second*itiM->second.area(j);
+                    }
+                }
+            }
+        }
+    }
+
+    void perform_surface_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, std::vector< double > > > &result){
+        /*!
+        Perform the surface integration of a scalar value. Returns the integrated value at each of the surface of the gauss points
+
+        :param std::map< unsigned int, double > &values: The values at each of the micro-points
+        :param std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point
+        :param std::vector< std::map< unsigned int, double > > result: The result of the integration over each of the faces
+        */
+
+        //Set up an iterator for the value map
+        std::map< unsigned int, std::vector< double > >::const_iterator itv;
+        integrateMap::const_iterator itiM;
+        std::map< unsigned int, std::vector< double > >::iterator itr;
+
+        //Initialize the result vector
+        result.resize(weights.size());
+
+        //Loop over the gauss points
+        for (unsigned int gp=0; gp<weights.size(); gp++){
+        
+            //Loop over the micro-node weights    
+            for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
+
+                //Find the value of the function at the node
+                itv = values.find(itiM->first);
+                if (itv == values.end()){
+                    std::cout << "Error: node " << itiM->first << " not found in values\n";
+                    assert(1==0);
+                }
+
+                //Loop over the planes
+                for (unsigned int j=0; j<itiM->second.planes.size(); j++){
+                    itr = result[gp].find(itiM->second.planes[j]);
+
+                    //Compute the value of the vector
+                    std::vector< double > vec = itv->second;
+                    for (unsigned int i=0; i<vec.size(); i++){vec[i] *= itiM->second.area(j);}
+
+                    //Insert the plane if new
+                    if (itr == result[gp].end()){
+                        result[gp].insert( std::pair< unsigned int, std::vector< double > >(itiM->second.planes[j], vec));
+                    }
+                    //Add to the plane if it exists already
+                    else{
+                        for (unsigned int i=0; i<vec.size(); i++){ itr->second[i] += vec[i];}
+                    }
                 }
             }
         }

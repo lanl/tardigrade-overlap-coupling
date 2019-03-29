@@ -998,6 +998,104 @@ void test_perform_volume_integration(std::ofstream &results){
     return;
 }
 
+void test_perform_surface_integration(std::ofstream &results){
+    /*!
+    Test performing surface integration over a domain.
+    */
+
+    overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
+    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
+    std::vector< overlap::integrateMap > points;
+    oc.compute_weights(data.node_numbers, data.coordinates, points);
+
+    //Test the computation of the surface area of the gauss domains
+    std::map< unsigned int, double > onemap;
+    for (unsigned int i=0; i<data.node_numbers.size(); i++){
+        onemap.insert( std::pair< unsigned int, double >(data.node_numbers[i], 1.));
+    }
+
+    std::vector< std::map< unsigned int, double > > result1;
+    overlap::perform_surface_integration(onemap, points, result1);
+
+    double gd_surface_area;
+
+    for (unsigned int gp=0; gp<result1.size(); gp++){
+
+        gd_surface_area = 0;
+
+        if (result1[gp].size() != 6*(gp%2)){
+            results << "test_perform_surface_integration (test 1a) & False\n";
+            return;
+        }
+
+        for (auto it=result1[gp].begin(); it!=result1[gp].end(); it++){
+            gd_surface_area += it->second;
+            if (!fuzzy_equals(it->second, 1.)){
+                results << "test_perform_surface_integration (test 1b) & False\n";
+                return;
+            }
+        }
+
+        if (!fuzzy_equals(gd_surface_area, 6*(gp%2))){
+            results << "test_perform_surface_integration (test 1c) & False\n";
+            return;
+        }
+    }
+
+    //Test the computation of a constant integrated over the surface of the gauss domains
+    std::map< unsigned int, double > constmap;
+    for (unsigned int i=0; i<data.node_numbers.size(); i++){
+        constmap.insert( std::pair< unsigned int, double >(data.node_numbers[i], 3.14159));
+    }
+
+    std::vector< std::map< unsigned int, double > > result2;
+    overlap::perform_surface_integration(constmap, points, result2);
+
+    for (unsigned int gp=0; gp<result2.size(); gp++){
+        
+        if (result2[gp].size() != 6*(gp%2)){
+            results << "test_perform_surface_integration (test 2a) & False\n";
+            return;
+        }
+
+        for (auto it=result2[gp].begin(); it!=result2[gp].end(); it++){
+            if (!fuzzy_equals(it->second, 3.14159)){
+                results << "test_perform_surface_integration (test 2b) & False\n";
+                return;
+            }
+        }
+    }
+
+    //Test a constant value integration of a vector quantity
+    //Test a constant value integration of a vector quantity
+    std::map< unsigned int, std::vector< double > > constvecmap;
+    for (unsigned int i=0; i<data.node_numbers.size(); i++){
+        constvecmap.insert( std::pair< unsigned int, std::vector< double > >(data.node_numbers[i], {1., 2., -3., 1.42}));
+    }
+
+    overlap::vecOfvec answer3 = {{0., 0., 0., 0.}, {1., 2., -3., 1.42}};
+    std::vector< std::map< unsigned int, std::vector< double > > > result3;
+    overlap::perform_surface_integration(constvecmap, points, result3);
+
+    for (unsigned int gp=0; gp<result3.size(); gp++){
+        
+        if (result3[gp].size() != 6*(gp%2)){
+            results << "test_perform_surface_integration (test 3a) & False\n";
+            return;
+        }
+
+        for (auto it=result3[gp].begin(); it!=result3[gp].end(); it++){
+            if (!fuzzy_equals(it->second, answer3[gp%2])){
+                results << "test_perform_surface_integration (test 3b) & False\n";
+                return;
+            }
+        }
+    }
+
+    results << "test_perform_surface_integration & True\n";
+    return;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -1033,6 +1131,7 @@ int main(){
 
     //Tests for the integrators
     test_perform_volume_integration(results);
+    test_perform_surface_integration(results);
 
     //Test misc. functions
     test_dot(results);
