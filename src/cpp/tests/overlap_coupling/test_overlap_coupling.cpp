@@ -932,6 +932,72 @@ void test_apply_nansons_relation(std::ofstream &results){
     return;
 }
 
+void test_perform_volume_integration(std::ofstream &results){
+    /*!
+    Test performing volume integration over a domain.
+    */
+
+    overlap::ParsedData data = overlap::read_data_from_file("overlap.txt");
+    overlap::OverlapCoupling oc = overlap::OverlapCoupling(data.local_nodes, data.local_gpts);
+    std::vector< overlap::integrateMap > points;
+    oc.compute_weights(data.node_numbers, data.coordinates, points);
+
+    //Test the computation of the object's volume
+    std::map< unsigned int, double > onemap;
+    for (unsigned int i=0; i<data.node_numbers.size(); i++){
+        onemap.insert( std::pair< unsigned int, double >(data.node_numbers[i], 1.));
+    }
+
+    std::vector< double > answer1(data.local_gpts.size(), 1.);
+    answer1[0] = answer1[2] = answer1[4] = answer1[6] = 0;
+    std::vector< double > result1;
+
+    overlap::perform_volume_integration(onemap, points, result1);
+
+    if (!fuzzy_equals(result1, answer1)){
+        results << "test_perform_volume_integration (test 1) & False\n";
+        return;
+    }
+
+    //Test a constant value integration
+    std::map< unsigned int, double > constmap;
+    for (unsigned int i=0; i<data.node_numbers.size(); i++){
+        constmap.insert( std::pair< unsigned int, double >(data.node_numbers[i], 3.14159));
+    }
+
+    std::vector< double > answer2(data.local_gpts.size(), 3.14159);
+    answer2[0] = answer2[2] = answer2[4] = answer2[6] = 0;
+    std::vector< double > result2;
+
+    overlap::perform_volume_integration(constmap, points, result2);
+
+    if (!fuzzy_equals(result2, answer2)){
+        results << "test_perform_volume_integration (test 2) & False\n";
+        return;
+    }
+
+    //Test a constant value integration of a vector quantity
+    std::map< unsigned int, std::vector< double > > constvecmap;
+    for (unsigned int i=0; i<data.node_numbers.size(); i++){
+        constvecmap.insert( std::pair< unsigned int, std::vector< double > >(data.node_numbers[i], {1., 2., -3., 1.42}));
+    }
+
+    overlap::vecOfvec answer3 = {{0., 0., 0., 0.}, {1., 2., -3., 1.42}};
+    overlap::vecOfvec result3;
+    overlap::perform_volume_integration(constvecmap, points, result3);
+
+    for (unsigned int i=0; i<result3.size(); i++){
+        if (!fuzzy_equals(result3[i], answer3[i%2])){
+            results << "test_perform_volume_integration (test 3) & False\n";
+            return;
+        }
+    }
+    
+    //All tests passed.
+    results << "test_perform_volume_integration & True\n";
+    return;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -964,6 +1030,9 @@ int main(){
 
     //Tests for the computation of the weights
     test_compute_weights(results);
+
+    //Tests for the integrators
+    test_perform_volume_integration(results);
 
     //Test misc. functions
     test_dot(results);

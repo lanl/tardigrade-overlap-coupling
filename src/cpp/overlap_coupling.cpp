@@ -1057,4 +1057,80 @@ namespace overlap{
             }
         }
     }
+
+    void perform_volume_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< double > &result){
+        /*
+        Perform the volume integration of a scalar value. Returns the integrated value at the gauss points.
+
+        :param map::< unsigned int, double > values: The map object which defines the values to be integrated at each of the micro-nodes
+        :param std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point.
+        :param std::vector< double > result: The integrated result.
+        */
+
+        //Set up an iterator for the value map
+        std::map<unsigned int, double >::const_iterator itv;
+        integrateMap::const_iterator itiM;
+
+        //Initialize the result vector
+        result = std::vector< double >(weights.size(), 0);
+        
+        //Loop over the gauss points
+        for (unsigned int gp=0; gp<weights.size(); gp++){
+
+            for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
+                
+                //Find the value of the function at the node
+                itv = values.find(itiM->first);
+                if (itv == values.end()){
+                    std::cout << "Error: node " << itiM->first << " not found in values\n";
+                    assert(1==0);
+                }
+
+                //Add the term to the integral.
+                result[gp] += itv->second*itiM->second.volume;
+            }
+        }
+    }
+
+    void perform_volume_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result){
+        /*
+        Perform the volume integration of a vector value. Returns the integrated value at the gauss points.
+
+        :param map::< unsigned int, std::vector< double > > values: The map object which defines the values to be integrated at each of the micro-nodes
+        :param std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point.
+        :param std::vector< std::vector< double > > result: The integrated result.
+        */
+
+        //Set up an iterator for the value map
+        std::map<unsigned int, std::vector< double >>::const_iterator itv;
+        integrateMap::const_iterator itiM;
+
+        //Initialize the result vector
+        result = std::vector< std::vector< double > >(weights.size());
+        
+        //Loop over the gauss points
+        for (unsigned int gp=0; gp<weights.size(); gp++){
+
+            result[gp].resize(values.begin()->second.size());
+
+            for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
+                
+                //Find the value of the function at the node
+                itv = values.find(itiM->first);
+                if (itv == values.end()){
+                    std::cout << "Error: node " << itiM->first << " not found in values\n";
+                    assert(1==0);
+                }
+
+                //Add the terms to the integral.
+                if (itv->second.size() != result[gp].size()){
+                    std::cout << "Error: result and value must have the same size\n";
+                }
+                for (unsigned int i=0; i<result[gp].size(); i++){
+                    result[gp][i] += itv->second[i]*itiM->second.volume;
+                }
+            }
+        }
+    }
 }
+
