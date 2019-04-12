@@ -21,8 +21,20 @@
 #include<assert.h>
 #include<string.h>
 
+#ifdef __GNUC__
+//Avoid warnings from Voro++ root code
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #include "voro++.hh"
 
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+#include<Eigen/Sparse>
+//#include<Eigen/Dense>
 
 #if CONVEXLIB == QUICKHULL
     #include "3d-quickhull/quickhull.h"
@@ -56,6 +68,9 @@ namespace overlap{
     typedef std::vector< std::vector< double > > vecOfvec;
     typedef std::map< std::vector< double >, std::vector< double > > planeMap;
     typedef std::map< unsigned int, MicroPoint > integrateMap;
+    typedef Eigen::SparseMatrix< FloatType > SpMat;
+    typedef Eigen::Triplet< FloatType > T;
+    typedef Eigen::SparseQR< SpMat, Eigen::COLAMDOrdering<int> > QRsolver;
 
     class OverlapCoupling{
         /*!
@@ -290,6 +305,13 @@ namespace overlap{
     void perform_volume_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result);
     void perform_surface_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, double > > &result);
     void perform_surface_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, std::vector< double > > > &result);
+    void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,
+                                const std::map< unsigned int, unsigned int >* dns_node_to_col_map,
+                                const std::vector< unsigned int > &macro_node_ids,
+                                const std::vector< FloatType > &cg, const vecOfvec &psis,
+                                const integrateMap &dns_weights,
+                                std::vector< T > &tripletList,
+                                unsigned int n_macro_dof=12, unsigned int n_micro_dof=3);
 }
 
 #endif

@@ -1230,5 +1230,86 @@ namespace overlap{
             }
         }
     }
+
+    void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_col_map,
+                                const std::map< unsigned int, unsigned int >* dns_node_to_row_map,
+                                const std::vector< unsigned int > &macro_node_ids,
+                                const std::vector< FloatType > &cg,
+                                const vecOfvec &psis,
+                                const integrateMap &dns_weights,
+                                std::vector< T > &tripletList,
+                                unsigned int n_macro_dof,
+                                unsigned int n_micro_dof){
+        /*!
+        Add the contributions of the nodes contained within a quadrature domain to the shape-function matrix
+        triplet list.
+        
+        :param std::map< unsigned int, unsigned int >* macro_node_to_col_map: A pointer to the map from the macro node id numbers to the location in the shape-function matrix. The value will be scaled by 12 since there are assumed to be 12 DOF for the macro nodes (i.e. 3D isothermal behavior)
+        :param std::map< unsigned int, unsigned int >* micro_node_to_row_map: A pointer to the map from the micro node id numbers to the location in the shape-function matrix. The value will be scaled by 3 since there are assumed to be 3 DOF for the micro nodes (i.e. 3D isothermal behavior)
+        :param std::vector< unsigned int > macro_node_ids: The id numbers of the macro-scale nodes
+        :param std::vector< FloatType > cg: The center of gravity of the macro node.
+        :param integrateMap dns_weights: The weights and locations of the micro-nodes in the macro element. All positions, volumes, and das should be in true space (i.e. not in local/master coordinates)
+        :param vecOfvec psis: The shape function values for each of the nodes at the cg.
+        :param std::vector< T > tripletList: The list of triplets used to construct the sparse matrix representation of the shape-function matrix for this quadrature domain
+        :param unsigned int n_macro_dof: The number of macro-scale DOF per node. Note that the code is only set up to deal with 12 but the values are in place for future expansion.
+        :param unsigned int n_micro_dof: The number of micro-scale DOF per node. Note that the code is only set up to deal with 3 but the values are in place for future expansion.
+        */
+
+        //Initialize the variables and iterators
+        
+        std::map< unsigned int, unsigned int >::const_iterator it;
+        integrateMap::const_iterator iMit;
+        std::vector< FloatType > xi(3,0);
+        unsigned int row0, col0;
+
+        //Reserve the memory required for the tripletList
+        tripletList.reserve(tripletList.size() + 8*12*dns_weights.size());
+
+        //Loop over the macro nodes
+        for (unsigned int n=0; n<psis.size(); n++){
+            //Set the initial index of the column
+            it = macro_node_to_col_map->find(macro_node_ids[n]);
+            if (it != macro_node_to_col_map->end()){
+                col0 = n_macro_dof*it->second;
+            }
+            else{
+                std::cout << "Error: Macro node not found in macro_node_to_col map\n";
+                assert(1==0);
+            }
+
+            //Loop over the micro-nodes and add the contributions to the shape-function matrix
+            for (iMit=dns_weights.begin(); iMit!=dns_weights.end(); iMit++){
+                //Set the initial index of the row
+                it = dns_node_to_row_map->find(iMit->first);
+                if (it != dns_node_to_row_map->end()){
+                    row0 = n_micro_dof*it->second;
+                }
+                else{
+                    std::cout << "Error: Micro node not found in micro_node_to_row map\n";
+                    assert(1==0);
+                }
+
+                //Compute the xi vector
+                for (unsigned int j=0; j<3; j++){
+                    xi[j] = iMit->second.coordinates[j] - cg[j];
+                }
+
+                //Add the values to the matrix
+                tripletList.push_back(T(row0 + 1, col0 +  0, psis[n][0]));
+                tripletList.push_back(T(row0 + 1, col0 +  1, psis[n][0]));
+                tripletList.push_back(T(row0 + 2, col0 +  2, psis[n][0]));
+                tripletList.push_back(T(row0 + 0, col0 +  3, psis[n][0]*xi[0]));
+                tripletList.push_back(T(row0 + 1, col0 +  4, psis[n][0]*xi[1]));
+                tripletList.push_back(T(row0 + 2, col0 +  5, psis[n][0]*xi[2]));
+                tripletList.push_back(T(row0 + 1, col0 +  6, psis[n][0]*xi[2]));
+                tripletList.push_back(T(row0 + 0, col0 +  7, psis[n][0]*xi[2]));
+                tripletList.push_back(T(row0 + 0, col0 +  8, psis[n][0]*xi[1]));
+                tripletList.push_back(T(row0 + 2, col0 +  9, psis[n][0]*xi[1]));
+                tripletList.push_back(T(row0 + 2, col0 + 10, psis[n][0]*xi[0]));
+                tripletList.push_back(T(row0 + 1, col0 + 11, psis[n][0]*xi[0]));
+            }
+        }
+        return;
+    }
 }
 
