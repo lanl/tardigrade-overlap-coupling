@@ -30,7 +30,7 @@ SOVERSION=liboverlap.so.1
 all: $(SONAME)
 
 $(SONAME): $(SOVERSION)
-	ln -s $(SOVERSION) $@
+	ln -s -f $(SOVERSION) $@
 
 $(SOVERSION): $(OBJECTS)
 	$(CC) $(STD) -shared -Wl,-soname,$(SOVERSION) -o $@ $^ $(CFLAGS) $(LOCAL_CFLAGS) $(ERRORFLG) $(DBG) $(INC) $(LIB) -std=gnu++11 -lvoro++

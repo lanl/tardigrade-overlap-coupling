@@ -192,6 +192,31 @@ namespace overlap{
         //!Compute the bounding planes
         dns_bounds.resize(3);
         compute_node_bounds(DNScoordinates, dns_planes, dns_bounds[0], dns_bounds[1], dns_bounds[2]);
+/*        std::cout << "dns_bounds:\n";
+        for (unsigned int i=0; i<dns_bounds.size(); i++){
+            std::cout << "    ";
+            for (unsigned int j=0; j<dns_bounds[i].size(); j++){
+                std::cout << dns_bounds[i][j] << " ";
+            }
+            std::cout << "\n";
+        }
+        double min_x, max_x = DNScoordinates[0][0];
+        double min_y, max_y = DNScoordinates[0][1];
+        double min_z, max_z = DNScoordinates[0][2];
+
+        for (unsigned int i=1; i<DNScoordinates.size(); i++){
+            min_x = fmin(min_x, DNScoordinates[i][0]);
+            min_y = fmin(min_y, DNScoordinates[i][1]);
+            min_z = fmin(min_z, DNScoordinates[i][2]);
+            max_x = fmax(max_x, DNScoordinates[i][0]);
+            max_y = fmax(max_y, DNScoordinates[i][1]);
+            max_z = fmax(max_z, DNScoordinates[i][2]);
+        }
+
+        std::cout << "bounds x: " << min_x << " " << max_y << "\n";
+        std::cout << "bounds y: " << min_y << " " << max_y << "\n";
+        std::cout << "bounds z: " << min_z << " " << max_z << "\n";
+*/
     }
 
     void OverlapCoupling::compute_node_bounds(const vecOfvec &coordinates, planeMap &planes,
@@ -303,8 +328,15 @@ namespace overlap{
         for (unsigned int i=0; i<gpt_nums.size(); i++){gpt_nums[i] = i;}
 //        std::cout << "gauss_points:\n";
 //        print_matrix(gauss_points);
-//        std::cout << "element_bounds:\n";
-//        print_matrix(element_bounds);
+/*        std::cout << "  element_bounds:\n";
+        for (unsigned int i=0; i<element_bounds.size(); i++){
+            std::cout << "    ";
+            for (unsigned int j=0; j<element_bounds[i].size(); j++){
+                std::cout << element_bounds[i][j] << " ";
+            }
+            std::cout << "\n";
+        }
+*/
         voro::container *container = construct_container(gpt_nums, gauss_points, element_bounds, vplanes);
 
         //Iterate over the gauss points
@@ -402,9 +434,21 @@ namespace overlap{
             container = construct_container(numbers, positions, element_bounds, planes);
             
             //Evaluate the point information
-            evaluate_container_information(container, points[gd]);
+            evaluate_container_information(container, points[gd], boundary_node_volumes);
 
             delete(container);
+        }
+
+        for (unsigned int gd=0; gd<gauss_domains.size(); gd++){
+//            std::cout << "gd: " << gd << "\n";
+
+            for (auto mpit = points[gd].begin(); mpit != points[gd].end(); mpit++){
+                if (boundary_node_volumes.find(mpit->first) != boundary_node_volumes.end()){
+                    mpit->second.weight =mpit->second.volume/boundary_node_volumes[mpit->first];
+                }
+//                std::cout << mpit->first << ": " << mpit->second.weight << "\n";
+            }
+
         }
     }
 
@@ -843,7 +887,7 @@ namespace overlap{
         return container;
     }
 
-    void evaluate_container_information(voro::container* container, integrateMap &points){
+    void evaluate_container_information(voro::container* container, integrateMap &points, std::map< unsigned int, FloatType> &boundary_node_volumes){
         /*!
         Compute required container information (volumes, surface areas, etc.) and return them.
 
@@ -854,6 +898,7 @@ namespace overlap{
 
         :param voro::container* container: A pointer to the Voro++ container class to be investigated
         :param std::vector< integrateMap > points: A vector of point information containers.
+        :param std::map< unsigned int, FloatType > boundary_node_volumes: The total volume of the cells on gauss domain boundaries
         */
 
         voro::voronoicell_neighbor c;
@@ -874,6 +919,7 @@ namespace overlap{
         vecOfvec face_centroids;
         unsigned int index = 0;
         unsigned int index_order = 0;
+        bool is_boundary = false;
 
         //Define the iterators
         std::vector< int >::iterator viit;
@@ -904,6 +950,7 @@ namespace overlap{
 
             index = 0;
             index_order = 0;
+            is_boundary = false;
 
             while (viit != neighbors.end()){
 //                std::cout << "index_order: " << index_order << "\n";
@@ -915,12 +962,22 @@ namespace overlap{
                                        cell_normals[index+2]});
                     find_face_centroid(face_vertices, vertices, index_order, centroid);
                     face_centroids.push_back({centroid[0], centroid[1], centroid[2]});
+                    is_boundary = true;
 
                 }
                 viit++;
                 vdit++;
                 index += 3;
                 index_order += face_vertices[index_order]+1;
+            }
+            if (is_boundary){
+                auto bit = boundary_node_volumes.find(cl.pid());
+                if (bit != boundary_node_volumes.end()){
+                    boundary_node_volumes[cl.pid()] += c.volume();
+                }
+                else{
+                    boundary_node_volumes.insert( std::pair< unsigned int, FloatType >(cl.pid(), c.volume()));
+                }
             }
 
             c.centroid(centroid[0], centroid[1], centroid[2]);
@@ -996,8 +1053,13 @@ namespace overlap{
         planeMap::const_iterator it;
         double distance;
 
+//        std::cout << "map planes to voro:\n";
+
         for (it=planes.begin(); it!=planes.end(); it++){
             distance = overlap::dot(it->first, it->second);
+//            std::cout << "  normal: " << it->first[0] << " " << it->first[1] << " " << it->first[2] << "\n";
+//            std::cout << "  face centroid: " << it->second[0] << " " << it->second[1] << " " << it->second[2] << "\n";
+//            std::cout << "  distance: " << distance << "\n";
             vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -(j+1)));
             j++;
         }
@@ -1016,9 +1078,14 @@ namespace overlap{
         std::vector< double > normal(3);
         vplanes.reserve(n);
 
+//        std::cout << "map_domain_to_voro:\n";
+
         for (unsigned int i=0; i<n; i++){
             normal = domain.normal(i);
             distance = overlap::dot(normal, domain.face_centroids[i]);
+//            std::cout << "  normal: " << normal[0] << " " << normal[1] << " " << normal[2] << "\n";
+//            std::cout << "  face centroid: " << domain.face_centroids[i][0] << " " << domain.face_centroids[i][1] << " " << domain.face_centroids[i][2] << "\n";
+//            std::cout << "  distance: " << distance << "\n";
             vplanes.push_back(voro::wall_plane(normal[0], normal[1], normal[2], distance, -j));
             j++;
         }
@@ -1237,6 +1304,10 @@ namespace overlap{
                                 const std::vector< FloatType > &cg,
                                 const vecOfvec &psis,
                                 const integrateMap &dns_weights,
+                                const std::map< unsigned int, unsigned int>* micro_node_elcount,
+                                bool share_ghost_free_boundary_nodes,
+                                bool macro_elem_is_ghost,
+                                unsigned int num_micro_free,
                                 std::vector< T > &tripletList,
                                 unsigned int n_macro_dof,
                                 unsigned int n_micro_dof){
@@ -1248,8 +1319,11 @@ namespace overlap{
         :param std::map< unsigned int, unsigned int >* micro_node_to_row_map: A pointer to the map from the micro node id numbers to the location in the shape-function matrix. The value will be scaled by 3 since there are assumed to be 3 DOF for the micro nodes (i.e. 3D isothermal behavior)
         :param std::vector< unsigned int > macro_node_ids: The id numbers of the macro-scale nodes
         :param std::vector< FloatType > cg: The center of gravity of the macro node.
-        :param integrateMap dns_weights: The weights and locations of the micro-nodes in the macro element. All positions, volumes, and das should be in true space (i.e. not in local/master coordinates)
         :param vecOfvec psis: The shape function values for each of the nodes at the cg.
+        :param integrateMap dns_weights: The weights and locations of the micro-nodes in the macro element. All positions, volumes, and das should be in true space (i.e. not in local/master coordinates)
+        :param std::map< unsigned int, unsigned int>* micro_node_elcount: The number of elements a given node is inside. Assumed 1 if not in map.
+        :param bool share_ghost_free_boundary_nodes: Boolean indicating if micro-nodes on a boundary between a free and ghost macro element should be shared
+        :param bool macro_elem_is_ghost: Boolean indicating if the macro-element is a ghost element or not
         :param std::vector< T > tripletList: The list of triplets used to construct the sparse matrix representation of the shape-function matrix for this quadrature domain
         :param unsigned int n_macro_dof: The number of macro-scale DOF per node. Note that the code is only set up to deal with 12 but the values are in place for future expansion.
         :param unsigned int n_micro_dof: The number of micro-scale DOF per node. Note that the code is only set up to deal with 3 but the values are in place for future expansion.
@@ -1261,9 +1335,17 @@ namespace overlap{
         integrateMap::const_iterator iMit;
         std::vector< FloatType > xi(3,0);
         unsigned int row0, col0;
+        double psi_n;
+        double weight;
 
         //Reserve the memory required for the tripletList
         tripletList.reserve(tripletList.size() + 8*12*dns_weights.size());
+
+//        std::cout << "cg: ";
+//        for (unsigned int i=0; i<3; i++){
+//            std::cout << cg[i] << " ";
+//        }
+//        std::cout << "\n";
 
         //Loop over the macro nodes
         for (unsigned int n=0; n<psis.size(); n++){
@@ -1271,6 +1353,7 @@ namespace overlap{
             it = macro_node_to_col_map->find(macro_node_ids[n]);
             if (it != macro_node_to_col_map->end()){
                 col0 = n_macro_dof*it->second;
+                psi_n = psis[n][0];
             }
             else{
                 std::cout << "Error: Macro node not found in macro_node_to_col map\n";
@@ -1279,6 +1362,7 @@ namespace overlap{
 
             //Loop over the micro-nodes and add the contributions to the shape-function matrix
             for (iMit=dns_weights.begin(); iMit!=dns_weights.end(); iMit++){
+
                 //Set the initial index of the row
                 it = dns_node_to_row_map->find(iMit->first);
                 if (it != dns_node_to_row_map->end()){
@@ -1289,27 +1373,133 @@ namespace overlap{
                     assert(1==0);
                 }
 
+                //Check if macro elements id'd as free can contain free micro elements and if the current node fails that test
+                if ((!share_ghost_free_boundary_nodes) && (!macro_elem_is_ghost) && (it->second < num_micro_free)){
+                    continue;
+                }
+
+                //Set the weight
+                weight = iMit->second.weight;
+                auto mnelit = micro_node_elcount->find(iMit->first);
+                if (mnelit != micro_node_elcount->end()){
+                    weight /= mnelit->second;
+                }
+
                 //Compute the xi vector
                 for (unsigned int j=0; j<3; j++){
                     xi[j] = iMit->second.coordinates[j] - cg[j];
                 }
 
+/*                if (it->second == 450){
+                    std::cout << "row0: " << row0 << "\n";
+                    std::cout << "col0: " << col0 << "\n";
+                    std::cout << "share_ghost_free_boundary_nodes: " << share_ghost_free_boundary_nodes << "\n";
+                    std::cout << "macro_elem_is_ghost: " << macro_elem_is_ghost << "\n";
+                    std::cout << "num_micro_free: " << num_micro_free << "\n";
+                    std::cout << "iMit->second.coordinates: ";
+                    for (unsigned int i=0; i<iMit->second.coordinates.size(); i++){
+                        std::cout << iMit->second.coordinates[i] << " ";
+                    }
+	            std::cout << "\n";
+                    std::cout << "xi: ";
+                    for (unsigned int i=0; i<xi.size(); i++){
+                        std::cout << xi[i] << " ";
+                    }
+	            std::cout << "\n";
+                    std::cout << "psi_n: " << psi_n << "\n";
+                    std::cout << "dns_weight: " << iMit->second.weight << "\n";
+                    std::cout << "weight: " << weight << "\n";
+                    if (mnelit != micro_node_elcount->end()){
+                        std::cout << "number of neighboring elements: " << mnelit->second << "\n";
+                    }
+                    
+                }
+*/
                 //Add the values to the matrix
-                tripletList.push_back(T(row0 + 1, col0 +  0, psis[n][0]));
-                tripletList.push_back(T(row0 + 1, col0 +  1, psis[n][0]));
-                tripletList.push_back(T(row0 + 2, col0 +  2, psis[n][0]));
-                tripletList.push_back(T(row0 + 0, col0 +  3, psis[n][0]*xi[0]));
-                tripletList.push_back(T(row0 + 1, col0 +  4, psis[n][0]*xi[1]));
-                tripletList.push_back(T(row0 + 2, col0 +  5, psis[n][0]*xi[2]));
-                tripletList.push_back(T(row0 + 1, col0 +  6, psis[n][0]*xi[2]));
-                tripletList.push_back(T(row0 + 0, col0 +  7, psis[n][0]*xi[2]));
-                tripletList.push_back(T(row0 + 0, col0 +  8, psis[n][0]*xi[1]));
-                tripletList.push_back(T(row0 + 2, col0 +  9, psis[n][0]*xi[1]));
-                tripletList.push_back(T(row0 + 2, col0 + 10, psis[n][0]*xi[0]));
-                tripletList.push_back(T(row0 + 1, col0 + 11, psis[n][0]*xi[0]));
+                tripletList.push_back(T(row0 + 0, col0 +  0, weight*psi_n));
+                tripletList.push_back(T(row0 + 1, col0 +  1, weight*psi_n));
+                tripletList.push_back(T(row0 + 2, col0 +  2, weight*psi_n));
+                tripletList.push_back(T(row0 + 0, col0 +  3, weight*psi_n*xi[0]));
+                tripletList.push_back(T(row0 + 1, col0 +  4, weight*psi_n*xi[1]));
+                tripletList.push_back(T(row0 + 2, col0 +  5, weight*psi_n*xi[2]));
+                tripletList.push_back(T(row0 + 1, col0 +  6, weight*psi_n*xi[2]));
+                tripletList.push_back(T(row0 + 0, col0 +  7, weight*psi_n*xi[2]));
+                tripletList.push_back(T(row0 + 0, col0 +  8, weight*psi_n*xi[1]));
+                tripletList.push_back(T(row0 + 2, col0 +  9, weight*psi_n*xi[1]));
+                tripletList.push_back(T(row0 + 2, col0 + 10, weight*psi_n*xi[0]));
+                tripletList.push_back(T(row0 + 1, col0 + 11, weight*psi_n*xi[0]));
             }
         }
         return;
     }
-}
 
+    SpMat form_sparsematrix(const std::vector< T > &tripletList, unsigned int nrows, unsigned int ncols, const bool &ignore_dup){
+        /*!
+        Form a sparse matrix from a triplet list
+
+        :param std::vector< T > tripletlist: A list of triplets to use to construct the matrix
+        :param bool ignore_dup: Flag to indicate whether duplicates should be ignored
+        :param SpMat result: The resulting sparse matrix
+        */
+
+        //Initialize the matrix
+        SpMat result(nrows, ncols);
+
+        //Construct the matrix following the logic on ignoring duplicates
+        if (ignore_dup){
+            result.setFromTriplets(tripletList.begin(), tripletList.end(), [] (const double&, const double &b) { return b; });
+        }
+        else{
+            result.setFromTriplets(tripletList.begin(), tripletList.end());
+        }
+        result.makeCompressed();
+        return result;
+    }
+
+    SpMat extract_block(const SpMat &A, unsigned int start_row, unsigned int start_col, unsigned int nrows, unsigned int ncols){
+        /*!
+        Extract a block from a larger sparse matrix
+        */
+
+        SpMat block = A.block(start_row, start_col, nrows, ncols);
+        block.makeCompressed();
+        return block;
+    }
+
+//    QRsolver form_solver(SpMat &A){
+//        /*!
+//        Form the QR solver.
+//        */
+//        QRsolver Asolver;
+//        A.makeCompressed();
+//        Asolver.compute(A);
+//        if (Asolver.info()!=Eigen::Success){
+//            std::cout << "Error: Least squares solution to update degrees of freedom failed.\n";
+//            assert(1==0);
+//        }
+//        return Asolver;
+//    }
+
+    void solve_for_projector(const SpMat &A, const SpMat &B, SpMat &X){
+        /*!
+        Solve for the projector by solving the sparse matrix linear algebra problem using QR decomposition.
+    
+        AX = B
+
+        :param SpMat A: The left-hand-side matrix
+        :param SpMat B: The right-hand-side matrix
+        :param SpMat X: The solution matrix.
+        */
+
+        //Define the solver
+        QRsolver solver;
+
+        //Perform the decomposition
+        solver.compute(A);
+        if( solver.info() != Eigen::Success){
+            std::cout << "Error: Least squares solution to solving for the projector failed\n";
+            assert(1==0);
+        }
+        X = solver.solve(B);
+    }
+}

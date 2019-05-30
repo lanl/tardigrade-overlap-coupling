@@ -33,7 +33,19 @@
 #pragma GCC diagnostic pop
 #endif
 
+#ifdef __GNUC__
+//Avoid warnings from Eigen/Sparse root code
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#endif
+
 #include<Eigen/Sparse>
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+
 //#include<Eigen/Dense>
 
 #if CONVEXLIB == QUICKHULL
@@ -69,8 +81,11 @@ namespace overlap{
     typedef std::map< std::vector< double >, std::vector< double > > planeMap;
     typedef std::map< unsigned int, MicroPoint > integrateMap;
     typedef Eigen::SparseMatrix< FloatType > SpMat;
+    typedef Eigen::Matrix< FloatType, Eigen::Dynamic, 1 > EigVec;
+    typedef Eigen::SparseVector< FloatType > SpEigVec;
     typedef Eigen::Triplet< FloatType > T;
     typedef Eigen::SparseQR< SpMat, Eigen::COLAMDOrdering<int> > QRsolver;
+    typedef Eigen::Ref< const SpMat > SpRef;
 
     class OverlapCoupling{
         /*!
@@ -121,6 +136,7 @@ namespace overlap{
             vecOfvec dns_bounds;
 
             std::vector< MicroPoint > gauss_domains;
+            std::map< unsigned int, FloatType> boundary_node_volumes;
 //            voro::container element_container;
 //            voro::container dns_container;
 
@@ -261,6 +277,7 @@ namespace overlap{
 //            vecOfvec normals;
             vecOfvec das;
             vecOfvec face_centroids;
+            FloatType weight = 1.;
    };
     
    //!===
@@ -294,7 +311,7 @@ namespace overlap{
     voro::container* construct_container(const std::vector< unsigned int > &point_numbers, const vecOfvec &point_coords,
                                          const vecOfvec &bounds, std::vector< voro::wall_plane> &planes, double expand=1);
 
-    void evaluate_container_information(voro::container *container, integrateMap &points);
+    void evaluate_container_information(voro::container *container, integrateMap &points, std::map< unsigned int, FloatType > &boundary_node_volumes);
 
     void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices, const int &index, std::vector< double > &centroid);
 
@@ -310,8 +327,16 @@ namespace overlap{
                                 const std::vector< unsigned int > &macro_node_ids,
                                 const std::vector< FloatType > &cg, const vecOfvec &psis,
                                 const integrateMap &dns_weights,
+                                const std::map< unsigned int, unsigned int >* micro_node_elcount,
+                                bool share_ghost_free_boundary_nodes,
+                                bool macro_elem_is_ghost,
+                                unsigned int num_micro_free,
                                 std::vector< T > &tripletList,
                                 unsigned int n_macro_dof=12, unsigned int n_micro_dof=3);
+    void solve_for_projector(const SpMat &A, const SpMat &B, SpMat &X);
+    SpMat form_sparsematrix(const std::vector< T > &tripletList, unsigned int nrows, unsigned int ncols, const bool &ignore_dup);
+    SpMat extract_block(const SpMat &A, unsigned int start_row, unsigned int start_col, unsigned int nrows, unsigned int ncols);
+//    QRsolver form_solver(SpMat &A);
 }
 
 #endif
