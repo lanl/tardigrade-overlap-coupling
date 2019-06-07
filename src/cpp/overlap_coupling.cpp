@@ -20,6 +20,9 @@
     #define CONVHULL_3D_ENABLE
 #endif
 
+//Indicate that the library is being compiled
+#define OVERLAP_LIBCOMPILE
+
 #include "overlap_coupling.h"
 
 namespace overlap{
@@ -1309,8 +1312,8 @@ namespace overlap{
                                 bool macro_elem_is_ghost,
                                 unsigned int num_micro_free,
                                 std::vector< T > &tripletList,
-                                unsigned int n_macro_dof,
-                                unsigned int n_micro_dof){
+                                unsigned int num_macro_dof,
+                                unsigned int num_micro_dof){
         /*!
         Add the contributions of the nodes contained within a quadrature domain to the shape-function matrix
         triplet list.
@@ -1325,8 +1328,8 @@ namespace overlap{
         :param bool share_ghost_free_boundary_nodes: Boolean indicating if micro-nodes on a boundary between a free and ghost macro element should be shared
         :param bool macro_elem_is_ghost: Boolean indicating if the macro-element is a ghost element or not
         :param std::vector< T > tripletList: The list of triplets used to construct the sparse matrix representation of the shape-function matrix for this quadrature domain
-        :param unsigned int n_macro_dof: The number of macro-scale DOF per node. Note that the code is only set up to deal with 12 but the values are in place for future expansion.
-        :param unsigned int n_micro_dof: The number of micro-scale DOF per node. Note that the code is only set up to deal with 3 but the values are in place for future expansion.
+        :param unsigned int num_macro_dof: The number of macro-scale DOF per node. Note that the code is only set up to deal with 12 but the values are in place for future expansion.
+        :param unsigned int num_micro_dof: The number of micro-scale DOF per node. Note that the code is only set up to deal with 3 but the values are in place for future expansion.
         */
 
         //Initialize the variables and iterators
@@ -1352,7 +1355,7 @@ namespace overlap{
             //Set the initial index of the column
             it = macro_node_to_col_map->find(macro_node_ids[n]);
             if (it != macro_node_to_col_map->end()){
-                col0 = n_macro_dof*it->second;
+                col0 = num_macro_dof*it->second;
                 psi_n = psis[n][0];
             }
             else{
@@ -1366,7 +1369,7 @@ namespace overlap{
                 //Set the initial index of the row
                 it = dns_node_to_row_map->find(iMit->first);
                 if (it != dns_node_to_row_map->end()){
-                    row0 = n_micro_dof*it->second;
+                    row0 = num_micro_dof*it->second;
                 }
                 else{
                     std::cout << "Error: Micro node not found in micro_node_to_row map\n";
@@ -1501,5 +1504,354 @@ namespace overlap{
             assert(1==0);
         }
         X = solver.solve(B);
+    }
+
+    Projector::Projector(unsigned int _num_macro_dof, unsigned int _num_micro_dof,
+                         unsigned int _num_macro_ghost, unsigned int _num_macro_free, 
+                         unsigned int _num_micro_ghost, unsigned int _num_micro_free){
+        /*!
+        Constructor
+        */
+
+        num_macro_dof = _num_macro_dof;
+        num_micro_dof = _num_micro_dof;
+        num_macro_ghost = _num_macro_ghost;
+        num_macro_free = _num_macro_free;
+        num_micro_ghost = _num_micro_ghost;
+        num_micro_free = _num_micro_free;
+    }
+
+    void Projector::add_shapefunction_terms(const std::map< unsigned int, unsigned int >* macro_node_to_col_map,
+                                            const std::map< unsigned int, unsigned int >* micro_node_to_row_map,
+                                            const std::vector< unsigned int > &macro_node_ids,
+                                            const std::vector< FloatType > &cg,
+                                            const vecOfvec &psis,
+                                            const integrateMap &dns_weights,
+                                            const std::map< unsigned int, unsigned int>* micro_node_elcount,
+                                            bool share_ghost_free_boundary_nodes,
+                                            bool macro_elem_is_ghost,
+                                            unsigned int num_micro_free,
+                                            unsigned int num_macro_dof,
+                                            unsigned int num_micro_dof){
+        /*!
+        Add the contributions of the nodes contained within a quadrature domain to the shape-function matrix
+        triplet list.
+
+        Note: This principally exists to isolate the version of Eigen used here.
+        
+        :param std::map< unsigned int, unsigned int >* macro_node_to_col_map: A pointer to the map from the macro node id numbers to the location in the shape-function matrix. The value will be scaled by 12 since there are assumed to be 12 DOF for the macro nodes (i.e. 3D isothermal behavior)
+        :param std::map< unsigned int, unsigned int >* micro_node_to_row_map: A pointer to the map from the micro node id numbers to the location in the shape-function matrix. The value will be scaled by 3 since there are assumed to be 3 DOF for the micro nodes (i.e. 3D isothermal behavior)
+        :param std::vector< unsigned int > macro_node_ids: The id numbers of the macro-scale nodes
+        :param std::vector< FloatType > cg: The center of gravity of the macro node.
+        :param vecOfvec psis: The shape function values for each of the nodes at the cg.
+        :param integrateMap dns_weights: The weights and locations of the micro-nodes in the macro element. All positions, volumes, and das should be in true space (i.e. not in local/master coordinates)
+        :param std::map< unsigned int, unsigned int>* micro_node_elcount: The number of elements a given node is inside. Assumed 1 if not in map.
+        :param bool share_ghost_free_boundary_nodes: Boolean indicating if micro-nodes on a boundary between a free and ghost macro element should be shared
+        :param bool macro_elem_is_ghost: Boolean indicating if the macro-element is a ghost element or not
+        :param unsigned int num_macro_dof: The number of macro-scale DOF per node. Note that the code is only set up to deal with 12 but the values are in place for future expansion.
+        :param unsigned int num_micro_dof: The number of micro-scale DOF per node. Note that the code is only set up to deal with 3 but the values are in place for future expansion.
+        */
+
+        construct_triplet_list(macro_node_to_col_map, micro_node_to_row_map, macro_node_ids,
+                               cg, psis, dns_weights,
+                               micro_node_elcount, share_ghost_free_boundary_nodes,
+                               macro_elem_is_ghost, num_micro_free,
+                               tripletList);
+    }
+
+    void Projector::form_shapefunction_matrix(unsigned int nrows, unsigned int ncols){
+        /*!
+        Form the shapefunction matrix
+        :param unsigned int nrows: The number of rows in the matrix
+        :param unsigned int ncols: The number of columns in the matrix
+        */
+
+        shapefunction = SpMat(nrows, ncols);
+        shapefunction.setFromTriplets(tripletList.begin(), tripletList.end());
+        shapefunction.makeCompressed();
+    }
+
+    int Projector::form_BDhQsolver(){
+        /*!
+        Form the solver for the BDhQ projector.
+        */
+
+        std::cout << "  Performing NQDh QR decomposition\n";
+        BDhQsolver.compute(shapefunction.block( 0, num_macro_dof*num_macro_free,
+                                                num_micro_dof*num_micro_free, num_macro_dof*num_macro_ghost));
+        if (BDhQsolver.info() != Eigen::Success){
+            return 1;
+        }
+        return 0;
+    }
+
+    int Projector::form_NQDh_PR_transpose_solver(){
+        /*!
+        Form the solver for problems of the form:
+
+        BDhQ.transpose x = b
+
+        where
+
+        NQDh P = Q R
+
+        NQDh = Q R P.transpose
+
+        NQDh BDhQ = I
+
+        Q R P.transpose BDhQ = I
+
+        BDhQ = P R.inverse Q.transpose
+        BDhQ.transpose = Q R.inverse_transpose P.transpose
+
+        So for problems of the form
+        x = BDhQ.transpose b
+
+        x = Q R.inverse_transpose P.transpose b
+        P R.transpose Q.transpose x = b
+        
+        So to solve for x we first must solve the linear equation
+        P R.transpose xp = b
+
+        And then:
+        x = Q xp
+        */
+
+        std::cout << "  Performing NQDh transpose QR decomposition\n";
+
+        if (BDhQsolver.matrixR().rows() < BDhQsolver.matrixR().cols()){
+            //Return error code because there are more macro scale dof than micro scale
+            return 1;
+        }
+
+        //Extract the transpose of R
+        SpMat matrixR_transpose = BDhQsolver.matrixR().block(0, 0,
+                                                             num_macro_dof*num_macro_ghost, num_macro_dof*num_macro_ghost).transpose();
+
+        //Perform the permutation
+        SpMat PR_transpose = BDhQsolver.colsPermutation()*matrixR_transpose;
+        NQDh_PR_transpose_solver.compute(PR_transpose);
+        if (NQDh_PR_transpose_solver.info() != Eigen::Success){
+            //Return error code because the decomposition failed
+            return 2;
+        }
+        return 0;
+    }
+
+    void Projector::solve_BDhQ(std::vector< FloatType > &Qvec, std::vector< FloatType > &Dhvec){
+        /*!
+        Solve an equation of the type:
+
+        Dh = BDhQ Q
+
+        :param std::vector< FloatType > Q: The incoming Q vector.
+        :param std::vector< FloatType > Dh: The outgoing Dh vector.
+        */
+
+        Eigen::Map<EigVec> Q(Qvec.data(), Qvec.size(), 1);
+        EigVec Dh = BDhQsolver.solve(Q);
+        Dhvec.resize(Dh.size());
+        Eigen::VectorXd::Map(&Dhvec[0], Dh.size()) = Dh;
+    }
+
+    void Projector::solve_BDhQtranspose(std::vector< FloatType > &bvec, std::vector< FloatType > &xvec){
+        /*!
+        Solve an equation of the type
+
+        x = BDhQ.transpose b
+
+        :param std::vector< FloatType > bvec: The right-hand-size vector
+        :param std::vector< FloatType > xvec: The solution vector
+        */
+
+        Eigen::Map<EigVec> b(bvec.data(), bvec.size(), 1);
+        EigVec xp = NQDh_PR_transpose_solver.solve(b);
+        EigVec x = BDhQsolver.matrixQ()*xp;
+        xvec.resize(x.size());
+        Eigen::VectorXd::Map(&xvec[0], x.size()) = x;
+    }
+
+    void Projector::_run_tests(bool solve_for_projectors){
+        /*!
+        Run some informal verification tests.
+        */
+
+        EigVec Dhtmp = EigVec::Zero(num_macro_dof*num_macro_ghost, 1);
+        for (unsigned int i=0; i<num_macro_ghost; i++){
+            Dhtmp(num_macro_dof*i + 0) =  0.32;
+            Dhtmp(num_macro_dof*i + 1) =  1.00;
+            Dhtmp(num_macro_dof*i + 2) = -3.42;
+        }
+
+        EigVec Dtmp = EigVec::Zero(num_macro_dof*num_macro_free, 1);
+        for (unsigned int i=0; i<num_macro_free; i++){
+            Dtmp(num_macro_dof*i + 0) =  0.32;
+            Dtmp(num_macro_dof*i + 1) =  1.00;
+            Dtmp(num_macro_dof*i + 2) = -3.42;
+        }
+
+        //Test if the macro-scale values are interpolated correctly
+        SpMat NQDh = shapefunction.block( 0, num_macro_dof*num_macro_free,
+                                          num_micro_dof*num_micro_free, num_macro_dof*num_macro_ghost);
+        EigVec Qtmp = NQDh*Dhtmp;
+
+        bool xtest, ytest, ztest;
+
+        for (unsigned int i=0; i<num_micro_free; i++){
+
+            xtest = fuzzy_equals(Qtmp(num_micro_dof*i + 0),  0.32);
+            ytest = fuzzy_equals(Qtmp(num_micro_dof*i + 1),  1.00);
+            ztest = fuzzy_equals(Qtmp(num_micro_dof*i + 2), -3.42);
+            if (!(xtest && ytest && ztest)){
+                std::cout << "i: " << i << "\n";
+                std::cout << "num_micro_free: " << num_micro_free << "\n";
+                std::cout << "Qtmp(" << num_micro_dof*i + 0 << "): " << Qtmp(num_micro_dof*i + 0) << "\n";
+                std::cout << "Qtmp(" << num_micro_dof*i + 1 << "): " << Qtmp(num_micro_dof*i + 1) << "\n";
+                std::cout << "Qtmp(" << num_micro_dof*i + 2 << "): " << Qtmp(num_micro_dof*i + 2) << "\n";
+                std::cout << "Test 1 failed: Micro-dof not expected value\n";
+                assert(1==0);
+            }
+        }
+
+        //Test if the solver solves correctly
+        EigVec Dhans = BDhQsolver.solve(Qtmp);
+
+        if (!fuzzy_equals((Dhans - Dhtmp).norm(), 0)){
+            std::cout << "Test 2 failed\n";
+            assert(2==0);
+        }
+
+        //Make sure that there are no non-zero terms in NQD
+        SpMat NQD   = shapefunction.block( 0, 0, num_micro_dof*num_micro_free, num_macro_dof*num_macro_free);
+        if (!fuzzy_equals(NQD.norm(), 0)){
+            std::cout << "Test 3 failed\n";
+            assert(3==0);
+        }
+
+        //Make sure that the interpolation of NQhD and NQhDh is carried out correctly
+        SpMat NQhD  = shapefunction.block( num_micro_dof*num_micro_free, 0, num_micro_dof*num_micro_ghost,  num_macro_dof*num_macro_free);
+        SpMat NQhDh = shapefunction.block( num_micro_dof*num_micro_free, num_macro_dof*num_macro_free, num_micro_dof*num_micro_ghost, num_macro_dof*num_macro_ghost);
+        EigVec Qhtmp = NQhD*Dtmp + NQhDh*Dhtmp;
+
+        std::vector< double > sum_shape_fxn(12, 0);
+        unsigned int dofnum = 450;
+        EigVec NQhDrow0 = NQhD.row(num_micro_dof*dofnum);
+        std::cout << "NQhD.row(" << num_micro_dof*dofnum << "):\n";
+        for (unsigned int i=0; i<num_macro_free; i++){
+            for (unsigned int j=0; j<12; j++){
+                std::cout << NQhDrow0[12*i + j] << " ";
+                sum_shape_fxn[j] += NQhDrow0[12*i + j];
+            }
+            std::cout << "\n";
+        }
+        std::cout << "sum of values from NQhD: ";
+        for (unsigned int j=0; j<12; j++){
+            std::cout << sum_shape_fxn[j] << " ";
+        }
+        std::cout << "\n";
+
+        std::cout << "NQhDh.row(" << num_micro_dof*dofnum << "):\n";
+        EigVec NQhDhrow0 = NQhDh.row(num_micro_dof*dofnum);
+        std::vector< double > sum_shape_fxn2(12, 0);
+        for (unsigned int i=0; i<num_macro_ghost; i++){
+            for (unsigned int j=0; j<12; j++){
+                std::cout << NQhDhrow0[12*i + j] << " ";
+                sum_shape_fxn2[j] += NQhDhrow0[12*i + j];
+            }
+           std::cout << "\n";
+        }
+        std::cout << "\n";
+
+        std::cout << "sum of values from NQhDh: ";
+        for (unsigned int j=0; j<12; j++){
+            std::cout << sum_shape_fxn2[j] << " ";
+        }
+        std::cout << "\n";
+
+        std::cout << "sum of values from NQhD and NQhDh: ";
+        for (unsigned int j=0; j<12; j++){
+            std::cout << sum_shape_fxn[j] + sum_shape_fxn2[j] << " ";
+        }
+        std::cout << "\n";
+
+        std::cout << "D:\n";
+        for (unsigned int i=0; i<num_macro_free; i++){
+            for (unsigned int j=0; j<12; j++){
+                std::cout << Dtmp[12*i + j] << " ";
+            }
+            std::cout << "\n";
+        }
+
+        for (unsigned int i=0; i<num_micro_ghost; i++){
+            xtest = fuzzy_equals(Qhtmp(num_micro_dof*i + 0),  0.32);
+            ytest = fuzzy_equals(Qhtmp(num_micro_dof*i + 1),  1.00);
+            ztest = fuzzy_equals(Qhtmp(num_micro_dof*i + 2), -3.42);
+            if (!(xtest && ytest && ztest)){
+                std::cout << "i: " << i << "\n";
+                std::cout << "num_micro_ghost: " << num_micro_ghost << "\n";
+                std::cout << "Qtmp(" << num_micro_dof*i + 0 << "): " << Qhtmp(num_micro_dof*i + 0) << "\n";
+                std::cout << "Qtmp(" << num_micro_dof*i + 1 << "): " << Qhtmp(num_micro_dof*i + 1) << "\n";
+                std::cout << "Qtmp(" << num_micro_dof*i + 2 << "): " << Qhtmp(num_micro_dof*i + 2) << "\n";
+                std::cout << "Test 4 failed: Micro-dof not expected value\n";
+                assert(4==0);
+            }
+        }
+        
+        if (solve_for_projectors){
+            SpMat NQDh_transpose = NQDh.transpose();
+
+            std::cout << "Null rows/columns of NQDh: size: " << NQDh.rows() << ", " << NQDh.cols() << "\n";
+            for (int k=0; k<NQDh.rows(); ++k){
+                if (NQDh.row(k).norm() < 1e-8){
+                    std::cout << "row: " << k << "\n";
+                }
+            }
+
+            for (int k=0; k<NQDh.cols(); ++k){
+                if (NQDh.col(k).norm() < 1e-8){
+                    std::cout << "col: " << k << "\n";
+                }
+            }
+
+            std::cout << "Null rows/columns of NQDh_transpose: size: " << NQDh_transpose.rows() << ", " << NQDh_transpose.cols() << "\n";
+            for (int k=0; k<NQDh_transpose.rows(); ++k){
+                if (NQDh_transpose.row(k).norm() < 1e-8){
+                    std::cout << "row: " << k << "\n";
+                }
+            }
+
+            for (int k=0; k<NQDh_transpose.cols(); ++k){
+                if (NQDh_transpose.col(k).norm() < 1e-8){
+                    std::cout << "col: " << k << "\n";
+                }
+            }
+
+            Dhans = NQDh_transpose*Qtmp;
+            std::cout << "Dhans:\n";
+            for (unsigned int i=0; i<num_macro_ghost; i++){
+                for (unsigned int j=0; j<12; j++){
+                    std::cout << Dhans[12*i + j] << " ";
+                }
+                std::cout << "\n";
+            }
+
+            EigVec QprojDh_result = NQDh_PR_transpose_solver.solve(Dhans);
+//            std::cout << "Q->Dh:\n" << QprojDh_result << "\n";
+            std::cout << "Qtmp_result shape: " << QprojDh_result.rows() << ", " << QprojDh_result.cols() << "\n";
+            std::cout << "Q shape: " << BDhQsolver.matrixQ().rows() << ", " << BDhQsolver.matrixQ().cols() << "\n";
+            Eigen::MatrixXd testing_things = BDhQsolver.matrixQ()*NQDh_PR_transpose_solver.solve(Dhans);
+            //std::cout << "Qtmp_result shape: " << Qtmp_result.rows() << ", " << Qtmp_result.cols() << "\n";
+            std::cout << "It worked, but why can't I save it?";
+            assert(-1==1);
+
+//            if ((Qtmp - Qtmp_result).norm() > 1e-8){
+//                std::cout << "Qtmp_result:\n" << Qtmp_result << "\n";
+//                mooseWarning("Test 5 failed: BDhQ_transpose solver returning unexpected values");
+//            }
+        }
+
+        std::cout << "All tests passed\n";
+        assert(-1==1);
+
     }
 }

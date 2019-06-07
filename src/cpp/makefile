@@ -11,7 +11,8 @@ include ../../config.mk
 
 # List of executables
 OBJECTS=overlap_coupling.o quickhull.o
-LOCAL_CFLAGS=-I. -O3 -flto -fpic -Wall
+#LOCAL_CFLAGS=-I. -O3 -flto -fpic -Wall
+LOCAL_CFLAGS=-I. -O3 -fpic -Wall
 
 #Set the mode due to the method variable
 DBG = 
