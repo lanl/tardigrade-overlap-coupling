@@ -295,7 +295,7 @@ namespace overlap{
         significant reduction in the expense of the projection.
         */
         public:
-            Projector(){};
+            Projector();
             Projector(unsigned int _num_macro_dof, unsigned int _num_micro_dof,
                       unsigned int _num_macro_ghost, unsigned int _num_macro_free,
                       unsigned int _num_micro_ghost, unsigned int _num_micro_free);
@@ -309,16 +309,18 @@ namespace overlap{
                                          const std::map< unsigned int, unsigned int>* micro_node_elcount,
                                          bool share_ghost_free_boundary_nodes,
                                          bool macro_elem_is_ghost,
-                                         unsigned int num_micro_free,
-                                         unsigned int n_macro_dof,
-                                         unsigned int n_micro_dof);
+                                         unsigned int num_micro_free);//,
+//                                         unsigned int n_macro_dof,
+//                                         unsigned int n_micro_dof);
 
             void form_shapefunction_matrix(unsigned int nrows, unsigned int ncols);
             int form_BDhQsolver();
             int form_NQDh_PR_transpose_solver();
 
-            void solve_BDhQ(std::vector< FloatType > &Qvec, std::vector< FloatType > &Dhvec);
-            void solve_BDhQtranspose(std::vector< FloatType > &bvec, std::vector< FloatType > &xvec);
+            void solve_BDhQ(const std::vector< FloatType > &Qvec, std::vector< FloatType > &Dhvec) const;
+            void solve_BDhQtranspose(const std::vector< FloatType > &bvec, std::vector< FloatType > &xvec) const;
+            void project_dof(const std::vector< double > &D, const std::vector<double > &Q,
+                             std::vector< double > &Dh, std::vector< double > &Qh) const;
             void _run_tests(bool solve_for_projectors);
 
         protected:

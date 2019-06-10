@@ -1342,7 +1342,7 @@ namespace overlap{
         double weight;
 
         //Reserve the memory required for the tripletList
-        tripletList.reserve(tripletList.size() + 8*12*dns_weights.size());
+        tripletList.reserve(tripletList.size() + 8*num_macro_dof*dns_weights.size());
 
 //        std::cout << "cg: ";
 //        for (unsigned int i=0; i<3; i++){
@@ -1506,6 +1506,13 @@ namespace overlap{
         X = solver.solve(B);
     }
 
+    Projector::Projector(){
+        /*!
+        Constructor
+        */
+        tripletList.resize(0);
+    }
+
     Projector::Projector(unsigned int _num_macro_dof, unsigned int _num_micro_dof,
                          unsigned int _num_macro_ghost, unsigned int _num_macro_free, 
                          unsigned int _num_micro_ghost, unsigned int _num_micro_free){
@@ -1519,6 +1526,7 @@ namespace overlap{
         num_macro_free = _num_macro_free;
         num_micro_ghost = _num_micro_ghost;
         num_micro_free = _num_micro_free;
+        tripletList.resize(0);
     }
 
     void Projector::add_shapefunction_terms(const std::map< unsigned int, unsigned int >* macro_node_to_col_map,
@@ -1530,9 +1538,9 @@ namespace overlap{
                                             const std::map< unsigned int, unsigned int>* micro_node_elcount,
                                             bool share_ghost_free_boundary_nodes,
                                             bool macro_elem_is_ghost,
-                                            unsigned int num_micro_free,
-                                            unsigned int num_macro_dof,
-                                            unsigned int num_micro_dof){
+                                            unsigned int num_micro_free){//,
+//                                            unsigned int num_macro_dof,
+//                                            unsigned int num_micro_dof){
         /*!
         Add the contributions of the nodes contained within a quadrature domain to the shape-function matrix
         triplet list.
@@ -1556,7 +1564,7 @@ namespace overlap{
                                cg, psis, dns_weights,
                                micro_node_elcount, share_ghost_free_boundary_nodes,
                                macro_elem_is_ghost, num_micro_free,
-                               tripletList);
+                               tripletList, num_macro_dof, num_micro_dof);
     }
 
     void Projector::form_shapefunction_matrix(unsigned int nrows, unsigned int ncols){
@@ -1638,33 +1646,47 @@ namespace overlap{
         return 0;
     }
 
-    void Projector::solve_BDhQ(std::vector< FloatType > &Qvec, std::vector< FloatType > &Dhvec){
+    void Projector::solve_BDhQ(const std::vector< FloatType > &Qvec, std::vector< FloatType > &Dhvec) const{
         /*!
         Solve an equation of the type:
 
         Dh = BDhQ Q
 
-        :param std::vector< FloatType > Q: The incoming Q vector.
+        :param const std::vector< FloatType > Q: The incoming Q vector.
         :param std::vector< FloatType > Dh: The outgoing Dh vector.
         */
 
-        Eigen::Map<EigVec> Q(Qvec.data(), Qvec.size(), 1);
-        EigVec Dh = BDhQsolver.solve(Q);
-        Dhvec.resize(Dh.size());
-        Eigen::VectorXd::Map(&Dhvec[0], Dh.size()) = Dh;
+        Eigen::Map<const EigVec> Q(Qvec.data(), Qvec.size(), 1);
+
+        if (Dhvec.size() != num_macro_dof*num_macro_ghost){
+            Dhvec = std::vector< double >(num_macro_dof*num_macro_ghost, 0);
+        }
+
+        Eigen::Map< EigVec > Dh(Dhvec.data(), Dhvec.size(), 1);
+        Dh = BDhQsolver.solve(Q);
+//        Dhvec.resize(Dh.size());
+//        Eigen::VectorXd::Map(&Dhvec[0], Dh.size()) = Dh;
     }
 
-    void Projector::solve_BDhQtranspose(std::vector< FloatType > &bvec, std::vector< FloatType > &xvec){
+    void Projector::solve_BDhQtranspose(const std::vector< FloatType > &bvec, std::vector< FloatType > &xvec) const{
         /*!
         Solve an equation of the type
 
         x = BDhQ.transpose b
 
-        :param std::vector< FloatType > bvec: The right-hand-size vector
+        :param const std::vector< FloatType > bvec: The right-hand-size vector
         :param std::vector< FloatType > xvec: The solution vector
         */
 
-        Eigen::Map<EigVec> b(bvec.data(), bvec.size(), 1);
+        Eigen::Map<const EigVec> b(bvec.data(), bvec.size(), 1);
+//        if (xvec.size() != num_micro_dof*num_micro_free){
+//            xvec = std::vector< double >(num_micro_dof*num_micro_free, 0);
+//        }
+//        Eigen::Map< EigVec > x(xvec.data(), xvec.size(), 1);
+//
+//        EigVec xp = NQDh_PR_transpose_solver.solve(b);
+//        x = BDhQsolver.matrixQ()*xp;
+
         EigVec xp = NQDh_PR_transpose_solver.solve(b);
         EigVec x = BDhQsolver.matrixQ()*xp;
         xvec.resize(x.size());
@@ -1853,5 +1875,39 @@ namespace overlap{
         std::cout << "All tests passed\n";
         assert(-1==1);
 
+    }
+
+    void Projector::project_dof(const std::vector< double > &Dvec, const std::vector< double > &Qvec,
+                                std::vector< double > &Dhvec, std::vector< double > &Qhvec) const{
+        /*!
+        Perform the projection operation projecting from free to ghost degrees of freedom
+
+        :param std::vector< double > Dvec: The macro-scale (micromorphic) free degrees of freedom
+        :param std::vector< double > Qvec: The micro-scale (DNS) free degrees of freedom
+        :param std::vector< double > Dhvec: The macro-scale (micromorphic) ghost degrees of freedom
+        :param std::vector< double > Qhvec: The micro-scale (DNS) free degrees of freedom
+        */
+
+        if (Dhvec.size() != num_macro_dof*num_macro_ghost){
+            Dhvec = std::vector< double >(num_macro_dof*num_macro_ghost, 0);
+        }
+        if (Qhvec.size() != num_micro_dof*num_micro_ghost){
+	    Qhvec = std::vector< double >(num_micro_dof*num_micro_ghost, 0);
+        }
+
+        //Form the Eigen maps
+        Eigen::Map<const EigVec> D(Dvec.data(), Dvec.size(), 1);
+        Eigen::Map<const EigVec> Q(Qvec.data(), Qvec.size(), 1);
+        Eigen::Map<EigVec> Dh(Dhvec.data(), num_macro_dof*num_macro_ghost, 1);
+        Eigen::Map<EigVec> Qh(Qhvec.data(), num_micro_dof*num_micro_ghost, 1);
+
+        //Solve for Dh
+        Dh = BDhQsolver.solve(Q);
+
+        //Solve for Qh (NQhD * D + NQhDh * Dh
+        Qh = shapefunction.block( num_micro_dof*num_micro_free, 0, num_micro_dof*num_micro_ghost, num_macro_dof*num_macro_free) * D
+       +shapefunction.block( num_micro_dof*num_micro_free, num_macro_dof*num_macro_free, num_micro_dof*num_micro_ghost, num_macro_dof*num_macro_ghost) * Dh;
+        return;
+        
     }
 }
