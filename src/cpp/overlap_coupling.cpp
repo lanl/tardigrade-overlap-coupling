@@ -1529,6 +1529,47 @@ namespace overlap{
         tripletList.resize(0);
     }
 
+    Projector::Projector(const Projector &p){
+        /*!
+        The copy constructor of Projector.
+        */
+
+        num_macro_dof = p.num_macro_dof;
+        num_micro_dof = p.num_micro_dof;
+        num_macro_ghost = p.num_macro_ghost;
+        num_macro_free = p.num_macro_free;
+        num_micro_ghost = p.num_micro_ghost;
+        num_micro_free = p.num_micro_free;
+        tripletList = p.tripletList;
+    }
+
+    void Projector::initialize(unsigned int _num_macro_dof, unsigned int _num_micro_dof,
+                               unsigned int _num_macro_ghost, unsigned int _num_macro_free,
+                               unsigned int _num_micro_ghost, unsigned int _num_micro_free){
+        /*!
+        Initialize the projector object
+
+        :param unsigned int _num_macro_dof: The number of macro-scale degrees of freedom
+        :param unsigned int _num_micro_dof: The number of micro-scale degrees of freedom
+        :param unsigned int _num_macro_ghost: The number of macro-scale ghost nodes in the overlap domain
+        :param unsigned int _num_macro_free: The number of macro-scale free nodes in the overlap domain
+        :param unsigned int _num_micro_ghost: The number of micro-scale ghost nodes in the overlap domain
+        :param unsigned int _num_micro_free: The number of micro-scale free nodes in the overlap domain
+
+        :return: Initialize the projector object
+ 
+        :rtype: void
+        */
+
+        num_macro_dof = _num_macro_dof;
+        num_micro_dof = _num_micro_dof;
+        num_macro_ghost = _num_macro_ghost;
+        num_macro_free = _num_macro_free;
+        num_micro_ghost = _num_micro_ghost;
+        num_micro_free = _num_micro_free;
+        tripletList.resize(0);
+    }
+
     void Projector::add_shapefunction_terms(const std::map< unsigned int, unsigned int >* macro_node_to_col_map,
                                             const std::map< unsigned int, unsigned int >* micro_node_to_row_map,
                                             const std::vector< unsigned int > &macro_node_ids,
@@ -1627,14 +1668,18 @@ namespace overlap{
 
         std::cout << "  Performing NQDh transpose QR decomposition\n";
 
-        if (BDhQsolver.matrixR().rows() < BDhQsolver.matrixR().cols()){
+        unsigned int rows = BDhQsolver.matrixR().rows();
+        unsigned int cols = BDhQsolver.matrixR().cols();
+
+        if (rows < cols){
             //Return error code because there are more macro scale dof than micro scale
             return 1;
         }
 
         //Extract the transpose of R
-        SpMat matrixR_transpose = BDhQsolver.matrixR().block(0, 0,
-                                                             num_macro_dof*num_macro_ghost, num_macro_dof*num_macro_ghost).transpose();
+//        SpMat matrixR_transpose = BDhQsolver.matrixR().block(0, 0,
+//                                                             num_macro_dof*num_macro_ghost, num_macro_dof*num_macro_ghost).transpose();
+        SpMat matrixR_transpose = BDhQsolver.matrixR().block(0, 0, cols, cols);
 
         //Perform the permutation
         SpMat PR_transpose = BDhQsolver.colsPermutation()*matrixR_transpose;
@@ -1674,11 +1719,13 @@ namespace overlap{
 
         x = BDhQ.transpose b
 
-        :param const std::vector< FloatType > bvec: The right-hand-size vector
+        :param const std::vector< FloatType > bvec: The right-hand-side vector
         :param std::vector< FloatType > xvec: The solution vector
         */
 
         Eigen::Map<const EigVec> b(bvec.data(), bvec.size(), 1);
+        xvec.resize(num_micro_dof*num_micro_free);
+        Eigen::Map<EigVec> x(xvec.data(), xvec.size(), 1);
 //        if (xvec.size() != num_micro_dof*num_micro_free){
 //            xvec = std::vector< double >(num_micro_dof*num_micro_free, 0);
 //        }
@@ -1688,12 +1735,61 @@ namespace overlap{
 //        x = BDhQsolver.matrixQ()*xp;
 
         EigVec xp = NQDh_PR_transpose_solver.solve(b);
-        EigVec x = BDhQsolver.matrixQ()*xp;
-        xvec.resize(x.size());
-        Eigen::VectorXd::Map(&xvec[0], x.size()) = x;
+        Eigen::MatrixXd matrixQ = BDhQsolver.matrixQ();
+        x = matrixQ.block(0, 0, num_micro_dof*num_micro_free, num_macro_dof*num_macro_ghost)*xp;
     }
 
-    void Projector::_run_tests(bool solve_for_projectors){
+    void Projector::solve_BQhDtranspose(const std::vector< FloatType > &bvec, std::vector< FloatType > &xvec) const{
+        /*!
+        Solve an equation of the type
+
+        x = BQhD b
+
+        where
+        BQhD = NQhd + NQhDh BDhD
+
+        and we assume BDhD = 0
+
+        :param const std::vector< FloatType > bvec: The right-hand-side vector
+        :param std::vector< FloatType > xvec: The solution vector.
+
+        */
+        Eigen::Map<const Eigen::MatrixXd> b(bvec.data(), 1, bvec.size());
+        xvec.resize(num_macro_dof*num_macro_free);
+        Eigen::Map<Eigen::MatrixXd> x(xvec.data(), 1, xvec.size());
+
+//        assert(-1==2);
+
+        x = b*shapefunction.block(num_micro_dof*num_micro_free, 0,
+                                  num_micro_dof*num_micro_ghost, num_macro_dof*num_macro_free);
+    }
+
+    void Projector::solve_BQhQtranspose(const std::vector< FloatType > &bvec, std::vector< FloatType > &xvec) const{
+        /*!
+        Solve an equation of the type
+
+        x = BQhQtranspose b
+
+        where
+        BQhQ = NQhD BDhQ -> BDhQtranspose = BDhQtranspose NQhDtranspose
+
+        -> x = BDhQtranspose NQhDtranspose b
+        */
+
+        Eigen::Map< const Eigen::MatrixXd > b(bvec.data(), 1, bvec.size());
+
+        std::vector< FloatType > bstarvec(num_macro_dof*num_macro_ghost, 0);
+        Eigen::Map< Eigen::MatrixXd > bstar(bstarvec.data(), 1, bstarvec.size());
+
+        //Transform using the right-hand-size using the shapefunction matrix
+        bstar = b*shapefunction.block(num_micro_dof*num_micro_free, num_macro_dof*num_macro_free,
+                                      num_micro_dof*num_micro_ghost, num_macro_dof*num_macro_ghost);
+
+        //Solve for the transformed matrix
+        solve_BDhQtranspose(bstarvec, xvec);
+    }
+
+    int Projector::_run_tests(bool solve_for_projectors){
         /*!
         Run some informal verification tests.
         */
@@ -1731,6 +1827,7 @@ namespace overlap{
                 std::cout << "Qtmp(" << num_micro_dof*i + 1 << "): " << Qtmp(num_micro_dof*i + 1) << "\n";
                 std::cout << "Qtmp(" << num_micro_dof*i + 2 << "): " << Qtmp(num_micro_dof*i + 2) << "\n";
                 std::cout << "Test 1 failed: Micro-dof not expected value\n";
+                return 1;
                 assert(1==0);
             }
         }
@@ -1740,13 +1837,29 @@ namespace overlap{
 
         if (!fuzzy_equals((Dhans - Dhtmp).norm(), 0)){
             std::cout << "Test 2 failed\n";
+            return 2;
             assert(2==0);
+        }
+
+        //Test of the wrapper for the solver solves correctly
+        std::vector< double > Dhvec;
+        std::vector< double > Qtmpvec(Qtmp.rows(), 0);
+        for (unsigned int i=0; i<Qtmp.rows(); i++){
+            Qtmpvec[i] = Qtmp[i];
+        }
+        solve_BDhQ(Qtmpvec, Dhvec);
+        for (unsigned int i=0; i<Dhvec.size(); i++){
+            if (!fuzzy_equals(Dhvec[i], Dhans[i])){
+                std::cout << "Test 3 failed\n";
+                return 3;
+            }
         }
 
         //Make sure that there are no non-zero terms in NQD
         SpMat NQD   = shapefunction.block( 0, 0, num_micro_dof*num_micro_free, num_macro_dof*num_macro_free);
         if (!fuzzy_equals(NQD.norm(), 0)){
-            std::cout << "Test 3 failed\n";
+            std::cout << "Test 4 failed\n";
+            return 4;
             assert(3==0);
         }
 
@@ -1814,11 +1927,11 @@ namespace overlap{
                 std::cout << "Qtmp(" << num_micro_dof*i + 0 << "): " << Qhtmp(num_micro_dof*i + 0) << "\n";
                 std::cout << "Qtmp(" << num_micro_dof*i + 1 << "): " << Qhtmp(num_micro_dof*i + 1) << "\n";
                 std::cout << "Qtmp(" << num_micro_dof*i + 2 << "): " << Qhtmp(num_micro_dof*i + 2) << "\n";
-                std::cout << "Test 4 failed: Micro-dof not expected value\n";
-                assert(4==0);
+                std::cout << "Test 5 failed: Micro-dof not expected value\n";
+                return 5;
             }
         }
-        
+
         if (solve_for_projectors){
             SpMat NQDh_transpose = NQDh.transpose();
 
@@ -1857,14 +1970,56 @@ namespace overlap{
                 std::cout << "\n";
             }
 
-            EigVec QprojDh_result = NQDh_PR_transpose_solver.solve(Dhans);
+            //Make sure that the BDhQtranspose solver is working as expected
+            std::vector< double > Qvec;
+            solve_BDhQtranspose(Dhvec, Qvec);
+            std::cout << "Qvec size: " << Qvec.size() << "\n";
+//            for (unsigned int i=0; i < Qvec.size(); i++){
+//                std::cout << Qvec[i] << "\n";
+//            }
+
+            if (Qvec.size() != num_micro_dof*num_micro_free){
+                std::cout << "Test 6 failed: BDhQtranspose solver returned a vector of improper size.";
+                return 6;
+            }
+
+            std::vector< double > Qhvec(num_micro_dof*num_micro_ghost, 0);
+            for (unsigned int i=0; i<num_micro_ghost; i++){
+                Qhvec[i+0] =  1.2;
+                Qhvec[i+1] =  2.3;
+                Qhvec[i+2] = -3.4;
+            }
+
+
+            std::vector< double > Dvec;
+            solve_BQhDtranspose(Qhvec, Dvec);
+            if (Dvec.size() != num_macro_dof*num_macro_free){
+                std::cout << "Test 7 failed: BQhDtranspose solver returned a vector of improper size.";
+            }
+
+            solve_BQhQtranspose(Qhvec, Qvec);
+            if (Qvec.size() != num_micro_dof*num_micro_free){
+                std::cout << "Test 8 failed: BQhQtranspose solver returned a vector of improper size.";
+            }
+
+            assert(-23==-24);
+
+//            EigVec QprojDh_result = NQDh_PR_transpose_solver.solve(Dhans);
 //            std::cout << "Q->Dh:\n" << QprojDh_result << "\n";
-            std::cout << "Qtmp_result shape: " << QprojDh_result.rows() << ", " << QprojDh_result.cols() << "\n";
-            std::cout << "Q shape: " << BDhQsolver.matrixQ().rows() << ", " << BDhQsolver.matrixQ().cols() << "\n";
-            Eigen::MatrixXd testing_things = BDhQsolver.matrixQ()*NQDh_PR_transpose_solver.solve(Dhans);
+//            std::cout << "Qtmp_result shape: " << QprojDh_result.rows() << ", " << QprojDh_result.cols() << "\n";
+//            std::cout << "NQDH shape: " << NQDh.rows() << ", " << NQDh.cols() << "\n";
+//            std::cout << "R shape: " << BDhQsolver.matrixR().rows() << ", " << BDhQsolver.matrixR().cols() << "\n";
+//            std::cout << "Q shape: " << BDhQsolver.matrixQ().rows() << ", " << BDhQsolver.matrixQ().cols() << "\n";
+//            Eigen::MatrixXd matrixQ = BDhQsolver.matrixQ();
+//            Eigen::MatrixXd testing_things = matrixQ.block(0, 0,
+//                                                 matrixQ.rows(),
+//                                                 BDhQsolver.matrixR().cols())*QprojDh_result;
+//            std::cout << "testing_things:\n" << testing_things << "\n"; 
+
+//            Eigen::MatrixXd testing_things = BDhQsolver.matrixQ()*NQDh_PR_transpose_solver.solve(Dhans);
             //std::cout << "Qtmp_result shape: " << Qtmp_result.rows() << ", " << Qtmp_result.cols() << "\n";
-            std::cout << "It worked, but why can't I save it?";
-            assert(-1==1);
+//            std::cout << "It worked, but why can't I save it?\n";
+//            assert(-1==1);
 
 //            if ((Qtmp - Qtmp_result).norm() > 1e-8){
 //                std::cout << "Qtmp_result:\n" << Qtmp_result << "\n";
@@ -1872,6 +2027,7 @@ namespace overlap{
 //            }
         }
 
+        return 0;
         std::cout << "All tests passed\n";
         assert(-1==1);
 

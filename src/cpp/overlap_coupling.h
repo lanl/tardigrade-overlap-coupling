@@ -39,7 +39,10 @@
 #pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #endif
 
+#ifdef OVERLAP_LIBCOMPILE
+#include<Eigen/Dense>
 #include<Eigen/Sparse>
+#endif
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
@@ -282,7 +285,7 @@ namespace overlap{
             vecOfvec das;
             vecOfvec face_centroids;
             FloatType weight = 1.;
-   };
+    };
 
     class Projector{
         /*!
@@ -299,6 +302,7 @@ namespace overlap{
             Projector(unsigned int _num_macro_dof, unsigned int _num_micro_dof,
                       unsigned int _num_macro_ghost, unsigned int _num_macro_free,
                       unsigned int _num_micro_ghost, unsigned int _num_micro_free);
+            Projector(const Projector &p);
 
             void add_shapefunction_terms(const std::map< unsigned int, unsigned int >* macro_node_to_col_map,
                                          const std::map< unsigned int, unsigned int >* micro_node_to_row_map,
@@ -313,23 +317,30 @@ namespace overlap{
 //                                         unsigned int n_macro_dof,
 //                                         unsigned int n_micro_dof);
 
+            void initialize(unsigned int _num_macro_dof, unsigned int _num_micro_dof,
+                            unsigned int _num_macro_ghost, unsigned int _num_macro_free,
+                            unsigned int _num_micro_ghost, unsigned int _num_micro_free);
             void form_shapefunction_matrix(unsigned int nrows, unsigned int ncols);
             int form_BDhQsolver();
             int form_NQDh_PR_transpose_solver();
 
             void solve_BDhQ(const std::vector< FloatType > &Qvec, std::vector< FloatType > &Dhvec) const;
             void solve_BDhQtranspose(const std::vector< FloatType > &bvec, std::vector< FloatType > &xvec) const;
+            void solve_BQhDtranspose(const std::vector< FloatType > &bvec, std::vector< FloatType > &xvec) const;
+            void solve_BQhQtranspose(const std::vector< FloatType > &bvec, std::vector< FloatType > &xvec) const;
             void project_dof(const std::vector< double > &D, const std::vector<double > &Q,
                              std::vector< double > &Dh, std::vector< double > &Qh) const;
-            void _run_tests(bool solve_for_projectors);
+            int _run_tests(bool solve_for_projectors);
 
         protected:
             unsigned int num_macro_dof, num_macro_ghost, num_macro_free;
             unsigned int num_micro_dof, num_micro_ghost, num_micro_free;
 
             //!Variables and functions not to be exposed to non-library code
-            #ifdef OVERLAP_LIBCOMPILE
+//            #ifdef OVERLAP_LIBCOMPILE
                 //!Variables and attributes
+//            Eigen::SparseMatrix< FloatType > shapefunction; //!The shape-function matrix. Formed as a sparse matrix.
+            #ifdef OVERLAP_LIBCOMPILE
                 SpMat shapefunction; //!The shape-function matrix. Formed as a sparse matrix.
                 QRsolver BDhQsolver; //!The solver for the BDhQ projection operation
                 QRsolver NQDh_PR_transpose_solver; //!The solver for PR.T x = b of the QR decomposition of NQDh
