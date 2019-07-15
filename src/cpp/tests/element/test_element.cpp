@@ -348,7 +348,26 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     :param std::ofstream &results: The output file to write the results to
     */
 
-    double eps;
+    double eps = 1e-6;
+    elib::vec scalar_answer(3, 0), scalar_result(3, 0);
+    double sg0, sgpx, sgpy, sgpz;
+
+    //Form the scalar field at the nodes
+    elib::vec scalar_nodal_values(element.nodes.size());
+    for (unsigned int n=0; n<element.nodes.size(); n++){
+        scalar_nodal_values[n] = scalar_field(element.nodes[n]);
+    }
+
+    //Interpolate the field
+    element.interpolate(scalar_nodal_values, {    -0.2,     0.4,     0.64}, sg0);
+    element.interpolate(scalar_nodal_values, {-0.2+eps,     0.4,     0.64}, sgpx);
+    element.interpolate(scalar_nodal_values, {    -0.2, 0.4+eps,     0.64}, sgpy);
+    element.interpolate(scalar_nodal_values, {    -0.2,     0.4, 0.64+eps}, sgpz);
+
+    //Compute the numeric gradient
+    scalar_answer[0] = (sgpx - sg0)/eps;
+    scalar_answer[1] = (sgpy - sg0)/eps;
+    scalar_answer[2] = (sgpz - sg0)/eps;
     
 }
 
