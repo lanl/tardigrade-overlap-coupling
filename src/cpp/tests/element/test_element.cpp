@@ -321,9 +321,37 @@ int test_interpolate(elib::Element &element, std::ofstream &results){
         return 1;
     }
 
+    //Interpolate a variable vector field
+    elib::vecOfvec vector_nodal_values(element.nodes.size());
+    for (unsigned int n=0; n<element.nodes.size(); n++){
+        vector_nodal_values[n] = vector_field(element.nodes[n]);
+    }
+
+    elib::vec vector_result, vector_answer;
+    element.interpolate(vector_nodal_values, xi, vector_result);
+    vector_answer = vector_field(x);
+
+    if (!fuzzy_equals(vector_result, vector_answer)){
+        results << element.name.c_str() << "_test_interpolate (test 4) & False\n";
+        return 1;
+    }
+
     results << element.name.c_str() << "_test_interpolate & True\n";
     return 0;
 }
+
+int test_get_local_gradient(elib::Element &element, std::ofstream &results){
+    /*!
+    Test the computation of the gradient with respect to the local coordinates
+
+    :param elib::Element element: The element to be tested
+    :param std::ofstream &results: The output file to write the results to
+    */
+
+    double eps;
+    
+}
+
 
 int test_element_functionality(elib::Element &element, std::ofstream &results){
     /*!
@@ -338,7 +366,6 @@ int test_element_functionality(elib::Element &element, std::ofstream &results){
 
     return 0;
 }
-
 
 int test_Hex8_functionality(std::ofstream &results){
     /*!
