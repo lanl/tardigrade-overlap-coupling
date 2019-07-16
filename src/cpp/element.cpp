@@ -240,7 +240,7 @@ namespace elib{
 
         // Set the initial iterate
         vec xi(local_node_coordinates[0].size(), 0);
-        
+
         // Compute the initial result
         vec x(global_coordinates.size(), 0);
         interpolate(nodes, xi, x);
@@ -254,7 +254,7 @@ namespace elib{
             R0 += pow(R[i], 2);
         }
         R0 = Rp = Rnorm = sqrt(R0);
-        
+
         //Set the tolerance
         double tol = tolr*R0 + tola;
 
@@ -281,6 +281,7 @@ namespace elib{
             //Line search
             nls = 0;
             while (Rnorm >= Rp){
+                std::cout << "in line search\n";
 
                 lambda *= 0.5;
 
@@ -306,6 +307,13 @@ namespace elib{
             Rp = Rnorm;
 
             niter += 1;
+        }
+        if (Rnorm > tol){
+            std::cout << "Error in Newton-Raphson solve\n";
+            assert(1==-1);
+        }
+        else{
+            local_coordinates = xi;
         }
     }
 

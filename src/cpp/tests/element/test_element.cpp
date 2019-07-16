@@ -532,6 +532,32 @@ int test_get_global_gradient(elib::Element &element, std::ofstream &results){
     return 0;
 }
 
+int test_compute_local_coordinates(elib::Element &element, std::ofstream &results){
+    /*!
+    Test for the computation of an element's local coordinates given it's global coordinates.
+
+    TODO: Generalize to non-3D elements.
+
+    :param elib::Element element: The element to be tested
+    :param std::ofstream &results: The output file to write the results to
+    */
+
+    elib::vec x = {0.25, 0.75, .14};
+    elib::vec xi, result;
+
+    element.compute_local_coordinates(x, xi);
+
+    element.interpolate(element.nodes, xi, result);
+
+    if (!fuzzy_equals(result, x)){
+        results << element.name.c_str() << "_test_compute_local_coordinates & False\n";
+        return 1;
+    }
+
+    results << element.name.c_str() << "_test_compute_local_coordinates & True\n";
+    return 0;
+}
+
 int test_element_functionality(elib::Element &element, std::ofstream &results){
     /*!
     Test the provided element's functionality
@@ -544,6 +570,7 @@ int test_element_functionality(elib::Element &element, std::ofstream &results){
     test_interpolate(element, results);
     test_get_local_gradient(element, results);
     test_get_global_gradient(element, results);
+    test_compute_local_coordinates(element, results);
 
     return 0;
 }
