@@ -21,6 +21,17 @@ namespace elib{
 
         nodes = _nodes;
         qrule = _qrule;
+        
+        bounding_box.resize(2);
+        bounding_box[0] = nodes[0];
+        bounding_box[1] = nodes[0];
+
+        for (unsigned int n=0; n<nodes.size(); n++){
+            for (unsigned int i=0; i<nodes[n].size(); i++){
+                bounding_box[0][i] = std::min(bounding_box[0][i], nodes[n][i]);
+                bounding_box[1][i] = std::max(bounding_box[1][i], nodes[n][i]);
+            }
+        }
     }
 
     void Element::interpolate(const vec &nodal_values, const vec &local_coordinates,
@@ -317,6 +328,37 @@ namespace elib{
         }
     }
 
+    bool Element::bounding_box_contains_point(const vec &x){
+        /*!
+        Determines if a point is contained within the element's bounding box
+
+        :param const vec &x: The point in global coordinates.
+        */
+
+        for (unsigned int i=0; i<bounding_box[0].size(); i++){
+            if ((bounding_box[0][i]>x[i]) || bounding_box[1][i]<x[i]){
+                return false;
+            } 
+        }
+        return true;
+    }
+
+    bool Element::contains_point(const vec &x){
+        /*!
+        Determines if a point is contained within the element.
+
+        Note: This requires a Newton-Raphson solve. If you need the local coordinates you 
+              might want to break this function up into its components. A rough check is 
+              available in bounding_box_contains_point.
+
+        :param const vec &x: The point in global coordinates.
+        */
+
+        vec xi;
+        compute_local_coordinates(x, xi);
+        return local_point_inside(xi);
+    }
+
     void Hex8::get_shape_functions(const vec &local_coordinates, vec &result){
         /*!
         Compute the shape functions for a Hex8 element.
@@ -348,6 +390,23 @@ namespace elib{
                          0.125*(1 + local_node_coordinates[n][0]*local_coordinates[0])*local_node_coordinates[n][1]*(1 + local_node_coordinates[n][2]*local_coordinates[2]),
                          0.125*(1 + local_node_coordinates[n][0]*local_coordinates[0])*(1 + local_node_coordinates[n][1]*local_coordinates[1])*local_node_coordinates[n][2]};
         }
+    }
+
+    bool Hex8::local_point_inside(const vec &local_coordinates){
+        /*!
+
+        Determine whether local coordinates are inside of the element or not
+
+        :param const vec &local_coordinates: The local coordinates (n local dim, )
+        */
+
+        for (unsigned int i=0; i<local_coordinates.size(); i++){
+            if (abs(local_coordinates[i])>1){
+                return false;
+            }
+        }
+
+        return true;
     }
 
     //Functions

@@ -27,6 +27,7 @@ namespace elib{
             vecOfvec nodes; //!The global coordinates of the nodes
             quadrature_rule qrule; //!The quadrature rule of the element
             vecOfvec local_node_coordinates; //!The local coordinates of the nodes
+            vecOfvec bounding_box; //!The bounding box of the element
 
             Element(vecOfvec nodes, quadrature_rule qrule);
 
@@ -65,6 +66,11 @@ namespace elib{
 
             virtual void get_shape_functions(const vec &local_coordinates, vec &result){} //Must be over-ridden
             virtual void get_local_grad_shape_functions(const vec &local_coordiantes, vecOfvec &result){} //Must be over-ridden
+            virtual bool local_point_inside(const vec &local_coordinates){return false;} //Must be over-ridden
+
+            bool bounding_box_contains_point(const vec &x);
+
+            bool contains_point(const vec &x);
     };
 
     class Hex8 : public Element{
@@ -88,6 +94,7 @@ namespace elib{
 
             void get_shape_functions(const vec &local_coordinates, vec &result);
             void get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
+            bool local_point_inside(const vec &local_coordinates);
     };
 
     //Functions

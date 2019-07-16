@@ -310,6 +310,53 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
     return 0;
 }
 
+int test_Hex8_local_point_inside(std::ofstream &results){
+    /*!
+    Test the determination of a point in local coordinates is inside the Hex8 element.
+    */
+
+    // Define the element's nodes
+    elib::vecOfvec nodes = {{0, 0, 0},
+                            {1, 0, 0},
+                            {1, 1, 0},
+                            {0, 1, 0},
+                            {0, 0, 1},
+                            {1, 0, 1},
+                            {1, 1, 1},
+                            {0, 1, 1}};
+
+    // Define the element's quadrature rule
+    elib::quadrature_rule qrule;
+    define_hex8_fully_integrated_quadrature(qrule);
+
+    // Construct the element
+    elib::Hex8 element(nodes, qrule);
+
+    // Set the xi value
+    elib::vec xi(3, 0);
+    if (!element.local_point_inside(xi)){
+        results << "test_Hex8_local_point_inside (test 1) & False\n";
+        return 1;
+    }
+
+    for (unsigned int i=0; i<xi.size(); i++){
+        xi[i] = 2;
+        if (element.local_point_inside(xi)){
+            results << "test_Hex8_local_point_inside (test 2) & False\n";
+            return 1;
+        }
+        xi[i] = -2;
+        if (element.local_point_inside(xi)){
+            results << "test_Hex8_local_point_inside (test 3) & False\n";
+            return 1;
+        }
+        xi[i] = 0;
+    }
+
+    results << "test_Hex8_local_point_inside & True\n";
+    return 0;
+}
+
 int test_interpolate(elib::Element &element, std::ofstream &results){
     /*!
     Test whether interpolation is performed correctly on the element.
@@ -558,6 +605,106 @@ int test_compute_local_coordinates(elib::Element &element, std::ofstream &result
     return 0;
 }
 
+int test_get_jacobian(elib::Element &element, std::ofstream &results){
+    /*!
+    Test the computation of the element's jacobian of transformation.
+
+    TODO: Generalize to non-3D elements.
+
+    :param elib::Element element: The element to be tested
+    :param std::ofstream &results: The output file to write the results to
+    */
+
+    //Compute a set of reference coordinates using a linear transformation
+    elib::vecOfvec reference_coordinates(element.nodes.size());
+    for (unsigned int n=0; n<element.nodes.size(); n++){
+        reference_coordinates[n].resize(element.nodes.size());
+        linear_transform(element.nodes[n], reference_coordinates[n]);
+    }
+
+    elib::vecOfvec result;
+    element.get_jacobian({0.2, -0.3, 0.4}, reference_coordinates, result);
+
+    elib::vecOfvec A, answer;
+    elib::vec b;
+    get_linear_transformation_definition(A, b);
+    elib::invert(A, answer);
+
+    if (!fuzzy_equals(answer, result)){
+        results << element.name.c_str() << "_test_get_jacobian & False\n";
+        return 1;
+    }
+
+    results << element.name.c_str() << "_test_get_jacobian & True\n";
+    return 0;
+}
+
+int test_bounding_box_contains_point(elib::Element &element, std::ofstream &results){
+    /*!
+    Test if the bounding box point detection works correctly.
+
+    :param elib::Element element: The element to be tested
+    :param std::ofstream &results: The output file to write the results to
+    */
+
+    double delta = 0.1;
+    elib::vec x;
+
+    x = element.bounding_box[0];
+    if (!element.bounding_box_contains_point(x)){
+        results << element.name.c_str() << "_test_bounding_box_contains_point (test 1) & False\n";
+        return 1;
+    }
+
+    //Check if points smaller than the bounds will be detected as being outside of the element
+    for (unsigned int i=0; i<element.bounding_box[0].size(); i++){
+        x = element.bounding_box[0];
+        x[i] -= delta;
+        if (element.bounding_box_contains_point(x)){
+            results << element.name.c_str() << "_test_bounding_box_contains_point (test 2) & False\n";
+            return 1;
+        }
+    } 
+
+    x = element.bounding_box[1];
+    if (!element.bounding_box_contains_point(x)){
+        results << element.name.c_str() << "_test_bounding_box_contains_point (test 3) & False\n";
+        return 1;
+    }
+
+    //Check if points larger than the bounds will be detected as being outside of the element
+    for (unsigned int i=0; i<element.bounding_box[1].size(); i++){
+        x = element.bounding_box[1];
+        x[i] += delta;
+        if (element.bounding_box_contains_point(x)){
+            results << element.name.c_str() << "_test_bounding_box_contains_point (test 4) & False\n";
+            return 1;
+        }
+    }
+
+    results << element.name.c_str() << "_test_bounding_box_contains_point & True\n";
+    return 0;
+}
+
+int test_contains_point(elib::Element &element, std::ofstream &results){
+    /*!
+    Test if the element can identify if a global point is contained inside.
+
+    :param elib::Element element: The element to be tested
+    :param std::ofstream &results: The output file to write the results to
+    */
+
+    for (unsigned int n=0; n<element.nodes.size(); n++){
+        if (!element.contains_point(element.nodes[n])){
+            results << element.name.c_str() << "_test_contains_point (test 1) & False\n";
+            return 1;
+        }
+    }
+
+    results << element.name.c_str() << "_test_contains_point & True\n";
+    return 0;
+}
+
 int test_element_functionality(elib::Element &element, std::ofstream &results){
     /*!
     Test the provided element's functionality
@@ -571,6 +718,9 @@ int test_element_functionality(elib::Element &element, std::ofstream &results){
     test_get_local_gradient(element, results);
     test_get_global_gradient(element, results);
     test_compute_local_coordinates(element, results);
+    test_get_jacobian(element, results);
+    test_bounding_box_contains_point(element, results);
+    test_contains_point(element, results);
 
     return 0;
 }
@@ -683,6 +833,7 @@ int main(){
     //Hex8 tests
     test_Hex8_get_shape_functions(results);
     test_Hex8_get_local_grad_shape_functions(results);
+    test_Hex8_local_point_inside(results);
     test_Hex8_functionality(results);
 
     //Eigen tool tests
