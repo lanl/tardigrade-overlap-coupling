@@ -36,11 +36,20 @@ namespace elib{
             void interpolate(const vecOfvec &nodal_values, const vec &local_coordinates,
                              vec &value);
 
+            void get_local_gradient(const vec &nodal_values, const vec &local_coordinates,
+			            vec &value);
+
             void get_local_gradient(const vecOfvec &nodal_values, const vec &local_coordinates,
                                     vecOfvec &value);
 
+            void get_global_gradient(const vec  &nodal_values, const vec &local_coordinates, const vecOfvec &coords,
+                                     vec &value);
+
             void get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates, const vecOfvec &coords,
                                      vecOfvec &value);
+
+            void get_global_gradient(const vec  &nodal_values, const vec &local_coordinates,
+                                     vec &value);
 
             void get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
                                      vecOfvec &value);
@@ -81,6 +90,10 @@ namespace elib{
             void get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
     };
 
+    //Functions
+
     void invert(const vecOfvec &A, vecOfvec &Ainv);
     void solve(const vecOfvec &A, const vec &b, vec &x);
+    void print(const vec &a);
+    void print(const vecOfvec &A);
 }

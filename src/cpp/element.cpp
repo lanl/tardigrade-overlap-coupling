@@ -69,6 +69,29 @@ namespace elib{
         return;
     }
 
+    void Element::get_local_gradient(const vec &nodal_values, const vec &local_coordinates,
+		                     vec &value){
+        /*!
+        Compute the gradient of the vector of values at the provided local coordinates.
+
+        :param const vec &nodal_values: The values to be interpolated (nnodes,)
+        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+        :param vecOfvec &value: The global gradient of the nodal_values
+        */
+
+	vecOfvec local_grad_shape_functions;
+	get_local_grad_shape_functions(local_coordinates, local_grad_shape_functions);
+
+	value = vec(local_grad_shape_functions[0].size(), 0);
+
+	for (unsigned int n=0; n<nodes.size(); n++){
+            for (unsigned int i=0; i<local_grad_shape_functions[n].size(); i++){
+                value[i] += nodal_values[n]*local_grad_shape_functions[n][i];
+            }
+	}
+	return;
+    }
+
     void Element::get_local_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
                                      vecOfvec &value){
         /*!
@@ -100,6 +123,35 @@ namespace elib{
         return;
     }
 
+    void Element::get_global_gradient(const vec  &nodal_values, const vec &local_coordinates,
+                                      const vecOfvec &coords, vec &value){
+        /*!
+        Compute the gradient of the values with respect to the provided coordinates.
+
+        :param const vec &nodal_values: The values to be interpolated (nnodes, value at node n)
+        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+        :param const vecOfvec &coords: The coordinates of the nodes (nnodes, n dim)
+        :param vecOfvec &value: The global gradient of the nodal_values
+        */
+
+        vec local_gradient;
+        vecOfvec dxdxi, dxidx;
+        get_local_gradient(nodal_values, local_coordinates, local_gradient);
+        get_local_gradient(coords, local_coordinates, dxdxi);
+        
+        invert(dxdxi, dxidx);
+
+        value.resize(dxidx[0].size());
+        for (unsigned int i=0; i<local_gradient.size(); i++){
+            value[i] = 0;
+            for (unsigned int j=0; j<dxidx.size(); j++){
+                    value[i] += local_gradient[j]*dxidx[j][i];
+            }
+        }
+
+        return;
+    }
+
     void Element::get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
                                       const vecOfvec &coords, vecOfvec &value){
         /*!
@@ -125,12 +177,27 @@ namespace elib{
         }
 
         for (unsigned int i=0; i<local_gradient.size(); i++){
-            for (unsigned int k=0; k<dxidx.size(); i++){
+            for (unsigned int k=0; k<dxidx.size(); k++){
                 for (unsigned int j=0; j<dxidx[k].size(); j++){
                     value[i][j] += local_gradient[i][k]*dxidx[k][j];
                 }
             }
         }
+
+        return;
+    }
+
+    void Element::get_global_gradient(const vec &nodal_values, const vec &local_coordinates,
+                                      vec &value){
+        /*!
+        Compute the gradient of the values with respect to the nodal coordinates.
+
+        :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
+        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+        :param vecOfvec &value: The global gradient of the nodal_values
+        */
+
+        get_global_gradient(nodal_values, local_coordinates, nodes, value);
         return;
     }
 
@@ -298,9 +365,9 @@ namespace elib{
 
         //Transfer the values
         Ainv.resize(A.size());
-        for (unsigned int i=0; i<A.size(); i++){
-            Ainv[i].resize(A.size());
-            for (unsigned int j=0; j<_Ainv.size(); j++){
+        for (unsigned int i=0; i<_Ainv.rows(); i++){
+            Ainv[i].resize(_Ainv.cols());
+            for (unsigned int j=0; j<_Ainv.cols(); j++){
                 Ainv[i][j] = _Ainv(i, j);
             }
         }
@@ -336,5 +403,27 @@ namespace elib{
         //Solve the matrix equation
         _x = _A.partialPivLu().solve(_b);
     }
+
+    void print(const vec &a){
+        /*!
+        Print the vector to the terminal
+        */
+
+        for (unsigned int i=0; i<a.size(); i++){
+            std::cout << a[i] << " ";
+        }
+        std::cout << "\n";
+    }
+
+    void print(const vecOfvec &A){
+        /*!
+        Print the matrix to the terminal
+        */
+
+        for (unsigned int i=0; i<A.size(); i++){
+            print(A[i]);
+        }
+    }
+
 }
 

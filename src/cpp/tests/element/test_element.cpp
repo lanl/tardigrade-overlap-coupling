@@ -82,7 +82,7 @@ void get_scalar_field_definition(elib::vec &a){
     :param elib::vec &a: The parameters for the scalar field
     */
 
-    a = {0.1, 0, 0};//-0.2, 0.3};
+    a = {0.1, -0.2, 0.3};
 }
 
 void get_vector_field_definition(elib::vecOfvec &A, elib::vec &b){
@@ -141,6 +141,40 @@ elib::vec vector_field(const elib::vec &x){
     }
 
     return out;
+}
+
+void get_linear_transformation_definition(elib::vecOfvec &A, elib::vec &b){
+    /*!
+    Get the definition of a linear transformation applied to the provided vector
+    */
+
+    A = {{ 0.26921601, -0.28725274,  0.01841124},
+         { 0.19559688,  0.01621845, -1.43394978},
+         { 0.33276929,  0.22285938,  0.82795953}};
+
+    b = {1.23409356, 0.50251371, 0.41645453};
+    return;
+}
+
+void linear_transform(const elib::vec &v, elib::vec &w){
+    /*!
+    Apply a linear transformation to a vector of a given dimension.
+
+    :param const elib::vec &v: The un-transformed vector
+    :param const elib::vec &w: The transformed vector
+    */
+
+    elib::vecOfvec A;
+    elib::vec b;
+    get_linear_transformation_definition(A, b);
+
+    w.resize(v.size());
+    for (unsigned int i=0; i<w.size(); i++){
+        w[i] = b[i];
+        for (unsigned int j=0; j<v.size(); j++){
+            w[i] += A[i][j]*v[j];
+        }
+    }
 }
 
 void define_hex8_fully_integrated_quadrature(elib::quadrature_rule &qrule){
@@ -280,6 +314,8 @@ int test_interpolate(elib::Element &element, std::ofstream &results){
     /*!
     Test whether interpolation is performed correctly on the element.
 
+    TODO: Generalize to non-3D in local coordinates elements.
+
     :param elib::Element element: The element to be tested
     :param std::ofstream &results: The output file to write the results to
     */
@@ -344,6 +380,8 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     /*!
     Test the computation of the gradient with respect to the local coordinates
 
+    TODO: Generalize to non-3D in local coordinates elements
+
     :param elib::Element element: The element to be tested
     :param std::ofstream &results: The output file to write the results to
     */
@@ -368,9 +406,131 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     scalar_answer[0] = (sgpx - sg0)/eps;
     scalar_answer[1] = (sgpy - sg0)/eps;
     scalar_answer[2] = (sgpz - sg0)/eps;
-    
+
+    //Compute the element result
+    element.get_local_gradient(scalar_nodal_values, {0.1, -0.2, 0.3}, scalar_result);
+
+    if (!fuzzy_equals(scalar_answer, scalar_result)){
+        results << element.name.c_str() << "_test_get_local_gradient (test 1) & False\n";
+	return 1;
+    } 
+
+    elib::vecOfvec vector_answer, vector_result;
+    elib::vecOfvec vector_nodal_values(element.nodes.size());
+    elib::vec vg0, vgpx, vgpy, vgpz;
+
+    for (unsigned int n=0; n<element.nodes.size(); n++){
+        vector_nodal_values[n] = vector_field(element.nodes[n]);
+    }
+
+    //Interpolate the field
+    elib::vec local_coordinates = {-0.2, 0.4, 0.64};
+    elib::vec perturbed_coordinates(local_coordinates.size());
+    elib::vecOfvec perturbation_matrix(element.local_node_coordinates[0].size()+1);
+
+    //Interpolate at the nominal position
+    element.interpolate(vector_nodal_values, local_coordinates, perturbation_matrix[0]);
+
+    //Perturb the local coordinates and interpolate
+    for (unsigned int i=0; i<perturbation_matrix.size()-1; i++){
+        for (unsigned int j=0; j<perturbation_matrix.size()-1; j++){
+            if (i == j){
+                perturbed_coordinates[j] = local_coordinates[j] + eps;
+    	    }
+	    else{
+                perturbed_coordinates[j] = local_coordinates[j];
+	    }
+	}
+	element.interpolate(vector_nodal_values, perturbed_coordinates, perturbation_matrix[i+1]);
+    }
+
+    //Approximate the derivative using finite differences
+    vector_answer.resize(vector_nodal_values[0].size());
+    for (unsigned int i=0; i<vector_answer.size(); i++){
+	vector_answer[i].resize(perturbation_matrix.size()-1);
+        for (unsigned int j=1; j<perturbation_matrix.size(); j++){
+            vector_answer[i][j-1] = (perturbation_matrix[j][i] - perturbation_matrix[0][i])/eps;
+	}
+    }
+    element.get_local_gradient(vector_nodal_values, local_coordinates, vector_result);
+
+    if (!fuzzy_equals(vector_answer, vector_result)){
+        results << element.name.c_str() << "_test_get_local_gradient (test 2) & False\n";
+	return 1;
+    }
+
+    results << element.name.c_str() << "_test_get_local_gradient & True\n";
+    return 0;
 }
 
+int test_get_global_gradient(elib::Element &element, std::ofstream &results){
+    /*!
+    Test the computation of the global gradient.
+
+    TODO: Generalize to non-3D elements.
+
+    :param elib::Element element: The element to be tested
+    :param std::ofstream &results: The output file to write the results to
+    */
+
+    //Compute a set of reference coordinates using a linear transformation
+    elib::vecOfvec reference_coordinates(element.nodes.size());
+    for (unsigned int n=0; n<element.nodes.size(); n++){
+        reference_coordinates[n].resize(element.nodes.size());
+        linear_transform(element.nodes[n], reference_coordinates[n]);
+    }
+
+    //Evaluate the scalar field
+    elib::vec scalar_nodal_current_values(element.nodes.size());
+    elib::vec scalar_nodal_reference_values(element.nodes.size());
+
+    for (unsigned int n=0; n<element.nodes.size(); n++){
+        scalar_nodal_current_values[n] = scalar_field(element.nodes[n]);
+        scalar_nodal_reference_values[n] = scalar_field(reference_coordinates[n]);
+    }
+
+    //Compute the two gradients
+    elib::vec grad_scalar_current, grad_scalar_reference;
+    element.get_global_gradient(scalar_nodal_current_values, {0.1, 0.2, 0.3}, grad_scalar_current);
+    element.get_global_gradient(scalar_nodal_reference_values, {0.1, 0.2, 0.3}, reference_coordinates, grad_scalar_reference);
+
+    //Get the expected gradient
+    elib::vec scalar_answer;
+    get_scalar_field_definition(scalar_answer);
+
+    if (!fuzzy_equals(grad_scalar_current, grad_scalar_reference) || !fuzzy_equals(grad_scalar_current, scalar_answer)){
+        results << element.name.c_str() << "_test_get_global_gradient (test 1) & False\n";
+        return 1;
+    }
+
+    //Evaluate the vector field
+    elib::vecOfvec vector_nodal_current_values(element.nodes.size());
+    elib::vecOfvec vector_nodal_reference_values(element.nodes.size());
+
+    for (unsigned int n=0; n<element.nodes.size(); n++){
+        vector_nodal_current_values[n] = vector_field(element.nodes[n]);
+        vector_nodal_reference_values[n] = vector_field(reference_coordinates[n]);
+    }
+
+    //Compute the two gradients
+    elib::vecOfvec grad_vector_current, grad_vector_reference;
+    element.get_global_gradient(vector_nodal_current_values, {0.1, 0.2, 0.3}, grad_vector_current);
+    element.get_global_gradient(vector_nodal_reference_values, {0.1, 0.2, 0.3}, reference_coordinates, grad_vector_reference);
+
+    //Get the expected gradient
+    elib::vecOfvec vector_answer;
+    elib::vec b;
+    get_vector_field_definition(vector_answer, b);
+
+    if (!fuzzy_equals(grad_vector_current, grad_vector_reference) || !fuzzy_equals(grad_vector_current, vector_answer)){
+        results << element.name.c_str() << "_test_get_global_gradient (test 2) & False\n";
+        return 1;
+    }
+
+
+    results << element.name.c_str() << "_test_get_global_gradient & True\n";
+    return 0;
+}
 
 int test_element_functionality(elib::Element &element, std::ofstream &results){
     /*!
@@ -382,6 +542,8 @@ int test_element_functionality(elib::Element &element, std::ofstream &results){
     */
 
     test_interpolate(element, results);
+    test_get_local_gradient(element, results);
+    test_get_global_gradient(element, results);
 
     return 0;
 }
@@ -411,6 +573,74 @@ int test_Hex8_functionality(std::ofstream &results){
     return test_element_functionality(element, results);
 }
 
+int test_invert(std::ofstream &results){
+    /*!
+    Test the computation of the matrix inverse
+    */
+
+    elib::vecOfvec A = {{2, 3,  5},
+                        {3, 6,  7},
+                        {5, 7, 10}};
+
+    elib::vecOfvec Ainv;
+    elib::invert(A, Ainv);
+
+    elib::vecOfvec answer = {{1, 0, 0},
+                             {0, 1, 0},
+                             {0, 0, 1}};
+    elib::vecOfvec result;
+
+    result.resize(A.size());
+    for (unsigned int i=0; i<A.size(); i++){
+        result[i].resize(A[i].size());
+        for (unsigned int j=0; j<A[i].size(); j++){
+            result[i][j] = 0;
+            for (unsigned int k=0; k<A[i].size(); k++){
+                result[i][j] += A[i][k]*Ainv[k][j];
+            }
+        }
+    }
+
+    if (!fuzzy_equals(result, answer)){
+        results << "test_invert & False\n";
+        return 1;
+    }
+
+    results << "test_invert & True\n";
+    return 0;
+}
+
+int test_solve(std::ofstream &results){
+    /*!
+    Test the computation of the matrix solve
+    */
+
+    elib::vecOfvec A = {{2, 3,  5},
+                        {3, 6,  7},
+                        {5, 7, 10}};
+
+    elib::vec answer = {1, 2, 3};
+
+    elib::vec b(A.size(), 0);
+
+    for (unsigned int i=0; i<A.size(); i++){
+        for (unsigned int j=0; j<A[i].size(); j++){
+            b[i] += A[i][j]*answer[j];
+        }
+    }
+
+    elib::vec result;
+    elib::solve(A, b, result);
+
+    if (!fuzzy_equals(answer, result)){
+        results << "test_solve & False\n";
+        return 1;
+    }
+
+    results << "test_solve & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -427,6 +657,10 @@ int main(){
     test_Hex8_get_shape_functions(results);
     test_Hex8_get_local_grad_shape_functions(results);
     test_Hex8_functionality(results);
+
+    //Eigen tool tests
+    test_invert(results);
+    test_solve(results);
 
     //Close the results file
     results.close();
