@@ -10,7 +10,7 @@
 include ../../config.mk
 
 # List of executables
-OBJECTS=overlap_coupling.o quickhull.o
+OBJECTS=overlap_coupling.o quickhull.o element.o
 #LOCAL_CFLAGS=-I. -O3 -flto -fpic -Wall
 LOCAL_CFLAGS=-I. -O3 -fpic -Wall
 
@@ -41,6 +41,9 @@ quickhull.o: $(QHULL)/QuickHull.cpp $(QHULL)/*.hpp
 
 overlap_coupling.o: overlap_coupling.cpp overlap_coupling.h
 	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< -std=gnu++11 -lvoro++
+
+element.o: element.cpp element.h
+	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< -lstdc++ -std=gnu++11
 
 clean:
 	rm $(OBJECTS) $(SOVERSION) $(SONAME)

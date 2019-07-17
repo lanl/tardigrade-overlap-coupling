@@ -36,7 +36,20 @@ namespace overlap{
         /*!
         The constructor for the filter.
         */
+        initialize(_local_coordinates, _gauss_points);
+//        local_coordinates = _local_coordinates;
+//        gauss_points = _gauss_points;
+//        compute_element_bounds();
+//        construct_gauss_domains();
+    }
 
+    void OverlapCoupling::initialize(const vecOfvec &_local_coordinates, const vecOfvec &_gauss_points){
+        /*!
+        Initialize the overlap coupling object.
+
+        :param const vecOfvec &_local_coordinates: The local coordinates of the domain's nodes
+        :param const vecOfvec &_gauss_points: The local coordinates of the gauss points for the domain.
+        */
         local_coordinates = _local_coordinates;
         gauss_points = _gauss_points;
         compute_element_bounds();
@@ -1162,6 +1175,43 @@ namespace overlap{
         }
     }
 
+    void perform_position_weighted_volume_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result){
+        /*
+        Perform the volume integration of a scalar value multiplied by the position of the point.
+        Returns the integrated value at the gauss points.
+
+        :param map::< unsigned int, double > values: The map object which defines the values to be integrated at each of the micro-nodes
+        :param std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point.
+        :param std::vector< std::vector< double > > result: The integrated result.
+        */
+
+        //Set up an iterator for the value map
+        std::map<unsigned int, double >::const_iterator itv;
+        integrateMap::const_iterator itiM;
+
+        //Initialize the result vector
+        result = std::vector< std::vector< double > >(weights.size());
+        //Loop over the gauss points
+        for (unsigned int gp=0; gp<weights.size(); gp++){
+            result[gp] = std::vector<double>(weights[gp].begin()->second.coordinates.size(), 0);
+
+            for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
+                
+                //Find the value of the function at the node
+                itv = values.find(itiM->first);
+                if (itv == values.end()){
+                    std::cout << "Error: node " << itiM->first << " not found in values\n";
+                    assert(1==0);
+                }
+
+                //Add the term to the integral.
+                for (unsigned int i=0; i<result[gp].size(); i++){
+                    result[gp][i] += itv->second*itiM->second.coordinates[i]*itiM->second.volume;
+                }
+            }
+        }
+    }
+
     void perform_volume_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result){
         /*
         Perform the volume integration of a vector value. Returns the integrated value at the gauss points.
@@ -1181,7 +1231,8 @@ namespace overlap{
         //Loop over the gauss points
         for (unsigned int gp=0; gp<weights.size(); gp++){
 
-            result[gp].resize(values.begin()->second.size());
+//            result[gp].resize(values.begin()->second.size());
+            result[gp] = std::vector<double>(values.begin()->second.size(), 0);
 
             for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
                 
@@ -2065,5 +2116,148 @@ namespace overlap{
        +shapefunction.block( num_micro_dof*num_micro_free, num_macro_dof*num_macro_free, num_micro_dof*num_micro_ghost, num_macro_dof*num_macro_ghost) * Dh;
         return;
         
+    }
+
+    MicromorphicFilter::MicromorphicFilter(const elib::Element& _element, bool _shared_dof_material){
+        /*!
+        Initialize the micromorphic filter
+
+        :param elib::Element &element: The underlying element over which the filter is computed.
+        */
+
+        element = _element;
+        shared_dof_material = _shared_dof_material;
+
+        elib::vecOfvec gauss_points(element.qrule.size());
+        for (unsigned int gp=0; gp<element.qrule.size(); gp++){
+            gauss_points[gp] = element.qrule[gp].first;
+        }
+
+        material_overlap.initialize(_element.local_node_coordinates, gauss_points); 
+    }
+
+    bool MicromorphicFilter::add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates){
+        /*!
+        Check if a dof point is inside the filter and add it if it is.
+
+        :param unsigned int &id: The micro point id number
+        :param elib::vec &coordinates: The global coordinates of the micro dof point.
+        */
+
+        if (element.bounding_box_contains_point(coordinates)){
+
+            elib::vec xi;
+            element.compute_local_coordinates(coordinates, xi);
+            if (element.local_point_inside(xi)){
+                dof_id_numbers.push_back(id);
+                micro_dof_local_coordinates.push_back(xi);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool MicromorphicFilter::add_micro_material_point(const unsigned int &id, const elib::vec &coordinates){
+        /*!
+        Check if a material point is inside the filter and add it if it is.
+
+        :param unsigned int &id: The micro point id number
+        :param elib::vec &coordinates: The global coordinates of the micro material point.
+        */
+
+        if (element.bounding_box_contains_point(coordinates)){
+
+            elib::vec xi;
+            element.compute_local_coordinates(coordinates, xi);
+            if (element.local_point_inside(xi)){
+                material_id_numbers.push_back(id);
+                micro_material_local_coordinates.push_back(xi);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    int MicromorphicFilter::construct_integrators(){
+        /*!
+        Construct the filter's integrators.
+        */
+
+        construct_material_point_integrator();
+        return 0;
+    }
+
+    int MicromorphicFilter::construct_material_point_integrator(){
+        /*!
+        Construct the integrator for the material points.
+
+        */
+
+        material_overlap.compute_weights(material_id_numbers, micro_material_local_coordinates, material_weights);
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_mass_properties(const std::map< unsigned int, double> &micro_density){
+        /*!
+        Compute the mass properties of the homogenized DNS.
+
+        :param std::map< unsigned int , elib::vec> &density:
+        */
+
+        compute_volume();
+        compute_density(micro_density);
+        compute_centers_of_mass(micro_density);
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_volume(){
+        /*!
+        Compute the volume of each of the filter's gauss domains
+        */
+
+        integrateMap::const_iterator itiM;
+
+        volume = std::vector< double >(material_weights.size(), 0);
+        for (unsigned int gp=0; gp<material_weights.size(); gp++){
+
+            for (itiM=material_weights[gp].begin(); itiM!=material_weights[gp].end(); itiM++){
+
+                //Add the term to the integral.
+                volume[gp] += itiM->second.volume;
+            }
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_density(const std::map< unsigned int, double> &micro_density){
+        /*!
+        Compute the density
+
+        :param std::map< unsigned int , elib::vec> &density:
+        */
+
+        perform_volume_integration(micro_density, material_weights, density);
+
+        for (unsigned int gp=0; gp<density.size(); gp++){
+            density[gp] /= volume[gp];
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_centers_of_mass(const std::map< unsigned int, double> &micro_density){
+        /*!
+        Compute the centers of mass of the material.
+
+        :param std::map< unsigned int , elib::vec> &density:
+        */
+
+        perform_position_weighted_volume_integration(micro_density, material_weights, center_of_mass);
+        
+        for (unsigned int gp=0; gp<density.size(); gp++){
+            for (unsigned int i=0; i<center_of_mass[gp].size(); i++){
+                center_of_mass[gp][i] /= volume[gp]*density[gp];
+            }
+        }
+        return 0;
     }
 }

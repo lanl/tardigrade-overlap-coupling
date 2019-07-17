@@ -68,6 +68,8 @@
     #error CONVEXLIB must be defined. If defined, check that the value is supported.
 #endif
 
+#include "element.h"
+
 namespace overlap{
 
     //!===
@@ -105,6 +107,7 @@ namespace overlap{
         public:
             OverlapCoupling();
             OverlapCoupling(const vecOfvec &local_coordinates, const vecOfvec &gauss_points);
+            void initialize(const vecOfvec &local_coordinates, const vecOfvec &gauss_points);
 
             //! > Interface to 3D-quickhull
             vertex_t map_vector_to_quickhull(const std::vector< double > &vector) const;
@@ -346,6 +349,56 @@ namespace overlap{
                 QRsolver NQDh_PR_transpose_solver; //!The solver for PR.T x = b of the QR decomposition of NQDh
                 std::vector< T > tripletList; //!A list of triplets which will be used to construct the shapefunction matrix
             #endif
+    };
+
+    class MicromorphicFilter{
+        /*!
+        A class which implements the micromorphic filter using other 
+        overlap-coupling classes rather than a stand-alone library. The filter 
+        tries to implement the approach as generally as possible though it 
+        does currently assume the finite-element framework for the filter.
+        */
+
+        public:
+            MicromorphicFilter(){};
+            MicromorphicFilter(const elib::Element& element, bool _shared_dof_material = true);
+            
+            //Point loading and integration domain construction
+            bool add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates);
+            bool add_micro_material_point(const unsigned int &id, const elib::vec &coordinates);
+
+            int construct_integrators();
+
+            //Compute mass properties
+            int compute_mass_properties(const std::map< unsigned int, double > &micro_density);
+
+        protected:
+            elib::Element element;
+            bool shared_dof_material;
+            OverlapCoupling material_overlap;
+
+            //ID number vectors
+            std::vector< unsigned int > dof_id_numbers;
+            std::vector< unsigned int > material_id_numbers;
+
+            //Local coordinates
+            elib::vecOfvec micro_dof_local_coordinates;
+            elib::vecOfvec micro_material_local_coordinates;
+
+            //Integrators
+            std::vector< integrateMap > dof_weights;
+            std::vector< integrateMap > material_weights;
+            int construct_dof_point_integrator();
+            int construct_material_point_integrator();
+
+            //Mass/geometric properties
+            elib::vec volume;
+            elib::vec density;
+            elib::vecOfvec center_of_mass;
+            int compute_volume();
+            int compute_density(const std::map< unsigned int, double > &micro_density);
+            int compute_centers_of_mass(const std::map< unsigned int, double > &micro_density);
+
     };
     
     //!===

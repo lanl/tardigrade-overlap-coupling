@@ -29,6 +29,7 @@ namespace elib{
             vecOfvec local_node_coordinates; //!The local coordinates of the nodes
             vecOfvec bounding_box; //!The bounding box of the element
 
+            Element(){}
             Element(vecOfvec nodes, quadrature_rule qrule);
 
             void interpolate(const vec &nodal_values, const vec &local_coordinates,
