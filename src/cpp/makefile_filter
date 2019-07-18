@@ -1,0 +1,39 @@
+# Micromorphic filter, a variationally based filter for DNS
+# 
+# Author: Nathan A. Miller (LANL / CU Boulder)
+# Email:  nathanm@lanl.gov
+# Date:   July 13, 2018
+#
+# This is the makefile for processDNS.cpp. It generates the 
+# micromorphic filter
+
+include ../../config.mk
+
+# List of executables
+EXECUTABLE=filter.out
+#LOCAL_CFLAGS=-I. -O3 -flto -fpic -Wall
+LOCAL_CFLAGS=-I. -O3 -fpic -Wall
+
+#Set the mode due to the method variable
+DBG = 
+ifeq ($(METHOD),dbg)
+  DBG = -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -g
+endif
+ifeq ($(METHOD),oprof)
+  DBG = -pg
+endif
+
+#Define the library name
+SONAME=liboverlap.so
+SOVERSION=liboverlap.so.1
+
+# Makefile rules
+all: $(EXECUTABLE)
+
+$(EXECUTABLE): filter.cpp filter.h
+	$(CXX) $(STD) $(CFLAGS) $(LOCAL_CFLAGS) $(ERRORFLG) $(DBG) $(INC) $(LIB) $(EIGEN) -o $@ $< -std=gnu++11 -lvoro++ -loverlap
+
+clean:
+	rm $(EXECUTABLE)
+
+.PHONY: all clean

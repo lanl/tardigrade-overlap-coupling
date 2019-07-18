@@ -6,6 +6,8 @@
 ===============================================================================
 */
 
+#ifndef ELEMENT_H
+#define ELEMENT_H
 #include<vector>
 #include<string>
 #include<math.h>
@@ -105,3 +107,4 @@ namespace elib{
     void print(const vec &a);
     void print(const vecOfvec &A);
 }
+#endif
