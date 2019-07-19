@@ -6,6 +6,7 @@ Tests for element.h and element.cpp
 #include<vector>
 #include<fstream>
 #include<math.h>
+#include<memory>
 
 #include<element.h>
 
@@ -705,6 +706,28 @@ int test_contains_point(elib::Element &element, std::ofstream &results){
     return 0;
 }
 
+int test_build_element_from_string(elib::Element &element, std::ofstream &results){
+    /*!
+    Test if the build element from string function is working correctly.
+
+    :param elib::Element element: The element to be tested
+    :param std::ofstream &results: The output file to write the results to
+    */
+
+    std::unique_ptr<elib::Element> new_element = elib::build_element_from_string(element.name, element.nodes, element.qrule);
+
+    std::string result = typeid(*new_element).name();
+    std::string answer = typeid(element).name();
+
+    if (std::strcmp(result.c_str(), answer.c_str()) != 0){
+        results << element.name.c_str() << "_test_build_element_from_string & False\n";
+        return 1;
+    }
+
+    results << element.name.c_str() << "_test_build_element_from_string & True\n";
+    return 0;
+}
+
 int test_element_functionality(elib::Element &element, std::ofstream &results){
     /*!
     Test the provided element's functionality
@@ -721,6 +744,7 @@ int test_element_functionality(elib::Element &element, std::ofstream &results){
     test_get_jacobian(element, results);
     test_bounding_box_contains_point(element, results);
     test_contains_point(element, results);
+    test_build_element_from_string(element, results);
 
     return 0;
 }

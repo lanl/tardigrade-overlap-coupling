@@ -11,6 +11,8 @@
 #include<vector>
 #include<string>
 #include<math.h>
+#include<memory>
+#include<iostream>
 #include<Eigen/Dense>
 
 namespace elib{
@@ -106,5 +108,7 @@ namespace elib{
     void solve(const vecOfvec &A, const vec &b, vec &x);
     void print(const vec &a);
     void print(const vecOfvec &A);
+
+    std::unique_ptr<Element> build_element_from_string(const std::string &elname, vecOfvec &nodes, quadrature_rule &qrule);
 }
 #endif

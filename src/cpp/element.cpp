@@ -7,7 +7,6 @@
 */
 
 #include "element.h"
-#include<iostream>
 
 namespace elib{
     
@@ -490,6 +489,24 @@ namespace elib{
         for (unsigned int i=0; i<A.size(); i++){
             print(A[i]);
         }
+    }
+
+    std::unique_ptr<Element> build_element_from_string(const std::string &eltype, vecOfvec &nodes, quadrature_rule &qrule){
+	    /*
+	     * Build an element from the element name, the nodes, and the quadrature rule
+	     *
+	     * TODO: Make the list of elements automatically populate.
+	     *
+	     * :param std::string &eltype: The name of the element
+	     * :param const vecOfvec &nodes: The element's nodes
+	     * :param const quadrature_rule &qrule: The quadrature rule of the element
+	     * :param Element *element: The returning element object.
+	    */
+
+	    if (std::strcmp(eltype.c_str(), "Hex8")==0){
+                return std::unique_ptr<Hex8>(new Hex8(nodes, qrule));
+	    }
+	    return NULL;
     }
 
 }
