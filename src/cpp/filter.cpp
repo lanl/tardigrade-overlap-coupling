@@ -233,6 +233,7 @@ int main(int argc, char **argv){
     */
 
     std::string input_fn;
+    std::string filter_fn;
     std::string output_fn;
 
     std::ifstream input_file;
@@ -241,18 +242,30 @@ int main(int argc, char **argv){
 
     int format=1; //Hard-coded to format 1
 
-    if (argc != 3){
+    if (argc != 4){
         std::cout << "argc: " << argc << "\n";
-        std::cout << "Error: require two filenames. A filename to read and a filename to write.\n";
+        std::cout << "Error: require three filenames. A dns data filename to read, a filter definition, and a filename to write.\n";
     }
     else{
         input_fn  = argv[1];
-        output_fn = argv[2];
+	filter_fn = argv[2];
+        output_fn = argv[3];
 
-        //Open the file
+        //Open the filter definition file
+	assembly::node_map nodes;
+	assembly::element_map elements;
+	assembly::qrule_map qrules;
+        int connresult = assembly::read_connectivity_data(filter_fn, nodes, elements, qrules);
+	if (connresult > 1){
+            std::cout << "Error in constructing filter\n";
+	    return 1;
+	}
+	assembly::print_qrule_map(qrules);
+
+        //Open the dns file
         int openresult = filter::open_input_file(input_fn, format, input_file);
         if (openresult>0){
-            std::cout << "Error in opening the input file\n";
+            std::cout << "Error in opening the DNS input file\n";
             return 1;
         }
         

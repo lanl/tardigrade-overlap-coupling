@@ -13,6 +13,7 @@
 #include<string>
 #include "occonfiguration.h"
 #include "overlap_coupling.h"
+#include "assembly.h"
 
 namespace filter{
 
