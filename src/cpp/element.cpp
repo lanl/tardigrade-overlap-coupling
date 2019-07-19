@@ -491,6 +491,34 @@ namespace elib{
         }
     }
 
+    void print(const quadrature_rule &qrule){
+        /*!
+        * Print the quadrature rule to the terminal.
+        */
+
+        for (unsigned int i=0; i<qrule.size(); i++){
+            for (unsigned int j=0; j<qrule[i].first.size(); j++){
+                std::cout << qrule[i].first[j] << " ";
+            }
+            std::cout << "(" << qrule[i].second << ")\n";
+        }
+
+    }
+
+    void print(const Element &element){
+        /*!
+        * Print the element information to the terminal.
+        */
+
+        std::cout << "Element of type: " << element.name << "\n";
+        std::cout << "\nglobal nodes:\n";
+        print(element.nodes);
+        std::cout << "\nlocal nodes:\n";
+        print(element.local_node_coordinates);
+        std::cout << "\nquadrature rule:\n";
+        print(element.qrule);
+    }
+
     std::unique_ptr<Element> build_element_from_string(const std::string &eltype, const vecOfvec &nodes, const quadrature_rule &qrule){
 	    /*
 	     * Build an element from the element name, the nodes, and the quadrature rule

@@ -318,7 +318,10 @@ namespace filter{
         */
 
         //Check if the filters have been initialized and populate them and the shapefunction matrix if required.
+        std::cout << "filters.size() " << filters.size() << "\n";
+        std::cout << "elements.size() " << elements.size() << "\n";
         if (filters.size() != elements.size()){
+            std::cout << "Populating the filters\n";
             int pf_result = populate_filters(data, nodes, elements, qrules, filters);
             if (pf_result > 0){
                 return 1;
@@ -375,6 +378,7 @@ int main(int argc, char **argv){
     elib::vecOfvec data;
 
     int format=1; //Hard-coded to format 1
+    int mode=0; //Hard-coded to total Lagrangian
 
     if (argc != 4){
         std::cout << "argc: " << argc << "\n";
@@ -389,6 +393,9 @@ int main(int argc, char **argv){
 	assembly::node_map nodes;
 	assembly::element_map elements;
 	assembly::qrule_map qrules;
+        overlap::SpMat shapefunctions;
+        filter::filter_map filters;
+
         int connresult = assembly::read_connectivity_data(filter_fn, nodes, elements, qrules);
 	if (connresult > 1){
             std::cout << "Error in constructing filter\n";
@@ -419,6 +426,11 @@ int main(int argc, char **argv){
             }
 
             std::cout << "Initializing filters\n";
+            int pt_result = filter::process_timestep(data, nodes, elements, qrules, mode, shapefunctions, filters);
+            if (pt_result > 0){
+                std::cout << "Error in processing timestep\n";
+                return 1;
+            }
         }
     }
     return 0;

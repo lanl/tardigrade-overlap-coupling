@@ -108,6 +108,8 @@ namespace elib{
     void solve(const vecOfvec &A, const vec &b, vec &x);
     void print(const vec &a);
     void print(const vecOfvec &A);
+    void print(const quadrature_rule &qrule);
+    void print(const Element &element);
 
     std::unique_ptr<Element> build_element_from_string(const std::string &elname, const vecOfvec &nodes, const quadrature_rule &qrule);
 }
