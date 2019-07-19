@@ -244,7 +244,7 @@ namespace filter{
                 return 1;
             }
 
-            //Loop over the elements. This could be parallelized.
+            //Loop over the elements. This could be parallelized but it probably won't make a difference.
             for (auto _element = _element_types->second.begin(); _element!=_element_types->second.end(); _element++){
 
                 auto elid = filters.find(_element->first);
@@ -281,7 +281,7 @@ namespace filter{
 
     int populate_filters(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
-                         filter_map &filters){
+                         std::map< unsigned int, double > &weights, filter_map &filters){
         /*!
         * Populate the micromorphic sub-filters using the provided data.
         *
@@ -289,6 +289,8 @@ namespace filter{
         * :param const assembly::node_map &nodes: The nodes of the micromorphic filter.
         * :param const assembly::element_map &elements: The elements of the micromorphic filter.
         * :param const assembly::qrule_map &qrules: The quadrature rules for the elements.
+        * :param std::map< unsigned int, double > &weights: The weights which indicate if a datapoint
+        *                                                   is shared between filter domains.
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
         */
 
@@ -296,6 +298,17 @@ namespace filter{
         int bf_result = build_filters(nodes, elements, qrules, filters);
         if (bf_result>0){
             return 1;
+        }
+
+        //This probably could/should be parallelized
+        for (auto datapoint=data.begin(); datapoint!=data.end(); datapoint++){
+            double w = 0;
+            //Iterate over the macro-scale filters
+            for (auto filter = filters.begin(); filter!=filters.end(); filter++){
+                bool iscontained;
+                int pointtype = (int)(datapoint[0]+0.5);
+                if (pointtype==
+            }
         }
 
         return 0;
@@ -318,18 +331,23 @@ namespace filter{
         */
 
         //Check if the filters have been initialized and populate them and the shapefunction matrix if required.
-        std::cout << "filters.size() " << filters.size() << "\n";
-        std::cout << "elements.size() " << elements.size() << "\n";
+        bool populated_filters = false;
         if (filters.size() != elements.size()){
             std::cout << "Populating the filters\n";
             int pf_result = populate_filters(data, nodes, elements, qrules, filters);
             if (pf_result > 0){
                 return 1;
             }
+            populated_filters = true;
         }
 
-        return 0;
+        //Add the data to the filters
+        std::map< unsigned int, double > weights;
 
+        
+        
+
+        return 0;
     }
 
     
