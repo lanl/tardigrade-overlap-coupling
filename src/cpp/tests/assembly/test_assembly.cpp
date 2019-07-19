@@ -18,19 +18,32 @@ int test_read_connectivity_data(std::ofstream &results){
 
     assembly::read_connectivity_data(input_filename, nodes, elements, qrules);
 
-    std::cout << "Nodes\n";
-    assembly::print_node_map(nodes);
-    std::cout << "Elements\n";
-    assembly::print_element_map(elements);
-    std::cout << "Qrules\n";
-    assembly::print_qrule_map(qrules);
+//    std::cout << "Nodes\n";
+//    assembly::print_node_map(nodes);
+//    std::cout << "Elements\n";
+//    assembly::print_element_map(elements);
+//    std::cout << "Qrules\n";
+//    assembly::print_qrule_map(qrules);
 
     if (nodes.size() != 8){
         results << "test_read_connectivity_data (test 1) & False\n";
+        return 1;
     }
 
     if (elements.size() != 1){
         results << "test_read_connectivity_data (test 2) & False\n";
+        return 1;
+    }
+
+    if (qrules.size() != 1){
+        results << "test_read_connectivity_data (test 3) & False\n";
+        return 1;
+    }
+    for (auto it = qrules.begin(); it != qrules.end(); it++){
+        if (std::strcmp(it->first.c_str(), "Hex8") != 0){
+            results << "test_read_connectivity_data (test 4) & False\n";
+            return 1;
+        }
     }
 
     results << "test_read_connectivity_data & True\n";
