@@ -12,13 +12,14 @@
 #include<iostream>
 #include<string>
 #include "occonfiguration.h"
+#define OVERLAP_LIBCOMPILE
 #include "overlap_coupling.h"
 #include "assembly.h"
 
 namespace filter{
 
     //!Typedefs
-    typedef std::map< unsigned int, overlap::MicromorphicFilter > filter_map
+    typedef std::map< unsigned int, overlap::MicromorphicFilter > filter_map;
 
     //!File IO
     int open_input_file(const std::string &fn, const int format, std::ifstream &file);

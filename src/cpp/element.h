@@ -34,7 +34,7 @@ namespace elib{
             vecOfvec bounding_box; //!The bounding box of the element
 
             Element(){}
-            Element(vecOfvec nodes, quadrature_rule qrule);
+            Element(const vecOfvec &nodes, const quadrature_rule &qrule);
 
             void interpolate(const vec &nodal_values, const vec &local_coordinates,
                              double &value);
@@ -85,7 +85,7 @@ namespace elib{
 
         public:
 
-            Hex8(const vecOfvec &nodes, quadrature_rule &qrule) : Element(nodes, qrule){
+            Hex8(const vecOfvec &nodes, const quadrature_rule &qrule) : Element(nodes, qrule){
                 name = "Hex8";
                 local_node_coordinates = {{-1, -1, -1},
                                           { 1, -1, -1},
@@ -109,6 +109,6 @@ namespace elib{
     void print(const vec &a);
     void print(const vecOfvec &A);
 
-    std::unique_ptr<Element> build_element_from_string(const std::string &elname, vecOfvec &nodes, quadrature_rule &qrule);
+    std::unique_ptr<Element> build_element_from_string(const std::string &elname, const vecOfvec &nodes, const quadrature_rule &qrule);
 }
 #endif

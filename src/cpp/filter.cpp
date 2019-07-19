@@ -237,11 +237,18 @@ namespace filter{
         //Iterate over the element types.
         for (auto _element_types = elements.begin(); _element_types!=elements.end(); _element_types++){
 
+            //Find the quadrature rule
+            auto qrule = qrules.find(_element_types->first);
+            if (qrule == qrules.end()){
+                std::cout << "Error: quadrature rule for " << _element_types->first << " not found.\n";
+                return 1;
+            }
+
             //Loop over the elements. This could be parallelized.
             for (auto _element = _element_types->second.begin(); _element!=_element_types->second.end(); _element++){
 
                 auto elid = filters.find(_element->first);
-                if (elid != 0){
+                if (elid != filters.end()){
                     std::cout << "Error: filters must be made of elements with unique ids.\n"
                               << "       " << _element->first << " is already used.\n";
                     return 1;
@@ -250,13 +257,19 @@ namespace filter{
                 //Create a vector of the filter's nodes
                 elib::vecOfvec element_nodes(_element->second.size());
                 for (unsigned int i=0; i<element_nodes.size(); i++){
-                    element_nodes[i] = nodes[_element->second[i]];
+                    auto point = nodes.find(_element->second[i]);
+                    if (point == nodes.end()){
+                        std::cout << "Error: node " << _element->second[i] << " not found.\n";
+                        return 1;
+                    }
+                    element_nodes[i] = point->second;
                 }
 
+
                 //Construct the element
-                std::unique_ptr _current_element = elib::build_element_from_string(_element_types->first,
-                                                                                   element_nodes,
-                                                                                   qrules[_element_types->first]);
+                std::unique_ptr<elib::Element> _current_element = elib::build_element_from_string(_element_types->first,
+                                                                                                  element_nodes,
+                                                                                                  qrule->second);
 
                 //Initialize the filter
                 filters.emplace(_element->first, *_current_element);
@@ -267,7 +280,7 @@ namespace filter{
     }
 
     int populate_filters(const elib::vecOfvec &data, const assembly::node_map &nodes,
-                         const assembly::element_map elements, const assembly::qrule_map &qrules,
+                         const assembly::element_map &elements, const assembly::qrule_map &qrules,
                          filter_map &filters){
         /*!
         * Populate the micromorphic sub-filters using the provided data.
@@ -279,16 +292,18 @@ namespace filter{
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
         */
 
+        //Construct the filters if they haven't been formed yet
         int bf_result = build_filters(nodes, elements, qrules, filters);
         if (bf_result>0){
             return 1;
         }
 
+        return 0;
     }
 
     int process_timestep_totalLagrangian(const elib::vecOfvec &data, const assembly::node_map &nodes,
                                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
-                                         filter_map &filters, overlap::SpMat &shapefunctions){
+                                         overlap::SpMat &shapefunctions, filter_map &filters){
         /*!
         * Process the current timestep using a total-Lagrangian approach.
         * If filters is empty, it is assumed that this is the first increment and they will be 
@@ -298,13 +313,16 @@ namespace filter{
         * :param const assembly::node_map &nodes: The nodes of the micromorphic filter.
         * :param const assembly::element_map &elements: The elements of the micromorphic filter.
         * :param const assembly::qrule_map &qrules: The quadrature rules for the elements.
-        * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
         * :param overlap::SpMat &shapefunctions: The shapefunction matrix.
+        * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
         */
 
         //Check if the filters have been initialized and populate them and the shapefunction matrix if required.
         if (filters.size() != elements.size()){
-            populate_filters(data, nodes, elements, qrules, filters);
+            int pf_result = populate_filters(data, nodes, elements, qrules, filters);
+            if (pf_result > 0){
+                return 1;
+            }
         }
 
         return 0;
@@ -314,7 +332,7 @@ namespace filter{
     
     int process_timestep(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
-                         const unsigned int mode, filter_map &filters, overlap::SpMat &shapefunctions){
+                         const unsigned int mode, overlap::SpMat &shapefunctions, filter_map &filters){
         /*!
         * Process the current timestep and compute the macro-scale stress and deformation quantities
         * 
@@ -326,13 +344,12 @@ namespace filter{
         *     Options:
         *         0 Total Lagrangian. If filters is empty, it will be assumed that 
         *         the current timestep is the reference configuration.
+        * :param overlap::SpMat &shapefunctions: The shapefunction matrix.
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
         */
     
         if (mode == 0){
-            return process_timestep_totalLagrangian(const elib::vecOfvec &data, const assembly::node_map &nodes,
-                                                    const assembly::element_map &elements, const assembly::qrule_map &qrules,
-                                                    filter_map &filters);
+            return process_timestep_totalLagrangian(data, nodes, elements, qrules, shapefunctions, filters);
         }
         return 1;
     }

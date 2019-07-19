@@ -10,7 +10,7 @@
 
 namespace elib{
     
-    Element::Element(vecOfvec _nodes, quadrature_rule _qrule){
+    Element::Element(const vecOfvec &_nodes, const quadrature_rule &_qrule){
         /*!
         The constructor for the element
 
@@ -491,7 +491,7 @@ namespace elib{
         }
     }
 
-    std::unique_ptr<Element> build_element_from_string(const std::string &eltype, vecOfvec &nodes, quadrature_rule &qrule){
+    std::unique_ptr<Element> build_element_from_string(const std::string &eltype, const vecOfvec &nodes, const quadrature_rule &qrule){
 	    /*
 	     * Build an element from the element name, the nodes, and the quadrature rule
 	     *
