@@ -361,7 +361,9 @@ namespace overlap{
 
         public:
             MicromorphicFilter(){};
-            MicromorphicFilter(const elib::Element& element, bool _shared_dof_material = true);
+//            MicromorphicFilter(elib::Element* element, bool _shared_dof_material = true);
+            MicromorphicFilter(const std::string &element_type, const elib::vecOfvec &nodes,
+                               const elib::quadrature_rule &qrule, bool _shared_dof_material = true);
             
             //Point loading and integration domain construction
             bool add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates);
@@ -372,8 +374,10 @@ namespace overlap{
             //Compute mass properties
             int compute_mass_properties(const std::map< unsigned int, double > &micro_density);
 
+	    int print();
+
         protected:
-            elib::Element element;
+	    std::unique_ptr<elib::Element> element;
             bool shared_dof_material;
             OverlapCoupling material_overlap;
 

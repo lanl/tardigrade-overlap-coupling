@@ -2118,22 +2118,45 @@ namespace overlap{
         
     }
 
-    MicromorphicFilter::MicromorphicFilter(const elib::Element& _element, bool _shared_dof_material){
+//    MicromorphicFilter::MicromorphicFilter(elib::Element* _element, bool _shared_dof_material){
+//        /*!
+//        Initialize the micromorphic filter
+//
+//        :param elib::Element &element: The underlying element over which the filter is computed.
+//        */
+//
+//        element = _element;
+//        shared_dof_material = _shared_dof_material;
+//
+//        elib::vecOfvec gauss_points(element->qrule.size());
+//        for (unsigned int gp=0; gp<element->qrule.size(); gp++){
+//            gauss_points[gp] = element->qrule[gp].first;
+//        }
+//
+//        material_overlap.initialize(_element->local_node_coordinates, gauss_points); 
+//    }
+
+    MicromorphicFilter::MicromorphicFilter(const std::string &element_type, const elib::vecOfvec &nodes,
+		                           const elib::quadrature_rule &qrule, bool _shared_dof_material){
         /*!
-        Initialize the micromorphic filter
+	 * Initialize the micromorphic filter
+	 *
+	 * :param const std::string &element_type: The name of the underlying element type
+	 * :param const elib::vecOfvec &nodes: The nodes which make up the element type (i.e. their coordinates)
+	 * :param const elib::quadrature_rule &qrule: The quadrature rule of the element.
+	 * :param bool _shared_dof_material: A flag which indicates if the material points should be used to 
+	 *                                   determine the macro-scale nodal coordinate information.
+	 */
 
-        :param elib::Element &element: The underlying element over which the filter is computed.
-        */
+	 element = elib::build_element_from_string(element_type, nodes, qrule);
+	 shared_dof_material = _shared_dof_material;
 
-        element = _element;
-        shared_dof_material = _shared_dof_material;
-
-        elib::vecOfvec gauss_points(element.qrule.size());
-        for (unsigned int gp=0; gp<element.qrule.size(); gp++){
-            gauss_points[gp] = element.qrule[gp].first;
-        }
-
-        material_overlap.initialize(_element.local_node_coordinates, gauss_points); 
+	 elib::vecOfvec gauss_points(element->qrule.size());
+	 for (unsigned int gp=0; gp<element->qrule.size(); gp++){
+             gauss_points[gp] = element->qrule[gp].first;
+	 }
+	 
+	 material_overlap.initialize(element->local_node_coordinates, gauss_points);
     }
 
     bool MicromorphicFilter::add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates){
@@ -2144,11 +2167,14 @@ namespace overlap{
         :param elib::vec &coordinates: The global coordinates of the micro dof point.
         */
 
-        if (element.bounding_box_contains_point(coordinates)){
+	std::cout << "bounding box:\n";
+        elib::print(element->bounding_box);
+
+        if (element->bounding_box_contains_point(coordinates)){
 
             elib::vec xi;
-            element.compute_local_coordinates(coordinates, xi);
-            if (element.local_point_inside(xi)){
+            element->compute_local_coordinates(coordinates, xi);
+            if (element->local_point_inside(xi)){
                 dof_id_numbers.push_back(id);
                 micro_dof_local_coordinates.push_back(xi);
                 return true;
@@ -2159,17 +2185,21 @@ namespace overlap{
 
     bool MicromorphicFilter::add_micro_material_point(const unsigned int &id, const elib::vec &coordinates){
         /*!
-        Check if a material point is inside the filter and add it if it is.
-
-        :param unsigned int &id: The micro point id number
-        :param elib::vec &coordinates: The global coordinates of the micro material point.
+        * Check if a material point is inside the filter and add it if it is.
+        * 
+        * :param unsigned int &id: The micro point id number
+        * :param elib::vec &coordinates: The global coordinates of the micro material point.
         */
 
-        if (element.bounding_box_contains_point(coordinates)){
+	std::cout << "coordinates: "; elib::print(coordinates);
+	std::cout << "bounding box:\n";
+        elib::print(element->bounding_box);
+
+        if (element->bounding_box_contains_point(coordinates)){
 
             elib::vec xi;
-            element.compute_local_coordinates(coordinates, xi);
-            if (element.local_point_inside(xi)){
+            element->compute_local_coordinates(coordinates, xi);
+            if (element->local_point_inside(xi)){
                 material_id_numbers.push_back(id);
                 micro_material_local_coordinates.push_back(xi);
                 return true;
@@ -2259,5 +2289,22 @@ namespace overlap{
             }
         }
         return 0;
+    }
+
+    int MicromorphicFilter::print(){
+        /*!
+	 * Print out the information contained in the filter
+	 */
+
+	std::cout << "DOF id numbers:\n";
+        elib::print(dof_id_numbers);
+	std::cout << "Material Point id numbers:\n";
+	elib::print(material_id_numbers);
+	std::cout << "DOF local coordinates:\n";
+	elib::print(micro_dof_local_coordinates);
+	std::cout << "Material Point local coordinates:\n";
+	elib::print(micro_material_local_coordinates);
+
+	return 0;
     }
 }

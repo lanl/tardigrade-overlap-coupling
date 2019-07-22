@@ -17,7 +17,9 @@
 
 namespace elib{
 
+    typedef std::vector< unsigned int > uivec;
     typedef std::vector< double > vec;
+    typedef std::vector< uivec > vecOfuivec;
     typedef std::vector< vec > vecOfvec;
     typedef std::vector<std::pair< vec, double> > quadrature_rule;
 
@@ -35,6 +37,7 @@ namespace elib{
 
             Element(){}
             Element(const vecOfvec &nodes, const quadrature_rule &qrule);
+	    virtual ~Element() = default;
 
             void interpolate(const vec &nodal_values, const vec &local_coordinates,
                              double &value);
@@ -100,6 +103,7 @@ namespace elib{
             void get_shape_functions(const vec &local_coordinates, vec &result);
             void get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
             bool local_point_inside(const vec &local_coordinates);
+
     };
 
     //Functions
@@ -107,7 +111,9 @@ namespace elib{
     void invert(const vecOfvec &A, vecOfvec &Ainv);
     void solve(const vecOfvec &A, const vec &b, vec &x);
     void print(const vec &a);
+    void print(const uivec &a);
     void print(const vecOfvec &A);
+    void print(const vecOfuivec &A);
     void print(const quadrature_rule &qrule);
     void print(const Element &element);
 

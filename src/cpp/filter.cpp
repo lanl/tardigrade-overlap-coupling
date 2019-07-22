@@ -266,13 +266,13 @@ namespace filter{
                 }
 
 
-                //Construct the element
-                std::unique_ptr<elib::Element> _current_element = elib::build_element_from_string(_element_types->first,
-                                                                                                  element_nodes,
-                                                                                                  qrule->second);
+//                //Construct the element
+//                elib::Element* _current_element = elib::build_element_from_string(_element_types->first,
+//                                                                                                  element_nodes,
+//                                                                                                  qrule->second);
 
                 //Initialize the filter
-                filters.emplace(_element->first, *_current_element);
+                filters.emplace(_element->first, overlap::MicromorphicFilter(_element_types->first, element_nodes, qrule->second));
 
             }
         }
@@ -303,11 +303,23 @@ namespace filter{
         //This probably could/should be parallelized
         for (auto datapoint=data.begin(); datapoint!=data.end(); datapoint++){
             double w = 0;
-            //Iterate over the macro-scale filters
+	    elib::print(*datapoint);
+
+	    //Iterate over the macro-scale filters
             for (auto filter = filters.begin(); filter!=filters.end(); filter++){
                 bool iscontained;
-                int pointtype = (int)(datapoint[0]+0.5);
-                if (pointtype==
+                int pointtype = (int)((*datapoint)[0]+0.5);
+                if (pointtype==1){
+                    std::cout << "material point found\n";
+		    iscontained = filter->second.add_micro_material_point((*datapoint)[1],
+				                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
+		    std::cout << "iscontained: " << iscontained << "\n";
+		    filter->second.print();
+		    assert(1==0);
+		}
+		if (pointtype==2){
+		    std::cout << "dof point found\n";
+		}
             }
         }
 
@@ -332,9 +344,10 @@ namespace filter{
 
         //Check if the filters have been initialized and populate them and the shapefunction matrix if required.
         bool populated_filters = false;
+        std::map< unsigned int, double > weights;
         if (filters.size() != elements.size()){
             std::cout << "Populating the filters\n";
-            int pf_result = populate_filters(data, nodes, elements, qrules, filters);
+            int pf_result = populate_filters(data, nodes, elements, qrules, weights, filters);
             if (pf_result > 0){
                 return 1;
             }
@@ -342,7 +355,6 @@ namespace filter{
         }
 
         //Add the data to the filters
-        std::map< unsigned int, double > weights;
 
         
         
