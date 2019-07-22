@@ -44,9 +44,7 @@ namespace elib{
         */
 
         vec shape_functions;
-	std::cout << "pre shape functions\n";
         get_shape_functions(local_coordinates, shape_functions);
-	std::cout << "shape functions: "; print(shape_functions);
 
         value = 0;
         for (unsigned int n=0; n<nodes.size(); n++){
@@ -253,17 +251,11 @@ namespace elib{
         // Set the initial iterate
         vec xi(local_node_coordinates[0].size(), 0);
 
-	std::cout << "derp1\n";
         // Compute the initial result
         vec x(global_coordinates.size(), 0);
-	std::cout << "global_coordinates: "; print(global_coordinates);
-	std::cout << "nodes:\n"; print(nodes);
-	std::cout << "xi: "; print(xi);
-	std::cout << "x: "; print(x);
 
         interpolate(nodes, xi, x);
 
-	std::cout << "derp2\n";
         // Set the initial residual vector
         vec R(global_coordinates.size(), 0);
         double R0, Rp, Rnorm;
@@ -274,7 +266,6 @@ namespace elib{
         }
         R0 = Rp = Rnorm = sqrt(R0);
 
-	std::cout << "derp 3\n";
         //Set the tolerance
         double tol = tolr*R0 + tola;
 
@@ -284,7 +275,6 @@ namespace elib{
         double lambda = 1.;
         vec dxi;
         vecOfvec J;
-	std::cout << "pre Newton-Raphson loop\n";
         while ((niter < maxiter) && (Rnorm > tol)){
             get_local_gradient(nodes, xi, J);
             solve(J, R, dxi);

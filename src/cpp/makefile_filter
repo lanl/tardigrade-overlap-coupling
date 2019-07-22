@@ -1,4 +1,11 @@
 # Micromorphic filter, a variationally based filter for DNS
+#
+# run: 'make -f makefile_filter full' to do a full build 
+# including liboverlap. This can fail if voro++ has been 
+# built in debug mode (METHOD=dbg make ...).
+#
+# To build the debug version of the library run 
+# 'METHOD=dbg make -f makefile_filter full'
 # 
 # Author: Nathan A. Miller (LANL / CU Boulder)
 # Email:  nathanm@lanl.gov
@@ -23,12 +30,15 @@ endif
 ifeq ($(METHOD),oprof)
   DBG = -pg
 endif
+export METHOD
 
 #Define the library name
 SONAME=liboverlap.so
 SOVERSION=liboverlap.so.1
 
 # Makefile rules
+.PHONY : clearscr build_library clean all
+
 all: $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
@@ -43,5 +53,19 @@ assembly.o: assembly.cpp assembly.h
 clean:
 	rm $(OBJECTS)
 	rm $(EXECUTABLE)
+
+deep_clean:
+	rm $(SONAME)
+	rm $(OBJECTS)
+	rm $(EXECUTABLE)
+
+clearscr:
+	clear
+
+build_library:
+	export METHOD
+	make -f makefile
+
+full: clearscr build_library all
 
 .PHONY: all clean

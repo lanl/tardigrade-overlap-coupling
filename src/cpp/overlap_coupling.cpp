@@ -2167,9 +2167,6 @@ namespace overlap{
         :param elib::vec &coordinates: The global coordinates of the micro dof point.
         */
 
-	std::cout << "bounding box:\n";
-        elib::print(element->bounding_box);
-
         if (element->bounding_box_contains_point(coordinates)){
 
             elib::vec xi;
@@ -2190,10 +2187,6 @@ namespace overlap{
         * :param unsigned int &id: The micro point id number
         * :param elib::vec &coordinates: The global coordinates of the micro material point.
         */
-
-	std::cout << "coordinates: "; elib::print(coordinates);
-	std::cout << "bounding box:\n";
-        elib::print(element->bounding_box);
 
         if (element->bounding_box_contains_point(coordinates)){
 

@@ -302,25 +302,33 @@ namespace filter{
 
         //This probably could/should be parallelized
         for (auto datapoint=data.begin(); datapoint!=data.end(); datapoint++){
-            double w = 0;
-	    elib::print(*datapoint);
+            unsigned int containing_filters;
 
 	    //Iterate over the macro-scale filters
             for (auto filter = filters.begin(); filter!=filters.end(); filter++){
-                bool iscontained;
+                bool iscontained = false;
                 int pointtype = (int)((*datapoint)[0]+0.5);
                 if (pointtype==1){
-                    std::cout << "material point found\n";
 		    iscontained = filter->second.add_micro_material_point((*datapoint)[1],
 				                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
-		    std::cout << "iscontained: " << iscontained << "\n";
-		    filter->second.print();
-		    assert(1==0);
 		}
 		if (pointtype==2){
 		    std::cout << "dof point found\n";
 		}
+
+                if (iscontained){
+                    containing_filters += 1;
+                }
             }
+
+            //Adjust the weighting on the point if it is contained in multiple elements.
+            //Note that this should only happen if a point is on the boundary between 
+            //multiple filter domains.
+
+            if (containing_filters > 1){
+                weights.emplace((unsigned int)((*datapoint)[0]+0.5), 1./containing_filters);
+            }
+            
         }
 
         return 0;
