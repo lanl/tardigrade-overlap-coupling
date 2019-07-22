@@ -622,8 +622,9 @@ void test_construct_container(std::ofstream &results){
     //Construct the container
     voro::container* container = overlap::construct_container(point_numbers, point_coords, bounds, vplanes);
     overlap::integrateMap points;
+    std::map< unsigned int, FloatType > boundary_node_volumes;
     overlap::integrateMap::iterator itiM;
-    overlap::evaluate_container_information( container, points);
+    overlap::evaluate_container_information( container, points, boundary_node_volumes);
     double result_d = 0;
     for (itiM=points.begin(); itiM!=points.end(); itiM++){
         result_d += itiM->second.volume;

@@ -369,17 +369,20 @@ namespace overlap{
             bool add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates);
             bool add_micro_material_point(const unsigned int &id, const elib::vec &coordinates);
 
-            int construct_integrators();
+            int construct_integrators(bool update_shapefunction_matrix = false);
 
             //Compute mass properties
             int compute_mass_properties(const std::map< unsigned int, double > &micro_density);
 
 	    int print();
 
+            int print_mass_properties();
+
         protected:
 	    std::unique_ptr<elib::Element> element;
             bool shared_dof_material;
             OverlapCoupling material_overlap;
+            OverlapCoupling dof_overlap;
 
             //ID number vectors
             std::vector< unsigned int > dof_id_numbers;
@@ -445,6 +448,7 @@ namespace overlap{
     void apply_nansons_relation(const std::vector< double > &N, const double &JdA, const vecOfvec &Finv, std::vector< double > &nda);
     void perform_volume_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< double > &result);
     void perform_volume_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result);
+    void perform_position_weighted_volume_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result);
     void perform_surface_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, double > > &result);
     void perform_surface_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, std::vector< double > > > &result);
     #ifdef OVERLAP_LIBCOMPILE

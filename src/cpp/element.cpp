@@ -561,5 +561,19 @@ namespace elib{
 	    return NULL;
     }
 
+    void determinant_3x3(const vecOfvec &A, double &d){
+        /*
+         * Compute the determinant of matrix A. Assumes A is a 3x3 matrix.
+         * 
+         * :param const vecOfvec &A: The matrix 
+         * :param double d: The determinant of A
+         */
+
+         d  = 0;
+         d += A[0][0]*(A[1][1]*A[2][2] - A[1][2]*A[2][1]);
+         d -= A[0][1]*(A[1][0]*A[2][2] - A[1][2]*A[2][0]);
+         d += A[0][2]*(A[1][0]*A[2][1] - A[1][1]*A[2][0]);
+    }
+
 }
 

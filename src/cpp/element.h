@@ -118,5 +118,6 @@ namespace elib{
     void print(const Element &element);
 
     std::unique_ptr<Element> build_element_from_string(const std::string &elname, const vecOfvec &nodes, const quadrature_rule &qrule);
+    void determinant_3x3(const vecOfvec &A, double &d);
 }
 #endif

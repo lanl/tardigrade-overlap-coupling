@@ -49,6 +49,6 @@ assembly.o: assembly.cpp assembly.h
 	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< -lstdc++ -std=gnu++11
 
 clean:
-	rm $(OBJECTS) $(SOVERSION) $(SONAME)
+	rm -f $(OBJECTS) $(SOVERSION) $(SONAME)
 
 .PHONY: all clean

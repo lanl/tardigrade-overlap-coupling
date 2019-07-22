@@ -11,7 +11,7 @@ include ../../../../config.mk
 
 # List of executables
 EXECUTABLES=test_overlap_coupling
-OBJECTS=overlap_coupling.o test_overlap_coupling.o quickhull.o
+OBJECTS=overlap_coupling.o test_overlap_coupling.o quickhull.o element.o
 INC+=-I../..
 LOCAL_CFLAGS=-ggdb
 
@@ -38,6 +38,10 @@ quickhull.o: $(QHULL)/QuickHull.cpp $(QHULL)/*.hpp
 
 overlap_coupling.o: ../../overlap_coupling.cpp ../../overlap_coupling.h ../../occonfiguration.h
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11 -lvoro++
+
+element.o: ../../element.cpp ../../element.h
+	$(CXX) $(CFLAGS) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< -lstdc++ -std=gnu++11
+
 
 clean:
 	rm -f $(EXECUTABLES)

@@ -40,7 +40,7 @@ namespace filter{
                       const assembly::qrule_map &qrules, filter_map &filters);
     int populate_filters(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
-                         std::map< unsigned int, double > &weights, filter_map &filters);
+                         std::map< unsigned int, double > &weights, filter_map &filters); 
     int process_timestep_totalLagrangian(const elib::vecOfvec &data, const assembly::node_map &nodes,
                                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                                          overlap::SpMat &shapefunctions, filter_map &filters);

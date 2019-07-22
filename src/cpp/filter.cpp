@@ -304,16 +304,19 @@ namespace filter{
         for (auto datapoint=data.begin(); datapoint!=data.end(); datapoint++){
             unsigned int containing_filters;
 
+            //Determine whether the point is a material point or dof point
+            int pointtype = (int)((*datapoint)[0]+0.5);
+
 	    //Iterate over the macro-scale filters
             for (auto filter = filters.begin(); filter!=filters.end(); filter++){
                 bool iscontained = false;
-                int pointtype = (int)((*datapoint)[0]+0.5);
                 if (pointtype==1){
 		    iscontained = filter->second.add_micro_material_point((*datapoint)[1],
 				                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
 		}
-		if (pointtype==2){
-		    std::cout << "dof point found\n";
+		else if (pointtype==2){
+                    iscontained = filter->second.add_micro_dof_point((*datapoint)[1],
+                                                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
 		}
 
                 if (iscontained){
@@ -338,9 +341,15 @@ namespace filter{
                                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                                          overlap::SpMat &shapefunctions, filter_map &filters){
         /*!
-        * Process the current timestep using a total-Lagrangian approach.
+        * Process the current timestep using a Total-Lagrangian approach.
         * If filters is empty, it is assumed that this is the first increment and they will be 
         * populated along with the shape-function matrix.
+        *
+        * Note that, even in a total-Lagrangian framework, we still must re-populate the material 
+        * point integrators every timestep but we can leave the shape-function matrix in tact. This 
+        * is because we do not, generally, know how the micro-volumes volumetrically deform but we 
+        * can choose to use the points originally contained within the filter as the points that 
+        * determine the filter's motion. This is what is meant by Total-Lagrangian.
         * 
         * :param const elib::vecOfvec &data: The DNS data at the current timestep.
         * :param const assembly::node_map &nodes: The nodes of the micromorphic filter.
@@ -350,19 +359,37 @@ namespace filter{
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
         */
 
-        //Check if the filters have been initialized and populate them and the shapefunction matrix if required.
+        //Check if the filters have been populated yet. If not, we will re-compute the shape-function matrix.
         bool populated_filters = false;
-        std::map< unsigned int, double > weights;
         if (filters.size() != elements.size()){
-            std::cout << "Populating the filters\n";
-            int pf_result = populate_filters(data, nodes, elements, qrules, weights, filters);
-            if (pf_result > 0){
-                return 1;
-            }
             populated_filters = true;
         }
 
-        //Add the data to the filters
+        //Populate the filters
+        std::map< unsigned int, double > shapefunction_weights;
+        int pf_result = populate_filters(data, nodes, elements, qrules, shapefunction_weights, filters);
+        if (pf_result > 0){
+            std::cout << "Error in population of filters.\n";
+            return 1;
+        }
+
+        //Perform the voronoi cell decomposition (maybe should be parallelized)
+        std::cout << "Constructing Integrators\n";
+        for (auto filter = filters.begin(); filter!=filters.end(); filter++){
+            filter->second.construct_integrators();
+        }
+        
+        //Compute the mass and volume properties of the filters
+        std::map< unsigned int, double > micro_density;
+        std::map< unsigned int, elib::vec> micro_position;
+        for (auto dataline = data.begin(); dataline!=data.end(); dataline++){
+            micro_density.emplace((*dataline)[1], (*dataline)[5]);
+        }
+        for (auto filter = filters.begin(); filter!=filters.end(); filter++){
+            filter->second.compute_mass_properties(micro_density);
+            filter->second.print_mass_properties();
+        }
+        
 
         
         

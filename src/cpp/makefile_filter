@@ -51,13 +51,14 @@ assembly.o: assembly.cpp assembly.h
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
 
 clean:
-	rm $(OBJECTS)
-	rm $(EXECUTABLE)
+	rm -f $(OBJECTS)
+	rm -f $(EXECUTABLE)
 
 deep_clean:
-	rm $(SONAME)
-	rm $(OBJECTS)
-	rm $(EXECUTABLE)
+	make -f makefile clean
+	rm -f $(SONAME) $(SOVERSION)
+	rm -f $(OBJECTS)
+	rm -f $(EXECUTABLE)
 
 clearscr:
 	clear
