@@ -2260,6 +2260,26 @@ namespace overlap{
         * Construct the integrator for the degree of freedom points.
         */
         dof_overlap.compute_weights(dof_id_numbers, micro_dof_local_coordinates, dof_weights);
+
+        //Transform the volumes and normals
+        elib::vecOfvec jacobian;
+        elib::vecOfvec invjacobian;
+        double je;
+        for (unsigned int gp=0; gp<dof_weights.size(); gp++){
+            for (auto it=dof_weights[gp].begin(); it!=dof_weights[gp].end(); it++){
+                element->get_jacobian(it->second.coordinates, element->local_node_coordinates, jacobian);
+                elib::determinant_3x3(jacobian, je);
+                elib::invert(jacobian, invjacobian);
+
+                //Transform the volume
+                it->second.volume *= je;
+
+                //Transform the normals
+                for (unsigned int j=0; j<it->second.das.size(); j++){
+                    overlap::apply_nansons_relation(it->second.normal(j), je*it->second.area(j), invjacobian, it->second.das[j]);
+                }
+            }
+        }
         return 0;
     }
 
@@ -2268,7 +2288,7 @@ namespace overlap{
          * Compute the mass properties of the homogenized DNS.
          *
          * :param std::map< unsigned int , double> &density: The densities of the micro points
-        */
+         */
 
         compute_volume();
         compute_density(micro_density);
@@ -2317,7 +2337,6 @@ namespace overlap{
         :param std::map< unsigned int , elib::vec> &density:
         */
 
-        elib::vecOfvec local_center_of_mass;
         perform_position_weighted_volume_integration(micro_density, material_weights, local_center_of_mass);
         
         center_of_mass.resize(local_center_of_mass.size());
@@ -2326,6 +2345,64 @@ namespace overlap{
                 local_center_of_mass[gp][i] /= volume[gp]*density[gp];
             }
             element->interpolate(element->nodes, local_center_of_mass[gp], center_of_mass[gp]);
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::add_shapefunction_matrix_contribution(const std::map< unsigned int, unsigned int > &macro_node_to_col,
+                                                                  const std::map< unsigned int, unsigned int > &micro_node_to_row,
+                                                                  const std::vector< unsigned int > &macro_node_ids,
+                                                                  const std::map< unsigned int, unsigned int > &micro_node_elcount,
+                                                                  const unsigned int num_macro_dof, const unsigned int num_micro_dof,
+                                                                  const unsigned int num_micro_free,
+                                                                  std::vector< T > &tripletList){
+        /*!
+         * Add the contribution of this filter to the shape-function matrix
+         * :param const std::map< unsigned int, unsigned int > &macro_node_to_col: The map from the macro nodes to the column of the 
+         *                                                                         matrix (divided by num_macro_dof) which corresponds
+         * :param const std::map< unsigned int, unsigned int > &micro_node_to_row: The map from the macro nodes to the row of the matrix
+         *                                                                         (divided by num_micro_dof) which corresponds.
+         * :param const std::vector< unsigned int > &macro_node_ids: The id numbers of the macro nodes.
+         * :param const std::map< unsigned int, unsigned int > &micro_node_elcount: The number of elements the micro node is contained within
+         * :param const unsigned int num_macro_dof: The number of degrees of freedom in the macro-scale
+         * :param const unsigned int num_micro_dof: The number of degrees of freedom in the micro-scale
+         * :param const unsigned int num_micro_free: The number of free micro degrees of freedom
+         * :param std::vector< T > &tripletList: The resulting terms of the sparse matrix.
+         */
+
+        elib::vecOfvec phis;
+        elib::vecOfvec cg_phis;
+
+        //Compute the shape-function values at the centers of mass
+        get_cg_phis(cg_phis);
+
+        //Iterate over the filter's gauss points
+        if (shared_dof_material){
+            for (unsigned int gp=0; gp<material_weights.size(); gp++){
+                //Re-cast the cg_phis at the gauss point to the shape expected by construct triplet list
+                phis.resize(cg_phis[gp].size());
+                for (unsigned int i=0; i<phis.size(); i++){phis[i].resize(1); phis[i][0] = cg_phis[gp][i];}
+
+                //Add the terms to the triplet list
+                overlap::construct_triplet_list(&macro_node_to_col, &micro_node_to_row, macro_node_ids,
+                                                center_of_mass[gp], phis, material_weights[gp],
+                                                &micro_node_elcount, false, true, num_micro_free,
+                                                        tripletList, num_macro_dof, num_micro_dof);
+            }
+        }
+        else{
+
+            for (unsigned int gp=0; gp<dof_weights.size(); gp++){
+                //Re-cast the cg_phis at the gauss point to the shape expected by construct triplet list
+                phis.resize(cg_phis[gp].size());
+                for (unsigned int i=0; i<phis.size(); i++){phis[i].resize(1); phis[i][0] = cg_phis[gp][i];}
+
+                //Add the terms to the triplet list
+                overlap::construct_triplet_list(&macro_node_to_col, &micro_node_to_row, macro_node_ids,
+                                                center_of_mass[gp], phis, dof_weights[gp],
+                                                &micro_node_elcount, false, true, num_micro_free,
+                                                tripletList, num_macro_dof, num_micro_dof);
+            }
         }
         return 0;
     }
@@ -2355,8 +2432,8 @@ namespace overlap{
 
     int MicromorphicFilter::print_mass_properties(){
         /*!
-        * Print out the mass properties of the filter
-        */
+         * Print out the mass properties of the filter
+         */
 
         std::cout << "***********************\n";
         std::cout << "*** MASS PROPERTIES ***\n";
@@ -2368,5 +2445,16 @@ namespace overlap{
             std::cout << "  C. of mass: "; elib::print(center_of_mass[gp]);
         }
         return 0;
+    }
+
+    int MicromorphicFilter::get_cg_phis(elib::vecOfvec &cg_phis){
+        /*!
+         * Compute the shape function values at the centers of mass.
+         */
+         cg_phis.resize(local_center_of_mass.size());
+         for (unsigned int gp=0; gp<local_center_of_mass.size(); gp++){
+             element->get_shape_functions(local_center_of_mass[gp], cg_phis[gp]);
+         }
+         return 0;
     }
 }

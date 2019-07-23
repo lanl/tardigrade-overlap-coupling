@@ -12,11 +12,11 @@ namespace elib{
     
     Element::Element(const vecOfvec &_nodes, const quadrature_rule &_qrule){
         /*!
-        The constructor for the element
-
-        :param const vecOfvec &nodes: The global coordinates of the nodes
-        :param const quadrature_rule &qrule: The quadrature rule of the element
-        */
+         * The constructor for the element
+         * 
+         * :param const vecOfvec &nodes: The global coordinates of the nodes
+         * :param const quadrature_rule &qrule: The quadrature rule of the element
+         */
 
         nodes = _nodes;
         qrule = _qrule;
@@ -36,12 +36,12 @@ namespace elib{
     void Element::interpolate(const vec &nodal_values, const vec &local_coordinates,
                               double &value){
         /*!
-        Interpolate the vector of values to the provided local coordinates.
-
-        :param const vec &nodal_values: The values to be interpolated (nnodes, value at node n)
-        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
-        :param double &value: The interpolated value
-        */
+         * Interpolate the vector of values to the provided local coordinates.
+         * 
+         * :param const vec &nodal_values: The values to be interpolated (nnodes, value at node n)
+         * :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+         * :param double &value: The interpolated value
+         */
 
         vec shape_functions;
         get_shape_functions(local_coordinates, shape_functions);
@@ -56,13 +56,13 @@ namespace elib{
     void Element::interpolate(const vecOfvec &nodal_values, const vec &local_coordinates,
                               vec &value){
         /*!
-        Interpolate the vector of values to the provided local coordinates.
-
-        :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
-        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
-        :param vec &value: The interpolated value
-        */
-        
+         * Interpolate the vector of values to the provided local coordinates.
+         * 
+         * :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
+         * :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+         * :param vec &value: The interpolated value
+         */
+         
         vec shape_functions;
         get_shape_functions(local_coordinates, shape_functions);
 
@@ -82,12 +82,12 @@ namespace elib{
     void Element::get_local_gradient(const vec &nodal_values, const vec &local_coordinates,
 		                     vec &value){
         /*!
-        Compute the gradient of the vector of values at the provided local coordinates.
-
-        :param const vec &nodal_values: The values to be interpolated (nnodes,)
-        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
-        :param vecOfvec &value: The global gradient of the nodal_values
-        */
+         * Compute the gradient of the vector of values at the provided local coordinates.
+         * 
+         * :param const vec &nodal_values: The values to be interpolated (nnodes,)
+         * :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+         * :param vecOfvec &value: The global gradient of the nodal_values
+         */
 
 	vecOfvec local_grad_shape_functions;
 	get_local_grad_shape_functions(local_coordinates, local_grad_shape_functions);
@@ -105,12 +105,12 @@ namespace elib{
     void Element::get_local_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
                                      vecOfvec &value){
         /*!
-        Compute the gradient of the vector of values at the provided local coordinates.
-
-        :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
-        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
-        :param vecOfvec &value: The global gradient of the nodal_values
-        */
+         * Compute the gradient of the vector of values at the provided local coordinates.
+         * 
+         * :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
+         * :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+         * :param vecOfvec &value: The global gradient of the nodal_values
+         */
 
         vecOfvec local_grad_shape_functions;
         get_local_grad_shape_functions(local_coordinates, local_grad_shape_functions);
@@ -136,13 +136,13 @@ namespace elib{
     void Element::get_global_gradient(const vec  &nodal_values, const vec &local_coordinates,
                                       const vecOfvec &coords, vec &value){
         /*!
-        Compute the gradient of the values with respect to the provided coordinates.
-
-        :param const vec &nodal_values: The values to be interpolated (nnodes, value at node n)
-        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
-        :param const vecOfvec &coords: The coordinates of the nodes (nnodes, n dim)
-        :param vecOfvec &value: The global gradient of the nodal_values
-        */
+         * Compute the gradient of the values with respect to the provided coordinates.
+         * 
+         * :param const vec &nodal_values: The values to be interpolated (nnodes, value at node n)
+         * :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+         * :param const vecOfvec &coords: The coordinates of the nodes (nnodes, n dim)
+         * :param vecOfvec &value: The global gradient of the nodal_values
+         */
 
         vec local_gradient;
         vecOfvec dxdxi, dxidx;
@@ -165,13 +165,13 @@ namespace elib{
     void Element::get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
                                       const vecOfvec &coords, vecOfvec &value){
         /*!
-        Compute the gradient of the values with respect to the provided coordinates.
-
-        :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
-        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
-        :param const vecOfvec &coords: The coordinates of the nodes (nnodes, n dim)
-        :param vecOfvec &value: The global gradient of the nodal_values
-        */
+         * Compute the gradient of the values with respect to the provided coordinates.
+         * 
+         * :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
+         * :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+         * :param const vecOfvec &coords: The coordinates of the nodes (nnodes, n dim)
+         * :param vecOfvec &value: The global gradient of the nodal_values
+         */
 
         vecOfvec local_gradient, dxdxi, dxidx;
         get_local_gradient(nodal_values, local_coordinates, local_gradient);
@@ -200,12 +200,12 @@ namespace elib{
     void Element::get_global_gradient(const vec &nodal_values, const vec &local_coordinates,
                                       vec &value){
         /*!
-        Compute the gradient of the values with respect to the nodal coordinates.
-
-        :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
-        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
-        :param vecOfvec &value: The global gradient of the nodal_values
-        */
+         * Compute the gradient of the values with respect to the nodal coordinates.
+         * 
+         * :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
+         * :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+         * :param vecOfvec &value: The global gradient of the nodal_values
+         */
 
         get_global_gradient(nodal_values, local_coordinates, nodes, value);
         return;
@@ -214,12 +214,12 @@ namespace elib{
     void Element::get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
                                       vecOfvec &value){
         /*!
-        Compute the gradient of the values with respect to the nodal coordinates.
-
-        :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
-        :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
-        :param vecOfvec &value: The global gradient of the nodal_values
-        */
+         * Compute the gradient of the values with respect to the nodal coordinates.
+         * 
+         * :param const vecOfvec &nodal_values: The values to be interpolated (nnodes, value at node n)
+         * :param const vec &local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+         * :param vecOfvec &value: The global gradient of the nodal_values
+         */
 
         get_global_gradient(nodal_values, local_coordinates, nodes, value);
         return;
@@ -228,10 +228,10 @@ namespace elib{
     void Element::get_jacobian(const vec &local_coordinates, const vecOfvec &reference_coordinates,
                                vecOfvec &jacobian){
         /*!
-        Compute the jacobian matrix (dxdX) of the element at the given local coordinates.
-        :param vec local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
-        :param vecOfvec reference_coordinates: The reference coordinates of the element (nnodes, ndim)
-        */
+         * Compute the jacobian matrix (dxdX) of the element at the given local coordinates.
+         * :param vec local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
+         * :param vecOfvec reference_coordinates: The reference coordinates of the element (nnodes, ndim)
+         */
 
         get_global_gradient(nodes, local_coordinates, reference_coordinates, jacobian);
     }
@@ -239,14 +239,14 @@ namespace elib{
     void Element::compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
                                             double tolr, double tola, unsigned int maxiter, unsigned int maxls){
         /*!
-        Compute the local coordinates given the global coordinates. Does this via Newton iteration.
-
-        :param const vec &global_coordinates: The global coordinates to compute the local coordinates at (ndim, )
-        :param const vec &local_coordinates: The local coordinates (n local dim, )
-        :param double tolr: The relative tolerance
-        :param double tola: The absolute tolerance
-        :param int maxiter: The maximum number of iterations
-        */
+         * Compute the local coordinates given the global coordinates. Does this via Newton iteration.
+         * 
+         * :param const vec &global_coordinates: The global coordinates to compute the local coordinates at (ndim, )
+         * :param const vec &local_coordinates: The local coordinates (n local dim, )
+         * :param double tolr: The relative tolerance
+         * :param double tola: The absolute tolerance
+         * :param int maxiter: The maximum number of iterations
+         */
 
         // Set the initial iterate
         vec xi(local_node_coordinates[0].size(), 0);
@@ -330,10 +330,10 @@ namespace elib{
 
     bool Element::bounding_box_contains_point(const vec &x){
         /*!
-        Determines if a point is contained within the element's bounding box
-
-        :param const vec &x: The point in global coordinates.
-        */
+         * Determines if a point is contained within the element's bounding box
+         * 
+         * :param const vec &x: The point in global coordinates.
+         */
 
         for (unsigned int i=0; i<bounding_box[0].size(); i++){
             if ((bounding_box[0][i]>x[i]) || bounding_box[1][i]<x[i]){
@@ -345,14 +345,14 @@ namespace elib{
 
     bool Element::contains_point(const vec &x){
         /*!
-        Determines if a point is contained within the element.
-
-        Note: This requires a Newton-Raphson solve. If you need the local coordinates you 
-              might want to break this function up into its components. A rough check is 
-              available in bounding_box_contains_point.
-
-        :param const vec &x: The point in global coordinates.
-        */
+         * Determines if a point is contained within the element.
+         * 
+         * Note: This requires a Newton-Raphson solve. If you need the local coordinates you 
+         *       might want to break this function up into its components. A rough check is 
+         *       available in bounding_box_contains_point.
+         *
+         * :param const vec &x: The point in global coordinates.
+         */
 
         vec xi;
         compute_local_coordinates(x, xi);
@@ -361,11 +361,11 @@ namespace elib{
 
     void Hex8::get_shape_functions(const vec &local_coordinates, vec &result){
         /*!
-        Compute the shape functions for a Hex8 element.
-
-        :param const vec &local_coordinates: The local coordinates (n local dim, )
-        :param vec &result: The vector of shape function values
-        */
+         * Compute the shape functions for a Hex8 element.
+         * 
+         * :param const vec &local_coordinates: The local coordinates (n local dim, )
+         * :param vec &result: The vector of shape function values
+         */
 
         result.resize(local_node_coordinates.size());
 
@@ -378,11 +378,11 @@ namespace elib{
 
     void Hex8::get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result){
         /*!
-        Compute the local gradients of the shape functions for a Hex8 element.
-
-        :param const vec &local_coordinates: The local coordinates (n local dim, )
-        :param vecOfvec &result: The gradients of the shape functions w.r.t. the local coordinates (n nodes, n local dim)
-        */
+         * Compute the local gradients of the shape functions for a Hex8 element.
+         *
+         * :param const vec &local_coordinates: The local coordinates (n local dim, )
+         * :param vecOfvec &result: The gradients of the shape functions w.r.t. the local coordinates (n nodes, n local dim)
+         */
 
         result.resize(local_node_coordinates.size());
         for (unsigned int n=0; n<local_node_coordinates.size(); n++){
@@ -394,11 +394,10 @@ namespace elib{
 
     bool Hex8::local_point_inside(const vec &local_coordinates){
         /*!
-
-        Determine whether local coordinates are inside of the element or not
-
-        :param const vec &local_coordinates: The local coordinates (n local dim, )
-        */
+         * Determine whether local coordinates are inside of the element or not
+         * 
+         * :param const vec &local_coordinates: The local coordinates (n local dim, )
+         */
 
         for (unsigned int i=0; i<local_coordinates.size(); i++){
             if (abs(local_coordinates[i])>1){
@@ -413,11 +412,11 @@ namespace elib{
 
     void invert(const vecOfvec &A, vecOfvec &Ainv){
         /*!
-        Invert the matrix A. Should only be used in very special circumstances.
-
-        :param const vecOfvec &A: The matrix to be inverted
-        :param vecOvec &Ainv: The inverse
-        */
+         * Invert the matrix A. Should only be used in very special circumstances.
+         * 
+         * :param const vecOfvec &A: The matrix to be inverted
+         * :param vecOvec &Ainv: The inverse
+         */
 
         //Transfer the values to an Eigen matrix.
         Eigen::MatrixXd _A(A.size(), A[0].size());
@@ -443,12 +442,12 @@ namespace elib{
 
     void solve(const vecOfvec &A, const vec &b, vec &x){
         /*!
-        Solve an equation of the form Ax = b
-
-        :param const vecOfvec &A: The A matrix
-        :param const vec &b: The b matrix
-        :param vec &x: The solution vector
-        */
+         * Solve an equation of the form Ax = b
+         *
+         * :param const vecOfvec &A: The A matrix
+         * :param const vec &b: The b matrix
+         * :param vec &x: The solution vector
+         */
 
         //Transfer the values of A to an Eigen matrix.
         Eigen::MatrixXd _A(A.size(), A[0].size());
@@ -473,7 +472,7 @@ namespace elib{
 
     void print(const uivec &a){
         /*!
-        Print the vector to the terminal
+        * Print the vector to the terminal
         */
 
         for (unsigned int i=0; i<a.size(); i++){
@@ -484,7 +483,7 @@ namespace elib{
 
     void print(const vec &a){
         /*!
-        Print the vector to the terminal
+        * Print the vector to the terminal
         */
 
         for (unsigned int i=0; i<a.size(); i++){
@@ -505,7 +504,7 @@ namespace elib{
 
     void print(const vecOfuivec &A){
         /*!
-        Print the matrix to the terminal
+        * Print the matrix to the terminal
         */
 
         for (unsigned int i=0; i<A.size(); i++){
@@ -553,7 +552,7 @@ namespace elib{
 	     * :param std::string &eltype: The name of the element
 	     * :param const vecOfvec &nodes: The element's nodes
 	     * :param const quadrature_rule &qrule: The quadrature rule of the element
-	    */
+             */
 
 	    if (std::strcmp(eltype.c_str(), "Hex8")==0){
                 return std::unique_ptr<Element>(new Hex8(nodes, qrule));

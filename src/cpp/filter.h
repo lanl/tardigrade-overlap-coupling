@@ -40,13 +40,20 @@ namespace filter{
                       const assembly::qrule_map &qrules, filter_map &filters);
     int populate_filters(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
-                         std::map< unsigned int, double > &weights, filter_map &filters); 
+                         const bool update_shapefunction, const bool shared_dof_material,
+                         std::map< unsigned int, unsigned int> &micro_node_to_row,
+                         std::map< unsigned int, unsigned int > &micro_node_elcount, filter_map &filters); 
     int process_timestep_totalLagrangian(const elib::vecOfvec &data, const assembly::node_map &nodes,
                                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
-                                         overlap::SpMat &shapefunctions, filter_map &filters);
+                                         const bool shared_dof_material,
+                                         overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters,
+                                         const unsigned int num_macro_dof=12, const unsigned int num_micro_dof=3);
     int process_timestep(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
-                         const unsigned int mode, overlap::SpMat &shapefunctions, filter_map &filters);
+                         const unsigned int mode, const bool shared_dof_material, 
+                         overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters);
+
+    int print(const std::map< unsigned int, unsigned int > &map);
 }
 
 int main(int argc, char **argv);

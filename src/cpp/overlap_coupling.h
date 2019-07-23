@@ -373,9 +373,19 @@ namespace overlap{
 
             //Compute mass properties
             int compute_mass_properties(const std::map< unsigned int, double > &micro_density);
+            int get_cg_phis(elib::vecOfvec &cg_phis);
 
+            //Construct the contributions to the shape-function matrix of the filter
+            int add_shapefunction_matrix_contribution(const std::map< unsigned int, unsigned int > &macro_node_to_col,
+                                                      const std::map< unsigned int, unsigned int > &micro_node_to_row,
+                                                      const std::vector< unsigned int > &macro_node_ids,
+                                                      const std::map< unsigned int, unsigned int > &micro_node_elcount,
+                                                      const unsigned int num_macro_dof, const unsigned int num_micro_dof,
+                                                      const unsigned int num_micro_free,
+                                                      std::vector< T > &tripletList);
+
+            //Display tools
 	    int print();
-
             int print_mass_properties();
 
         protected:
@@ -401,7 +411,9 @@ namespace overlap{
             //Mass/geometric properties
             elib::vec volume;
             elib::vec density;
+            elib::vecOfvec local_center_of_mass;
             elib::vecOfvec center_of_mass;
+
             int compute_volume();
             int compute_density(const std::map< unsigned int, double > &micro_density);
             int compute_centers_of_mass(const std::map< unsigned int, double > &micro_density);
