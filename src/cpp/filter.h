@@ -20,6 +20,7 @@ namespace filter{
 
     //!Typedefs
 //    typedef std::map< unsigned int, overlap::MicromorphicFilter > filter_map;
+    typedef std::map< unsigned int, unsigned int > uint_map;
     typedef std::map< unsigned int, overlap::MicromorphicFilter > filter_map;
 
     //!File IO
@@ -41,19 +42,27 @@ namespace filter{
     int populate_filters(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                          const bool update_shapefunction, const bool shared_dof_material,
-                         std::map< unsigned int, unsigned int> &micro_node_to_row,
-                         std::map< unsigned int, unsigned int > &micro_node_elcount, filter_map &filters); 
+                         uint_map &micro_node_to_row,
+                         uint_map &micro_node_elcount, filter_map &filters); 
     int process_timestep_totalLagrangian(const elib::vecOfvec &data, const assembly::node_map &nodes,
                                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                                          const bool shared_dof_material,
+                                         uint_map &macro_node_to_col,
+                                         uint_map &micro_node_to_row,
+                                         uint_map &micro_node_elcount,
+                                         std::map< unsigned int, elib::vec > &micro_reference_coordinates,
                                          overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters,
                                          const unsigned int num_macro_dof=12, const unsigned int num_micro_dof=3);
     int process_timestep(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                          const unsigned int mode, const bool shared_dof_material, 
+                         uint_map &macro_node_to_col,
+                         uint_map &micro_node_to_row,
+                         uint_map &micro_node_elcount,
+                         std::map< unsigned int, elib::vec > &micro_reference_coordinates,
                          overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters);
 
-    int print(const std::map< unsigned int, unsigned int > &map);
+    int print(const uint_map &map);
 }
 
 int main(int argc, char **argv);
