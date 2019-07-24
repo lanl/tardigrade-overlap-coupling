@@ -283,7 +283,7 @@ namespace filter{
                         const assembly::element_map &elements, const assembly::qrule_map &qrules,
                         const bool update_shapefunction, const bool shared_dof_material,
                         std::map<unsigned int, unsigned int > &micro_node_to_row,
-                        uint_map &micro_node_elcount, filter_map &filters){
+                        std::map< unsigned int, unsigned int > &micro_node_elcount, filter_map &filters){
         /*!
         * Populate the micromorphic sub-filters using the provided data.
         *
@@ -294,9 +294,9 @@ namespace filter{
         * :param const bool update_shapefunction: Flag indicating of the shapefunction matrix is to be updated.
         * :param const bool shared_dof_material: Flag indicating if the degrees of freedom and material quantities are known at 
         *                                       the same points.
-        * :param uint_map &micro_node_to_row: The mapping from the micro node number to the 
+        * :param std::map< unsigned int, unsigned int > &micro_node_to_row: The mapping from the micro node number to the 
         *                                                                   row of the shape function matrix.
-        * :param uint_map &micro_node_elcount: The number of filters a node is contained within.
+        * :param std::map< unsigned int, unsigned int > &micro_node_elcount: The number of filters a node is contained within.
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
         */
 
@@ -309,7 +309,7 @@ namespace filter{
         //Erase micro_node_to_row
         if (update_shapefunction){
             micro_node_to_row.clear();
-            micro_node_elcount.clear();
+	    micro_node_elcount.clear();
         }
 
         //This probably could/should be parallelized
@@ -342,12 +342,12 @@ namespace filter{
                 //Update in the case of a material point and shared dof-material points (i.e. MPM)
                 micro_node_to_row.emplace((*datapoint)[1], index);
 
-                //Adjust the weighting on the point if it is contained in elements.
+    		//Adjust the weighting on the point if it is contained in elements.
                 //Note that this should only happen if a point is on the boundary between 
                 //multiple filter domains.
 
                 if (containing_filters > 1){
-                    micro_node_elcount.emplace((unsigned int)((*datapoint)[0]+0.5), containing_filters);
+                   micro_node_elcount.emplace((unsigned int)((*datapoint)[0]+0.5), containing_filters);
                 }
 
             }
@@ -355,7 +355,7 @@ namespace filter{
                 //Update in the case of a dof point and non-shared dof-material points (i.e. FEA)
                 micro_node_to_row.emplace((*datapoint)[1], index);
 
-                //Adjust the weighting on the point if it is contained in elements.
+		//Adjust the weighting on the point if it is contained in elements.
                 //Note that this should only happen if a point is on the boundary between 
                 //multiple filter domains.
 
@@ -376,10 +376,10 @@ namespace filter{
     int process_timestep_totalLagrangian(const elib::vecOfvec &data, const assembly::node_map &nodes,
                                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                                          const bool shared_dof_material,
-                                         uint_map &macro_node_to_col,
-                                         uint_map &micro_node_to_row,
-                                         uint_map &micro_node_elcount,
-                                         std::map< unsigned int, elib::vec > &micro_reference_coordinates,
+                                         std::map< unsigned int, unsigned int > &macro_node_to_col,
+                                         std::map< unsigned int, unsigned int > &micro_node_to_row,
+                                         std::map< unsigned int, unsigned int > &micro_node_elcount,
+					 std::map< unsigned int, elib::vec > &reference_coordinates,
                                          overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters,
                                          const unsigned int num_macro_dof, const unsigned int num_micro_dof){
         /*!
@@ -398,14 +398,15 @@ namespace filter{
         * :param const assembly::element_map &elements: The elements of the micromorphic filter.
         * :param const assembly::qrule_map &qrules: The quadrature rules for the elements.
         * :param const bool shared_dof_material: Whether the dof and material information is co-located.
-        * :param uint_map &macro_node_to_col: The mapping from the macro node to 
-        *     the column in the shape-function matrix divided by num_macro_dof
-        * :param uint_map &micro_node_to_row: The mapping from the micro node to 
-        *     the row in the shape-function matrix divided by num_micro_dof
-        * :param uint_map &micro_node_elcount: The number of filters the micro-node
-        *     is located inside of. Only defined for micro-nodes on the boundaries between elements.
-        * :param std::map< unsigned int, elib::vec > &micro_reference_coordinates: The reference coordinates of the 
-        *     micro dof nodes.
+        * :param std::map< unsigned int, unsigned int > &macro_node_to_col: The map from macro nodes to the corresponding 
+	*     column of the matrix (normalized by the num_macro_dof)
+        * :param std::map< unsigned int, unsigned int > &micro_node_to_row: The map from micro nodes to the corresponding
+	*     row of the matrix (normalized by the num_micro_dof)
+        * :param std::map< unsigned int, unsigned int > &micro_node_elcount: The number of macro elements (filters) 
+	*     containing the given micro node. Only occurs for micro nodes on the boundaries between two filters and 
+	*     is only populated for nodes greater than 1.
+        * :param  std::map< unsigned int, elib::vec > &reference_coordinates: The reference coordinates used to compute 
+	*     the change in position of the dof points.
         * :param overlap::SpMat &shapefunctions: The shapefunction matrix.
         * :param overlap::QRsolver &dof_solver: The degree of freedom solver object.
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
@@ -417,11 +418,10 @@ namespace filter{
         bool populated_filters = false;
         std::vector< unsigned int > macro_node_ids(nodes.size());
         if (filters.size() != elements.size()){
+            populated_filters = true;
 
             macro_node_to_col.clear();
-            micro_node_to_row.clear();
 
-            populated_filters = true;
             unsigned int index = 0;
             for (auto it=nodes.begin(); it!=nodes.end(); it++){
                 macro_node_to_col.emplace(it->first, index);
@@ -429,45 +429,84 @@ namespace filter{
                 index++;
             }
         }
-        else {
-            std::cout << "Transforming the degrees of freedom\n";
-            //Compute the micro-scale displacements
-            std::vector< double > micro_displacements(shapefunctions.rows());
-            std::vector< double > macro_displacements(shapefunctions.cols());
+	else{
+            //Compute the macro displacement
+	    std::vector< double > macro_displacement(shapefunctions.cols());
+	    std::vector< double > micro_displacement(shapefunctions.rows());
 
-            bool readrow;
-            for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
-                readrow = false;
-                if (shared_dof_material){
-                    if ((int)((*dataline)[0]+0.5) == 1){
-                        readrow = true;
-                    }
-                }
-                else if ((int)((*dataline)[0]+0.5) == 2){
-                    readrow = true;
-                }
+	    //Iterate through the data
+            std::cout << "np.array([";
+	    for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
+                //Compute the difference between the current coordinates and the 
+		//reference
+                std::vector< double > pi(num_micro_dof);
+		bool dof_point = false;
+		int nodetype = (int)((*dataline)[0]+0.5);
+//		std::cout << nodetype << " ";
+		unsigned int nodeid = (unsigned int)((*dataline)[1]+0.5);
+		
+		//Extract the point information if required
+		if ((nodetype==1) && (shared_dof_material)){
+		    dof_point = true;
+//                    std::cout << nodeid << ": ";
+                    for (unsigned int i=0; i<3; i++){
+                        pi[i] = (*dataline)[2+i];
+//                        std::cout << pi[i] << " ";
+		    }
+//                    std::cout << "\n";
+		}
+		else if ((nodetype==2) && (!shared_dof_material)){
+		    dof_point = true;
+                    for (unsigned int i=0; i<3; i++){
+			pi[i] = (*dataline)[2+i];
+		    }
+		}
 
-                if (readrow){
-                    auto refcoord = micro_reference_coordinates.find((int)((*dataline)[1]+0.5));
-                    if (refcoord == micro_reference_coordinates.end()){
-                        std::cout << "Error: micro dof node was not found in the current timestep\n";
+		//Check if the current node is located in the reference coordinates (it better be!)
+		if (dof_point){
+                    auto ref = reference_coordinates.find(nodeid);
+                    if (ref == reference_coordinates.end()){
+                        std::cerr << "Error: node " << nodeid << " not found in reference coordinates.\n";
+                        std::cerr << "       it is currently required that nodes cannot be deleted.\n";
                         return 1;
                     }
-                    else{
-                        for (unsigned int i=0; i<num_micro_dof; i++){
-                            micro_displacements[num_micro_dof*micro_node_to_row[refcoord->first]+i] = (*dataline)[2+i] - refcoord->second[i];
-                        }
+                    //Assign the value to the micro-displacement (dof) vector
+                    std::cout << "[";
+                    for (unsigned int i=0; i<pi.size(); i++){
+                        micro_displacement[num_micro_dof*ref->first+i] = pi[i]-ref->second[i];
+                        std::cout << micro_displacement[num_micro_dof*ref->first+i] << ", ";
                     }
+                    std::cout << "],\n";
                 }
+	    }
+            std::cout << "])\n";
 
+//            std::cout << "micro_displacement:\n";
+//            elib::print(micro_displacement);
+//            assert(1==0);
+
+	    //Solve for the macro dof
+	    Eigen::Map< overlap::EigVec > b(micro_displacement.data(), micro_displacement.size(), 1);
+	    Eigen::Map< overlap::EigVec > x(macro_displacement.data(), macro_displacement.size(), 1);
+	    x = dof_solver.solve(b);
+
+//            std::cout << "micro displacement:\n";
+//            elib::print(micro_displacement);
+
+	    std::cout << "\nmacro_displacement:\n";
+            unsigned int ub = 3;
+            std::cout << "[";
+	    for (unsigned int i=0; i<8; i++){
+                std::cout << "[";
+                for (unsigned int j=0; j<ub; j++){
+                    std::cout << macro_displacement[num_macro_dof*i+j];
+	            if (j<(ub-1)){std::cout << ", ";}
+		}
+		std::cout << "],\n";
             }
-            
-            Eigen::Map< overlap::EigVec > b(micro_displacements.data(), micro_displacements.size(), 1);
-            Eigen::Map< overlap::EigVec > x(macro_displacements.data(), macro_displacements.size(), 1);
-            x = dof_solver.solve(b);
-
+            std::cout << "]\n";
             assert(1==0);
-        }
+	}
 
         //Populate the filters
         int pf_result = populate_filters(data, nodes, elements, qrules,
@@ -494,7 +533,7 @@ namespace filter{
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             filter->second.compute_mass_properties(micro_density);
         }
-        
+
         //Construct the shapefunction matrix if required
         if (populated_filters){
             std::cout << "Computing the Shape-Function matrix\n";
@@ -522,6 +561,38 @@ namespace filter{
                 std::cout << "Error: Failure in QR decomposition.\n";
                 return 1;
             }
+
+	    //Populate the reference coordinate map
+	    reference_coordinates.clear();
+
+	    for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
+                std::vector< double > pi(num_micro_dof);
+                bool dof_point = false;
+                int nodetype = (int)((*dataline)[0]+0.5);
+                unsigned int nodeid = (unsigned int)((*dataline)[1]+0.5);
+
+                //Extract the point information if required
+                if ((nodetype==1) && (shared_dof_material)){
+                    dof_point = true;
+                    for (unsigned int i=0; i<3; i++){
+                        pi[i] = (*dataline)[2+i];
+                    }
+                }
+                else if ((nodetype==2) && (!shared_dof_material)){
+                    dof_point = true;
+                    for (unsigned int i=0; i<3; i++){
+                        pi[i] = (*dataline)[2+i];
+                    }
+                }
+
+                //Add a contained micro-point to the reference coordinates
+		if (dof_point){
+                    auto it=micro_node_to_row.find(nodeid);
+                    if (it != micro_node_to_row.end()){
+                        reference_coordinates.emplace(it->first, pi);
+		    }
+		}
+	    }
             
         }
 
@@ -532,10 +603,10 @@ namespace filter{
     int process_timestep(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                          const unsigned int mode, const bool shared_dof_material,
-                         uint_map &macro_node_to_col,
-                         uint_map &micro_node_to_row,
-                         uint_map &micro_node_elcount,
-                         std::map< unsigned int, elib::vec > &micro_reference_coordinates,
+                         std::map< unsigned int, unsigned int > &macro_node_to_col,
+                         std::map< unsigned int, unsigned int > &micro_node_to_row,
+                         std::map< unsigned int, unsigned int > &micro_node_elcount,
+			 std::map< unsigned int, elib::vec > &reference_coordinates,
                          overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters){
         /*!
         * Process the current timestep and compute the macro-scale stress and deformation quantities
@@ -550,14 +621,15 @@ namespace filter{
         *         the current timestep is the reference configuration.
         * :param bool shared_dof_material: Flag which indicates if the dof and material information are 
         *                                  co-located.
-        * :param uint_map &macro_node_to_col: The mapping from the macro node to 
-        *     the column in the shape-function matrix divided by num_macro_dof
-        * :param uint_map &micro_node_to_row: The mapping from the micro node to 
-        *     the row in the shape-function matrix divided by num_micro_dof
-        * :param uint_map &micro_node_elcount: The number of filters the micro-node
-        *     is located inside of. Only defined for micro-nodes on the boundaries between elements.
-        * :param std::map< unsigned int, elib::vec > &micro_reference_coordinates: The reference coordinates of the 
-        *     micro dof nodes. Note that these may not be the reference coordinates in the sense of continuum mechanics.
+        * :param std::map< unsigned int, unsigned int > &macro_node_to_col: The map from macro nodes to the corresponding 
+	*     column of the matrix (normalized by the num_macro_dof)
+        * :param std::map< unsigned int, unsigned int > &micro_node_to_row: The map from micro nodes to the corresponding
+	*     row of the matrix (normalized by the num_micro_dof)
+        * :param std::map< unsigned int, unsigned int > &micro_node_elcount: The number of macro elements (filters) 
+	*     containing the given micro node. Only occurs for micro nodes on the boundaries between two filters and 
+	*     is only populated for nodes greater than 1.
+        * :param  std::map< unsigned int, elib::vec > &reference_coordinates: The reference coordinates used to compute 
+	*     the change in position of the dof points.
         * :param overlap::SpMat &shapefunctions: The shapefunction matrix.
         * :param overlap::QRsolver &dof_solver: The solver for the degrees of freedom.
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
@@ -565,21 +637,31 @@ namespace filter{
     
         if (mode == 0){
             return process_timestep_totalLagrangian(data, nodes, elements, qrules,
-                                                    shared_dof_material,
-                                                    macro_node_to_col, micro_node_to_row, micro_node_elcount,
-                                                    micro_reference_coordinates,
-                                                    shapefunctions, dof_solver, filters);
+                                                    shared_dof_material, macro_node_to_col, micro_node_to_row, 
+						    micro_node_elcount, reference_coordinates, 
+						    shapefunctions, dof_solver, filters);
         }
         return 1;
     }
 
-    int print(const uint_map &map){
+    int print(const std::map< unsigned int, unsigned int > &map){
         /*!
          * print the map to the terminal
          */
 
          for (auto it=map.begin(); it!=map.end(); it++){
              std::cerr << it->first << ": " << it->second << "\n";
+         }
+         return 0;
+    }
+
+    int print(const uint_to_vec &map){
+        /*!
+         * print the map to the terminal
+         */
+
+         for (auto it=map.begin(); it!=map.end(); it++){
+             std::cerr << it->first << ": "; elib::print(it->second);
          }
          return 0;
     }
@@ -624,11 +706,10 @@ int main(int argc, char **argv){
         overlap::SpMat shapefunctions;
         overlap::QRsolver dof_solver;
         filter::filter_map filters;
-
-        filter::uint_map macro_node_to_col;
-        filter::uint_map micro_node_to_row;
-        filter::uint_map micro_node_elcount;
-        std::map< unsigned int, elib::vec > micro_reference_coordinates;
+	filter::uint_map macro_node_to_col;
+	filter::uint_map micro_node_to_row;
+	filter::uint_map micro_node_elcount;
+	std::map< unsigned int, elib::vec > reference_coordinates;
 
         int connresult = assembly::read_connectivity_data(filter_fn, nodes, elements, qrules);
 	if (connresult > 1){
@@ -661,8 +742,9 @@ int main(int argc, char **argv){
 
             std::cout << "Initializing filters\n";
             int pt_result = filter::process_timestep(data, nodes, elements, qrules, mode, shared_dof_material,
-                                                     macro_node_to_col, micro_node_to_row, micro_node_elcount,
-                                                     micro_reference_coordinates, shapefunctions, dof_solver, filters);
+                                                     macro_node_to_col, micro_node_to_row, micro_node_elcount, 
+						     reference_coordinates,
+                                                     shapefunctions, dof_solver, filters);
             if (pt_result > 0){
                 std::cout << "Error in processing timestep\n";
                 return 1;

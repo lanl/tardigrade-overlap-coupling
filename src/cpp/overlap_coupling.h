@@ -136,6 +136,8 @@ namespace overlap{
             const vecOfvec* get_dns_bounds() const;
             const std::vector< MicroPoint >* get_gauss_domains() const;
 
+            void print_element() const;
+
         protected:
             vecOfvec local_coordinates;
             vecOfvec gauss_points;

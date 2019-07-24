@@ -19,9 +19,9 @@
 namespace filter{
 
     //!Typedefs
-//    typedef std::map< unsigned int, overlap::MicromorphicFilter > filter_map;
-    typedef std::map< unsigned int, unsigned int > uint_map;
     typedef std::map< unsigned int, overlap::MicromorphicFilter > filter_map;
+    typedef std::map< unsigned int, unsigned int > uint_map;
+    typedef std::map< unsigned int, elib::vec > uint_to_vec;
 
     //!File IO
     int open_input_file(const std::string &fn, const int format, std::ifstream &file);
@@ -50,19 +50,20 @@ namespace filter{
                                          uint_map &macro_node_to_col,
                                          uint_map &micro_node_to_row,
                                          uint_map &micro_node_elcount,
-                                         std::map< unsigned int, elib::vec > &micro_reference_coordinates,
+                                         uint_to_vec &reference_coordinates,
                                          overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters,
                                          const unsigned int num_macro_dof=12, const unsigned int num_micro_dof=3);
     int process_timestep(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
-                         const unsigned int mode, const bool shared_dof_material, 
+                         const unsigned int mode, const bool shared_dof_material,
                          uint_map &macro_node_to_col,
                          uint_map &micro_node_to_row,
                          uint_map &micro_node_elcount,
-                         std::map< unsigned int, elib::vec > &micro_reference_coordinates,
+                         uint_to_vec &reference_coordinates,
                          overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters);
 
     int print(const uint_map &map);
+    int print(const uint_to_vec &map);
 }
 
 int main(int argc, char **argv);

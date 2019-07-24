@@ -375,6 +375,8 @@ namespace overlap{
 
         if (cl.start()) do if (container->compute_cell(c, cl)){
             //Extract the required values from the point
+//            std::cout << "cl.pid(): " << cl.pid() << "\n";
+            index = cl.pid();
             cl.pos(x, y, z);
             c.normals( cell_normals );
             c.face_vertices( face_vertices );
@@ -411,7 +413,7 @@ namespace overlap{
             //Add the point
             gauss_domains[index] = MicroPoint(c.volume(), centroid, planes, 
                                               areas, normals, points);
-            index++;
+//            index++;
 
         } while (cl.inc());
 
@@ -513,6 +515,22 @@ namespace overlap{
         */
 
         return &dns_bounds;
+    }
+
+    void OverlapCoupling::print_element() const{
+        /*!
+         * Print a selection of properties of the element
+         */
+
+        std::cout << "OverlapCoupling Object\n";
+        std::cout << "element_bounds:\n";
+        elib::print(element_bounds);
+        std::cout << "element planes:\n";
+        print_planeMap(element_planes);
+        std::cout << "Gauss domains\n";
+        for (unsigned int i=0; i<gauss_domains.size(); i++){
+            gauss_domains[i].print();
+        }
     }
 
 //    void OverlapCoupling::construct_element_container(){
@@ -2161,7 +2179,7 @@ namespace overlap{
 	 for (unsigned int gp=0; gp<element->qrule.size(); gp++){
              gauss_points[gp] = element->qrule[gp].first;
 	 }
-	 
+
 	 material_overlap.initialize(element->local_node_coordinates, gauss_points);
 
          if (!shared_dof_material){
@@ -2375,6 +2393,26 @@ namespace overlap{
 
         //Compute the shape-function values at the centers of mass
         get_cg_phis(cg_phis);
+
+//TEMP
+        std::cout << "cg_phis:\n";
+        elib::print(cg_phis);
+
+        std::cout << "local_com:\n";
+        elib::print(local_center_of_mass);
+
+        std::cout << "gpts:\n";
+        elib::print(element->qrule);
+
+        elib::print(macro_node_ids);
+        std::cout << "macro_node_elcount:\n";
+        for (auto it=micro_node_elcount.begin(); it!=micro_node_elcount.end(); it++){
+            std::cout << it->first << ": " << it->second << "\n";
+        }
+        std::cout << "num_macro_dof: " << num_macro_dof << "\n";
+        std::cout << "num_micro_dof: " << num_micro_dof << "\n";
+        std::cout << "num_micro_free: " << num_micro_free << "\n";
+//ENDTEMP
 
         //Iterate over the filter's gauss points
         if (shared_dof_material){
