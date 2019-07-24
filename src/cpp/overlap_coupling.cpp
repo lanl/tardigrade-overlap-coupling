@@ -1215,7 +1215,7 @@ namespace overlap{
             result[gp] = std::vector<double>(weights[gp].begin()->second.coordinates.size(), 0);
 
             for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
-                
+
                 //Find the value of the function at the node
                 itv = values.find(itiM->first);
                 if (itv == values.end()){
@@ -1417,7 +1417,7 @@ namespace overlap{
         double weight;
 
         //Reserve the memory required for the tripletList
-        tripletList.reserve(tripletList.size() + 8*num_macro_dof*dns_weights.size());
+        tripletList.reserve(tripletList.size() + psis.size()*num_macro_dof*dns_weights.size());
 
 //        std::cout << "cg: ";
 //        for (unsigned int i=0; i<3; i++){
@@ -1439,6 +1439,7 @@ namespace overlap{
             }
 
             //Loop over the micro-nodes and add the contributions to the shape-function matrix
+//            std::cout << "dns_weights.size(): " << dns_weights.size() << "\n";
             for (iMit=dns_weights.begin(); iMit!=dns_weights.end(); iMit++){
 
                 //Set the initial index of the row
@@ -1468,31 +1469,31 @@ namespace overlap{
                     xi[j] = iMit->second.coordinates[j] - cg[j];
                 }
 
-/*                if (it->second == 450){
-                    std::cout << "row0: " << row0 << "\n";
-                    std::cout << "col0: " << col0 << "\n";
-                    std::cout << "share_ghost_free_boundary_nodes: " << share_ghost_free_boundary_nodes << "\n";
-                    std::cout << "macro_elem_is_ghost: " << macro_elem_is_ghost << "\n";
-                    std::cout << "num_micro_free: " << num_micro_free << "\n";
-                    std::cout << "iMit->second.coordinates: ";
-                    for (unsigned int i=0; i<iMit->second.coordinates.size(); i++){
-                        std::cout << iMit->second.coordinates[i] << " ";
-                    }
-	            std::cout << "\n";
-                    std::cout << "xi: ";
-                    for (unsigned int i=0; i<xi.size(); i++){
-                        std::cout << xi[i] << " ";
-                    }
-	            std::cout << "\n";
-                    std::cout << "psi_n: " << psi_n << "\n";
-                    std::cout << "dns_weight: " << iMit->second.weight << "\n";
-                    std::cout << "weight: " << weight << "\n";
-                    if (mnelit != micro_node_elcount->end()){
-                        std::cout << "number of neighboring elements: " << mnelit->second << "\n";
-                    }
-                    
-                }
-*/
+//                if (it->second == 450){
+//                    std::cout << "row0: " << row0 << "\n";
+//                    std::cout << "col0: " << col0 << "\n";
+//                    std::cout << "share_ghost_free_boundary_nodes: " << share_ghost_free_boundary_nodes << "\n";
+//                    std::cout << "macro_elem_is_ghost: " << macro_elem_is_ghost << "\n";
+//                    std::cout << "num_micro_free: " << num_micro_free << "\n";
+//                    std::cout << "iMit->second.coordinates: ";
+//                    for (unsigned int i=0; i<iMit->second.coordinates.size(); i++){
+//                        std::cout << iMit->second.coordinates[i] << " ";
+//                    }
+//	            std::cout << "\n";
+//                    std::cout << "xi: ";
+//                    for (unsigned int i=0; i<xi.size(); i++){
+//                        std::cout << xi[i] << " ";
+//                    }
+//	            std::cout << "\n";
+//                    std::cout << "psi_n: " << psi_n << "\n";
+//                    std::cout << "dns_weight: " << iMit->second.weight << "\n";
+//                    std::cout << "weight: " << weight << "\n";
+//                    if (mnelit != micro_node_elcount->end()){
+//                        std::cout << "number of neighboring elements: " << mnelit->second << "\n";
+//                    }
+//                    
+//                }
+
                 //Add the values to the matrix
                 tripletList.push_back(T(row0 + 0, col0 +  0, weight*psi_n));
                 tripletList.push_back(T(row0 + 1, col0 +  1, weight*psi_n));
@@ -2257,6 +2258,9 @@ namespace overlap{
         double je;
         for (unsigned int gp=0; gp<material_weights.size(); gp++){
             for (auto it=material_weights[gp].begin(); it!=material_weights[gp].end(); it++){
+//                std::cout << "material point: " << it->first << "\n";
+//                it->second.print();
+
                 element->get_jacobian(it->second.coordinates, element->local_node_coordinates, jacobian);
                 elib::determinant_3x3(jacobian, je);
                 elib::invert(jacobian, invjacobian);
@@ -2268,7 +2272,21 @@ namespace overlap{
                 for (unsigned int j=0; j<it->second.das.size(); j++){
                     overlap::apply_nansons_relation(it->second.normal(j), je*it->second.area(j), invjacobian, it->second.das[j]);
                 }
+
+                //Transform the coordinates to true-space
+                elib::vec lc = it->second.coordinates;
+                element->interpolate(element->nodes, lc, it->second.coordinates);
+
+                //Transform the face centroids to true-space
+                for (unsigned int n=0; n<it->second.face_centroids.size(); n++){
+                    lc = it->second.face_centroids[n];
+                    element->interpolate(element->nodes, lc, it->second.face_centroids[n]);
+                }
+
+//                std::cout << "true space\n";
+//                it->second.print();
             }
+//            assert(2==3);
         }
         return 0;
     }
@@ -2295,6 +2313,16 @@ namespace overlap{
                 //Transform the normals
                 for (unsigned int j=0; j<it->second.das.size(); j++){
                     overlap::apply_nansons_relation(it->second.normal(j), je*it->second.area(j), invjacobian, it->second.das[j]);
+                }
+
+                //Transform the coordinates to true-space
+                elib::vec lc = it->second.coordinates;
+                element->interpolate(element->nodes, lc, it->second.coordinates);
+
+                //Transform the face centroids to true-space
+                for (unsigned int n=0; n<it->second.face_centroids.size(); n++){
+                    lc = it->second.face_centroids[n];
+                    element->interpolate(element->nodes, lc, it->second.face_centroids[n]);
                 }
             }
         }
@@ -2355,15 +2383,23 @@ namespace overlap{
         :param std::map< unsigned int , elib::vec> &density:
         */
 
-        perform_position_weighted_volume_integration(micro_density, material_weights, local_center_of_mass);
+        perform_position_weighted_volume_integration(micro_density, material_weights, center_of_mass);
+
+//        std::cout << "material_weights[0]:\n";
+//        for (auto p = material_weights[0].begin(); p!=material_weights[0].end(); p++){
+//            std::cout << p->first << " ";
+//            p->second.print();
+//
+//        }
         
-        center_of_mass.resize(local_center_of_mass.size());
+        local_center_of_mass.resize(center_of_mass.size());
         for (unsigned int gp=0; gp<density.size(); gp++){
-            for (unsigned int i=0; i<local_center_of_mass[gp].size(); i++){
-                local_center_of_mass[gp][i] /= volume[gp]*density[gp];
+            for (unsigned int i=0; i<center_of_mass[gp].size(); i++){
+                center_of_mass[gp][i] /= volume[gp]*density[gp];
             }
-            element->interpolate(element->nodes, local_center_of_mass[gp], center_of_mass[gp]);
+            element->compute_local_coordinates(center_of_mass[gp], local_center_of_mass[gp]);
         }
+
         return 0;
     }
 
@@ -2395,23 +2431,23 @@ namespace overlap{
         get_cg_phis(cg_phis);
 
 //TEMP
-        std::cout << "cg_phis:\n";
-        elib::print(cg_phis);
-
-        std::cout << "local_com:\n";
-        elib::print(local_center_of_mass);
-
-        std::cout << "gpts:\n";
-        elib::print(element->qrule);
-
-        elib::print(macro_node_ids);
-        std::cout << "macro_node_elcount:\n";
-        for (auto it=micro_node_elcount.begin(); it!=micro_node_elcount.end(); it++){
-            std::cout << it->first << ": " << it->second << "\n";
-        }
-        std::cout << "num_macro_dof: " << num_macro_dof << "\n";
-        std::cout << "num_micro_dof: " << num_micro_dof << "\n";
-        std::cout << "num_micro_free: " << num_micro_free << "\n";
+//        std::cout << "cg_phis:\n";
+//        elib::print(cg_phis);
+//
+//        std::cout << "local_com:\n";
+//        elib::print(local_center_of_mass);
+//
+//        std::cout << "gpts:\n";
+//        elib::print(element->qrule);
+//
+//        elib::print(macro_node_ids);
+//        std::cout << "macro_node_elcount:\n";
+//        for (auto it=micro_node_elcount.begin(); it!=micro_node_elcount.end(); it++){
+//            std::cout << it->first << ": " << it->second << "\n";
+//        }
+//        std::cout << "num_macro_dof: " << num_macro_dof << "\n";
+//        std::cout << "num_micro_dof: " << num_micro_dof << "\n";
+//        std::cout << "num_micro_free: " << num_micro_free << "\n";
 //ENDTEMP
 
         //Iterate over the filter's gauss points

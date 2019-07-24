@@ -435,7 +435,7 @@ namespace filter{
 	    std::vector< double > micro_displacement(shapefunctions.rows());
 
 	    //Iterate through the data
-            std::cout << "np.array([";
+//            std::cout << "np.array([";
 	    for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
                 //Compute the difference between the current coordinates and the 
 		//reference
@@ -471,15 +471,15 @@ namespace filter{
                         return 1;
                     }
                     //Assign the value to the micro-displacement (dof) vector
-                    std::cout << "[";
+//                    std::cout << "[";
                     for (unsigned int i=0; i<pi.size(); i++){
                         micro_displacement[num_micro_dof*ref->first+i] = pi[i]-ref->second[i];
-                        std::cout << micro_displacement[num_micro_dof*ref->first+i] << ", ";
+//                        std::cout << micro_displacement[num_micro_dof*ref->first+i] << ", ";
                     }
-                    std::cout << "],\n";
+//                    std::cout << "],\n";
                 }
 	    }
-            std::cout << "])\n";
+//            std::cout << "])\n";
 
 //            std::cout << "micro_displacement:\n";
 //            elib::print(micro_displacement);
