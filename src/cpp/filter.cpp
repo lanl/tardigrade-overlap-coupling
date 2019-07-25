@@ -604,11 +604,9 @@ namespace filter{
         std::cout << "Computing Mass Properties\n";
         std::map< unsigned int, double > micro_density;
         std::map< unsigned int, elib::vec> micro_position;
-        std::cout << " here 1\n";
         for (auto dataline = data.begin(); dataline!=data.end(); dataline++){
             micro_density.emplace((*dataline)[1], (*dataline)[5]);
         }
-        std::cout << " here 2\n";
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             filter->second.compute_mass_properties(micro_density);
         }
