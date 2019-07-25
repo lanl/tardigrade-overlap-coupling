@@ -293,6 +293,14 @@ namespace elib{
             //Line search
             nls = 0;
             while (Rnorm >= Rp){
+                std::cout << "global coordinates: "; print(global_coordinates);
+                std::cout << "nodes:\n";
+                print(nodes);
+                assert(1==0);
+                std::cout << "Rp: " << Rp << "\n";
+                std::cout << "Rnorm: " << Rnorm << "\n";
+                std::cout << "lambda: " << lambda << "\n";
+                std::cout << "dxi: "; print(dxi);
                 std::cout << "in line search\n";
 
                 lambda *= 0.5;
