@@ -31,6 +31,7 @@ namespace elib{
         public:
             std::string name; //!The name of the element
             vecOfvec nodes; //!The global coordinates of the nodes
+            vecOfvec reference_nodes; //!The global reference coordinates of the nodes
             quadrature_rule qrule; //!The quadrature rule of the element
             vecOfvec local_node_coordinates; //!The local coordinates of the nodes
             vecOfvec bounding_box; //!The bounding box of the element
@@ -79,6 +80,10 @@ namespace elib{
             bool bounding_box_contains_point(const vec &x);
 
             bool contains_point(const vec &x);
+
+            int update_node_position(const unsigned int n, const vec &displacement);
+
+            int update_node_positions(const vecOfvec &displacements);
     };
 
     class Hex8 : public Element{

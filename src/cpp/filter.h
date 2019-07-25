@@ -43,7 +43,13 @@ namespace filter{
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                          const bool update_shapefunction, const bool shared_dof_material,
                          uint_map &micro_node_to_row,
-                         uint_map &micro_node_elcount, filter_map &filters); 
+                         uint_map &micro_node_elcount, filter_map &filters);
+    int construct_micro_displacement_vector_from_positions(const elib::vecOfvec &data, const uint_to_vec &reference_coordinates,
+                                                           const bool shared_dof_material,
+                                                           const unsigned int num_micro_dof, elib::vec &micro_displacement_vector);
+    int assign_dof_information_to_filters(const assembly::node_map &nodes, const assembly::element_map &elements,
+                                          const uint_map &macro_node_to_col, const unsigned int num_macro_dof,
+                                          const std::vector< double > &macro_displacement, filter_map &filters); 
     int process_timestep_totalLagrangian(const elib::vecOfvec &data, const assembly::node_map &nodes,
                                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                                          const bool shared_dof_material,
@@ -52,6 +58,7 @@ namespace filter{
                                          uint_map &micro_node_elcount,
                                          uint_to_vec &reference_coordinates,
                                          overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters,
+                                         std::ofstream &output_file,
                                          const unsigned int num_macro_dof=12, const unsigned int num_micro_dof=3);
     int process_timestep(const elib::vecOfvec &data, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
@@ -60,7 +67,8 @@ namespace filter{
                          uint_map &micro_node_to_row,
                          uint_map &micro_node_elcount,
                          uint_to_vec &reference_coordinates,
-                         overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters);
+                         overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters,
+                         std::ofstream &output_file);
 
     int print(const uint_map &map);
     int print(const uint_to_vec &map);

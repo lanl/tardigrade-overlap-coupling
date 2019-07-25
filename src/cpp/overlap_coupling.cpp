@@ -427,6 +427,11 @@ namespace overlap{
         Compute the weights of the DNS points for their integration of the gauss domains along with other quantities which 
         will be required.
 
+        NOTE: All quantities will be in the coordinate system provided to the filter. This means that if you use,
+              in the finite element context, the local coordinates of the element, all of the properties will be 
+              in that reference frame. Mapping these quantities to the global coordinate frame will be required 
+              to perform integration.
+
         :param std::vector< unsigned int > numbers: The number (index) of the DNS point.
         :param vecOfvec positions: The positions of the DNS points in local coordinates.
         :param std::vector< std::vector< MicroPoint > > points: The outgoing weights and other required quantities.
@@ -1212,7 +1217,13 @@ namespace overlap{
         result = std::vector< std::vector< double > >(weights.size());
         //Loop over the gauss points
         for (unsigned int gp=0; gp<weights.size(); gp++){
-            result[gp] = std::vector<double>(weights[gp].begin()->second.coordinates.size(), 0);
+            auto tmpit = weights[gp].begin();
+            if (weights[gp].size()==0){
+                std::cout << "Warning: gauss point with no micro-scale points detected.\n";
+                continue;
+            }
+            result[gp] = std::vector<double>(tmpit->second.coordinates.size(), 0);
+//            result[gp] = std::vector<double>(weights[gp].begin()->second.coordinates.size(), 0);
 
             for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
 
@@ -2161,11 +2172,13 @@ namespace overlap{
 //        material_overlap.initialize(_element->local_node_coordinates, gauss_points); 
 //    }
 
-    MicromorphicFilter::MicromorphicFilter(const std::string &element_type, const elib::vecOfvec &nodes,
-		                           const elib::quadrature_rule &qrule, bool _shared_dof_material){
+    MicromorphicFilter::MicromorphicFilter(const unsigned int _id, const std::string &element_type,
+                                           const elib::vecOfvec &nodes, const elib::quadrature_rule &qrule,
+                                           bool _shared_dof_material){
         /*!
 	 * Initialize the micromorphic filter
 	 *
+         * :param unsigned int id: The id number of the filter
 	 * :param const std::string &element_type: The name of the underlying element type
 	 * :param const elib::vecOfvec &nodes: The nodes which make up the element type (i.e. their coordinates)
 	 * :param const elib::quadrature_rule &qrule: The quadrature rule of the element.
@@ -2173,19 +2186,25 @@ namespace overlap{
 	 *                                   determine the macro-scale nodal coordinate information.
 	 */
 
-	 element = elib::build_element_from_string(element_type, nodes, qrule);
-	 shared_dof_material = _shared_dof_material;
+        filter_id = _id;
+        element = elib::build_element_from_string(element_type, nodes, qrule);
+        shared_dof_material = _shared_dof_material;
 
-	 elib::vecOfvec gauss_points(element->qrule.size());
-	 for (unsigned int gp=0; gp<element->qrule.size(); gp++){
-             gauss_points[gp] = element->qrule[gp].first;
-	 }
+        elib::vecOfvec gauss_points(element->qrule.size());
+        for (unsigned int gp=0; gp<element->qrule.size(); gp++){
+            gauss_points[gp] = element->qrule[gp].first;
+        }
 
-	 material_overlap.initialize(element->local_node_coordinates, gauss_points);
+        material_overlap.initialize(element->local_node_coordinates, gauss_points);
 
-         if (!shared_dof_material){
-             dof_overlap.initialize(element->local_node_coordinates, gauss_points);
-         }
+        if (!shared_dof_material){
+            dof_overlap.initialize(element->local_node_coordinates, gauss_points);
+        }
+
+        dof_values.resize(nodes.size());
+
+        filter_dim = nodes[0].size();
+
     }
 
     bool MicromorphicFilter::add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates){
@@ -2336,8 +2355,11 @@ namespace overlap{
          * :param std::map< unsigned int , double> &density: The densities of the micro points
          */
 
+        std::cout << "compute volume\n";
         compute_volume();
+        std::cout << "compute density\n";
         compute_density(micro_density);
+        std::cout << "compute center of mass\n";
         compute_centers_of_mass(micro_density);
         return 0;
     }
@@ -2383,6 +2405,7 @@ namespace overlap{
         :param std::map< unsigned int , elib::vec> &density:
         */
 
+        std::cout << "entering position weighted volume integration\n";
         perform_position_weighted_volume_integration(micro_density, material_weights, center_of_mass);
 
 //        std::cout << "material_weights[0]:\n";
@@ -2392,6 +2415,7 @@ namespace overlap{
 //
 //        }
         
+        std::cout << "computing local coordinates\n";
         local_center_of_mass.resize(center_of_mass.size());
         for (unsigned int gp=0; gp<density.size(); gp++){
             for (unsigned int i=0; i<center_of_mass[gp].size(); i++){
@@ -2481,19 +2505,25 @@ namespace overlap{
         return 0;
     }
 
-    int MicromorphicFilter::print(){
+    int MicromorphicFilter::print(const bool show_microscale_info){
         /*!
 	 * Print out the information contained in the filter
+         *
+         * :param const bool show_microscale_info: Print out the micro-scale points 
+         *     contained in the filter. This can result in huge amounds of output.
+         *     defaults to false.
 	 */
 
-	std::cout << "DOF id numbers:\n";
-        elib::print(dof_id_numbers);
-	std::cout << "Material Point id numbers:\n";
-	elib::print(material_id_numbers);
-	std::cout << "DOF local coordinates:\n";
-	elib::print(micro_dof_local_coordinates);
-	std::cout << "Material Point local coordinates:\n";
-	elib::print(micro_material_local_coordinates);
+        if (show_microscale_info){
+            std::cout << "DOF id numbers:\n";
+            elib::print(dof_id_numbers);
+            std::cout << "Material Point id numbers:\n";
+            elib::print(material_id_numbers);
+            std::cout << "DOF local coordinates:\n";
+            elib::print(micro_dof_local_coordinates);
+            std::cout << "Material Point local coordinates:\n";
+            elib::print(micro_material_local_coordinates);
+        }
         std::cout << "Element planes:\n";
         const planeMap *ep = material_overlap.get_element_planes();
         const planeMap *dnsp = material_overlap.get_dns_planes();
@@ -2501,6 +2531,18 @@ namespace overlap{
         std::cout << "DNS planes:\n";
         print_planeMap(*dnsp);
 
+        std::cout << "**************************\n";
+        std::cout << "*** ELEMENT PROPERTIES ***\n";
+        std::cout << "**************************\n";
+        elib::print(*element);
+
+        //Print the degree of freedom properties
+        std::cout << "*********************************\n";
+        std::cout << "*** DEGREES OF FREEDOM VALUES ***\n";
+        std::cout << "*********************************\n";
+        elib::print(dof_values);
+        //Print the mass properties
+        print_mass_properties();
 	return 0;
     }
 
@@ -2530,5 +2572,168 @@ namespace overlap{
              element->get_shape_functions(local_center_of_mass[gp], cg_phis[gp]);
          }
          return 0;
+    }
+
+    const unsigned int MicromorphicFilter::id(){
+        /*!
+         * Return the filter's id number
+         */
+
+         return filter_id;
+    }
+
+    const unsigned int MicromorphicFilter::dim(){
+        /*!
+         * Return the filter's spatial dimension
+         */
+        return filter_dim;
+    }
+
+    const std::string MicromorphicFilter::element_type(){
+        /*!
+         * Get the name of the element type
+         * 
+         * :param std::string &eltype: The name of the element type
+         */
+        
+        return element->name;
+    }
+
+    int MicromorphicFilter::update_element_node_positions(const unsigned int n, const elib::vec &displacement){
+        /*!
+         * Update the nodal position of node n in the element
+         * 
+         * :param const unsigned int n: The local node number
+         * :param const elib::vec &displacement: The displacement of the node from the reference state
+         */
+
+       return element->update_node_position(n, displacement);
+
+//       if (element->reference_nodes[n].size() != displacement.size()){
+//           std::cerr << "Error: local node " << n << " has a dimension of " << element->reference_nodes[n].size() << ".\n";
+//           std::cerr << "       the nodal displacement has a dimension of " << displacement.size() << ".\n";
+//           return 1;
+//       }
+//       for (unsigned int i=0; i<element->reference_nodes[n].size(); i++){
+//           element->nodes[n][i] = element->reference_nodes[n][i] + displacement[i];
+//       }
+//       return 0;
+
+    }
+
+    int MicromorphicFilter::update_element_node_positions(const elib::vecOfvec &displacements){
+        /*!
+         * Update the nodal positions of the elements to reflect a movement of the filter.
+         * 
+         * :param elib::vecOfvec &displacements: The displacements at the nodes from the reference coordinates
+         */
+
+         return element->update_node_positions(displacements);
+
+//         if (element->nodes.size() != displacements.size()){
+//             std::cerr << "Error: " << displacements.size() << " nodal displacements provided to an element which has " << element->nodes.size() << "\n";
+//             return 1;
+//         }
+//         for (unsigned int n=0; n<element->nodes.size(); n++){
+//             int uenp_result = update_element_node_positions(n, displacements[n]);
+//             if (uenp_result > 0){
+//                 return uenp_result;
+//             }
+//         }
+//         return 0;
+    }
+
+    int MicromorphicFilter::update_dof_values(const unsigned int n,
+                                              const std::vector< FloatType > &new_dof_values){
+        /*!
+         * Update the degree of freedom values for node n
+         * 
+         * :param const unsigned int n: The node to update the degree of freedom values for
+         * :param const std::vector< FloatType > &new_dof_values: The new values of the degree of freedom
+         */
+        dof_values[n] = new_dof_values;
+        return 0;
+    }
+
+    int MicromorphicFilter::update_dof_values(const vecOfvec &new_dof_values){
+        /*!
+         * Update the degree of freedom values for the filter.
+         * 
+         * :param std::vector< double > &new_dof_values: The new values of the degrees of freedom
+         */
+
+        if (new_dof_values.size() != element->nodes.size()){
+            std::cerr << "Error: new degrees of freedom must be defined for all nodes to use this function.\n";
+            std::cerr << "       Individual degrees of freedom can be updated using\n";
+            std::cerr << "        MicromorphicFilter::update_dof_values(local_node_number, new_dof_at_node)\n";
+            return 1;
+        }
+
+        for (unsigned int n=0; n<new_dof_values.size(); n++){
+            update_dof_values(n, new_dof_values[n]);
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::write_to_file(std::ofstream &file){
+        /*!
+         * Write the filter data to the provided file.
+         * 
+         * :param std::ofstream &file: The output file
+         * :param unsigned int &id: The filter's id number
+        */
+        
+        file << "*MICROMORPHIC FILTER, " << filter_id;
+        file << " *ELEMENT\n";
+        file << "  *NODES\n";
+        for (unsigned int n=0; n<element->nodes.size(); n++){
+            file << "  ";
+            for (unsigned int i=0; i<element->nodes[n].size(); i++){
+                file << element->nodes[n][i] << ", ";
+            }
+            file << "\n";
+        }
+        //Write out the nodal values
+        file << " *DOF VALUES\n";
+        for (unsigned int n=0; n<dof_values.size(); n++){
+            file << "  ";
+            for (unsigned int i=0; i<dof_values.size(); i++){
+                file << dof_values[n][i] << ", ";
+            }
+            file << "\n";
+        }
+        //Write out the Gauss point values
+        file << " *GAUSS POINT INFORMATION\n";
+        for (unsigned int gp=0; gp<material_weights.size(); gp++){
+            file << "  *VOLUME, " << volume[gp] << "\n";
+            file << "  *DENSITY, " << density[gp] << "\n";
+            file << "  *LOCAL MASS CENTER, ";
+            for (unsigned int i=0; i<local_center_of_mass[gp].size(); i++){
+                file << local_center_of_mass[gp][i] << ", ";
+            }
+            file << "\n";
+            file << "  *GLOBAL MASS CENTER, ";
+            for (unsigned int i=0; i<center_of_mass[gp].size(); i++){
+                file << center_of_mass[gp][i] << ", ";
+            }
+            file << "\n";
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::clear_microscale(){
+        /*!
+         * Clear any stored micro-scale information. This 
+         * should be done prior to building a new integrator 
+         * after an old one has been built. 
+         */
+
+        dof_id_numbers.clear();
+        material_id_numbers.clear();
+        micro_dof_local_coordinates.clear();
+        micro_material_local_coordinates.clear();
+        dof_weights.clear();
+        material_weights.clear();
+        return 0;
     }
 }

@@ -364,7 +364,7 @@ namespace overlap{
         public:
             MicromorphicFilter(){};
 //            MicromorphicFilter(elib::Element* element, bool _shared_dof_material = true);
-            MicromorphicFilter(const std::string &element_type, const elib::vecOfvec &nodes,
+            MicromorphicFilter(const unsigned int id, const std::string &element_type, const elib::vecOfvec &nodes,
                                const elib::quadrature_rule &qrule, bool _shared_dof_material = true);
             
             //Point loading and integration domain construction
@@ -385,13 +385,30 @@ namespace overlap{
                                                       const unsigned int num_macro_dof, const unsigned int num_micro_dof,
                                                       const unsigned int num_micro_free,
                                                       std::vector< T > &tripletList);
+            const unsigned int id();
+            const unsigned int dim();
+
+            //Element query/setting tools
+            const std::string element_type();
+            int update_element_node_positions(const unsigned int n, const elib::vec &displacement);
+            int update_element_node_positions(const elib::vecOfvec &displacements);
+            int update_dof_values(const unsigned int n, const std::vector< FloatType > &new_dof_values);
+            int update_dof_values(const vecOfvec &new_dof_values);
 
             //Display tools
-	    int print();
+	    int print(const bool show_microscale_info = false);
             int print_mass_properties();
 
+            //File IO tools
+            int write_to_file(std::ofstream &file);
+
+            //Re-initialize
+            int clear_microscale();
+
         protected:
+            unsigned int filter_id;
 	    std::unique_ptr<elib::Element> element;
+            unsigned int filter_dim;
             bool shared_dof_material;
             OverlapCoupling material_overlap;
             OverlapCoupling dof_overlap;
@@ -419,6 +436,9 @@ namespace overlap{
             int compute_volume();
             int compute_density(const std::map< unsigned int, double > &micro_density);
             int compute_centers_of_mass(const std::map< unsigned int, double > &micro_density);
+
+            //Degree of freedom properties
+            vecOfvec dof_values;
 
     };
     

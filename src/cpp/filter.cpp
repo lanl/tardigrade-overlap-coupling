@@ -265,14 +265,9 @@ namespace filter{
                     element_nodes[i] = point->second;
                 }
 
-
-//                //Construct the element
-//                elib::Element* _current_element = elib::build_element_from_string(_element_types->first,
-//                                                                                                  element_nodes,
-//                                                                                                  qrule->second);
-
                 //Initialize the filter
-                filters.emplace(_element->first, overlap::MicromorphicFilter(_element_types->first, element_nodes, qrule->second));
+                filters.emplace(_element->first, overlap::MicromorphicFilter(_element->first, _element_types->first,
+                                                                             element_nodes, qrule->second));
 
             }
         }
@@ -301,9 +296,17 @@ namespace filter{
         */
 
         //Construct the filters if they haven't been formed yet
-        int bf_result = build_filters(nodes, elements, qrules, filters);
-        if (bf_result>0){
-            return 1;
+        if (filters.size() == 0){
+            std::cout << " Filter list unpopulated. Initial construction of filters occuring\n";
+            int bf_result = build_filters(nodes, elements, qrules, filters);
+            if (bf_result>0){
+                return 1;
+            }
+        }
+        else{
+            for (auto filter=filters.begin(); filter!=filters.end(); filter++){
+                filter->second.clear_microscale();
+            }
         }
 
         //Erase micro_node_to_row
@@ -373,6 +376,123 @@ namespace filter{
         return 0;
     }
 
+    int construct_micro_displacement_vector_from_positions(const elib::vecOfvec &data, const uint_to_vec &reference_coordinates,
+                                                           const bool shared_dof_material,
+                                                           const unsigned int num_micro_dof, elib::vec &micro_displacement_vector){
+
+        /*!
+         * Construct the micro displacement vector by computing the difference between the current position and some 
+         * reference position.
+         * 
+         * :param const elib::vecOfvec &data: A collection of micro-scale data
+         * :param const uint_to_vec &reference_coordinates: The reference coordinates for the data
+         * :param const bool shared_dof_material: Whether the degrees of freedom are located at the material points or not. 
+         * :param const unsigned int num_micro_dof: The number of micro-scale degrees of freedom per node
+         * :param elib::vec &micro_displacement_vector: The returned micro-scale displacement vector
+         */
+
+        micro_displacement_vector.resize(reference_coordinates.size()*num_micro_dof);
+
+        for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
+            //Compute the difference between the current coordinates and the 
+            //reference
+            std::vector< double > pi(num_micro_dof);
+            bool dof_point = false;
+            int nodetype = (int)((*dataline)[0]+0.5);
+//              std::cout << nodetype << " ";
+            unsigned int nodeid = (unsigned int)((*dataline)[1]+0.5);
+
+            //Extract the point information if required
+            if ((nodetype==1) && (shared_dof_material)){
+                dof_point = true;
+//                    std::cout << nodeid << ": ";
+                for (unsigned int i=0; i<3; i++){
+                    pi[i] = (*dataline)[2+i];
+//                        std::cout << pi[i] << " ";
+                }
+//                    std::cout << "\n";
+            }
+            else if ((nodetype==2) && (!shared_dof_material)){
+                dof_point = true;
+                for (unsigned int i=0; i<3; i++){
+                    pi[i] = (*dataline)[2+i];
+                }
+            }
+
+            //Check if the current node is located in the reference coordinates (it better be!)
+            if (dof_point){
+                auto ref = reference_coordinates.find(nodeid);
+                if (ref == reference_coordinates.end()){
+                    std::cerr << "Error: node " << nodeid << " not found in reference coordinates.\n";
+                    std::cerr << "       it is currently required that nodes cannot be deleted.\n";
+                    return 1;
+                }
+                //Assign the value to the micro-displacement (dof) vector
+                for (unsigned int i=0; i<pi.size(); i++){
+                    micro_displacement_vector[num_micro_dof*ref->first+i] = pi[i]-ref->second[i];
+                }
+            }
+        }
+        return 0;   
+        
+    }
+
+    int assign_dof_information_to_filters(const assembly::node_map &nodes, const assembly::element_map &elements,
+                                          const uint_map &macro_node_to_col, const unsigned int num_macro_dof,
+                                          const std::vector< double > &macro_displacement, filter_map &filters){
+        /*!
+         * Assign the computed macro-scale degree of freedom values to the nodes
+         * 
+         */
+
+        //Assign the dof information to the filter and update their current nodal positions.
+        for (auto filter=filters.begin(); filter!=filters.end(); filter++){
+
+            //Get the elements of the given type
+            auto elementtype=elements.find(filter->second.element_type());
+            if (elementtype == elements.end()){
+                std::cout << "Error: cant find filter element type in elements\n";
+                return 1;
+            }
+
+            //Get the element nodal definition
+            auto element = elementtype->second.find(filter->second.id());
+            if (element == elementtype->second.end()){
+                std::cout << "Error: filter not found in element list\n";
+                return 1;
+            }
+                
+            //Iterate through the element's nodes
+            unsigned int index=0;
+            elib::vecOfvec new_nodes(element->second.size());
+            for (auto n=element->second.begin(); n!=element->second.end(); n++){
+
+                auto dofptr = macro_node_to_col.find(*n);
+                if (dofptr == macro_node_to_col.end()){
+                    std::cout << "Error: filter node " << *n << "not found in macro_node_to_col map\n";
+                    return 1;
+                }
+
+                filter->second.update_dof_values(index, 
+                    std::vector< double >(&macro_displacement[num_macro_dof*dofptr->second],
+                                          &macro_displacement[num_macro_dof*dofptr->second+num_macro_dof-1]));
+
+                //We assume that the first dof values are the macro displacements
+                unsigned int uenp_result = filter->second.update_element_node_positions(index,
+                    std::vector< double > (&macro_displacement[num_macro_dof*dofptr->second],
+                                           &macro_displacement[num_macro_dof*dofptr->second+filter->second.dim()])
+                );
+                if (uenp_result > 0){
+                    return 1;
+                }
+
+                index++;
+            }
+            filter->second.print();
+        }
+        return 0;
+    }
+        
     int process_timestep_totalLagrangian(const elib::vecOfvec &data, const assembly::node_map &nodes,
                                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                                          const bool shared_dof_material,
@@ -381,6 +501,7 @@ namespace filter{
                                          std::map< unsigned int, unsigned int > &micro_node_elcount,
 					 std::map< unsigned int, elib::vec > &reference_coordinates,
                                          overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters,
+                                         std::ofstream &output_file,
                                          const unsigned int num_macro_dof, const unsigned int num_micro_dof){
         /*!
         * Process the current timestep using a Total-Lagrangian approach.
@@ -410,6 +531,7 @@ namespace filter{
         * :param overlap::SpMat &shapefunctions: The shapefunction matrix.
         * :param overlap::QRsolver &dof_solver: The degree of freedom solver object.
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
+        * :param std::ofstream &output_file: The output file to write the filter results to
         * :param const unsigned int num_macro_dof: The number of macro-scale degrees of freedom (default 12)
         * :param const unsigned int num_micro_dof: The number of micro-scale degrees of freedom (default 3)
         */
@@ -417,7 +539,7 @@ namespace filter{
         //Check if the filters have been populated yet. If not, we will re-compute the shape-function matrix.
         bool populated_filters = false;
         std::vector< unsigned int > macro_node_ids(nodes.size());
-        if (filters.size() != elements.size()){
+        if (filters.size() == 0){
             populated_filters = true;
 
             macro_node_to_col.clear();
@@ -431,69 +553,24 @@ namespace filter{
         }
 	else{
             //Compute the macro displacement
+            std::cout << " Computing the macro-displacement\n";
 	    std::vector< double > macro_displacement(shapefunctions.cols());
 	    std::vector< double > micro_displacement(shapefunctions.rows());
 
-	    //Iterate through the data
-//            std::cout << "np.array([";
-	    for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
-                //Compute the difference between the current coordinates and the 
-		//reference
-                std::vector< double > pi(num_micro_dof);
-		bool dof_point = false;
-		int nodetype = (int)((*dataline)[0]+0.5);
-//		std::cout << nodetype << " ";
-		unsigned int nodeid = (unsigned int)((*dataline)[1]+0.5);
-		
-		//Extract the point information if required
-		if ((nodetype==1) && (shared_dof_material)){
-		    dof_point = true;
-//                    std::cout << nodeid << ": ";
-                    for (unsigned int i=0; i<3; i++){
-                        pi[i] = (*dataline)[2+i];
-//                        std::cout << pi[i] << " ";
-		    }
-//                    std::cout << "\n";
-		}
-		else if ((nodetype==2) && (!shared_dof_material)){
-		    dof_point = true;
-                    for (unsigned int i=0; i<3; i++){
-			pi[i] = (*dataline)[2+i];
-		    }
-		}
-
-		//Check if the current node is located in the reference coordinates (it better be!)
-		if (dof_point){
-                    auto ref = reference_coordinates.find(nodeid);
-                    if (ref == reference_coordinates.end()){
-                        std::cerr << "Error: node " << nodeid << " not found in reference coordinates.\n";
-                        std::cerr << "       it is currently required that nodes cannot be deleted.\n";
-                        return 1;
-                    }
-                    //Assign the value to the micro-displacement (dof) vector
-//                    std::cout << "[";
-                    for (unsigned int i=0; i<pi.size(); i++){
-                        micro_displacement[num_micro_dof*ref->first+i] = pi[i]-ref->second[i];
-//                        std::cout << micro_displacement[num_micro_dof*ref->first+i] << ", ";
-                    }
-//                    std::cout << "],\n";
-                }
-	    }
-//            std::cout << "])\n";
-
-//            std::cout << "micro_displacement:\n";
-//            elib::print(micro_displacement);
-//            assert(1==0);
+            construct_micro_displacement_vector_from_positions(data, reference_coordinates,
+                                                               shared_dof_material, num_micro_dof,
+                                                               micro_displacement);
 
 	    //Solve for the macro dof
 	    Eigen::Map< overlap::EigVec > b(micro_displacement.data(), micro_displacement.size(), 1);
 	    Eigen::Map< overlap::EigVec > x(macro_displacement.data(), macro_displacement.size(), 1);
 	    x = dof_solver.solve(b);
 
-//            std::cout << "micro displacement:\n";
-//            elib::print(micro_displacement);
+            std::cout << " Assigning macro-dof values to the filter\n";
+            assign_dof_information_to_filters(nodes, elements, macro_node_to_col, num_macro_dof,
+                                              macro_displacement, filters);
 
-	    std::cout << "\nmacro_displacement:\n";
+            std::cout << "\nmacro_displacement:\n";
             unsigned int ub = 3;
             std::cout << "[";
 	    for (unsigned int i=0; i<8; i++){
@@ -505,7 +582,7 @@ namespace filter{
 		std::cout << "],\n";
             }
             std::cout << "]\n";
-            assert(1==0);
+//            assert(1==0);
 	}
 
         //Populate the filters
@@ -527,9 +604,11 @@ namespace filter{
         std::cout << "Computing Mass Properties\n";
         std::map< unsigned int, double > micro_density;
         std::map< unsigned int, elib::vec> micro_position;
+        std::cout << " here 1\n";
         for (auto dataline = data.begin(); dataline!=data.end(); dataline++){
             micro_density.emplace((*dataline)[1], (*dataline)[5]);
         }
+        std::cout << " here 2\n";
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             filter->second.compute_mass_properties(micro_density);
         }
@@ -607,7 +686,8 @@ namespace filter{
                          std::map< unsigned int, unsigned int > &micro_node_to_row,
                          std::map< unsigned int, unsigned int > &micro_node_elcount,
 			 std::map< unsigned int, elib::vec > &reference_coordinates,
-                         overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters){
+                         overlap::SpMat &shapefunctions, overlap::QRsolver &dof_solver, filter_map &filters,
+                         std::ofstream &output_file){
         /*!
         * Process the current timestep and compute the macro-scale stress and deformation quantities
         * 
@@ -633,13 +713,14 @@ namespace filter{
         * :param overlap::SpMat &shapefunctions: The shapefunction matrix.
         * :param overlap::QRsolver &dof_solver: The solver for the degrees of freedom.
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
+        * :param std::ofstream &output_file: The file to write the output data to
         */
     
         if (mode == 0){
             return process_timestep_totalLagrangian(data, nodes, elements, qrules,
                                                     shared_dof_material, macro_node_to_col, micro_node_to_row, 
 						    micro_node_elcount, reference_coordinates, 
-						    shapefunctions, dof_solver, filters);
+						    shapefunctions, dof_solver, filters, output_file);
         }
         return 1;
     }
@@ -683,6 +764,7 @@ int main(int argc, char **argv){
     std::string output_fn;
 
     std::ifstream input_file;
+    std::ofstream output_file;
 
     elib::vecOfvec data;
 
@@ -717,6 +799,8 @@ int main(int argc, char **argv){
 	    return 1;
 	}
 
+        output_file.open(output_fn);
+
         //Open the dns file
         int openresult = filter::open_input_file(input_fn, format, input_file);
         if (openresult>0){
@@ -744,12 +828,13 @@ int main(int argc, char **argv){
             int pt_result = filter::process_timestep(data, nodes, elements, qrules, mode, shared_dof_material,
                                                      macro_node_to_col, micro_node_to_row, micro_node_elcount, 
 						     reference_coordinates,
-                                                     shapefunctions, dof_solver, filters);
+                                                     shapefunctions, dof_solver, filters, output_file);
             if (pt_result > 0){
                 std::cout << "Error in processing timestep\n";
                 return 1;
             }
         }
+        output_file.close();
     }
     return 0;
 }

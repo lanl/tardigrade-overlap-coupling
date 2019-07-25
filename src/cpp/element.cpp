@@ -19,6 +19,7 @@ namespace elib{
          */
 
         nodes = _nodes;
+        reference_nodes = _nodes;
         qrule = _qrule;
         
         bounding_box.resize(2);
@@ -359,6 +360,49 @@ namespace elib{
         return local_point_inside(xi);
     }
 
+    int Element::update_node_position(const unsigned int n, const vec &displacement){
+        /*!
+         * Update the nodal position of node n in the element
+         * 
+         * :param const unsigned int n: The local node number
+         * :param const elib::vec &displacement: The displacement of the node from the reference state
+         */
+        
+        if (reference_nodes[n].size() != displacement.size()){
+            std::cerr << "Error: local node " << n << " has a dimension of " << reference_nodes[n].size() << ".\n";
+            std::cerr << "       the nodal displacement has a dimension of " << displacement.size() << ".\n";
+            return 1;
+        }
+        for (unsigned int i=0; i<reference_nodes[n].size(); i++){
+            nodes[n][i] = reference_nodes[n][i] + displacement[i];
+            bounding_box[0][i] = std::min(bounding_box[0][i], nodes[n][i]);
+            bounding_box[1][i] = std::max(bounding_box[1][i], nodes[n][i]);
+        }
+
+        return 0;
+    }
+
+    int Element::update_node_positions(const vecOfvec &displacements){
+        /*!
+         * Update the nodal positions of the elements to reflect a movement of the filter.
+         * 
+         * :param elib::vecOfvec &displacements: The displacements at the nodes from the reference coordinates
+         */
+        
+        if (nodes.size() != displacements.size()){
+            std::cerr << "Error: " << displacements.size() << " nodal displacements provided to an element which has " << reference_nodes.size() << "nodes.\n";
+            return 1;
+        }
+        for (unsigned int n=0; n<nodes.size(); n++){
+            int uenp_result = update_node_position(n, displacements[n]);
+            if (uenp_result > 0){
+                return uenp_result;
+            }
+        }
+        return 0;
+    }
+
+
     void Hex8::get_shape_functions(const vec &local_coordinates, vec &result){
         /*!
          * Compute the shape functions for a Hex8 element.
@@ -535,6 +579,8 @@ namespace elib{
         std::cout << "Element of type: " << element.name << "\n";
         std::cout << "\nglobal nodes:\n";
         print(element.nodes);
+        std::cout << "\nglobal reference nodes:\n";
+        print(element.reference_nodes);
         std::cout << "\nlocal nodes:\n";
         print(element.local_node_coordinates);
         std::cout << "\nquadrature rule:\n";
