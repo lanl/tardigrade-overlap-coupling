@@ -63,8 +63,13 @@ def transformation(x, t):
                     [-0.05, -0.20, -0.10]]) + np.eye(3);
     b = t*np.array([3.2, -.5, 2.0])
     D = np.matmul(Q,C)
+#    print(D - np.eye(3));
     xp = (D.dot(x.reshape((-1, 1))) + b.reshape((-1, 1)))
     return xp.flatten()
+
+#for t in np.linspace(0, 1, 11):
+#    transformation(np.zeros(3,), t)
+#raise
 
 import pickle
 fn = "example_data.txt"
