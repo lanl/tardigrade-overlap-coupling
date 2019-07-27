@@ -116,7 +116,7 @@ namespace overlap{
 #if CONVEXLIB != AKUUKKA
     void OverlapCoupling::extract_mesh_info(const mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const{
 #else
-    void OverlapCoupling::extract_mesh_info(mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const{
+    void OverlapCoupling::extract_mesh_info(mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const {//, vecOfvec &facepoints) const{
 #endif
         /*!
         Extract the required information from the quickhull mesh
@@ -157,8 +157,12 @@ namespace overlap{
                 i3 = mesh.first[index+2];
 
                 //Construct the normal and get a point on the face.
-                normals.push_back(normal_from_vertices(mesh.second[i1], mesh.second[i2], mesh.second[i3]));
-                points.push_back(map_quickhull_to_vector(mesh.second[i1]));
+                std::vector< FloatType > normal;
+                int nfv_result = normal_from_vertices(mesh.second[i1], mesh.second[i2], mesh.secont[i3], normal);
+                if (!(nfv_result > 0)){
+                    normals.push_back(normal);//normal_from_vertices(mesh.second[i1], mesh.second[i2], mesh.second[i3]));
+                    points.push_back(map_quickhull_to_vector(mesh.second[i1]));
+                }
                 index += 3;
             }
         #elif CONVEXLIB == AKUUKKA
@@ -177,9 +181,18 @@ namespace overlap{
                 i3 = indexBuffer[i*3+2];
 
                 //Construct the normal and get a point on the face.
-                normals.push_back(normal_from_vertices(vertexBuffer[i1], vertexBuffer[i2], vertexBuffer[i3]));
+                std::vector< FloatType > normal;
+                int nfv_result = normal_from_vertices(vertexBuffer[i1], vertexBuffer[i2], vertexBuffer[i3], normal);
+
+                if (!(nfv_result > 0)){
+//                    normals.push_back(normal_from_vertices(vertexBuffer[i1], vertexBuffer[i2], vertexBuffer[i3]));
 //                std::cout << "n: ";print_vector(normals[i]);
-                points.push_back(map_quickhull_to_vector(vertexBuffer[i1]));
+                    normals.push_back(normal);
+                    points.push_back(map_quickhull_to_vector(vertexBuffer[i1]));
+                    //facepoints.push_back(map_quickhull_to_vector(vertexBuffer[i1]));
+                    //facepoints.push_back(map_quickhull_to_vector(vertexBuffer[i2]));
+                    //facepoints.push_back(map_quickhull_to_vector(vertexBuffer[i3]));
+                }
             }
             
         #endif
@@ -251,7 +264,11 @@ namespace overlap{
         //!Map the coordinates to 3D-quickhull vertices
         std::vector< vertex_t > vertices;
         map_vectors_to_quickhull(coordinates, vertices);
-        
+//        std::cout << "coordinates:\n[";
+//        for (unsigned int i=0; i<coordinates.size(); i++){
+//            std::cout << "[" << coordinates[i][0] << ", " << coordinates[i][1] << ", " << coordinates[i][2] << "],\n";
+//        }
+//        std::cout << "]\n";
         //!Construct the mesh
         #if CONVEXLIB == QUICKHULL
             mesh_t mesh = qh_quickhull3d(&vertices[0], vertices.size());
@@ -276,9 +293,25 @@ namespace overlap{
         #endif
 
         //!Extract the relevant information
-        vecOfvec normals, points;
-        extract_mesh_info(mesh, normals, points);
+        vecOfvec normals, points;//, face_points;
+        extract_mesh_info(mesh, normals, points);//, face_points);
 
+/*        std::cout << "normals:\n[";
+        for (unsigned int i=0; i<normals.size(); i++){
+            std::cout << "[" << normals[i][0] << ", " << normals[i][1] << ", " << normals[i][2] << "],\n";
+        }
+        std::cout << "]\n";
+        std::cout << "points:\n[";
+        for (unsigned int i=0; i<points.size(); i++){
+            std::cout << "[" << points[i][0] << ", " << points[i][1] << ", " << points[i][2] << "],\n";
+        }
+        std::cout << "]\n";
+        std::cout << "face_points:\n[";
+        for (unsigned int i=0; i<face_points.size(); i++){
+            std::cout << "[" << face_points[i][0] << ", " << face_points[i][1] << ", " << face_points[i][2] << "],\n";
+        }
+        std::cout << "]\n";
+*/
         //!Form the planes
         planes = compute_unique_planes(normals, points);
 
@@ -458,6 +491,12 @@ namespace overlap{
             
             //Evaluate the point information
             evaluate_container_information(container, points[gd], boundary_node_volumes);
+
+            if (points[gd].size() == 0 ){
+                gauss_domains[gd].print();
+                print_planeMap(dns_planes);
+                assert(-23==-22);
+            }
 
             delete(container);
         }
@@ -766,20 +805,23 @@ namespace overlap{
         return fabs(a-b)<tol;
     }
 
-    std::vector< double > normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3){
+    int normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3, std::vector< double > &normal, double tolr, double tola){
         /*!
-        Compute the normal vector from three vertices.
-
-        :param vertex_t p1: The center vertex of the triangle
-        :param vertex_t p2: The first vertex CCW from the center vertex
-        :param vertex_t p3: the second vertex CCW from the center vertex
-        */
+         * Compute the normal vector from three vertices. If the resulting area of the two vectors is smaller than the tolerance
+         * then the return value will be greater than zero.
+         * 
+         * :param vertex_t p1: The center vertex of the triangle
+         * :param vertex_t p2: The first vertex CCW from the center vertex
+         * :param vertex_t p3: the second vertex CCW from the center vertex
+         * :param std::vector< double > &normal: The normal vector
+         * :param double tol: The tolerance.
+         */
 
 //        std::cout << "p1: ", print_vertex(p1);
 //        std::cout << "p2: ", print_vertex(p2);
 //        std::cout << "p3: ", print_vertex(p3);
 
-        std::vector< double > v1(3), v2(3), normal;
+        std::vector< double > v1(3), v2(3);
         v1[0] = p2.x - p1.x;
         v1[1] = p2.y - p1.y;
         v1[2] = p2.z - p1.z;
@@ -788,13 +830,30 @@ namespace overlap{
         v2[1] = p3.y - p1.y;
         v2[2] = p3.z - p1.z;
 
+        //Normalize v1 and v2
+        double v1_mag = sqrt(dot(v1, v1));
+        double v2_mag = sqrt(dot(v2, v2));
+        for (unsigned int i=0; i<v1.size(); i++){v1[i]/=v1_mag;}
+        for (unsigned int i=0; i<v2.size(); i++){v2[i]/=v2_mag;}
+
         //Compute the normal
         normal = cross(v1, v2);
 
         //Normalize the normal vector
-        double mag = sqrt(dot(normal, normal));
+        double narea = dot(normal, normal);
+        double mag = sqrt(narea);
         for (unsigned int i=0; i<normal.size(); i++){normal[i]/=mag;}
-        return normal;
+
+        //Check for numerical issues
+        double tol = 1*tolr + tola;
+        if (narea < tol ){
+            //The area of the rhombus between the two vectors is very small.
+            //They are likely either nearly in the same direction or in 
+            //opposite directions and the result is suspect.
+            return 1;
+        }
+        
+        return 0;
     }
 
     bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr, const double tola){
@@ -2173,21 +2232,24 @@ namespace overlap{
 //    }
 
     MicromorphicFilter::MicromorphicFilter(const unsigned int _id, const std::string &element_type,
-                                           const elib::vecOfvec &nodes, const elib::quadrature_rule &qrule,
+                                           const std::vector< unsigned int > &global_node_ids, const elib::vecOfvec &nodes,
+                                           const elib::quadrature_rule &qrule, const unsigned int num_macro_dof,
                                            bool _shared_dof_material){
         /*!
 	 * Initialize the micromorphic filter
 	 *
          * :param unsigned int id: The id number of the filter
 	 * :param const std::string &element_type: The name of the underlying element type
+         * :param const std::vector< unsigned int > global_node_ids: The global node id numbers
 	 * :param const elib::vecOfvec &nodes: The nodes which make up the element type (i.e. their coordinates)
 	 * :param const elib::quadrature_rule &qrule: The quadrature rule of the element.
+         * :param const unsigned int num_macro_dof: The number of macro-scale degrees of freedom.
 	 * :param bool _shared_dof_material: A flag which indicates if the material points should be used to 
 	 *                                   determine the macro-scale nodal coordinate information.
 	 */
 
         filter_id = _id;
-        element = elib::build_element_from_string(element_type, nodes, qrule);
+        element = elib::build_element_from_string(element_type, global_node_ids, nodes, qrule);
         shared_dof_material = _shared_dof_material;
 
         elib::vecOfvec gauss_points(element->qrule.size());
@@ -2202,12 +2264,15 @@ namespace overlap{
         }
 
         dof_values.resize(nodes.size());
+        for (unsigned int i=0; i<nodes.size(); i++){
+            dof_values[i] = std::vector< FloatType >(num_macro_dof, 0);
+        }
 
         filter_dim = nodes[0].size();
 
     }
 
-    bool MicromorphicFilter::add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates){
+    bool MicromorphicFilter::add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates, FloatType tol){
         /*!
         Check if a dof point is inside the filter and add it if it is.
 
@@ -2219,7 +2284,7 @@ namespace overlap{
 
             elib::vec xi;
             element->compute_local_coordinates(coordinates, xi);
-            if (element->local_point_inside(xi)){
+            if (element->local_point_inside(xi, tol)){
                 dof_id_numbers.push_back(id);
                 micro_dof_local_coordinates.push_back(xi);
                 return true;
@@ -2228,7 +2293,7 @@ namespace overlap{
         return false;
     }
 
-    bool MicromorphicFilter::add_micro_material_point(const unsigned int &id, const elib::vec &coordinates){
+    bool MicromorphicFilter::add_micro_material_point(const unsigned int &id, const elib::vec &coordinates, FloatType tol){
         /*!
         * Check if a material point is inside the filter and add it if it is.
         * 
@@ -2240,7 +2305,7 @@ namespace overlap{
 
             elib::vec xi;
             element->compute_local_coordinates(coordinates, xi);
-            if (element->local_point_inside(xi)){
+            if (element->local_point_inside(xi, tol)){
                 material_id_numbers.push_back(id);
                 micro_material_local_coordinates.push_back(xi);
                 return true;
@@ -2256,6 +2321,8 @@ namespace overlap{
         * :param bool update_shapefunction_matrix: Flag indicating if the shape-function matrix
         *                                          should be updated.
         */
+        
+//        std::cout << "material_id_numbers.size(): " << material_id_numbers.size() << "\n";
 
         construct_material_point_integrator();
         if ((!shared_dof_material) && (update_shapefunction_matrix)){
@@ -2276,6 +2343,18 @@ namespace overlap{
         elib::vecOfvec invjacobian;
         double je;
         for (unsigned int gp=0; gp<material_weights.size(); gp++){
+/*            std::cout << "points in gauss point " << gp << ": " << material_weights[gp].size() << "\n";
+            if (material_weights[gp].size()<10){
+
+                const std::vector< MicroPoint >* gd = material_overlap.get_gauss_domains();
+                (*gd)[gp].print();
+
+                for (unsigned int i=0; i<micro_material_local_coordinates.size(); i++){
+                    elib::print(micro_material_local_coordinates[i]);
+                }
+                assert(1==0);
+            }
+*/
             for (auto it=material_weights[gp].begin(); it!=material_weights[gp].end(); it++){
 //                std::cout << "material point: " << it->first << "\n";
 //                it->second.print();
@@ -2559,6 +2638,7 @@ namespace overlap{
             std::cout << "  volume:  " << volume[gp] << "\n";
             std::cout << "  density: " << density[gp] << "\n";
             std::cout << "  C. of mass: "; elib::print(center_of_mass[gp]);
+            std::cout << "  local C. of mass: "; elib::print(local_center_of_mass[gp]);
         }
         return 0;
     }
@@ -2589,6 +2669,13 @@ namespace overlap{
         return filter_dim;
     }
 
+    const std::vector< unsigned int >* MicromorphicFilter::get_element_global_node_ids(){
+        /*!
+         * Get the global node ids of the underlying Element object.
+         */
+        return element->get_global_node_ids();
+    }
+
     const std::string MicromorphicFilter::element_type(){
         /*!
          * Get the name of the element type
@@ -2599,7 +2686,19 @@ namespace overlap{
         return element->name;
     }
 
-    int MicromorphicFilter::update_element_node_positions(const unsigned int n, const elib::vec &displacement){
+    int MicromorphicFilter::update_element_node_position(const unsigned int n){
+        /*!
+         * Update the position of node n using the dof values of the filter.
+         *
+         * Note: The first filter_dim values are assumed to be the nodal displacements.
+         * 
+         * :param const unsigned int n: The local node number
+         */
+        std::vector< FloatType > displacement = std::vector< FloatType >(&dof_values[n][0], &dof_values[n][0]+filter_dim);
+        return update_element_node_position(n, displacement);
+    }
+
+    int MicromorphicFilter::update_element_node_position(const unsigned int n, const elib::vec &displacement){
         /*!
          * Update the nodal position of node n in the element
          * 
@@ -2683,11 +2782,11 @@ namespace overlap{
          * :param unsigned int &id: The filter's id number
         */
         
-        file << "*MICROMORPHIC FILTER, " << filter_id;
+        file << "*MICROMORPHIC FILTER, " << filter_id << "\n";
         file << " *ELEMENT\n";
         file << "  *NODES\n";
         for (unsigned int n=0; n<element->nodes.size(); n++){
-            file << "  ";
+            file << "   ";
             for (unsigned int i=0; i<element->nodes[n].size(); i++){
                 file << element->nodes[n][i] << ", ";
             }

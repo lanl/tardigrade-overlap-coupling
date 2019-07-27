@@ -30,6 +30,7 @@ namespace elib{
 
         public:
             std::string name; //!The name of the element
+            std::vector< unsigned int > global_node_ids; //!The global id numbers of the nodes
             vecOfvec nodes; //!The global coordinates of the nodes
             vecOfvec reference_nodes; //!The global reference coordinates of the nodes
             quadrature_rule qrule; //!The quadrature rule of the element
@@ -37,7 +38,7 @@ namespace elib{
             vecOfvec bounding_box; //!The bounding box of the element
 
             Element(){}
-            Element(const vecOfvec &nodes, const quadrature_rule &qrule);
+            Element(const std::vector< unsigned int > &global_node_ids, const vecOfvec &nodes, const quadrature_rule &qrule);
 	    virtual ~Element() = default;
 
             void interpolate(const vec &nodal_values, const vec &local_coordinates,
@@ -75,15 +76,19 @@ namespace elib{
 
             virtual void get_shape_functions(const vec &local_coordinates, vec &result){} //Must be over-ridden
             virtual void get_local_grad_shape_functions(const vec &local_coordiantes, vecOfvec &result){} //Must be over-ridden
-            virtual bool local_point_inside(const vec &local_coordinates){return false;} //Must be over-ridden
+            virtual bool local_point_inside(const vec &local_coordinates, const double tol=1e-9){return false;} //Must be over-ridden
 
             bool bounding_box_contains_point(const vec &x);
 
             bool contains_point(const vec &x);
 
-            int update_node_position(const unsigned int n, const vec &displacement);
+            int update_node_position(const unsigned int n, const vec &displacement, const bool bounding_box_update=true);
 
             int update_node_positions(const vecOfvec &displacements);
+
+            int update_bounding_box();
+
+            const std::vector< unsigned int > *get_global_node_ids();
     };
 
     class Hex8 : public Element{
@@ -93,7 +98,8 @@ namespace elib{
 
         public:
 
-            Hex8(const vecOfvec &nodes, const quadrature_rule &qrule) : Element(nodes, qrule){
+            Hex8(const std::vector< unsigned int > &global_node_ids, 
+                 const vecOfvec &nodes, const quadrature_rule &qrule) : Element(global_node_ids, nodes, qrule){
                 name = "Hex8";
                 local_node_coordinates = {{-1, -1, -1},
                                           { 1, -1, -1},
@@ -107,7 +113,7 @@ namespace elib{
 
             void get_shape_functions(const vec &local_coordinates, vec &result);
             void get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
-            bool local_point_inside(const vec &local_coordinates);
+            bool local_point_inside(const vec &local_coordinates, const double tol=1e-8);
 
     };
 
@@ -122,7 +128,8 @@ namespace elib{
     void print(const quadrature_rule &qrule);
     void print(const Element &element);
 
-    std::unique_ptr<Element> build_element_from_string(const std::string &elname, const vecOfvec &nodes, const quadrature_rule &qrule);
+    std::unique_ptr<Element> build_element_from_string(const std::string &elname, const std::vector< unsigned int > &global_node_is, 
+                                                       const vecOfvec &nodes, const quadrature_rule &qrule);
     void determinant_3x3(const vecOfvec &A, double &d);
 }
 #endif

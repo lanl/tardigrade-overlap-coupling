@@ -76,20 +76,27 @@ namespace filter{
         return 1;
     }
     
-    int read_timestep(std::ifstream &file, const int format, elib::vecOfvec &data){
+    int read_timestep(std::ifstream &file, const int format, std::ofstream &output_file, elib::vecOfvec &data){
         /*!
         Read in the information for a single timestep in the provided format.
     
         :param std::ifstream &file: The input file to read
         :param const int format: The input file format
+        :param std::ofstream &output_file: The output file
         :param elib::vecOfvec &data: The parsed data. Note: All data is converted to double
         */
     
+        double time;
+        int result;
         if (format == 1){
-            return read_timestep_format1(file, data);
+            result = read_timestep_format1(file, time, data);
         }
-    
-        return 1;
+        else{
+            result = 1;
+        }
+
+        output_file << "*TIMESTEP, " << time << "\n";
+        return result;
     }
     
     int find_current_time_format1(std::ifstream &file, elib::vecOfvec &data, double &time){
@@ -198,15 +205,13 @@ namespace filter{
         return 0;    
     }
     
-    int read_timestep_format1(std::ifstream &file, elib::vecOfvec &data){
+    int read_timestep_format1(std::ifstream &file, double &time, elib::vecOfvec &data){
         /*!
         Read in the information for a single timestep.
     
         :param std::ifstream &file: The input file to read
         :param elib::vecOfvec &data: The parsed data. Note: All data is converted to double.
         */
-    
-        double time;
     
         //Get the current time
         int get_time_result = find_current_time_format1(file, data, time);
@@ -221,13 +226,14 @@ namespace filter{
     }
 
     int build_filters(const assembly::node_map &nodes, const assembly::element_map elements,
-                      const assembly::qrule_map &qrules, filter_map &filters){
+                      const assembly::qrule_map &qrules, const unsigned int num_macro_dof, filter_map &filters){
         /*!
         * Build the filters for processing data.
         *
         * :param const assembly::node_map &nodes: The nodes of the micromorphic filter.
         * :param const assembly::element_map &elements: The elements of the micromorphic filter.
         * :param const assembly::qrule_map &qrules: The quadrature rules for the elements.
+        * :param const unsigned int num_macro_dof: The number of macro-scale degrees of freedom.
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
         */
 
@@ -267,7 +273,8 @@ namespace filter{
 
                 //Initialize the filter
                 filters.emplace(_element->first, overlap::MicromorphicFilter(_element->first, _element_types->first,
-                                                                             element_nodes, qrule->second));
+                                                                             _element->second, element_nodes, qrule->second,
+                                                                             num_macro_dof));
 
             }
         }
@@ -277,6 +284,7 @@ namespace filter{
     int populate_filters(const elib::vecOfvec &data, const assembly::node_map &nodes,
                         const assembly::element_map &elements, const assembly::qrule_map &qrules,
                         const bool update_shapefunction, const bool shared_dof_material,
+                        const unsigned int num_macro_dof,
                         std::map<unsigned int, unsigned int > &micro_node_to_row,
                         std::map< unsigned int, unsigned int > &micro_node_elcount, filter_map &filters){
         /*!
@@ -289,6 +297,7 @@ namespace filter{
         * :param const bool update_shapefunction: Flag indicating of the shapefunction matrix is to be updated.
         * :param const bool shared_dof_material: Flag indicating if the degrees of freedom and material quantities are known at 
         *                                       the same points.
+        * :param const unsigned int num_macro_dof: The number of degrees of freedom to macro-scale has.
         * :param std::map< unsigned int, unsigned int > &micro_node_to_row: The mapping from the micro node number to the 
         *                                                                   row of the shape function matrix.
         * :param std::map< unsigned int, unsigned int > &micro_node_elcount: The number of filters a node is contained within.
@@ -298,7 +307,7 @@ namespace filter{
         //Construct the filters if they haven't been formed yet
         if (filters.size() == 0){
             std::cout << " Filter list unpopulated. Initial construction of filters occuring\n";
-            int bf_result = build_filters(nodes, elements, qrules, filters);
+            int bf_result = build_filters(nodes, elements, qrules, num_macro_dof, filters);
             if (bf_result>0){
                 return 1;
             }
@@ -326,6 +335,7 @@ namespace filter{
 	    //Iterate over the macro-scale filters
             for (auto filter = filters.begin(); filter!=filters.end(); filter++){
                 bool iscontained = false;
+                
                 if (pointtype==1){
 		    iscontained = filter->second.add_micro_material_point((*datapoint)[1],
 				                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
@@ -464,24 +474,34 @@ namespace filter{
                 
             //Iterate through the element's nodes
             unsigned int index=0;
-            elib::vecOfvec new_nodes(element->second.size());
+//            std::cout << "macro_node_to_col:\n";
+//            print(macro_node_to_col);
+//            std::cout << "macro_displacement:\n";
+//            for (unsigned int i=0; i<8; i++){
+//                for (unsigned int j=0; j<num_macro_dof; j++){
+//                    std::cout << macro_displacement[num_macro_dof*i + j] << ", ";
+//                }
+//                std::cout << "\n";
+//            }
+//            std::cout << "element nodes:\n";
             for (auto n=element->second.begin(); n!=element->second.end(); n++){
 
                 auto dofptr = macro_node_to_col.find(*n);
                 if (dofptr == macro_node_to_col.end()){
-                    std::cout << "Error: filter node " << *n << "not found in macro_node_to_col map\n";
+                    std::cerr << "Error: filter node " << *n << "not found in macro_node_to_col map\n";
                     return 1;
                 }
 
                 filter->second.update_dof_values(index, 
-                    std::vector< double >(&macro_displacement[num_macro_dof*dofptr->second],
-                                          &macro_displacement[num_macro_dof*dofptr->second+num_macro_dof-1]));
+                    std::vector< double >(macro_displacement.begin() + num_macro_dof*dofptr->second,
+                                          macro_displacement.begin() + num_macro_dof*dofptr->second + num_macro_dof));
 
                 //We assume that the first dof values are the macro displacements
-                unsigned int uenp_result = filter->second.update_element_node_positions(index,
-                    std::vector< double > (&macro_displacement[num_macro_dof*dofptr->second],
-                                           &macro_displacement[num_macro_dof*dofptr->second+filter->second.dim()])
-                );
+                unsigned int uenp_result = filter->second.update_element_node_position(index);
+//                unsigned int uenp_result = filter->second.update_element_node_positions(index,
+//                    std::vector< double > (&macro_displacement[num_macro_dof*dofptr->second],
+//                                           &macro_displacement[num_macro_dof*dofptr->second+filter->second.dim()])
+//                );
                 if (uenp_result > 0){
                     return 1;
                 }
@@ -538,7 +558,7 @@ namespace filter{
 
         //Check if the filters have been populated yet. If not, we will re-compute the shape-function matrix.
         bool populated_filters = false;
-        std::vector< unsigned int > macro_node_ids(nodes.size());
+//        std::vector< unsigned int > macro_node_ids(nodes.size());
         if (filters.size() == 0){
             populated_filters = true;
 
@@ -547,7 +567,7 @@ namespace filter{
             unsigned int index = 0;
             for (auto it=nodes.begin(); it!=nodes.end(); it++){
                 macro_node_to_col.emplace(it->first, index);
-                macro_node_ids[index] = it->first;
+//                macro_node_ids[index] = it->first;
                 index++;
             }
         }
@@ -571,6 +591,7 @@ namespace filter{
                                               macro_displacement, filters);
 
             std::cout << "\nmacro_displacement:\n";
+//            elib::print(macro_displacement);
             unsigned int ub = 3;
             std::cout << "[";
 	    for (unsigned int i=0; i<8; i++){
@@ -587,7 +608,7 @@ namespace filter{
 
         //Populate the filters
         int pf_result = populate_filters(data, nodes, elements, qrules,
-                                         populated_filters, shared_dof_material,
+                                         populated_filters, shared_dof_material, num_macro_dof,
                                          micro_node_to_row, micro_node_elcount, filters);
         if (pf_result > 0){
             std::cout << "Error in population of filters.\n";
@@ -619,7 +640,13 @@ namespace filter{
             for (auto filter = filters.begin(); filter!=filters.end(); filter++){
 
                 //Compute the contribution of the current filter to the shape-function matrix
-                filter->second.add_shapefunction_matrix_contribution(macro_node_to_col, micro_node_to_row, macro_node_ids,
+                const std::vector< unsigned int > *macro_node_ids = filter->second.get_element_global_node_ids();
+//                std::cout << "macro_node_ids:\n";
+//                for (unsigned int i=0; i<macro_node_ids->size(); i++){
+//                    std::cout << (*macro_node_ids)[i] << "\n";
+//                }
+
+                filter->second.add_shapefunction_matrix_contribution(macro_node_to_col, micro_node_to_row, *macro_node_ids,
                                                                      micro_node_elcount, num_macro_dof, num_micro_dof, 
                                                                      data.size(), tripletList);
             }
@@ -673,6 +700,9 @@ namespace filter{
             
         }
 
+        for (auto filter = filters.begin(); filter!=filters.end(); filter++){
+            filter->second.write_to_file(output_file);
+        }
         return 0;
     }
 
@@ -816,7 +846,7 @@ int main(int argc, char **argv){
         //Read the timeseries
         while (!input_file.eof()){
             data.resize(0);
-            int filterresult = filter::read_timestep(input_file, format, data);
+            int filterresult = filter::read_timestep(input_file, format, output_file, data);
             if (filterresult>0){
                 std::cout << "Error reading timestep.\n";
                 return 1;

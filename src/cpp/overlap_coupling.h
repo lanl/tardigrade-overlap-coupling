@@ -117,7 +117,7 @@ namespace overlap{
 #if CONVEXLIB != AKUUKKA
             void extract_mesh_info(const mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;
 #else
-            void extract_mesh_info(mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;
+            void extract_mesh_info(mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;//, vecOfvec &facepoints) const;
 #endif
             void compute_node_bounds(const vecOfvec &coordinates, planeMap &planes, 
                 std::vector< double > &xbnds, std::vector< double > &ybnds, std::vector< double > &zbnds,
@@ -364,12 +364,13 @@ namespace overlap{
         public:
             MicromorphicFilter(){};
 //            MicromorphicFilter(elib::Element* element, bool _shared_dof_material = true);
-            MicromorphicFilter(const unsigned int id, const std::string &element_type, const elib::vecOfvec &nodes,
-                               const elib::quadrature_rule &qrule, bool _shared_dof_material = true);
+            MicromorphicFilter(const unsigned int id, const std::string &element_type, 
+                               const std::vector< unsigned int > &global_node_ids, const elib::vecOfvec &nodes,
+                               const elib::quadrature_rule &qrule, const unsigned int num_macro_dof, bool _shared_dof_material = true);
             
             //Point loading and integration domain construction
-            bool add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates);
-            bool add_micro_material_point(const unsigned int &id, const elib::vec &coordinates);
+            bool add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates, FloatType tol=1e-3);
+            bool add_micro_material_point(const unsigned int &id, const elib::vec &coordinates, FloatType tol=1e-1);
 
             int construct_integrators(bool update_shapefunction_matrix = false);
 
@@ -387,10 +388,12 @@ namespace overlap{
                                                       std::vector< T > &tripletList);
             const unsigned int id();
             const unsigned int dim();
+            const std::vector< unsigned int >* get_element_global_node_ids();
 
             //Element query/setting tools
             const std::string element_type();
-            int update_element_node_positions(const unsigned int n, const elib::vec &displacement);
+            int update_element_node_position(const unsigned int n);
+            int update_element_node_position(const unsigned int n, const elib::vec &displacement);
             int update_element_node_positions(const elib::vecOfvec &displacements);
             int update_dof_values(const unsigned int n, const std::vector< FloatType > &new_dof_values);
             int update_dof_values(const vecOfvec &new_dof_values);
@@ -461,7 +464,7 @@ namespace overlap{
 
     bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr=1e-6, const double tola=1e-6);
 
-    std::vector< double > normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3);
+    int normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3, std::vector< double > &normal, double tolr=1e-6, double tola=1e-6);
 
     void print_vertex(const vertex_t &vertex);
     void print_vector(const std::vector< FloatType > &vector);

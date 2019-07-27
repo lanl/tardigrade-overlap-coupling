@@ -10,28 +10,31 @@
 
 namespace elib{
     
-    Element::Element(const vecOfvec &_nodes, const quadrature_rule &_qrule){
+    Element::Element(const std::vector< unsigned int > &_global_node_ids, const vecOfvec &_nodes, const quadrature_rule &_qrule){
         /*!
          * The constructor for the element
          * 
+         * :param std::vector< unsigned int > global_node_ids: The global id numbers of the element's nodes
          * :param const vecOfvec &nodes: The global coordinates of the nodes
          * :param const quadrature_rule &qrule: The quadrature rule of the element
          */
 
+        global_node_ids = _global_node_ids;
         nodes = _nodes;
         reference_nodes = _nodes;
         qrule = _qrule;
         
         bounding_box.resize(2);
-        bounding_box[0] = nodes[0];
-        bounding_box[1] = nodes[0];
-
-        for (unsigned int n=0; n<nodes.size(); n++){
-            for (unsigned int i=0; i<nodes[n].size(); i++){
-                bounding_box[0][i] = std::min(bounding_box[0][i], nodes[n][i]);
-                bounding_box[1][i] = std::max(bounding_box[1][i], nodes[n][i]);
-            }
-        }
+        update_bounding_box();
+//        bounding_box[0] = nodes[0];
+//        bounding_box[1] = nodes[0];
+//
+//        for (unsigned int n=0; n<nodes.size(); n++){
+//            for (unsigned int i=0; i<nodes[n].size(); i++){
+//                bounding_box[0][i] = std::min(bounding_box[0][i], nodes[n][i]);
+//                bounding_box[1][i] = std::max(bounding_box[1][i], nodes[n][i]);
+//            }
+//        }
     }
 
     void Element::interpolate(const vec &nodal_values, const vec &local_coordinates,
@@ -296,6 +299,7 @@ namespace elib{
                 std::cout << "global coordinates: "; print(global_coordinates);
                 std::cout << "nodes:\n";
                 print(nodes);
+                std::cout << "x: "; print(x);
                 assert(1==0);
                 std::cout << "Rp: " << Rp << "\n";
                 std::cout << "Rnorm: " << Rnorm << "\n";
@@ -368,12 +372,13 @@ namespace elib{
         return local_point_inside(xi);
     }
 
-    int Element::update_node_position(const unsigned int n, const vec &displacement){
+    int Element::update_node_position(const unsigned int n, const vec &displacement, const bool bounding_box_update){
         /*!
          * Update the nodal position of node n in the element
          * 
          * :param const unsigned int n: The local node number
          * :param const elib::vec &displacement: The displacement of the node from the reference state
+         * :param const bool bounding_box_update: Boolean to indicate if the bounding box update should be calculated.
          */
         
         if (reference_nodes[n].size() != displacement.size()){
@@ -383,8 +388,10 @@ namespace elib{
         }
         for (unsigned int i=0; i<reference_nodes[n].size(); i++){
             nodes[n][i] = reference_nodes[n][i] + displacement[i];
-            bounding_box[0][i] = std::min(bounding_box[0][i], nodes[n][i]);
-            bounding_box[1][i] = std::max(bounding_box[1][i], nodes[n][i]);
+        }
+
+        if (bounding_box_update){
+            update_bounding_box();
         }
 
         return 0;
@@ -402,14 +409,40 @@ namespace elib{
             return 1;
         }
         for (unsigned int n=0; n<nodes.size(); n++){
-            int uenp_result = update_node_position(n, displacements[n]);
+            int uenp_result = update_node_position(n, displacements[n], false);
             if (uenp_result > 0){
                 return uenp_result;
+            }
+        }
+
+        update_bounding_box();
+        return 0;
+    }
+
+    int Element::update_bounding_box(){
+        /*!
+         * Update the element's bounding box.
+         */
+
+        
+        bounding_box[0] = nodes[0];
+        bounding_box[1] = nodes[0];
+
+        for (unsigned int n=1; n<nodes.size(); n++){
+            for (unsigned int i=0; i<nodes[n].size(); i++){
+                bounding_box[0][i] = std::min(bounding_box[0][i], nodes[n][i]);
+                bounding_box[1][i] = std::max(bounding_box[1][i], nodes[n][i]);
             }
         }
         return 0;
     }
 
+    const std::vector< unsigned int >* Element::get_global_node_ids(){
+        /*!
+         * Return a constant pointer to the global node ids
+         */
+        return &global_node_ids;
+    }
 
     void Hex8::get_shape_functions(const vec &local_coordinates, vec &result){
         /*!
@@ -444,15 +477,16 @@ namespace elib{
         }
     }
 
-    bool Hex8::local_point_inside(const vec &local_coordinates){
+    bool Hex8::local_point_inside(const vec &local_coordinates, const double tol){
         /*!
          * Determine whether local coordinates are inside of the element or not
          * 
          * :param const vec &local_coordinates: The local coordinates (n local dim, )
+         * :param double tol: The tolerance
          */
 
         for (unsigned int i=0; i<local_coordinates.size(); i++){
-            if (abs(local_coordinates[i])>1){
+            if ((abs(local_coordinates[i]) - 1)>tol){
                 return false;
             }
         }
@@ -597,19 +631,21 @@ namespace elib{
 	print(element.bounding_box);
     }
 
-    std::unique_ptr<Element> build_element_from_string(const std::string &eltype, const vecOfvec &nodes, const quadrature_rule &qrule){
+    std::unique_ptr<Element> build_element_from_string(const std::string &eltype, const std::vector< unsigned int > &global_node_ids, 
+                                                       const vecOfvec &nodes, const quadrature_rule &qrule){
 	    /*
 	     * Build an element from the element name, the nodes, and the quadrature rule
 	     *
 	     * TODO: Make the list of elements automatically populate.
 	     *
 	     * :param std::string &eltype: The name of the element
+             * :param std::vector< unsigned int > &global_node_ids: The id numbers of the global nodes
 	     * :param const vecOfvec &nodes: The element's nodes
 	     * :param const quadrature_rule &qrule: The quadrature rule of the element
              */
 
 	    if (std::strcmp(eltype.c_str(), "Hex8")==0){
-                return std::unique_ptr<Element>(new Hex8(nodes, qrule));
+                return std::unique_ptr<Element>(new Hex8(global_node_ids, nodes, qrule));
 	    }
 	    return NULL;
     }
