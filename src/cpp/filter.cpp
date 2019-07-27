@@ -508,7 +508,7 @@ namespace filter{
 
                 index++;
             }
-            filter->second.print();
+            //filter->second.print();
         }
         return 0;
     }
@@ -590,19 +590,18 @@ namespace filter{
             assign_dof_information_to_filters(nodes, elements, macro_node_to_col, num_macro_dof,
                                               macro_displacement, filters);
 
-            std::cout << "\nmacro_displacement:\n";
-//            elib::print(macro_displacement);
-            unsigned int ub = 3;
-            std::cout << "[";
-	    for (unsigned int i=0; i<8; i++){
-                std::cout << "[";
-                for (unsigned int j=0; j<ub; j++){
-                    std::cout << macro_displacement[num_macro_dof*i+j];
-	            if (j<(ub-1)){std::cout << ", ";}
-		}
-		std::cout << "],\n";
-            }
-            std::cout << "]\n";
+//            std::cout << "\nmacro_displacement:\n";
+//            unsigned int ub = 3;
+//            std::cout << "[";
+//	    for (unsigned int i=0; i<8; i++){
+//                std::cout << "[";
+//                for (unsigned int j=0; j<ub; j++){
+//                    std::cout << macro_displacement[num_macro_dof*i+j];
+//	            if (j<(ub-1)){std::cout << ", ";}
+//		}
+//		std::cout << "],\n";
+//            }
+//            std::cout << "]\n";
 //            assert(1==0);
 	}
 
@@ -796,6 +795,14 @@ int main(int argc, char **argv){
 
     elib::vecOfvec data;
 
+    std::cout << "\n\n";
+    std::cout << "###########################\n";
+    std::cout << "### MICROMORPHIC FILTER ###\n";
+    std::cout << "###########################\n";
+    std::cout << "\n";
+    std::cout << "  author: Nathan Miller\n";
+    std::cout << "  email: nathanm@lanl.gov\n\n";
+
     int format=1; //Hard-coded to format 1
     int mode=0; //Hard-coded to total Lagrangian
     bool shared_dof_material = 1; //Hard-coded to co-located information
@@ -808,6 +815,8 @@ int main(int argc, char **argv){
         input_fn  = argv[1];
 	filter_fn = argv[2];
         output_fn = argv[3];
+
+        std::cout << "Opening filter definition file.\n";
 
         //Open the filter definition file
 	assembly::node_map nodes;
@@ -829,7 +838,11 @@ int main(int argc, char **argv){
 
         output_file.open(output_fn);
 
+        output_file << "*INPUT_FILE, " << input_fn << "\n";
+        output_file << "*FILTER_CONFIGURATION_FILE, " << filter_fn << "\n";
+
         //Open the dns file
+        std::cout << "Opening micro-scale data file.\n";
         int openresult = filter::open_input_file(input_fn, format, input_file);
         if (openresult>0){
             std::cout << "Error in opening the DNS input file\n";
@@ -861,8 +874,13 @@ int main(int argc, char **argv){
                 std::cout << "Error in processing timestep\n";
                 return 1;
             }
+            else{
+                std::cout << "Timestep processing successful\n\n";
+            }
         }
         output_file.close();
     }
+    std::cout << "Processing of input file " << input_fn << " completed.\n";
+    std::cout << "Output written to " << output_fn << "\n";
     return 0;
 }
