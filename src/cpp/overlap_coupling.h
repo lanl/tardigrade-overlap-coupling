@@ -123,10 +123,10 @@ namespace overlap{
                 std::vector< double > &xbnds, std::vector< double > &ybnds, std::vector< double > &zbnds,
                 const double tolr=1e-6, const double tola=1e-6);
 
-            void compute_dns_bounds(const vecOfvec &dns_coordinates);
+            void compute_dns_bounds(const vecOfvec &dns_coordinates, bool use_dns_bounds);
 
             void compute_weights(const std::vector< unsigned int > &numbers, const vecOfvec &positions,
-                                 std::vector< integrateMap > &points);
+                                 std::vector< integrateMap > &points, bool use_dns_bounds=true);
 
             //! > Interface to defined quantities
             const planeMap* get_element_planes() const;
@@ -366,7 +366,8 @@ namespace overlap{
 //            MicromorphicFilter(elib::Element* element, bool _shared_dof_material = true);
             MicromorphicFilter(const unsigned int id, const std::string &element_type, 
                                const std::vector< unsigned int > &global_node_ids, const elib::vecOfvec &nodes,
-                               const elib::quadrature_rule &qrule, const unsigned int num_macro_dof, bool _shared_dof_material = true);
+                               const elib::quadrature_rule &qrule, const unsigned int num_macro_dof, bool _shared_dof_material = true, 
+                               bool _use_dns_bounds = false);
             
             //Point loading and integration domain construction
             bool add_micro_dof_point(const unsigned int &id, const elib::vec &coordinates, FloatType tol=1e-3);
@@ -413,6 +414,7 @@ namespace overlap{
 	    std::unique_ptr<elib::Element> element;
             unsigned int filter_dim;
             bool shared_dof_material;
+            bool use_dns_bounds;
             OverlapCoupling material_overlap;
             OverlapCoupling dof_overlap;
 

@@ -211,7 +211,7 @@ namespace overlap{
         return;
     }
 
-    void OverlapCoupling::compute_dns_bounds(const vecOfvec &DNScoordinates){
+    void OverlapCoupling::compute_dns_bounds(const vecOfvec &DNScoordinates, bool use_dns_bounds){
         /*!
         Compute the bounds of the DNS.
 
@@ -219,8 +219,14 @@ namespace overlap{
         */
 
         //!Compute the bounding planes
-        dns_bounds.resize(3);
-        compute_node_bounds(DNScoordinates, dns_planes, dns_bounds[0], dns_bounds[1], dns_bounds[2]);
+        if (use_dns_bounds){
+            dns_bounds.resize(3);
+            compute_node_bounds(DNScoordinates, dns_planes, dns_bounds[0], dns_bounds[1], dns_bounds[2]);
+        }
+        else{
+            dns_planes = element_planes;
+            dns_bounds = element_bounds;
+        }
 /*        std::cout << "dns_bounds:\n";
         for (unsigned int i=0; i<dns_bounds.size(); i++){
             std::cout << "    ";
@@ -455,26 +461,28 @@ namespace overlap{
     }
 
     void OverlapCoupling::compute_weights(const std::vector< unsigned int > &numbers, const vecOfvec &positions,
-                                          std::vector< integrateMap > &points){
+                                          std::vector< integrateMap > &points, bool use_dns_bounds){
         /*!
-        Compute the weights of the DNS points for their integration of the gauss domains along with other quantities which 
-        will be required.
-
-        NOTE: All quantities will be in the coordinate system provided to the filter. This means that if you use,
-              in the finite element context, the local coordinates of the element, all of the properties will be 
-              in that reference frame. Mapping these quantities to the global coordinate frame will be required 
-              to perform integration.
-
-        :param std::vector< unsigned int > numbers: The number (index) of the DNS point.
-        :param vecOfvec positions: The positions of the DNS points in local coordinates.
-        :param std::vector< std::vector< MicroPoint > > points: The outgoing weights and other required quantities.
+         * Compute the weights of the DNS points for their integration of the gauss domains along with other quantities which 
+         * will be required.
+         * 
+         * NOTE: All quantities will be in the coordinate system provided to the filter. This means that if you use,
+         *      in the finite element context, the local coordinates of the element, all of the properties will be 
+         *      in that reference frame. Mapping these quantities to the global coordinate frame will be required 
+         *      to perform integration.
+         * 
+         * :param std::vector< unsigned int > numbers: The number (index) of the DNS point.
+         * :param vecOfvec positions: The positions of the DNS points in local coordinates.
+         * :param std::vector< std::vector< MicroPoint > > points: The outgoing weights and other required quantities.
+         * :param bool use_dns_bounds: Flag on whether the DNS bounds should be used. When used in the full overlap 
+         *     context this may not be desired.
         */
 
         const MicroPoint* mp;
         voro::container* container;
 
         //Compute the bounds of the DNS
-        compute_dns_bounds(positions);
+        compute_dns_bounds(positions, use_dns_bounds);
 
         //Iterate through the gauss domains
         points.resize(gauss_domains.size());
@@ -2234,7 +2242,7 @@ namespace overlap{
     MicromorphicFilter::MicromorphicFilter(const unsigned int _id, const std::string &element_type,
                                            const std::vector< unsigned int > &global_node_ids, const elib::vecOfvec &nodes,
                                            const elib::quadrature_rule &qrule, const unsigned int num_macro_dof,
-                                           bool _shared_dof_material){
+                                           bool _shared_dof_material, bool _use_dns_bounds){
         /*!
 	 * Initialize the micromorphic filter
 	 *
@@ -2246,11 +2254,13 @@ namespace overlap{
          * :param const unsigned int num_macro_dof: The number of macro-scale degrees of freedom.
 	 * :param bool _shared_dof_material: A flag which indicates if the material points should be used to 
 	 *                                   determine the macro-scale nodal coordinate information.
+         * :param bool _use_dns_bounds: A flag which indicates whether the DNS bounds should be used for the overlap.
 	 */
 
         filter_id = _id;
         element = elib::build_element_from_string(element_type, global_node_ids, nodes, qrule);
         shared_dof_material = _shared_dof_material;
+        use_dns_bounds = _use_dns_bounds;
 
         elib::vecOfvec gauss_points(element->qrule.size());
         for (unsigned int gp=0; gp<element->qrule.size(); gp++){
@@ -2336,7 +2346,7 @@ namespace overlap{
         * Construct the integrator for the material points.
         */
 
-        material_overlap.compute_weights(material_id_numbers, micro_material_local_coordinates, material_weights);
+        material_overlap.compute_weights(material_id_numbers, micro_material_local_coordinates, material_weights, use_dns_bounds);
 
         //Transform the volumes and normals
         elib::vecOfvec jacobian;
@@ -2393,7 +2403,7 @@ namespace overlap{
         /*!
         * Construct the integrator for the degree of freedom points.
         */
-        dof_overlap.compute_weights(dof_id_numbers, micro_dof_local_coordinates, dof_weights);
+        dof_overlap.compute_weights(dof_id_numbers, micro_dof_local_coordinates, dof_weights, use_dns_bounds);
 
         //Transform the volumes and normals
         elib::vecOfvec jacobian;

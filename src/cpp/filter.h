@@ -47,7 +47,8 @@ namespace filter{
                          uint_map &micro_node_elcount, filter_map &filters);
     int construct_micro_displacement_vector_from_positions(const elib::vecOfvec &data, const uint_to_vec &reference_coordinates,
                                                            const bool shared_dof_material,
-                                                           const unsigned int num_micro_dof, elib::vec &micro_displacement_vector);
+                                                           const unsigned int num_micro_dof, const uint_map &micro_node_to_row,
+                                                           elib::vec &micro_displacement_vector);
     int assign_dof_information_to_filters(const assembly::node_map &nodes, const assembly::element_map &elements,
                                           const uint_map &macro_node_to_col, const unsigned int num_macro_dof,
                                           const std::vector< double > &macro_displacement, filter_map &filters); 

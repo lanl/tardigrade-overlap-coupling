@@ -388,7 +388,8 @@ namespace filter{
 
     int construct_micro_displacement_vector_from_positions(const elib::vecOfvec &data, const uint_to_vec &reference_coordinates,
                                                            const bool shared_dof_material,
-                                                           const unsigned int num_micro_dof, elib::vec &micro_displacement_vector){
+                                                           const unsigned int num_micro_dof, const uint_map &micro_node_to_row,
+                                                           elib::vec &micro_displacement_vector){
 
         /*!
          * Construct the micro displacement vector by computing the difference between the current position and some 
@@ -398,10 +399,12 @@ namespace filter{
          * :param const uint_to_vec &reference_coordinates: The reference coordinates for the data
          * :param const bool shared_dof_material: Whether the degrees of freedom are located at the material points or not. 
          * :param const unsigned int num_micro_dof: The number of micro-scale degrees of freedom per node
+         * :param const uint_map &micro_node_to_row: The map from the micro node to the row of the shape-function matrix
          * :param elib::vec &micro_displacement_vector: The returned micro-scale displacement vector
          */
 
-        micro_displacement_vector.resize(reference_coordinates.size()*num_micro_dof);
+        micro_displacement_vector.resize(micro_node_to_row.size()*num_micro_dof);
+//        std::cout << "reference coordinates:\n"; print(reference_coordinates);
 
         for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
             //Compute the difference between the current coordinates and the 
@@ -429,7 +432,7 @@ namespace filter{
                 }
             }
 
-            //Check if the current node is located in the reference coordinates (it better be!)
+            //Check if the current node is located in the referencecoordinates map (it better be!)
             if (dof_point){
                 auto ref = reference_coordinates.find(nodeid);
                 if (ref == reference_coordinates.end()){
@@ -438,8 +441,11 @@ namespace filter{
                     return 1;
                 }
                 //Assign the value to the micro-displacement (dof) vector
-                for (unsigned int i=0; i<pi.size(); i++){
-                    micro_displacement_vector[num_micro_dof*ref->first+i] = pi[i]-ref->second[i];
+                auto it = micro_node_to_row.find(nodeid);
+                if (it != micro_node_to_row.end()){
+                    for (unsigned int i=0; i<pi.size(); i++){
+                        micro_displacement_vector[num_micro_dof*it->second+i] = pi[i] - ref->second[i];
+                    }
                 }
             }
         }
@@ -577,9 +583,15 @@ namespace filter{
 	    std::vector< double > macro_displacement(shapefunctions.cols());
 	    std::vector< double > micro_displacement(shapefunctions.rows());
 
-            construct_micro_displacement_vector_from_positions(data, reference_coordinates,
-                                                               shared_dof_material, num_micro_dof,
-                                                               micro_displacement);
+            std::cout << "shapefunction shape: " << shapefunctions.cols() << ", " << shapefunctions.rows() << "\n";
+
+            int cmdvfp_result = construct_micro_displacement_vector_from_positions(data, reference_coordinates,
+                                                                                   shared_dof_material, num_micro_dof,
+                                                                                   micro_node_to_row,
+                                                                                   micro_displacement);
+            if (cmdvfp_result > 0){
+                return 1;
+            }
 
 	    //Solve for the macro dof
 	    Eigen::Map< overlap::EigVec > b(micro_displacement.data(), micro_displacement.size(), 1);
@@ -688,13 +700,17 @@ namespace filter{
                     }
                 }
 
-                //Add a contained micro-point to the reference coordinates
+                //Store the reference coordinates of the point if it is a DOF point
 		if (dof_point){
-                    auto it=micro_node_to_row.find(nodeid);
-                    if (it != micro_node_to_row.end()){
-                        reference_coordinates.emplace(it->first, pi);
-		    }
+//                    auto it=micro_node_to_row.find(nodeid);
+//                    if (it != micro_node_to_row.end()){
+//                        reference_coordinates.emplace(it->first, pi);
+//		    }
+                    reference_coordinates.emplace(nodeid, pi);
 		}
+//                if (nodeid == 9){
+//                    assert(1==-1);
+//                }
 	    }
             
         }
