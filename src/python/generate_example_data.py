@@ -58,15 +58,15 @@ def voigt(A):
 def transformation(x, t):
     angles = np.zeros(3)#t*np.array([np.pi/2, -np.pi/5, np.pi/3])
     Q = rotation_matrix(random=False, angles=angles)
-#    C = t*np.array([[ 1.00,  0.20, -0.05],\
-#                    [ 0.20, -0.40, -0.20],\
-#                    [-0.05, -0.20, -0.10]]) + np.eye(3);
-    C = t*np.diag([1, 0, 0]).astype(float) + np.eye(3)
+    C = t*np.array([[ 1.00,  0.20, -0.05],\
+                    [ 0.20, -0.40, -0.20],\
+                    [-0.05, -0.20, -0.10]]) + np.eye(3);
+#    C = t*np.diag([1, 2, -0.3]).astype(float) + np.eye(3)
     eigval, eigvec = np.linalg.eig(C)
     if any(eigval<0):
         errstr = "deformation tensor not positive definite"
         raise ValueError(errstr)
-    b = np.zeros(3)#t*np.array([3.2, -.5, 2.0])
+    b = t*np.array([3.2, -.5, 2.0])
     D = np.matmul(Q,C)
     xp = (D.dot(x.reshape((-1, 1))) + b.reshape((-1, 1)))
     return xp.flatten()
