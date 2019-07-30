@@ -565,6 +565,7 @@ namespace filter{
         //Check if the filters have been populated yet. If not, we will re-compute the shape-function matrix.
         bool populated_filters = false;
 //        std::vector< unsigned int > macro_node_ids(nodes.size());
+//        std::vector< double > u_450(3);
         if (filters.size() == 0){
             populated_filters = true;
 
@@ -589,6 +590,12 @@ namespace filter{
                                                                                    shared_dof_material, num_micro_dof,
                                                                                    micro_node_to_row,
                                                                                    micro_displacement);
+
+//            u_450[0] = micro_displacement[3*450+0];
+//            u_450[1] = micro_displacement[3*450+1];
+//            u_450[2] = micro_displacement[3*450+2];
+//            std::cout << "micro_displacement[450]: " << u_450[0] << ", " << u_450[1] << ", " << u_450[2] << "\n";
+
             if (cmdvfp_result > 0){
                 return 1;
             }
@@ -628,8 +635,10 @@ namespace filter{
 
         //Perform the voronoi cell decomposition (maybe should be parallelized)
         std::cout << "Constructing Integrators\n";
+//        unsigned int gd_450;
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             filter->second.construct_integrators();
+//            gd_450 = filter->second.get_dns_point_gauss_domain(450);
         }
         
         //Compute the mass and volume properties of the filters
@@ -639,9 +648,13 @@ namespace filter{
         for (auto dataline = data.begin(); dataline!=data.end(); dataline++){
             micro_density.emplace((*dataline)[1], (*dataline)[5]);
         }
+
+//        const std::vector< double >* gd_450_cm;
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             filter->second.compute_mass_properties(micro_density);
+//            gd_450_cm = filter->second.get_center_of_mass(gd_450);
         }
+
 
         //Construct the shapefunction matrix if required
         if (populated_filters){
@@ -715,9 +728,20 @@ namespace filter{
             
         }
 
+//TEMP
+//        std::cout << "gd_450_cm: "; elib::print(*gd_450_cm);
+//        std::cout << "p_450: " << u_450[0] + reference_coordinates[450][0] << ", "
+//                               << u_450[1] + reference_coordinates[450][1] << ", "
+//                               << u_450[2] + reference_coordinates[450][2] << "\n";
+//        std::cout << "reference_coordinates[450]: "; elib::print(reference_coordinates[450]);
+//        std::cout << "xi_450: " << u_450[0] + reference_coordinates[450][0] - (*gd_450_cm)[0] << ", "
+//                                << u_450[1] + reference_coordinates[450][1] - (*gd_450_cm)[1] << ", "
+//                                << u_450[2] + reference_coordinates[450][2] - (*gd_450_cm)[2] << "\n";
+//ENDTEMP
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             filter->second.write_to_file(output_file);
         }
+
         return 0;
     }
 

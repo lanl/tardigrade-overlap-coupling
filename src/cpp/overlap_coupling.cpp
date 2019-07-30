@@ -450,7 +450,7 @@ namespace overlap{
             centroid[2] += z;
 
             //Add the point
-            gauss_domains[index] = MicroPoint(c.volume(), centroid, planes, 
+            gauss_domains[index] = MicroPoint(c.volume(), centroid, {x, y, z}, planes, 
                                               areas, normals, points);
 //            index++;
 
@@ -628,6 +628,8 @@ namespace overlap{
         std::cout << "  volume: " << volume << "\n";
 
         std::cout << "  coordinates: "; print_vector(coordinates);
+
+        std::cout << "  particle coordinates: "; print_vector(particle_coordinates);
 
         std::cout << "  planes:";
         for (unsigned int i=0; i<planes.size(); i++){
@@ -811,6 +813,25 @@ namespace overlap{
 
         double tol = fmin(tolr*fabs(a) + tola, tolr*fabs(b) + tola);
         return fabs(a-b)<tol;
+    }
+
+    bool fuzzy_equals(const std::vector< double > &a, const std::vector< double > &b, const double tolr, const double tola){
+        /*!
+        Compare two vectors of doubles to determine if they are equal.
+        */
+
+        if (a.size() != b.size()){
+            return false;
+        }
+        else{
+            for (unsigned int i=0; i<a.size(); i++){
+                bool tmp = fuzzy_equals(a[i], b[i], tolr, tola);
+                if (!tmp){
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     int normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3, std::vector< double > &normal, double tolr, double tola){
@@ -1091,7 +1112,7 @@ namespace overlap{
             centroid[1] += y;
             centroid[2] += z;
 //            std::cout << "cl.pid(): " << cl.pid() << "\n";
-            points.insert(std::pair< unsigned int, MicroPoint>(cl.pid(), MicroPoint(c.volume(), centroid, planes, areas, normals, face_centroids)));
+            points.insert(std::pair< unsigned int, MicroPoint>(cl.pid(), MicroPoint(c.volume(), centroid, {x, y, z}, planes, areas, normals, face_centroids)));
 //            points[cl.pid()].print();
 //            vtot += c.volume();
 
@@ -1544,34 +1565,32 @@ namespace overlap{
 
                 //Compute the xi vector
                 for (unsigned int j=0; j<3; j++){
-                    xi[j] = iMit->second.coordinates[j] - cg[j];
+//                    xi[j] = iMit->second.coordinates[j] - cg[j];
+                      xi[j] = iMit->second.particle_coordinates[j] - cg[j];
                 }
 
-//                if (it->second == 450){
-//                    std::cout << "row0: " << row0 << "\n";
-//                    std::cout << "col0: " << col0 << "\n";
-//                    std::cout << "share_ghost_free_boundary_nodes: " << share_ghost_free_boundary_nodes << "\n";
-//                    std::cout << "macro_elem_is_ghost: " << macro_elem_is_ghost << "\n";
-//                    std::cout << "num_micro_free: " << num_micro_free << "\n";
-//                    std::cout << "iMit->second.coordinates: ";
-//                    for (unsigned int i=0; i<iMit->second.coordinates.size(); i++){
-//                        std::cout << iMit->second.coordinates[i] << " ";
-//                    }
-//	            std::cout << "\n";
-//                    std::cout << "xi: ";
-//                    for (unsigned int i=0; i<xi.size(); i++){
-//                        std::cout << xi[i] << " ";
-//                    }
-//	            std::cout << "\n";
-//                    std::cout << "psi_n: " << psi_n << "\n";
-//                    std::cout << "dns_weight: " << iMit->second.weight << "\n";
-//                    std::cout << "weight: " << weight << "\n";
-//                    if (mnelit != micro_node_elcount->end()){
-//                        std::cout << "number of neighboring elements: " << mnelit->second << "\n";
-//                    }
-//                    
-//                }
-
+/*                bool diff_centroid_particle = !fuzzy_equals(iMit->second.coordinates, iMit->second.particle_coordinates);
+                if (diff_centroid_particle){//(it->second == 450){
+                    std::cout << "id: " << it->second << "\n";
+                    std::cout << "row0: " << row0 << "\n";
+                    std::cout << "col0: " << col0 << "\n";
+                    std::cout << "share_ghost_free_boundary_nodes: " << share_ghost_free_boundary_nodes << "\n";
+                    std::cout << "macro_elem_is_ghost: " << macro_elem_is_ghost << "\n";
+                    std::cout << "num_micro_free: " << num_micro_free << "\n";
+                    std::cout << "iMit->second.coordinates: "; elib::print(iMit->second.coordinates);
+                    std::cout << "iMit->second.particle_coordinates: "; elib::print(iMit->second.particle_coordinates);
+                    
+                    std::cout << "cg: "; elib::print(cg);
+                    std::cout << "xi: "; elib::print(xi);
+                    std::cout << "psi_n: " << psi_n << "\n";
+                    std::cout << "dns_weight: " << iMit->second.weight << "\n";
+                    std::cout << "weight: " << weight << "\n";
+                    if (mnelit != micro_node_elcount->end()){
+                        std::cout << "number of neighboring elements: " << mnelit->second << "\n";
+                    }
+                    
+                }
+*/
                 //Add the values to the matrix
                 tripletList.push_back(T(row0 + 0, col0 +  0, weight*psi_n));
                 tripletList.push_back(T(row0 + 1, col0 +  1, weight*psi_n));
@@ -2384,6 +2403,8 @@ namespace overlap{
                 //Transform the coordinates to true-space
                 elib::vec lc = it->second.coordinates;
                 element->interpolate(element->nodes, lc, it->second.coordinates);
+                lc = it->second.particle_coordinates;
+                element->interpolate(element->nodes, lc, it->second.particle_coordinates);
 
                 //Transform the face centroids to true-space
                 for (unsigned int n=0; n<it->second.face_centroids.size(); n++){
@@ -2426,6 +2447,8 @@ namespace overlap{
                 //Transform the coordinates to true-space
                 elib::vec lc = it->second.coordinates;
                 element->interpolate(element->nodes, lc, it->second.coordinates);
+                lc = it->second.particle_coordinates;
+                element->interpolate(element->nodes, lc, it->second.particle_coordinates);
 
                 //Transform the face centroids to true-space
                 for (unsigned int n=0; n<it->second.face_centroids.size(); n++){
@@ -2686,6 +2709,48 @@ namespace overlap{
         return element->get_global_node_ids();
     }
 
+    unsigned int MicromorphicFilter::get_dns_point_gauss_domain(const unsigned int dns_id){
+        /*!
+         * Get the gauss point associated with the provided dns point
+         * returns -1 if the point is not in the filter.
+         *
+         * :param const unsigned int dns_id: The id of the dns point.
+         */
+
+        //Search in the material weights integrator
+        for (unsigned int i=0; i<material_weights.size(); i++){
+            auto it = material_weights[i].find(dns_id);
+            if (it != material_weights[i].end()){
+                return i;
+            }
+        }
+
+        //Search in the dof weights integrator
+        for (unsigned int i=0; i<dof_weights.size(); i++){
+            auto it = dof_weights[i].find(dns_id);
+            if (it != dof_weights[i].end()){
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    const std::vector< FloatType >* MicromorphicFilter::get_center_of_mass(const unsigned int &gp_id){
+        /*!
+         * get the center of mass for the gauss point indicated. Returns 
+         * NULL if the gp_id is out of range.
+         *
+         * :param const int &gp_id: The local gauss point number
+         */
+
+        if (gp_id > center_of_mass.size()){
+            std::cerr << "Error: Gauss point " << gp_id << " is out of range.\n";
+            return NULL;
+        }
+        return &center_of_mass[gp_id];
+    }
+
     const std::string MicromorphicFilter::element_type(){
         /*!
          * Get the name of the element type
@@ -2806,7 +2871,7 @@ namespace overlap{
         file << " *DOF VALUES\n";
         for (unsigned int n=0; n<dof_values.size(); n++){
             file << "  ";
-            for (unsigned int i=0; i<dof_values.size(); i++){
+            for (unsigned int i=0; i<dof_values[n].size(); i++){
                 file << dof_values[n][i] << ", ";
             }
             file << "\n";

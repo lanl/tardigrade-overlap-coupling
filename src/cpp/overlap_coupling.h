@@ -198,6 +198,7 @@ namespace overlap{
             //! > Constructors
             MicroPoint(){}
             MicroPoint( double ivolume, std::vector< double > icoordinates,
+                        std::vector< double > pcoordinates,
                         std::vector< int > iplanes, std::vector< double > iareas,
                         vecOfvec inormals, vecOfvec iface_centroids){
                           /*!
@@ -205,6 +206,7 @@ namespace overlap{
 
                           :param double ivolume: The volume of the voronoi cell
                           :param std::vector< double > icoordinates: The coordinates of the centroid of the voronoi cell
+                          :param std::vector< double > pcoordinates: The coordinates of the particle which defined the cell
                           :param std::vector< int > iplanes: The exterior planes cutting the cell
                           :param std::vector< double > iareas: Areas of the surfaces corresponding to iplanes
                           :param vecOfvec inormals: The normals corresponding to iplanes
@@ -215,6 +217,9 @@ namespace overlap{
 
                           coordinates.reserve(icoordinates.size());
                           for (unsigned int i=0; i<icoordinates.size(); i++){coordinates.push_back(icoordinates[i]);}
+
+                          particle_coordinates.reserve(pcoordinates.size());
+                          for (unsigned int i=0; i<pcoordinates.size(); i++){particle_coordinates.push_back(pcoordinates[i]);}
 
                           planes.reserve(iplanes.size());
                           for (unsigned int i=0; i<iplanes.size(); i++){planes.push_back(iplanes[i]);}
@@ -284,6 +289,7 @@ namespace overlap{
             //! > Attributes
             double volume;
             std::vector< double > coordinates;
+            std::vector< double > particle_coordinates;
             std::vector< int > planes;
 //            std::vector< double > areas;
 //            vecOfvec normals;
@@ -390,6 +396,8 @@ namespace overlap{
             const unsigned int id();
             const unsigned int dim();
             const std::vector< unsigned int >* get_element_global_node_ids();
+            unsigned int get_dns_point_gauss_domain(const unsigned int dns_id);
+            const std::vector< FloatType >* get_center_of_mass(const unsigned int &gp_id);
 
             //Element query/setting tools
             const std::string element_type();
@@ -463,6 +471,8 @@ namespace overlap{
     std::vector< double > cross(const std::vector< double > &a, const std::vector< double > &b);
 
     bool fuzzy_equals(const double a, const double b, const double tolr=1e-6, const double tola=1e-6);
+
+    bool fuzzy_equals(const std::vector< double > &a, const std::vector< double > &b, const double tolr=1e-6, const double tola=1e-6);
 
     bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr=1e-6, const double tola=1e-6);
 
