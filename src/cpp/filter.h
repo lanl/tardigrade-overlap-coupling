@@ -41,7 +41,7 @@ namespace filter{
     //!Data collection commands
     int assemble_micro_density(const elib::vecOfvec &data, const input_format mp_format, std::map< unsigned int, double > &micro_density);
 
-    int get_position(const elib::vecOfvec &data, const input_format &format, unsigned int &node_id, elib::vec &position);
+    int get_position(const elib::vec &dataline, const input_format &format, unsigned int &node_id, elib::vec &position);
 
     int populate_reference_coordinates(const elib::vecOfvec &data, const bool shared_dof_material, const input_format &mp_format,
                                        const input_format &dof_format, uint_to_vec &reference_coordinates);

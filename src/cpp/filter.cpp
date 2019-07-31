@@ -475,30 +475,37 @@ namespace filter{
         micro_displacement_vector.resize(micro_node_to_row.size()*num_micro_dof);
 //        std::cout << "reference coordinates:\n"; print(reference_coordinates);
 
+        std::vector< double > pi;
+        bool dof_point;
+        int nodetype;
+        unsigned int nodeid;
+
         for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
             //Compute the difference between the current coordinates and the 
             //reference
-            std::vector< double > pi(num_micro_dof);
-            bool dof_point = false;
-            int nodetype = (int)((*dataline)[0]+0.5);
+//            std::vector< double > pi(num_micro_dof);
+            dof_point = false;
+            nodetype = (int)((*dataline)[0]+0.5);
 //              std::cout << nodetype << " ";
-            unsigned int nodeid = (unsigned int)((*dataline)[1]+0.5);
+//            unsigned int nodeid = (unsigned int)((*dataline)[1]+0.5);
 
             //Extract the point information if required
             if ((nodetype==1) && (shared_dof_material)){
                 dof_point = true;
-//                    std::cout << nodeid << ": ";
-                for (unsigned int i=0; i<3; i++){
-                    pi[i] = (*dataline)[2+i];
-//                        std::cout << pi[i] << " ";
-                }
-//                    std::cout << "\n";
+                get_position(*dataline, mp_format, nodeid, pi);
+////                    std::cout << nodeid << ": ";
+//                for (unsigned int i=0; i<3; i++){
+//                    pi[i] = (*dataline)[2+i];
+////                        std::cout << pi[i] << " ";
+//                }
+////                    std::cout << "\n";
             }
             else if ((nodetype==2) && (!shared_dof_material)){
                 dof_point = true;
-                for (unsigned int i=0; i<3; i++){
-                    pi[i] = (*dataline)[2+i];
-                }
+                get_position(*dataline, dof_format, nodeid, pi);
+//                for (unsigned int i=0; i<3; i++){
+//                    pi[i] = (*dataline)[2+i];
+//                }
             }
 
             //Check if the current node is located in the referencecoordinates map (it better be!)
@@ -835,30 +842,6 @@ namespace filter{
 
 	    //Populate the reference coordinate map
             populate_reference_coordinates(data, shared_dof_material, mp_format, dof_format, reference_coordinates);
-/*	    reference_coordinates.clear();
-
-	    for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
-                std::vector< double > pi(num_micro_dof);
-                bool dof_point = false;
-                int nodetype = (int)((*dataline)[0]+0.5);
-                unsigned int nodeid;// = (unsigned int)((*dataline)[1]+0.5);
-
-                //Extract the point information if required
-                if ((nodetype==1) && (shared_dof_material)){
-                    dof_point = true;
-                    get_position(*dataline, mp_format, nodeid, pi);
-                }
-                else if ((nodetype==2) && (!shared_dof_material)){
-                    dof_point = true;
-                    get_position(*dataline, dof_format, nodeid, pi);
-                }
-
-                //Store the reference coordinates of the point if it is a DOF point
-		if (dof_point){
-                    reference_coordinates.emplace(nodeid, pi);
-		}
-	    }
-*/
         }
 
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
