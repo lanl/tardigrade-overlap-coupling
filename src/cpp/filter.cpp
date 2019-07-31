@@ -409,15 +409,11 @@ namespace filter{
                     get_position(*datapoint, mp_format, nodeid, position);
                     iscontained = filter->second.add_micro_material_point(nodeid, position);
 
-//		    iscontained = filter->second.add_micro_material_point((*datapoint)[1],
-//				                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
 		}
 		else if (pointtype==2){
                     get_position(*datapoint, dof_format, nodeid, position);
                     iscontained = filter->second.add_micro_dof_point(nodeid, position);
 
-//                    iscontained = filter->second.add_micro_dof_point((*datapoint)[1],
-//                                                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
 		}
 
                 if (iscontained){
