@@ -392,6 +392,9 @@ namespace filter{
 
         //This probably could/should be parallelized
         unsigned int index = 0;
+        std::vector< double > position;
+        unsigned int nodeid;
+
         for (auto datapoint=data.begin(); datapoint!=data.end(); datapoint++){
             unsigned int containing_filters = 0;
 
@@ -403,12 +406,18 @@ namespace filter{
                 bool iscontained = false;
                 
                 if (pointtype==1){
-		    iscontained = filter->second.add_micro_material_point((*datapoint)[1],
-				                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
+                    get_position(*datapoint, mp_format, nodeid, position);
+                    iscontained = filter->second.add_micro_material_point(nodeid, position);
+
+//		    iscontained = filter->second.add_micro_material_point((*datapoint)[1],
+//				                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
 		}
 		else if (pointtype==2){
-                    iscontained = filter->second.add_micro_dof_point((*datapoint)[1],
-                                                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
+                    get_position(*datapoint, dof_format, nodeid, position);
+                    iscontained = filter->second.add_micro_dof_point(nodeid, position);
+
+//                    iscontained = filter->second.add_micro_dof_point((*datapoint)[1],
+//                                                            std::vector< double >((*datapoint).begin()+2, (*datapoint).begin()+5));
 		}
 
                 if (iscontained){
@@ -479,33 +488,27 @@ namespace filter{
         bool dof_point;
         int nodetype;
         unsigned int nodeid;
+        int gp_result;
 
         for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
             //Compute the difference between the current coordinates and the 
             //reference
-//            std::vector< double > pi(num_micro_dof);
             dof_point = false;
             nodetype = (int)((*dataline)[0]+0.5);
-//              std::cout << nodetype << " ";
-//            unsigned int nodeid = (unsigned int)((*dataline)[1]+0.5);
+            gp_result = 0;
 
             //Extract the point information if required
             if ((nodetype==1) && (shared_dof_material)){
                 dof_point = true;
-                get_position(*dataline, mp_format, nodeid, pi);
-////                    std::cout << nodeid << ": ";
-//                for (unsigned int i=0; i<3; i++){
-//                    pi[i] = (*dataline)[2+i];
-////                        std::cout << pi[i] << " ";
-//                }
-////                    std::cout << "\n";
+                gp_result = get_position(*dataline, mp_format, nodeid, pi);
             }
             else if ((nodetype==2) && (!shared_dof_material)){
                 dof_point = true;
-                get_position(*dataline, dof_format, nodeid, pi);
-//                for (unsigned int i=0; i<3; i++){
-//                    pi[i] = (*dataline)[2+i];
-//                }
+                gp_result = get_position(*dataline, dof_format, nodeid, pi);
+            }
+
+            if (gp_result > 0){
+                return gp_result;
             }
 
             //Check if the current node is located in the referencecoordinates map (it better be!)
