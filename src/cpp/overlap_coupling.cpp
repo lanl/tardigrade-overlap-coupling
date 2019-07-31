@@ -2469,11 +2469,11 @@ namespace overlap{
          * :param std::map< unsigned int , double> &density: The densities of the micro points
          */
 
-        std::cout << "compute volume\n";
+//        std::cout << "compute volume\n";
         compute_volume();
-        std::cout << "compute density\n";
+//        std::cout << "compute density\n";
         compute_density(micro_density);
-        std::cout << "compute center of mass\n";
+//        std::cout << "compute center of mass\n";
         compute_centers_of_mass(micro_density);
         return 0;
     }
@@ -2514,12 +2514,12 @@ namespace overlap{
 
     int MicromorphicFilter::compute_centers_of_mass(const std::map< unsigned int, double> &micro_density){
         /*!
-        Compute the centers of mass of the material.
+         * Compute the centers of mass of the material.
+         * 
+         * :param std::map< unsigned int , elib::vec> &density:
+         */
 
-        :param std::map< unsigned int , elib::vec> &density:
-        */
-
-        std::cout << "entering position weighted volume integration\n";
+//        std::cout << "entering position weighted volume integration\n";
         perform_position_weighted_volume_integration(micro_density, material_weights, center_of_mass);
 
 //        std::cout << "material_weights[0]:\n";
@@ -2529,7 +2529,7 @@ namespace overlap{
 //
 //        }
         
-        std::cout << "computing local coordinates\n";
+//        std::cout << "computing local coordinates\n";
         local_center_of_mass.resize(center_of_mass.size());
         for (unsigned int gp=0; gp<density.size(); gp++){
             for (unsigned int i=0; i<center_of_mass[gp].size(); i++){

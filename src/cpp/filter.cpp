@@ -44,33 +44,93 @@ namespace filter{
         return 1;
     }
     
-    int read_past_header(std::ifstream &file, const int format){
+    int read_past_header(std::ifstream &file, input_format &mp_format, input_format &dof_format, const int format){
         /*!
-        Read past the file header for the given format
-    
-        :param const std::ifstream &file: The input file
-        :param int format: The format of the file
-        */
+         * Read past the file header for the given format
+         * 
+         * :param const std::ifstream &file: The input file
+         * :param input_format &mp_format: The format of a material point line
+         * :param input_format &dof_format: The format of a dof point line
+         * :param int format: The format of the file
+         */
     
         if (format==1){
-            return read_past_header_format1(file);
+            return read_past_header_format1(file, mp_format, dof_format);
         }
     
         return 1;
     }
-    
-    int read_past_header_format1(std::ifstream &file){
+
+// FOLLOWING LINES FROM https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
+
+    // trim from start (in place)
+    static inline void ltrim(std::string &s) {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+            return !std::isspace(ch);
+        }));
+    }
+
+    // trim from end (in place)
+    static inline void rtrim(std::string &s) {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+            return !std::isspace(ch);
+        }).base(), s.end());
+    }
+
+    // trim from both ends (in place)
+    static inline void trim(std::string &s) {
+        ltrim(s);
+        rtrim(s);
+    }   
+// END LINES FROM https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring    
+
+    int set_format(std::string &line, input_format &format){
         /*!
-        Read past the header information for format 1
-    
-        :param std::ifstream file: The input file
-        */
+         * Set the format from the input line
+         * 
+         * :param std::string &line: A line from the input file
+         * :param input_format &format: The format to be specified
+         */
+         
+         std::vector< std::string > sline;
+         split_string(line, ",", sline);
+         std::vector< unsigned int > vals(2, 0);
+
+         for (unsigned int i=1; i<sline.size(); i+=3){
+             vals[0] = std::stol(sline[i+1]);
+             vals[1] = std::stol(sline[i+2]);
+             format.emplace(sline[i], vals);
+         }
+         return 0;
+    }
+
+    int read_past_header_format1(std::ifstream &file, input_format &mp_format, input_format &dof_format){
+        /*!
+         * Read past the header information for format 1
+         * 
+         * :param std::ifstream file: The input file
+         * :param input_format &mp_format: The format of a material point line
+         * :param input_format &dof_format: The format of a dof point line
+         */
     
         std::string line;
-    
+   
+        std::cout << "File header:\n\n";
+ 
         while (std::getline(file, line)){
-            if (std::strcmp(line.c_str(), "BEGIN DATA") == 0){
+            if (line.find("*MPFORMAT") != std::string::npos){
+                set_format(line, mp_format);
+            }
+            else if (line.find("*DOFFORMAT") != std::string::npos){
+                set_format(line, dof_format);
+            }
+
+            else if (std::strcmp(line.c_str(), "BEGIN DATA") == 0){
+                std::cout << "\n";
                 return 0;
+            }
+            else{
+                std::cout << line << "\n";
             }
         }
         return 1;
@@ -131,9 +191,12 @@ namespace filter{
         size_t last, next;
         last = next = 0;
         parsed_line.resize(0);
+        std::string substr;
     
         while ((next = line.find(delimiter, last)) != std::string::npos){
-            parsed_line.push_back(line.substr(last, next - last));
+            substr = line.substr(last, next - last);
+            trim(substr);
+            parsed_line.push_back(substr);//line.substr(last, next - last));
             last = next + 1;
         }
         parsed_line.push_back(line.substr(last));
@@ -281,7 +344,8 @@ namespace filter{
         return 0;
     }
 
-    int populate_filters(const elib::vecOfvec &data, const assembly::node_map &nodes,
+    int populate_filters(const elib::vecOfvec &data, const input_format &mp_format, const input_format &dof_format, 
+                        const assembly::node_map &nodes,
                         const assembly::element_map &elements, const assembly::qrule_map &qrules,
                         const bool update_shapefunction, const bool shared_dof_material,
                         const unsigned int num_macro_dof,
@@ -291,6 +355,8 @@ namespace filter{
         * Populate the micromorphic sub-filters using the provided data.
         *
         * :param const elib::vecOfvec &data: The DNS data at the current timestep.
+        * :param const input_format &mp_format: The format of a material point dataline
+        * :param const input_format &dof_format: The format of a degree of freedom dataline
         * :param const assembly::node_map &nodes: The nodes of the micromorphic filter.
         * :param const assembly::element_map &elements: The elements of the micromorphic filter.
         * :param const assembly::qrule_map &qrules: The quadrature rules for the elements.
@@ -386,7 +452,8 @@ namespace filter{
         return 0;
     }
 
-    int construct_micro_displacement_vector_from_positions(const elib::vecOfvec &data, const uint_to_vec &reference_coordinates,
+    int construct_micro_displacement_vector_from_positions(const elib::vecOfvec &data, const input_format &mp_format, 
+                                                           const input_format &dof_format, const uint_to_vec &reference_coordinates,
                                                            const bool shared_dof_material,
                                                            const unsigned int num_micro_dof, const uint_map &micro_node_to_row,
                                                            elib::vec &micro_displacement_vector){
@@ -396,6 +463,8 @@ namespace filter{
          * reference position.
          * 
          * :param const elib::vecOfvec &data: A collection of micro-scale data
+         * :param const input_format &mp_format: The format of a material point dataline
+         * :param const input_format &dof_format: The format of a degree of freedom dataline
          * :param const uint_to_vec &reference_coordinates: The reference coordinates for the data
          * :param const bool shared_dof_material: Whether the degrees of freedom are located at the material points or not. 
          * :param const unsigned int num_micro_dof: The number of micro-scale degrees of freedom per node
@@ -518,8 +587,106 @@ namespace filter{
         }
         return 0;
     }
+
+    int assemble_micro_density(const elib::vecOfvec &data, const input_format mp_format, std::map< unsigned int, double > &micro_density){
+        /*!
+         * Assemble the micro-density map for use in homogenizing the density
+         */
         
-    int process_timestep_totalLagrangian(const elib::vecOfvec &data, const assembly::node_map &nodes,
+        auto idit = mp_format.find("ID");
+        auto densityit = mp_format.find("DENSITY");
+
+        if ((idit == mp_format.end()) || (densityit == mp_format.end())){
+            std::cout << "MPFORMAT:\n"; print(mp_format);
+            std::cout << "Error: density or id not defined in *MPFORMAT\n";
+            return 1;
+        }
+
+        for (auto dataline = data.begin(); dataline!=data.end(); dataline++){
+
+            if ((unsigned int)((*dataline)[0]+0.5) == 1){
+                micro_density.emplace((*dataline)[ idit->second[0] ], (*dataline)[ densityit->second[0] ]);
+            }
+        }
+        return 0;
+    }
+
+    int get_position(const elib::vec &dataline, const input_format &format, unsigned int &node_id, elib::vec &position){
+        /*!
+         * Get the position from the provided dataline given the format
+         * 
+         * :param const elib::vec &dataline: The line of data as read from the input file
+         * :param const input_format &format: The formatting of the line
+         * :param unsigned int &node_id: The id associated with the position.
+         * :param elib::vec &position: The returned position vector
+         */
+        
+        auto idit = format.find("ID");
+        auto pit = format.find("POSITION");
+
+        if ((idit == format.end()) || (pit == format.end())){
+            std::cerr << "Error: ID or POSITION not found in format\n";
+            return 1;
+        }
+
+        node_id = dataline[idit->second[0]];
+        position.resize(pit->second[1]);
+        for (unsigned int i=0; i<pit->second[1]; i++){
+            position[i] = dataline[pit->second[0]+i];
+        }
+        return 0;
+    }
+
+    int populate_reference_coordinates(const elib::vecOfvec &data, const bool shared_dof_material, const input_format &mp_format,
+                                       const input_format &dof_format, uint_to_vec &reference_coordinates){
+        /*!
+         * Populate the reference coordinates map
+         * 
+         * :param const elib::vecOfvec &data: The dns data to be parsed.
+         * :param const input_format &mp_format: The format of material points.
+         * :param const input_format &dof_format: The format of degree of freedom points
+         * :param uint_to_vec &reference_coordinates: The reference coordinates map
+         */
+ 
+        //Populate the reference coordinate map
+        reference_coordinates.clear();
+
+        std::vector< double > pi;
+        bool dof_point;
+        int nodetype;
+        unsigned int nodeid;
+        int gp_result;
+
+        for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
+//            std::vector< double > pi(num_micro_dof);
+            dof_point = false;
+            gp_result = 0;
+            nodetype = (int)((*dataline)[0]+0.5);
+
+            //Extract the point information if required
+            if ((nodetype==1) && (shared_dof_material)){
+                dof_point = true;
+                gp_result = get_position(*dataline, mp_format, nodeid, pi);
+            }
+            else if ((nodetype==2) && (!shared_dof_material)){
+                dof_point = true;
+                gp_result = get_position(*dataline, dof_format, nodeid, pi);
+            }
+
+            if (gp_result > 0){
+                return gp_result;
+            }
+
+            //Store the reference coordinates of the point if it is a DOF point
+            if (dof_point){
+                reference_coordinates.emplace(nodeid, pi);
+            }
+        }
+        return 0;
+    }
+
+    int process_timestep_totalLagrangian(const elib::vecOfvec &data, const input_format &mp_format, const input_format &dof_format, 
+                                         const assembly::node_map &nodes,
                                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                                          const bool shared_dof_material,
                                          std::map< unsigned int, unsigned int > &macro_node_to_col,
@@ -541,6 +708,8 @@ namespace filter{
         * determine the filter's motion. This is what is meant by Total-Lagrangian.
         * 
         * :param const elib::vecOfvec &data: The DNS data at the current timestep.
+        * :param const input_format &mp_format: The format of a material point dataline
+        * :param const input_format &dof_format: The format of a degree of freedom dataline
         * :param const assembly::node_map &nodes: The nodes of the micromorphic filter.
         * :param const assembly::element_map &elements: The elements of the micromorphic filter.
         * :param const assembly::qrule_map &qrules: The quadrature rules for the elements.
@@ -584,17 +753,10 @@ namespace filter{
 	    std::vector< double > macro_displacement(shapefunctions.cols());
 	    std::vector< double > micro_displacement(shapefunctions.rows());
 
-            std::cout << "shapefunction shape: " << shapefunctions.cols() << ", " << shapefunctions.rows() << "\n";
-
-            int cmdvfp_result = construct_micro_displacement_vector_from_positions(data, reference_coordinates,
+            int cmdvfp_result = construct_micro_displacement_vector_from_positions(data, mp_format, dof_format, reference_coordinates,
                                                                                    shared_dof_material, num_micro_dof,
                                                                                    micro_node_to_row,
                                                                                    micro_displacement);
-
-//            u_450[0] = micro_displacement[3*450+0];
-//            u_450[1] = micro_displacement[3*450+1];
-//            u_450[2] = micro_displacement[3*450+2];
-//            std::cout << "micro_displacement[450]: " << u_450[0] << ", " << u_450[1] << ", " << u_450[2] << "\n";
 
             if (cmdvfp_result > 0){
                 return 1;
@@ -609,23 +771,10 @@ namespace filter{
             assign_dof_information_to_filters(nodes, elements, macro_node_to_col, num_macro_dof,
                                               macro_displacement, filters);
 
-//            std::cout << "\nmacro_displacement:\n";
-//            unsigned int ub = 3;
-//            std::cout << "[";
-//	    for (unsigned int i=0; i<8; i++){
-//                std::cout << "[";
-//                for (unsigned int j=0; j<ub; j++){
-//                    std::cout << macro_displacement[num_macro_dof*i+j];
-//	            if (j<(ub-1)){std::cout << ", ";}
-//		}
-//		std::cout << "],\n";
-//            }
-//            std::cout << "]\n";
-//            assert(1==0);
 	}
 
         //Populate the filters
-        int pf_result = populate_filters(data, nodes, elements, qrules,
+        int pf_result = populate_filters(data, mp_format, dof_format, nodes, elements, qrules,
                                          populated_filters, shared_dof_material, num_macro_dof,
                                          micro_node_to_row, micro_node_elcount, filters);
 
@@ -636,27 +785,19 @@ namespace filter{
 
         //Perform the voronoi cell decomposition (maybe should be parallelized)
         std::cout << "Constructing Integrators\n";
-//        unsigned int gd_450;
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             filter->second.construct_integrators();
-//            gd_450 = filter->second.get_dns_point_gauss_domain(450);
         }
         
         //Compute the mass and volume properties of the filters
         std::cout << "Computing Mass Properties\n";
         std::map< unsigned int, double > micro_density;
-        std::map< unsigned int, elib::vec> micro_position;
-        for (auto dataline = data.begin(); dataline!=data.end(); dataline++){
-            micro_density.emplace((*dataline)[1], (*dataline)[5]);
-        }
+        assemble_micro_density(data, mp_format, micro_density);
 
-//        const std::vector< double >* gd_450_cm;
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             std::cout << "filter: " << filter->first << "\n";
             filter->second.compute_mass_properties(micro_density);
-//            gd_450_cm = filter->second.get_center_of_mass(gd_450);
         }
-
 
         //Construct the shapefunction matrix if required
         if (populated_filters){
@@ -693,53 +834,33 @@ namespace filter{
             }
 
 	    //Populate the reference coordinate map
-	    reference_coordinates.clear();
+            populate_reference_coordinates(data, shared_dof_material, mp_format, dof_format, reference_coordinates);
+/*	    reference_coordinates.clear();
 
 	    for (auto dataline=data.begin(); dataline!=data.end(); dataline++){
                 std::vector< double > pi(num_micro_dof);
                 bool dof_point = false;
                 int nodetype = (int)((*dataline)[0]+0.5);
-                unsigned int nodeid = (unsigned int)((*dataline)[1]+0.5);
+                unsigned int nodeid;// = (unsigned int)((*dataline)[1]+0.5);
 
                 //Extract the point information if required
                 if ((nodetype==1) && (shared_dof_material)){
                     dof_point = true;
-                    for (unsigned int i=0; i<3; i++){
-                        pi[i] = (*dataline)[2+i];
-                    }
+                    get_position(*dataline, mp_format, nodeid, pi);
                 }
                 else if ((nodetype==2) && (!shared_dof_material)){
                     dof_point = true;
-                    for (unsigned int i=0; i<3; i++){
-                        pi[i] = (*dataline)[2+i];
-                    }
+                    get_position(*dataline, dof_format, nodeid, pi);
                 }
 
                 //Store the reference coordinates of the point if it is a DOF point
 		if (dof_point){
-//                    auto it=micro_node_to_row.find(nodeid);
-//                    if (it != micro_node_to_row.end()){
-//                        reference_coordinates.emplace(it->first, pi);
-//		    }
                     reference_coordinates.emplace(nodeid, pi);
 		}
-//                if (nodeid == 9){
-//                    assert(1==-1);
-//                }
 	    }
-            
+*/
         }
 
-//TEMP
-//        std::cout << "gd_450_cm: "; elib::print(*gd_450_cm);
-//        std::cout << "p_450: " << u_450[0] + reference_coordinates[450][0] << ", "
-//                               << u_450[1] + reference_coordinates[450][1] << ", "
-//                               << u_450[2] + reference_coordinates[450][2] << "\n";
-//        std::cout << "reference_coordinates[450]: "; elib::print(reference_coordinates[450]);
-//        std::cout << "xi_450: " << u_450[0] + reference_coordinates[450][0] - (*gd_450_cm)[0] << ", "
-//                                << u_450[1] + reference_coordinates[450][1] - (*gd_450_cm)[1] << ", "
-//                                << u_450[2] + reference_coordinates[450][2] - (*gd_450_cm)[2] << "\n";
-//ENDTEMP
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             filter->second.write_to_file(output_file);
         }
@@ -748,7 +869,8 @@ namespace filter{
     }
 
     
-    int process_timestep(const elib::vecOfvec &data, const assembly::node_map &nodes,
+    int process_timestep(const elib::vecOfvec &data, const input_format &mp_format, 
+                         const input_format &dof_format, const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
                          const unsigned int mode, const bool shared_dof_material,
                          std::map< unsigned int, unsigned int > &macro_node_to_col,
@@ -761,6 +883,8 @@ namespace filter{
         * Process the current timestep and compute the macro-scale stress and deformation quantities
         * 
         * :param const elib::vecOfvec &data: The DNS data at the current timestep.
+        * :param const input_format &mp_format: The format of a material point dataline
+        * :param const input_format &dof_format: The format of a degree of freedom dataline
         * :param const assembly::node_map &nodes: The nodes of the micromorphic filter.
         * :param const assembly::element_map &elements: The elements of the micromorphic filter.
         * :param const assembly::qrule_map &qrules: The quadrature rules for the elements.
@@ -786,7 +910,7 @@ namespace filter{
         */
     
         if (mode == 0){
-            return process_timestep_totalLagrangian(data, nodes, elements, qrules,
+            return process_timestep_totalLagrangian(data, mp_format, dof_format, nodes, elements, qrules,
                                                     shared_dof_material, macro_node_to_col, micro_node_to_row, 
 						    micro_node_elcount, reference_coordinates, 
 						    shapefunctions, dof_solver, filters, output_file);
@@ -814,6 +938,17 @@ namespace filter{
              std::cerr << it->first << ": "; elib::print(it->second);
          }
          return 0;
+    }
+
+    int print(const input_format &format){
+        /*!
+         * print the format to the terminal
+         */
+        
+        for (auto it=format.begin(); it!=format.end(); it++){
+            std::cerr << it->first << ": " << it->second[0] << ", " << it->second[1] << "\n";
+        }
+        return 0;
     }
 
 }
@@ -866,6 +1001,9 @@ int main(int argc, char **argv){
 	assembly::qrule_map qrules;
         overlap::SpMat shapefunctions;
         overlap::QRsolver dof_solver;
+        
+        filter::input_format mp_format;
+        filter::input_format dof_format;
         filter::filter_map filters;
 	filter::uint_map macro_node_to_col;
 	filter::uint_map micro_node_to_row;
@@ -892,7 +1030,7 @@ int main(int argc, char **argv){
         }
         
         //Read past the header
-        int headerresult = filter::read_past_header(input_file, format);
+        int headerresult = filter::read_past_header(input_file, mp_format, dof_format, format);
         if (headerresult>0){
             std::cout << "Error in skipping the header.\n Check the input file format.\n";
             return 1;
@@ -908,7 +1046,8 @@ int main(int argc, char **argv){
             }
 
             std::cout << "Initializing filters\n";
-            int pt_result = filter::process_timestep(data, nodes, elements, qrules, mode, shared_dof_material,
+            int pt_result = filter::process_timestep(data, mp_format, dof_format, nodes, elements, qrules, 
+                                                     mode, shared_dof_material,
                                                      macro_node_to_col, micro_node_to_row, micro_node_elcount, 
 						     reference_coordinates,
                                                      shapefunctions, dof_solver, filters, output_file);

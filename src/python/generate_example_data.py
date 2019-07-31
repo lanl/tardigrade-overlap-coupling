@@ -83,8 +83,14 @@ f = open(fn, 'w')
 header  = "This file contains fake data that is not intended to be representative\n"
 header += "of any true material. It exists merely to demonstrate the filter's\n"
 header += "capabilities.\n"
-header += "BEGIN DATA\n"
 f.write(header)
+
+input_format = "*MPFORMAT, ID, 1, 1, POSITION, 2, 3, DENSITY, 5, 1, STRESS, 7, 9\n"
+input_format += "*DOFFORMAT, ID, 1, 1, POSITION, 2, 3\n"
+
+f.write(input_format)
+
+f.write("BEGIN DATA\n")
 
 time = np.linspace(0, 1, 11)
 for t in time:
