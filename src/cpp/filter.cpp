@@ -360,7 +360,7 @@ namespace filter{
                 //multiple filter domains.
 
                 if (containing_filters > 1){
-                   micro_node_elcount.emplace((unsigned int)((*datapoint)[0]+0.5), containing_filters);
+                   micro_node_elcount.emplace((unsigned int)((*datapoint)[1]+0.5), containing_filters);
                 }
 
             }
@@ -373,7 +373,7 @@ namespace filter{
                 //multiple filter domains.
 
                 if (containing_filters > 1){
-                    micro_node_elcount.emplace((unsigned int)((*datapoint)[0]+0.5), containing_filters);
+                    micro_node_elcount.emplace((unsigned int)((*datapoint)[1]+0.5), containing_filters);
                 }
 
             }
@@ -628,6 +628,7 @@ namespace filter{
         int pf_result = populate_filters(data, nodes, elements, qrules,
                                          populated_filters, shared_dof_material, num_macro_dof,
                                          micro_node_to_row, micro_node_elcount, filters);
+
         if (pf_result > 0){
             std::cout << "Error in population of filters.\n";
             return 1;
@@ -651,6 +652,7 @@ namespace filter{
 
 //        const std::vector< double >* gd_450_cm;
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
+            std::cout << "filter: " << filter->first << "\n";
             filter->second.compute_mass_properties(micro_density);
 //            gd_450_cm = filter->second.get_center_of_mass(gd_450);
         }

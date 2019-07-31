@@ -1561,6 +1561,8 @@ namespace overlap{
                 auto mnelit = micro_node_elcount->find(iMit->first);
                 if (mnelit != micro_node_elcount->end()){
                     weight /= mnelit->second;
+//                    std::cout << "dns node, weight, elcount: " << iMit->first << ", " << iMit->second.weight << ", " << mnelit->second << "\n";
+                    
                 }
 
                 //Compute the xi vector
@@ -2312,8 +2314,8 @@ namespace overlap{
         if (element->bounding_box_contains_point(coordinates)){
 
             elib::vec xi;
-            element->compute_local_coordinates(coordinates, xi);
-            if (element->local_point_inside(xi, tol)){
+            int clc_result = element->compute_local_coordinates(coordinates, xi);
+            if ((element->local_point_inside(xi, tol)) and (clc_result == 0)){
                 dof_id_numbers.push_back(id);
                 micro_dof_local_coordinates.push_back(xi);
                 return true;
@@ -2892,6 +2894,7 @@ namespace overlap{
             }
             file << "\n";
         }
+        file.flush();
         return 0;
     }
 

@@ -209,6 +209,8 @@ int test_Hex8_get_shape_functions(std::ofstream &results){
     */
 
     // Define the element's nodes
+    std::vector< unsigned int > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
+
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
                             {1, 1, 0},
@@ -223,7 +225,7 @@ int test_Hex8_get_shape_functions(std::ofstream &results){
     define_hex8_fully_integrated_quadrature(qrule);
 
     // Construct the element
-    elib::Hex8 element(nodes, qrule);
+    elib::Hex8 element(node_ids, nodes, qrule);
 
     // Initialize the shape function vector
     elib::vec shape_functions;
@@ -266,6 +268,8 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
     */
 
     // Define the element's nodes
+    std::vector< unsigned int > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
+
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
                             {1, 1, 0},
@@ -280,7 +284,7 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
     define_hex8_fully_integrated_quadrature(qrule);
 
     // Construct the element
-    elib::Hex8 element(nodes, qrule);
+    elib::Hex8 element(node_ids, nodes, qrule);
 
     //Compute a numeric gradient of the shape functions
     double eps = 1e-6;
@@ -317,6 +321,8 @@ int test_Hex8_local_point_inside(std::ofstream &results){
     */
 
     // Define the element's nodes
+    std::vector< unsigned int > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
+
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
                             {1, 1, 0},
@@ -331,7 +337,7 @@ int test_Hex8_local_point_inside(std::ofstream &results){
     define_hex8_fully_integrated_quadrature(qrule);
 
     // Construct the element
-    elib::Hex8 element(nodes, qrule);
+    elib::Hex8 element(node_ids, nodes, qrule);
 
     // Set the xi value
     elib::vec xi(3, 0);
@@ -459,6 +465,8 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     element.get_local_gradient(scalar_nodal_values, {0.1, -0.2, 0.3}, scalar_result);
 
     if (!fuzzy_equals(scalar_answer, scalar_result)){
+        std::cerr << "scalar_answer: "; print(scalar_answer);
+        std::cerr << "scalar_result: "; print(scalar_result);
         results << element.name.c_str() << "_test_get_local_gradient (test 1) & False\n";
 	return 1;
     } 
@@ -580,7 +588,7 @@ int test_get_global_gradient(elib::Element &element, std::ofstream &results){
     return 0;
 }
 
-int test_compute_local_coordinates(elib::Element &element, std::ofstream &results){
+int test_compute_local_coordinates(elib::Element &element, elib::vec xtest, bool isoutside, std::ofstream &results){
     /*!
     Test for the computation of an element's local coordinates given it's global coordinates.
 
@@ -590,14 +598,19 @@ int test_compute_local_coordinates(elib::Element &element, std::ofstream &result
     :param std::ofstream &results: The output file to write the results to
     */
 
-    elib::vec x = {0.25, 0.75, .14};
     elib::vec xi, result;
 
-    element.compute_local_coordinates(x, xi);
+    int clc_result = element.compute_local_coordinates(xtest, xi);
+
+    if ((clc_result > 0) && (isoutside)){
+        results << element.name.c_str() << "_test_compute_local_coordinates & True\n";
+
+        return 0;
+    }
 
     element.interpolate(element.nodes, xi, result);
 
-    if (!fuzzy_equals(result, x)){
+    if (!fuzzy_equals(result, xtest)){
         results << element.name.c_str() << "_test_compute_local_coordinates & False\n";
         return 1;
     }
@@ -714,7 +727,7 @@ int test_build_element_from_string(elib::Element &element, std::ofstream &result
     :param std::ofstream &results: The output file to write the results to
     */
 
-    std::unique_ptr<elib::Element> new_element = elib::build_element_from_string(element.name, element.nodes, element.qrule);
+    std::unique_ptr<elib::Element> new_element = elib::build_element_from_string(element.name, element.global_node_ids, element.nodes, element.qrule);
 
     std::string result = typeid(*new_element).name();
     std::string answer = typeid(element).name();
@@ -728,7 +741,7 @@ int test_build_element_from_string(elib::Element &element, std::ofstream &result
     return 0;
 }
 
-int test_element_functionality(elib::Element &element, std::ofstream &results){
+int test_element_functionality(elib::Element &element, elib::vec &xtest, bool isoutside, std::ofstream &results){
     /*!
     Test the provided element's functionality
 
@@ -740,7 +753,7 @@ int test_element_functionality(elib::Element &element, std::ofstream &results){
     test_interpolate(element, results);
     test_get_local_gradient(element, results);
     test_get_global_gradient(element, results);
-    test_compute_local_coordinates(element, results);
+    test_compute_local_coordinates(element, xtest, isoutside, results);
     test_get_jacobian(element, results);
     test_bounding_box_contains_point(element, results);
     test_contains_point(element, results);
@@ -754,6 +767,8 @@ int test_Hex8_functionality(std::ofstream &results){
     Test the Hex8 element's functionality
     */
 
+    // First test a non-distorted element
+
     // Define the element's nodes
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
@@ -764,14 +779,47 @@ int test_Hex8_functionality(std::ofstream &results){
                             {1, 1, 1},
                             {0, 1, 1}};
 
+    // Define the element's node ids
+    std::vector< unsigned int > node_ids = {1, 2, 3, 4, 5, 6, 7, 8};
+
     // Define the element's quadrature rule
     elib::quadrature_rule qrule;
     define_hex8_fully_integrated_quadrature(qrule);
 
     // Construct the element
-    elib::Hex8 element(nodes, qrule);
+    elib::Hex8 element(node_ids, nodes, qrule);
 
-    return test_element_functionality(element, results);
+    // Define a test point
+    elib::vec xtest = {0.25, 0.75, .14};
+    bool isoutside = false;
+
+    int tef_return = test_element_functionality(element, xtest, isoutside, results);
+    if (tef_return > 0){
+        return tef_return;
+    }
+
+    // Test a distorted element
+    nodes = {{0.516905, 0.391528, 0.293894 },
+             {0.86161, 0.442245, 0.178099 },
+             {1.10153, 0.877418, 0.274955 },
+             {0.846862, 0.78123, 0.445236 },
+             {0.315421, 0.42434, 0.676207 },
+             {0.720471, 0.459122, 0.606603 },
+             {0.869162, 0.915384, 0.665252 },
+             {0.52575, 0.848709, 0.771187}};
+
+    element = elib::Hex8(node_ids, nodes, qrule);
+
+    xtest = {0.672, 0.636, 0.368};
+    isoutside = true;
+
+    tef_return = test_element_functionality(element, xtest, isoutside, results);
+
+    if (tef_return > 0){
+        return tef_return;
+    }
+
+    return 0;
 }
 
 int test_invert(std::ofstream &results){

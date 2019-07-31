@@ -240,7 +240,81 @@ namespace elib{
         get_global_gradient(nodes, local_coordinates, reference_coordinates, jacobian);
     }
 
-    void Element::compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
+    void Element::estimate_local_coordinates(const vec &global_coordinates, vec &local_coordinates, double tolr, double tola){
+        /*!
+         * Estimate the local coordinates of a globally defined node
+         * 
+         * :param const vec &global_coordinates: The global coordinates of the node in question
+         * :param vec &local_coordinates: The estimate of the local coordinates
+         * :param double tolr: The relative tolerance
+         * :param double tola: The absolute tolerance
+         */
+
+        //Initialize the distances vector        
+        vec distance(nodes.size(), 0);
+
+        //Initialize the sum distances value
+        double sum_distance = 0;
+        double sum_inv_distance = 0;
+
+        //Compute the distances from the point to the nodes
+        unsigned int index=0;
+        for (auto node = nodes.begin(); node != nodes.end(); node++){
+
+            //Make sure the current node and global point have the same global dimension
+            if ((*node).size() != global_coordinates.size()){
+                std::cerr << "Error: point and node have different global dimensions\n";
+                assert(1==0);
+            }
+
+            //Compute the distance
+            for (unsigned int i=0; i<(*node).size(); i++){
+                distance[index] += pow((*node)[i] - global_coordinates[i], 2);
+            }
+            distance[index] = std::sqrt(distance[index]);
+
+            //Update the sum of the distances
+            sum_distance += distance[index];
+
+            index++;
+            
+        }
+
+        //Make sure none of the distances are too small
+        index = 0;
+
+        //Set the tolerance
+        double tol = tolr*sum_distance + tola;
+        for (auto d=distance.begin(); d!=distance.end(); d++){
+            if ((*d) < tol){
+                local_coordinates = local_node_coordinates[index];
+                return;
+            }
+            sum_inv_distance += 1/(*d);
+            index++;
+        }
+
+        //Use the distances and the sum of the distances to estimate the local coordinates
+        index = 0;
+        local_coordinates = vec(local_node_coordinates[0].size(), 0);
+        for (auto node = local_node_coordinates.begin(); node != local_node_coordinates.end(); node++){
+            if (local_coordinates.size() != (*node).size()){
+                std::cerr << "Error: local node coordinates have different local dimensions\n";
+                assert(1==0);
+            }
+
+            //Compute the weighted distance
+            for (unsigned int i=0; i<(*node).size(); i++){
+                local_coordinates[i] += (*node)[i]*(1/distance[index])/sum_inv_distance;
+            }
+
+            //Increment the index
+            index++;
+        }
+        return;
+    }
+
+    int Element::compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
                                             double tolr, double tola, unsigned int maxiter, unsigned int maxls){
         /*!
          * Compute the local coordinates given the global coordinates. Does this via Newton iteration.
@@ -254,6 +328,7 @@ namespace elib{
 
         // Set the initial iterate
         vec xi(local_node_coordinates[0].size(), 0);
+        estimate_local_coordinates(global_coordinates, xi);
 
         // Compute the initial result
         vec x(global_coordinates.size(), 0);
@@ -281,7 +356,26 @@ namespace elib{
         vecOfvec J;
         while ((niter < maxiter) && (Rnorm > tol)){
             get_local_gradient(nodes, xi, J);
-            solve(J, R, dxi);
+
+/*            //Estimate the gradient using finite differences
+            vecOfvec Jest(R.size(), vec(R.size(), 0));
+            double eps = 1e-6;
+            vec delta(xi.size(), 0);
+            for (unsigned int i=0; i<xi.size(); i++){
+                delta = xi;
+                delta[i] = xi[i]*(1 + eps);
+                interpolate(nodes, delta, x);
+                for (unsigned int j=0; j<x.size(); j++){
+                    Jest[j][i] = ((global_coordinates[j] - x[j]) - R[j])/(xi[i]*eps);
+                }
+                
+            }
+
+            std::cout << "################################\n";
+            std::cout << "Jest:\n"; print(Jest);
+            std::cout << "J:\n"; print(J);
+*/
+            solve(J, R, dxi, 2);
             for (unsigned int i=0; i<xi.size(); i++){
                 xi[i] += dxi[i];
             }
@@ -295,17 +389,26 @@ namespace elib{
 
             //Line search
             nls = 0;
+            lambda = 1.;
             while (Rnorm >= Rp){
-                std::cout << "global coordinates: "; print(global_coordinates);
-                std::cout << "nodes:\n";
-                print(nodes);
-                std::cout << "x: "; print(x);
-                assert(1==0);
-                std::cout << "Rp: " << Rp << "\n";
-                std::cout << "Rnorm: " << Rnorm << "\n";
-                std::cout << "lambda: " << lambda << "\n";
-                std::cout << "dxi: "; print(dxi);
-                std::cout << "in line search\n";
+//                std::cout << "global coordinates: "; print(global_coordinates);
+//                std::cout << "nodes:\n"; print(nodes);
+//                std::cout << "x: "; print(x);
+//                std::cout << "Rp: " << Rp << "\n";
+//                std::cout << "Rnorm: " << Rnorm << "\n";
+//                std::cout << "lambda: " << lambda << "\n";
+//                std::cout << "xi: "; print(xi);
+//                std::cout << "dxi: "; print(dxi);
+
+//                std::cout << "in line search iteration " << nls << "\n";
+//                std::cout << " global coordinates: "; print(global_coordinates);
+//                std::cout << " nodes:\n"; print(nodes);
+//                std::cout << " x: "; print(x);
+//                std::cout << " Rp: " << Rp << "\n";
+//                std::cout << " Rnorm: " << Rnorm << "\n";
+//                std::cout << " lambda: " << lambda << "\n";
+//                std::cout << " xi: "; print(xi);
+//                std::cout << " dxi: "; print(dxi);
 
                 lambda *= 0.5;
 
@@ -327,18 +430,34 @@ namespace elib{
                 if (nls > maxls){
                     break;
                 }
+
+//                std::cout << "Rnorm new: " << Rnorm << "\n";
+//                std::cout << "xi: "; print(xi);
+//                std::cout << "dxi: "; print(dxi);
+//                std::cout << "x: "; print(x);
+//                assert(1==0);
             }
+
+            if (nls > maxls){
+                std::cerr << "Failure in line search\n";
+                return 1;
+                assert(1==-1);
+
+            }
+
             Rp = Rnorm;
 
             niter += 1;
         }
         if (Rnorm > tol){
             std::cout << "Error in Newton-Raphson solve\n";
+            return 1;
             assert(1==-1);
         }
         else{
             local_coordinates = xi;
         }
+        return 0;
     }
 
     bool Element::bounding_box_contains_point(const vec &x){
@@ -368,7 +487,12 @@ namespace elib{
          */
 
         vec xi;
-        compute_local_coordinates(x, xi);
+        int clc_result = compute_local_coordinates(x, xi);
+
+        //We assume that if the local coordinates cannot be computed the point must be outside of the element
+        if (clc_result > 1){
+            return false;
+        }
         return local_point_inside(xi);
     }
 
@@ -526,7 +650,7 @@ namespace elib{
 
     }
 
-    void solve(const vecOfvec &A, const vec &b, vec &x){
+    void solve(const vecOfvec &A, const vec &b, vec &x, int mode){
         /*!
          * Solve an equation of the form Ax = b
          *
@@ -553,7 +677,18 @@ namespace elib{
         Eigen::Map< Eigen::VectorXd> _x(x.data(), x.size(), 1);
 
         //Solve the matrix equation
-        _x = _A.partialPivLu().solve(_b);
+        if (mode==1){
+            _x = _A.partialPivLu().solve(_b);
+        }
+        else if (mode==2){
+            _x = _A.fullPivLu().solve(_b);
+        }
+        else if (mode==3){
+            _x = _A.colPivHouseholderQr().solve(_b);
+        }
+        else{
+            _x = _A.fullPivHouseholderQr().solve(_b);
+        }
     }
 
     void print(const uivec &a){

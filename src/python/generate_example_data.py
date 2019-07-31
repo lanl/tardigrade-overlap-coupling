@@ -11,9 +11,9 @@ npts = 1000
 #x = np.array([2*(np.random.rand(3)-0.1) for _ in range(npts)])
 
 #Structured points
-x_ = np.linspace(0, 1, 10);
-y_ = np.linspace(0, 1, 10);
-z_ = np.linspace(0, 1, 10);
+x_ = np.linspace(0, 1, 11);
+y_ = np.linspace(0, 1, 11);
+z_ = np.linspace(0, 1, 11);
 X, Y, Z = np.meshgrid(x_, y_, z_);
 
 x = np.vstack([X.flatten(), Y.flatten(), Z.flatten()]).T

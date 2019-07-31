@@ -71,8 +71,10 @@ namespace elib{
             void get_jacobian(const vec &local_coordinates, const vecOfvec &reference_coordinates,
                               vecOfvec &jacobian);
 
-            void compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
-                                           double tolr=1e-9, double tola=1e-9, unsigned int maxiter=20, unsigned int maxls=5);
+            void estimate_local_coordinates(const vec &global_coordinates, vec &local_coordinates, double tolr=1e-9, double tola=1e-9);
+
+            int compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
+                                          double tolr=1e-9, double tola=1e-9, unsigned int maxiter=20, unsigned int maxls=5);
 
             virtual void get_shape_functions(const vec &local_coordinates, vec &result){} //Must be over-ridden
             virtual void get_local_grad_shape_functions(const vec &local_coordiantes, vecOfvec &result){} //Must be over-ridden
@@ -120,7 +122,7 @@ namespace elib{
     //Functions
 
     void invert(const vecOfvec &A, vecOfvec &Ainv);
-    void solve(const vecOfvec &A, const vec &b, vec &x);
+    void solve(const vecOfvec &A, const vec &b, vec &x, int mode=1);
     void print(const vec &a);
     void print(const uivec &a);
     void print(const vecOfvec &A);
