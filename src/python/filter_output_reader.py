@@ -70,6 +70,7 @@ class GaussPointInformation(object):
         self.density = [] #The density at the gauss point
         self.local_mass_center = [] #The local mass center associated with the gauss point
         self.global_mass_center = [] #The global mass center associated with the gauss point
+        self.surface_area = [] #The surface area of the faces associated with the gauss point
         
     def __repr__(self, offset=0):
         out_str = " "*offset + "Gauss Point Information\n"
@@ -107,6 +108,14 @@ class GaussPointInformation(object):
             out_str += " "*offset + "  "
             for gmci in gmc:
                 out_str += " {0:+1.4f}".format(gmci)
+            out_str += "\n"
+
+        out_str += " "*offset + " Surface Areas:\n";
+        for sa in self.surface_area:
+            for key in sa.keys():
+                out_str += " "*offset + "  "
+                out_str += "{0:3d} : ".format(key)
+                out_str += "{0:1.4f}\n".format(sa[key])
             out_str += "\n"
         
         return out_str
@@ -183,14 +192,20 @@ def read_output_data(output_fn):
         elif "*GLOBAL MASS CENTER" in sline[0]:
             gmc = [float(sl.strip()) for sl in sline[1:] if len(sl.strip())>0]
             gpinfo.global_mass_center.append(gmc)
+
+        elif "*SURFACE AREAS" in sline[0]:
+            surface_areas = read_values(of)
+            faces = (surface_areas[:, 0]+0.5).flatten().astype(int)
+            values = surface_areas[:, 1:].flatten()
+            gpinfo.surface_area.append(dict([(f, v) for f, v in zip(faces, values)]))
             
         elif "*" in sline[0]:
             print("Warning: unknown keyword detected")
-            print("  ", sline[0])
+            print("  ", line)
             
         else:
             print(sline)
-            data_array.append([float(v) for v in sline])
+#            data_array.append([float(v) for v in sline])
             
         line = of.readline()
         

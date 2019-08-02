@@ -85,17 +85,17 @@ namespace overlap{
         return vector;
     }
 
-    void OverlapCoupling::map_vectors_to_quickhull(const vecOfvec &vectors, std::vector< vertex_t > &vertices) const{
+    void OverlapCoupling::map_vectors_to_quickhull(const std::map< unsigned int, std::vector< FloatType > > &vectors, std::vector< vertex_t > &vertices) const{
         /*!
-        Map a collection of vectors to a vertex which can be read by 3D-quickhull
-        
-        :param vecOfvec vectors: a vector of std::vector< double > representing the vector values
-        :param std::vector< vertex_t > vertices: The output in a format readable by 3D-quickhull
-        */
+         * Map a collection of vectors to a vertex which can be read by 3D-quickhull
+         * 
+         * :param std::map< unsigned int, std::vector< FloatType > > &vectors: a map of std::vector< double > representing the vector values
+         * :param std::vector< vertex_t > vertices: The output in a format readable by 3D-quickhull
+         */
 
         vertices.reserve(vectors.size());
-        for (unsigned int i=0; i<vectors.size(); i++){
-            vertices.push_back(map_vector_to_quickhull(vectors[i]));
+        for (auto vector=vectors.begin(); vector!=vectors.end(); vector++){
+            vertices.push_back(map_vector_to_quickhull(vector->second));
         }
         return;
     }
@@ -201,22 +201,25 @@ namespace overlap{
 
     void OverlapCoupling::compute_element_bounds(){
         /*!
-        Compute the bounds of the element by constructing its convex hull.
-        */
+         * Compute the bounds of the element by constructing its convex hull.
+         */
 
         //!Compute the bounding planes
         element_bounds.resize(3);
-        compute_node_bounds(local_coordinates, element_planes, element_bounds[0], element_bounds[1], element_bounds[2]);
+        std::map< unsigned int, std::vector< FloatType > > local_coordinate_map;
+        for (unsigned int i=0; i<local_coordinates.size(); i++){local_coordinate_map.emplace(i, local_coordinates[i]);}
+
+        compute_node_bounds(local_coordinate_map, element_planes, element_bounds[0], element_bounds[1], element_bounds[2]);
 
         return;
     }
 
-    void OverlapCoupling::compute_dns_bounds(const vecOfvec &DNScoordinates, bool use_dns_bounds){
+    void OverlapCoupling::compute_dns_bounds(const std::map< unsigned int, std::vector< FloatType > > &DNScoordinates, bool use_dns_bounds){
         /*!
-        Compute the bounds of the DNS.
-
-        :param vecOfvec DNScoordinates: A vector of std::vectors of the DNS point coordinates
-        */
+         * Compute the bounds of the DNS.
+         * 
+         * :param std::map< unsigned int, std::vector< FloatType > > &DNScoordinates: The map of std::vectors of the DNS point coordinates
+         */
 
         //!Compute the bounding planes
         if (use_dns_bounds){
@@ -254,12 +257,12 @@ namespace overlap{
 */
     }
 
-    void OverlapCoupling::compute_node_bounds(const vecOfvec &coordinates, planeMap &planes,
+    void OverlapCoupling::compute_node_bounds(const std::map< unsigned int, std::vector< FloatType > > &coordinates, planeMap &planes,
         std::vector< double > &xbnds, std::vector< double > &ybnds, std::vector< double > &zbnds, const double tolr, const double tola){
         /*!
         Compute the bounding planes for the provided coordinates.
 
-        :param vecOfvec coordinates: A vector of std::vectors of the nodal coordinates.
+        :param std::map< unsigned int, std::vector< FloatType > > &coordinates: A map of std::vectors of the nodal coordinates.
         :param planeMap planes: The resulting planes which bound the coordinates.
         :param std::vector< double > xbnds: The bounds of the nodes in the x direction
         :param std::vector< double > ybnds: The bounds of the nodes in the y direction
@@ -376,11 +379,13 @@ namespace overlap{
         std::vector< voro::wall_plane > vplanes;
 //        std::cout << "element_planes:\n";
 //        print_planeMap(element_planes);
+//        assert(1==0);
         map_planes_to_voro(element_planes, vplanes);
 
         //Construct the container
-        std::vector< unsigned int > gpt_nums(gauss_points.size());
-        for (unsigned int i=0; i<gpt_nums.size(); i++){gpt_nums[i] = i;}
+//        std::vector< unsigned int > gpt_nums(gauss_points.size());
+        std::map< unsigned int, std::vector< FloatType > > gpt_map;
+        for (unsigned int i=0; i<gauss_points.size(); i++){gpt_map.emplace(i, gauss_points[i]);}
 //        std::cout << "gauss_points:\n";
 //        print_matrix(gauss_points);
 /*        std::cout << "  element_bounds:\n";
@@ -392,13 +397,14 @@ namespace overlap{
             std::cout << "\n";
         }
 */
-        voro::container *container = construct_container(gpt_nums, gauss_points, element_bounds, vplanes);
+        voro::container *container = construct_container(gpt_map, element_bounds, vplanes);
 
         //Iterate over the gauss points
         voro::voronoicell_neighbor c;
         voro::c_loop_all cl(*container);
 
         //Loop over the contained points
+        std::vector< int > neighbors;
         std::vector< double > cell_normals;
         std::vector< int > face_vertices;
         std::vector< int > planes;
@@ -412,12 +418,17 @@ namespace overlap{
 
         gauss_domains.resize(gauss_points.size());
 
+        unsigned int plane_num = 0;
+
         if (cl.start()) do if (container->compute_cell(c, cl)){
             //Extract the required values from the point
 //            std::cout << "cl.pid(): " << cl.pid() << "\n";
             index = cl.pid();
+//            std::cout << "id: " << index << "\n";
             cl.pos(x, y, z);
+//            std::cout << "pos: " << x << ", " << y << ", " << z << "\n";
             c.normals( cell_normals );
+            c.neighbors( neighbors );
             c.face_vertices( face_vertices );
             c.face_areas( areas );
             c.vertices(x, y, z, vertices);
@@ -429,16 +440,26 @@ namespace overlap{
             planes.resize(cell_normals.size()/3);
             //Loop over the domain's faces
             for (unsigned int i=0; i<cell_normals.size()/3; i++){
+                if (neighbors[i] < 0){
+                    plane_num = - (neighbors[i] + 1);
+                }
+                else{
+                    plane_num = neighbors[i] + element_planes.size();
+                }
+//                std::cout << "plane_num: " << plane_num << "\n";
                 //Extract the normal
                 normals[i] = {cell_normals[3*i+0],
                               cell_normals[3*i+1],
                               cell_normals[3*i+2]};
 
+//                std::cout << "normal: "; elib::print(normals[i]);
+
                 //Find the centroid of each of the face
                 find_face_centroid(face_vertices, vertices, ifv, points[i]);
 
                 //Set the face number
-                planes[i] = i;
+                planes[i] = plane_num;
+                plane_num++;
 
                 ifv += face_vertices[ifv]+1;
             }
@@ -452,15 +473,18 @@ namespace overlap{
             //Add the point
             gauss_domains[index] = MicroPoint(c.volume(), centroid, {x, y, z}, planes, 
                                               areas, normals, points);
+//            std::cout << "gauss domain " << index << "\n"; gauss_domains[index].print();
+//            assert(1==0);
 //            index++;
 
         } while (cl.inc());
+//        assert(1==0);
 
         //Free the memory associated with the container
         delete(container);
     }
 
-    void OverlapCoupling::compute_weights(const std::vector< unsigned int > &numbers, const vecOfvec &positions,
+    void OverlapCoupling::compute_weights(const std::map< unsigned int, std::vector< FloatType > > &positions,
                                           std::vector< integrateMap > &points, bool use_dns_bounds){
         /*!
          * Compute the weights of the DNS points for their integration of the gauss domains along with other quantities which 
@@ -471,8 +495,7 @@ namespace overlap{
          *      in that reference frame. Mapping these quantities to the global coordinate frame will be required 
          *      to perform integration.
          * 
-         * :param std::vector< unsigned int > numbers: The number (index) of the DNS point.
-         * :param vecOfvec positions: The positions of the DNS points in local coordinates.
+         * :param std::map< unsigned int, std::vector< FloatType > > positions: Map from the DNS point number to it's local position.
          * :param std::vector< std::vector< MicroPoint > > points: The outgoing weights and other required quantities.
          * :param bool use_dns_bounds: Flag on whether the DNS bounds should be used. When used in the full overlap 
          *     context this may not be desired.
@@ -480,6 +503,8 @@ namespace overlap{
 
         const MicroPoint* mp;
         voro::container* container;
+
+        std::map< int, std::pair< std::vector< FloatType >, std::vector< FloatType > > > bounding_faces;
 
         //Compute the bounds of the DNS
         compute_dns_bounds(positions, use_dns_bounds);
@@ -491,14 +516,34 @@ namespace overlap{
             //Construct the Voro++ planes from the gauss domain
             mp = &gauss_domains[gd];
             std::vector< voro::wall_plane > planes;
+//            std::cout << "gd: " << gd << "\n";
+//            (*mp).print();
             map_domain_to_voro(*mp, planes);
-            map_planes_to_voro(dns_planes, planes, planes.size());
+            for (unsigned int i=0; i<(*mp).planes.size(); i++){
+                bounding_faces.emplace(-((*mp).planes[i]+1),
+                                       std::pair< std::vector< FloatType >, std::vector< FloatType > >((*mp).normal(i), (*mp).face_centroids[i]));
+            }
+
+            if (use_dns_bounds){
+                int bni=0;
+                for (auto dpit=dns_planes.begin(); dpit!=dns_planes.end(); dpit++){
+                    bounding_faces.emplace(-(planes.size() + bni), std::pair< std::vector< FloatType > , std::vector< FloatType > >(dpit->first, dpit->second));
+                }
+                
+                map_planes_to_voro(dns_planes, planes, planes.size());
+            }
+
+//            for (auto tmpit=bounding_faces.begin(); tmpit!=bounding_faces.end(); tmpit++){
+//                std::cout << tmpit->first << ": normal: "; elib::print(tmpit->second.first);
+//                std::cout << "   : point: "; elib::print(tmpit->second.second);
+//            }
 
             //Construct the container
-            container = construct_container(numbers, positions, element_bounds, planes);
+            container = construct_container(positions, element_bounds, planes);
             
             //Evaluate the point information
-            evaluate_container_information(container, points[gd], boundary_node_volumes);
+            evaluate_container_information(positions, bounding_faces, container, points[gd], boundary_node_volumes);
+//            assert(1==0);
 
             if (points[gd].size() == 0 ){
                 gauss_domains[gd].print();
@@ -508,6 +553,8 @@ namespace overlap{
 
             delete(container);
         }
+
+//        assert(1==0);
 
         for (unsigned int gd=0; gd<gauss_domains.size(); gd++){
 //            std::cout << "gd: " << gd << "\n";
@@ -902,20 +949,20 @@ namespace overlap{
 
     void print_vertex(const vertex_t &vertex){
         /*!
-        Print the value of a vertex to the terminal (debugging tool)
-
-        :param vertex_t vertex: The vertex to print
-        */
+         * Print the value of a vertex to the terminal (debugging tool)
+         * 
+         * :param vertex_t vertex: The vertex to print
+         */
 
         printf("%+1.6f %+1.6f %+1.6f", vertex.x, vertex.y, vertex.z);
     }
 
     void print_vector(const std::vector< FloatType > &vector){
         /*!
-        Print the value of a vector to the terminal (debugging tool)
-
-        :param std::vector< FloatType > vector: The vector to print
-        */
+         * Print the value of a vector to the terminal (debugging tool)
+         * 
+         * :param std::vector< FloatType > vector: The vector to print
+         */
 
         for (unsigned int i=0; i<vector.size(); i++){
             printf("%+1.6f ",vector[i]);
@@ -925,8 +972,10 @@ namespace overlap{
 
     void print_matrix(const std::vector< std::vector< FloatType > > &matrix){
         /*!
-        Print the value of a matrix to the terminal (debugging tool)
-        */
+         * Print the value of a matrix to the terminal (debugging tool)
+         * 
+         * const vecOfvec &matrix: The matrix to be printed
+         */
         for (unsigned int i=0; i<matrix.size(); i++){
             print_vector(matrix[i]);
         }
@@ -934,11 +983,11 @@ namespace overlap{
 
     void print_planeMap(const planeMap &planes){
         /*!
-        Print the value of a planeMap to the terminal (debugging tool)
-
-        :param planeMap planes: The planemap to print
-
-        */
+         * Print the value of a planeMap to the terminal (debugging tool)
+         * 
+         * :param planeMap planes: The planemap to print
+         * 
+         */
         planeMap::const_iterator it;
         int padlen = 30;
         std::string str1 = "normals";
@@ -956,6 +1005,29 @@ namespace overlap{
         }
     }
 
+    void print_coordinateMap(const std::map< unsigned int, std::vector< FloatType > > &coordinates){
+        /*!
+         * Print the coordinate map (id, coordinates) to the terminal
+         * 
+         * :param const std::map< unsigned int, std::vector< FloatType > > &coordinates: The coordinate map
+         */
+        
+        std::map< unsigned int, std::vector< FloatType > >::const_iterator it;
+        int padlen = 30;
+        std::string str1 = "id";
+        std::string str2 = "coordinates";
+        int prel1 = std::ceil(0.5*(padlen - str1.length()));
+        int postl1 = std::floor(0.5*(padlen - str1.length()));
+        int prel2 = std::ceil(0.5*(padlen - str2.length()));
+        int postl2 = std::floor(0.5*(padlen - str2.length()));
+
+        printf("%*s%s%*s|%*s%s%*s\n", prel1, "", "id", postl1, "", prel2, "", "coordinates", postl2, "");
+        for (it = coordinates.begin(); it != coordinates.end(); it++){
+            printf("%+6d | %+1.6f %+1.6f %+1.6f\n",
+                   it->first, it->second[0], it->second[1], it->second[2]);
+        }
+    }
+
     void add_planes_to_container(std::vector< voro::wall_plane > &planes, voro::container &container){
         /*!
         Add the planes as defined to the voro::container object
@@ -969,15 +1041,14 @@ namespace overlap{
         }
     }
 
-    voro::container* construct_container(const std::vector< unsigned int > &point_numbers, const vecOfvec &point_coords,
+    voro::container* construct_container(const std::map< unsigned int, std::vector< FloatType > >  &point_coords,
                                          const vecOfvec &bounds, std::vector< voro::wall_plane > &planes, double expand){
         /*!
         Returns the pointer to a new voro::container formed by the walls in planes and containing the points in point_coords.
 
         NOTE: delete this memory after using!
 
-        :param std::vector< unsigned int > point_numbers: The point id numbers
-        :param vecOfvec point_coords: The coordinates of the points
+        :param std::map< unsigned int, std::vector< FloatType > > &point_coords: The map to the coordinates of the points
         :param vecOfvec bounds: The bounds of the domains
         :param std::vector< voro::wall_plane > planes: The definitions of the bounding planes.
         :param double expand: The amount to expand the bounds by. Ensures that points on the surface aren't id'd as being outside
@@ -990,13 +1061,13 @@ namespace overlap{
                                        bounds[2][0]-expand, bounds[2][1]+expand,
                                        false, false, false);
 
-        //Add the points to the pre-container
-        if (point_numbers.size() != point_coords.size()){
-            std::cout << "Error: The point indices and coordinates must have the same length\n";
-            assert(1==0);
-        }
-        for (unsigned int i=0; i<point_numbers.size(); i++){
-            pcontainer.put(point_numbers[i], point_coords[i][0], point_coords[i][1], point_coords[i][2]);
+//        //Add the points to the pre-container
+//        if (point_numbers.size() != point_coords.size()){
+//            std::cout << "Error: The point indices and coordinates must have the same length\n";
+//            assert(1==0);
+//        }
+        for (auto point = point_coords.begin(); point != point_coords.end(); point++){//unsigned int i=0; i<point_numbers.size(); i++){
+            pcontainer.put(point->first, point->second[0], point->second[1], point->second[2]);
         }
         pcontainer.guess_optimal(nx, ny, nz);
 
@@ -1014,7 +1085,10 @@ namespace overlap{
         return container;
     }
 
-    void evaluate_container_information(voro::container* container, integrateMap &points, std::map< unsigned int, FloatType> &boundary_node_volumes){
+    void evaluate_container_information(const std::map< unsigned int, std::vector< FloatType > > &positions,
+                                        const std::map< int, std::pair< std::vector< FloatType >, std::vector< FloatType > > > &bounding_faces,
+                                        voro::container* container, integrateMap &points, 
+                                        std::map< unsigned int, FloatType> &boundary_node_volumes){
         /*!
         Compute required container information (volumes, surface areas, etc.) and return them.
 
@@ -1023,6 +1097,8 @@ namespace overlap{
         is actually a surface on the outside of the domain. The planes will be id'd by adding 1 and taking 
         the negative.
 
+        :param const std::map< unsigned int, std::vector< FloatType > > &positions: A map from the dns node number to its local position
+        :param const std::map< unsigned int, std::pair< std::vector< FloatType >, std::vector< FloatType > > > &bounding_faces: The bounding surfaces
         :param voro::container* container: A pointer to the Voro++ container class to be investigated
         :param std::vector< integrateMap > points: A vector of point information containers.
         :param std::map< unsigned int, FloatType > boundary_node_volumes: The total volume of the cells on gauss domain boundaries
@@ -1081,6 +1157,9 @@ namespace overlap{
 
             while (viit != neighbors.end()){
 //                std::cout << "index_order: " << index_order << "\n";
+//                std::cout << *viit << ", ";
+
+                //Accept points cut by planes which will have a negative index
                 if (*viit < 0){
                     planes.push_back(-(*viit+1));
                     areas.push_back(*vdit);
@@ -1092,11 +1171,92 @@ namespace overlap{
                     is_boundary = true;
 
                 }
+                else{
+
+                    //Check if the current face is coincident with one of the bounding faces
+                    std::vector< FloatType > tmp_normal({cell_normals[index+0],
+                                                         cell_normals[index+1],
+                                                         cell_normals[index+2]});
+
+                    find_face_centroid(face_vertices, vertices, index_order, centroid);
+
+                    //Iterate through the bounding faces
+                    int temp_id = 0;
+                    bool dircomp, planecmp;
+                    for (auto face_it=bounding_faces.begin(); face_it!=bounding_faces.end(); face_it++){
+                        dircomp = compare_vector_directions(tmp_normal, face_it->second.first);
+                        planecmp = point_on_surface(centroid, face_it->second.first, face_it->second.second);
+
+                        if ((dircomp) && (planecmp)){
+                            temp_id = face_it->first;
+                            break;
+                        }
+                    }
+                    if (temp_id < 0){
+                        planes.push_back(-(temp_id+1));
+                        areas.push_back(*vdit);
+                        normals.push_back(tmp_normal);
+                        face_centroids.push_back(centroid);
+                        is_boundary = true;
+
+                    }
+/*
+                
+                    //Check if a neighboring point is not included in the domain. This means the point is also on a boundary
+                    auto nit = positions.find(*viit);
+                    if (nit != positions.end()){
+                        if (!container->point_inside(nit->second[0], nit->second[1], nit->second[2])){
+
+                            //Get the normal and centroid information
+                            std::vector< FloatType > tmp_normal({cell_normals[index+0],
+                                                                 cell_normals[index+1],
+                                                                 cell_normals[index+2]});
+
+                            find_face_centroid(face_vertices, vertices, index_order, centroid);
+
+                            //Determine the face's id number
+                            int temp_id=0;
+                            bool dircomp, planecmp;
+//                            std::cout << "neighbor location: "; elib::print(nit->second);
+//                            std::cout << "face centroid: "; elib::print(centroid);
+//                            std::cout << "face normal:   "; elib::print(tmp_normal);
+                            for (auto face_it=bounding_faces.begin(); face_it!=bounding_faces.end(); face_it++){
+//                                std::cout << " plane id: " << face_it->first << "\n";
+//                                std::cout << " plane normal: "; elib::print(face_it->second.first);
+//                                std::cout << " plane point:  "; elib::print(face_it->second.second); std::cout << "\n";
+
+                                dircomp = compare_vector_directions(tmp_normal, face_it->second.first);
+                                planecmp = point_on_surface(centroid, face_it->second.first, face_it->second.second);
+
+                                if ((dircomp) && (planecmp)){
+                                    temp_id = face_it->first;
+                                    break;
+                                }
+                            }
+                            if (temp_id == 0){
+                                std::cout << "Error: bounding volume has no associated normal\n";
+                                //assert(1==0);
+                            }
+                            else{
+                                planes.push_back(-(temp_id+1));
+                                areas.push_back(*vdit);
+                                normals.push_back(tmp_normal);
+                                find_face_centroid(face_vertices, vertices, index_order, centroid);
+                                face_centroids.push_back(centroid);
+                                is_boundary = true;
+                            }
+                        }
+                    }
+
+*/
+                }
+
                 viit++;
                 vdit++;
                 index += 3;
                 index_order += face_vertices[index_order]+1;
             }
+//            std::cout << "\n";
             if (is_boundary){
                 auto bit = boundary_node_volumes.find(cl.pid());
                 if (bit != boundary_node_volumes.end()){
@@ -1200,22 +1360,26 @@ namespace overlap{
         :param std::vector< voro::wall_plane > vplanes: A std::vector of voro::wall_plane objects which can be added to a voro::container
         */
 
-        unsigned int j=1, n = domain.das.size();
+        unsigned int n = domain.das.size();
+//        unsigned int j=1, n = domain.das.size();
         double distance;
         std::vector< double > normal(3);
         vplanes.reserve(n);
 
-//        std::cout << "map_domain_to_voro:\n";
+//        std::cout << "\nmap_domain_to_voro:\n";
 
         for (unsigned int i=0; i<n; i++){
             normal = domain.normal(i);
             distance = overlap::dot(normal, domain.face_centroids[i]);
+//            std::cout << "  true plane id: " << domain.planes[i] << "\n";
+//            std::cout << "  voro plane id: " << -(domain.planes[i]+1) << "\n";
 //            std::cout << "  normal: " << normal[0] << " " << normal[1] << " " << normal[2] << "\n";
 //            std::cout << "  face centroid: " << domain.face_centroids[i][0] << " " << domain.face_centroids[i][1] << " " << domain.face_centroids[i][2] << "\n";
 //            std::cout << "  distance: " << distance << "\n";
-            vplanes.push_back(voro::wall_plane(normal[0], normal[1], normal[2], distance, -j));
-            j++;
+            vplanes.push_back(voro::wall_plane(normal[0], normal[1], normal[2], distance, -(domain.planes[i]+1)));//j));
+//            j++;
         }
+//        assert(1==0);
     }
 
     void apply_nansons_relation(const std::vector< double > &N, const double &JdA, const vecOfvec &Finv, std::vector< double > &nda){
@@ -1375,6 +1539,45 @@ namespace overlap{
                 }
             }
         }
+    }
+
+    void compute_surface_area(const std::vector< integrateMap > &weights, scalar_surface_map &surface_area){
+        /*!
+         * Compute the surface areas of each of the faces in the gauss domains
+         * 
+         * :param const std::vector< integrateMap > &weights: The weights of each of the nodes in true-space for each gauss point
+         * :param scalar_surface_map &surface_area: The computed surface areas
+         */
+
+        integrateMap::const_iterator itiM;
+        std::map< unsigned int, double >::iterator itr;
+
+        //Initialize the surface_area vector
+        surface_area.resize(weights.size());
+
+        //Loop over the gauss domains
+        for (unsigned int gp=0; gp<weights.size(); gp++){
+            
+            //Loop over the micro-node weights
+            for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
+
+                //Loop over the planes
+                for (unsigned int j=0; j<itiM->second.planes.size(); j++){
+
+                    itr = surface_area[gp].find(itiM->second.planes[j]);
+
+                    //Insert the plane if new
+                    if (itr == surface_area[gp].end()){
+                        surface_area[gp].emplace(itiM->second.planes[j], itiM->second.area(j));
+                    }
+                    //Add to the plane if it exists already
+                    else{
+                        itr->second += itiM->second.area(j);
+                    }
+                }
+            }
+        }
+        return;
     }
 
     void perform_surface_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, double > > &result){
@@ -2316,8 +2519,9 @@ namespace overlap{
             elib::vec xi;
             int clc_result = element->compute_local_coordinates(coordinates, xi);
             if ((element->local_point_inside(xi, tol)) and (clc_result == 0)){
-                dof_id_numbers.push_back(id);
-                micro_dof_local_coordinates.push_back(xi);
+//                dof_id_numbers.push_back(id);
+//                micro_dof_local_coordinates.push_back(xi);
+                micro_dof_local_coordinates.emplace(id, xi);
                 return true;
             }
         }
@@ -2337,8 +2541,9 @@ namespace overlap{
             elib::vec xi;
             element->compute_local_coordinates(coordinates, xi);
             if (element->local_point_inside(xi, tol)){
-                material_id_numbers.push_back(id);
-                micro_material_local_coordinates.push_back(xi);
+                micro_material_local_coordinates.emplace(id, xi);
+//                material_id_numbers.push_back(id);
+//                micro_material_local_coordinates.push_back(xi);
                 return true;
             }
         }
@@ -2367,7 +2572,9 @@ namespace overlap{
         * Construct the integrator for the material points.
         */
 
-        material_overlap.compute_weights(material_id_numbers, micro_material_local_coordinates, material_weights, use_dns_bounds);
+//        material_overlap.compute_weights(material_id_numbers, micro_material_local_coordinates, material_weights, use_dns_bounds);
+        material_overlap.compute_weights(micro_material_local_coordinates, material_weights, use_dns_bounds);
+
 
         //Transform the volumes and normals
         elib::vecOfvec jacobian;
@@ -2426,7 +2633,8 @@ namespace overlap{
         /*!
         * Construct the integrator for the degree of freedom points.
         */
-        dof_overlap.compute_weights(dof_id_numbers, micro_dof_local_coordinates, dof_weights, use_dns_bounds);
+//        dof_overlap.compute_weights(dof_id_numbers, micro_dof_local_coordinates, dof_weights, use_dns_bounds);
+        dof_overlap.compute_weights(micro_dof_local_coordinates, dof_weights, use_dns_bounds);
 
         //Transform the volumes and normals
         elib::vecOfvec jacobian;
@@ -2471,6 +2679,7 @@ namespace overlap{
 
 //        std::cout << "compute volume\n";
         compute_volume();
+        compute_surface_area();
 //        std::cout << "compute density\n";
         compute_density(micro_density);
 //        std::cout << "compute center of mass\n";
@@ -2494,6 +2703,15 @@ namespace overlap{
                 volume[gp] += itiM->second.volume;
             }
         }
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_surface_area(){
+        /*!
+         * Compute the surface areas of each of the filter's gauss domains
+         */
+
+        overlap::compute_surface_area(material_weights, surface_area);
         return 0;
     }
 
@@ -2538,6 +2756,17 @@ namespace overlap{
             element->compute_local_coordinates(center_of_mass[gp], local_center_of_mass[gp]);
         }
 
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_symmetric_microstress(const std::map< unsigned int, std::vector< double > > &micro_cauchy){
+        /*!
+         * Compute the symmetric microstress (i.e. the volume average of the micro-scale's Cauchy stress)
+         * 
+         * :param const std::map< unsigned int, std::vector< double > > &micro_cauchy:
+         */
+        
+        perform_volume_integration(micro_cauchy, material_weights, symmetric_microstress);
         return 0;
     }
 
@@ -2629,14 +2858,15 @@ namespace overlap{
 	 */
 
         if (show_microscale_info){
-            std::cout << "DOF id numbers:\n";
-            elib::print(dof_id_numbers);
-            std::cout << "Material Point id numbers:\n";
-            elib::print(material_id_numbers);
-            std::cout << "DOF local coordinates:\n";
-            elib::print(micro_dof_local_coordinates);
-            std::cout << "Material Point local coordinates:\n";
-            elib::print(micro_material_local_coordinates);
+            std::cout << "DOF information: (id, coordinates)\n";
+            print_coordinateMap(micro_dof_local_coordinates);
+//            elib::print(dof_id_numbers);
+            std::cout << "Material Point information (id, coordinates):\n";
+            print_coordinateMap(micro_material_local_coordinates);
+//            std::cout << "DOF local coordinates:\n";
+//            elib::print(micro_dof_local_coordinates);
+//            std::cout << "Material Point local coordinates:\n";
+//            elib::print(micro_material_local_coordinates);
         }
         std::cout << "Element planes:\n";
         const planeMap *ep = material_overlap.get_element_planes();
@@ -2882,6 +3112,10 @@ namespace overlap{
         file << " *GAUSS POINT INFORMATION\n";
         for (unsigned int gp=0; gp<material_weights.size(); gp++){
             file << "  *VOLUME, " << volume[gp] << "\n";
+            file << "  *SURFACE AREAS (plane, area)\n";
+            for (auto it=surface_area[gp].begin(); it!=surface_area[gp].end(); it++){
+                file << "   " << it->first << ", " << it->second << "\n";
+            }
             file << "  *DENSITY, " << density[gp] << "\n";
             file << "  *LOCAL MASS CENTER, ";
             for (unsigned int i=0; i<local_center_of_mass[gp].size(); i++){
@@ -2905,12 +3139,46 @@ namespace overlap{
          * after an old one has been built. 
          */
 
-        dof_id_numbers.clear();
-        material_id_numbers.clear();
+        //dof_id_numbers.clear();
+        //material_id_numbers.clear();
         micro_dof_local_coordinates.clear();
         micro_material_local_coordinates.clear();
         dof_weights.clear();
         material_weights.clear();
         return 0;
+    }
+
+    std::vector< double > subtract(const std::vector< double > &a, const std::vector< double > &b){
+        /*!
+         * Subtract two vectors c = a - b
+         * 
+         * :param std::vector< double > &a: The leading vector
+         * :param std::vector< double > &b: The tailing vector
+         */
+        
+        if (a.size() != b.size()){
+            std::cerr << "Error: vectors of different sizes cannot be subtracted.\n";
+            assert(1==0);
+        }
+
+        std::vector< double > c(a.size());
+        for (unsigned int i=0; i<a.size(); i++){
+            c[i] = a[i] - b[i];
+        }
+        return c;
+    }
+
+    bool point_on_surface(const std::vector< double > &p, const std::vector< double > &n, const std::vector< double > &a){
+        /*!
+         * Determine whether the point p is on the surface defined by the normal n and the point on the surface a.
+         * 
+         * :param const std::vector< double > &p: The query point
+         * :param const std::vector< double > &n: The surface normal
+         * :param const std::vector< double > &a: A point on the surface
+         */
+        
+        std::vector< double > d = subtract(p, a);
+        double distance = dot(d, n);
+        return fuzzy_equals(distance, 0);
     }
 }

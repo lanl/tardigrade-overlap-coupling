@@ -525,7 +525,6 @@ namespace filter{
             }
         }
         return 0;   
-        
     }
 
     int assign_dof_information_to_filters(const assembly::node_map &nodes, const assembly::element_map &elements,

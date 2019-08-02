@@ -85,6 +85,8 @@ namespace overlap{
     typedef std::vector< std::vector< double > > vecOfvec;
     typedef std::map< std::vector< double >, std::vector< double > > planeMap;
     typedef std::map< unsigned int, MicroPoint > integrateMap;
+    typedef std::vector< std::map< unsigned int, double > > scalar_surface_map;
+    typedef std::vector< std::map< unsigned int, std::vector< double > > > vector_surface_map;
 
     //Ignore Eigen definitions when not being compiled into the library
     #ifdef OVERLAP_LIBCOMPILE
@@ -112,20 +114,20 @@ namespace overlap{
             //! > Interface to 3D-quickhull
             vertex_t map_vector_to_quickhull(const std::vector< double > &vector) const;
             std::vector< double > map_quickhull_to_vector(const vertex_t &vertex) const;
-            void map_vectors_to_quickhull(const vecOfvec &vectors, std::vector< vertex_t > &vertices) const;
+            void map_vectors_to_quickhull(const std::map< unsigned int, std::vector< FloatType > > &vectors, std::vector< vertex_t > &vertices) const;
             void map_quickhull_to_vectors(const std::vector< vertex_t > &vertices, vecOfvec &vectors) const;
 #if CONVEXLIB != AKUUKKA
             void extract_mesh_info(const mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;
 #else
             void extract_mesh_info(mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;//, vecOfvec &facepoints) const;
 #endif
-            void compute_node_bounds(const vecOfvec &coordinates, planeMap &planes, 
+            void compute_node_bounds(const std::map< unsigned int, std::vector< FloatType > > &coordinates, planeMap &planes, 
                 std::vector< double > &xbnds, std::vector< double > &ybnds, std::vector< double > &zbnds,
                 const double tolr=1e-6, const double tola=1e-6);
 
-            void compute_dns_bounds(const vecOfvec &dns_coordinates, bool use_dns_bounds);
+            void compute_dns_bounds(const std::map< unsigned int, std::vector< FloatType > > &dns_coordinates, bool use_dns_bounds);
 
-            void compute_weights(const std::vector< unsigned int > &numbers, const vecOfvec &positions,
+            void compute_weights(const std::map< unsigned int, std::vector< FloatType > > &positions,
                                  std::vector< integrateMap > &points, bool use_dns_bounds=true);
 
             //! > Interface to defined quantities
@@ -427,12 +429,14 @@ namespace overlap{
             OverlapCoupling dof_overlap;
 
             //ID number vectors
-            std::vector< unsigned int > dof_id_numbers;
-            std::vector< unsigned int > material_id_numbers;
+//            std::vector< unsigned int > dof_id_numbers;
+//            std::vector< unsigned int > material_id_numbers;
 
             //Local coordinates
-            elib::vecOfvec micro_dof_local_coordinates;
-            elib::vecOfvec micro_material_local_coordinates;
+//            elib::vecOfvec micro_dof_local_coordinates;
+//            elib::vecOfvec micro_material_local_coordinates;
+            std::map< unsigned int, std::vector< FloatType > > micro_dof_local_coordinates;
+            std::map< unsigned int, std::vector< FloatType > > micro_material_local_coordinates;
 
             //Integrators
             std::vector< integrateMap > dof_weights;
@@ -442,16 +446,23 @@ namespace overlap{
 
             //Mass/geometric properties
             elib::vec volume;
+            scalar_surface_map surface_area;
             elib::vec density;
             elib::vecOfvec local_center_of_mass;
             elib::vecOfvec center_of_mass;
 
             int compute_volume();
+            int compute_surface_area();
             int compute_density(const std::map< unsigned int, double > &micro_density);
             int compute_centers_of_mass(const std::map< unsigned int, double > &micro_density);
 
             //Degree of freedom properties
             vecOfvec dof_values;
+
+            //Stress properties
+            int compute_symmetric_microstress(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
+            
+            vecOfvec symmetric_microstress;
 
     };
     
@@ -468,6 +479,10 @@ namespace overlap{
 
     double dot(const std::vector< double > &a, const std::vector< double > &b);
 
+    std::vector< double > subtract(const std::vector< double > &a, const std::vector< double > &b);
+
+    bool point_on_surface(const std::vector< double > &p, const std::vector< double > &n, const std::vector< double > &a);
+
     std::vector< double > cross(const std::vector< double > &a, const std::vector< double > &b);
 
     bool fuzzy_equals(const double a, const double b, const double tolr=1e-6, const double tola=1e-6);
@@ -482,13 +497,17 @@ namespace overlap{
     void print_vector(const std::vector< FloatType > &vector);
     void print_matrix(const std::vector< std::vector< FloatType > > &matrix);
     void print_planeMap(const planeMap &planes);
+    void print_coordinateMap(const std::map< unsigned int, std::vector< FloatType > > &coordinates);    
 
     void add_planes_to_container(std::vector< voro::wall_plane > &planes, voro::container &container);
 
-    voro::container* construct_container(const std::vector< unsigned int > &point_numbers, const vecOfvec &point_coords,
+    voro::container* construct_container(const std::map< unsigned int, std::vector< FloatType > > &point_coords,
                                          const vecOfvec &bounds, std::vector< voro::wall_plane> &planes, double expand=1);
 
-    void evaluate_container_information(voro::container *container, integrateMap &points, std::map< unsigned int, FloatType > &boundary_node_volumes);
+    void evaluate_container_information(const std::map< unsigned int, std::vector< FloatType > > &positions,
+                                        const std::map< int, std::pair< std::vector< FloatType >, std::vector< FloatType > > > &bounding_faces,
+                                        voro::container *container, integrateMap &points, std::map< unsigned int,
+                                        FloatType > &boundary_node_volumes);
 
     void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices, const int &index, std::vector< double > &centroid);
 
@@ -498,6 +517,7 @@ namespace overlap{
     void perform_volume_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< double > &result);
     void perform_volume_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result);
     void perform_position_weighted_volume_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result);
+    void compute_surface_area(const std::vector< integrateMap > &weights, scalar_surface_map &surface_areas);
     void perform_surface_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, double > > &result);
     void perform_surface_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, std::vector< double > > > &result);
     #ifdef OVERLAP_LIBCOMPILE
