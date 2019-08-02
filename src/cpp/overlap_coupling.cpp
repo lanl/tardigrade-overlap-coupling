@@ -519,6 +519,7 @@ namespace overlap{
 //            std::cout << "gd: " << gd << "\n";
 //            (*mp).print();
             map_domain_to_voro(*mp, planes);
+            bounding_faces.clear();
             for (unsigned int i=0; i<(*mp).planes.size(); i++){
                 bounding_faces.emplace(-((*mp).planes[i]+1),
                                        std::pair< std::vector< FloatType >, std::vector< FloatType > >((*mp).normal(i), (*mp).face_centroids[i]));
@@ -533,10 +534,10 @@ namespace overlap{
                 map_planes_to_voro(dns_planes, planes, planes.size());
             }
 
-//            for (auto tmpit=bounding_faces.begin(); tmpit!=bounding_faces.end(); tmpit++){
-//                std::cout << tmpit->first << ": normal: "; elib::print(tmpit->second.first);
-//                std::cout << "   : point: "; elib::print(tmpit->second.second);
-//            }
+            for (auto tmpit=bounding_faces.begin(); tmpit!=bounding_faces.end(); tmpit++){
+                std::cout << tmpit->first << ": normal: "; elib::print(tmpit->second.first);
+                std::cout << "   : point: "; elib::print(tmpit->second.second);
+            }
 
             //Construct the container
             container = construct_container(positions, element_bounds, planes);
