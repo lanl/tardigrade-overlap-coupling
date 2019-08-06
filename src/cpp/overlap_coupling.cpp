@@ -534,10 +534,10 @@ namespace overlap{
                 map_planes_to_voro(dns_planes, planes, planes.size());
             }
 
-            for (auto tmpit=bounding_faces.begin(); tmpit!=bounding_faces.end(); tmpit++){
-                std::cout << tmpit->first << ": normal: "; elib::print(tmpit->second.first);
-                std::cout << "   : point: "; elib::print(tmpit->second.second);
-            }
+//            for (auto tmpit=bounding_faces.begin(); tmpit!=bounding_faces.end(); tmpit++){
+//                std::cout << tmpit->first << ": normal: "; elib::print(tmpit->second.first);
+//                std::cout << "   : point: "; elib::print(tmpit->second.second);
+//            }
 
             //Construct the container
             container = construct_container(positions, element_bounds, planes);
@@ -1542,19 +1542,23 @@ namespace overlap{
         }
     }
 
-    void compute_surface_area(const std::vector< integrateMap > &weights, scalar_surface_map &surface_area){
+    void compute_surface_area_normal(const std::vector< integrateMap > &weights,
+                                     scalar_surface_map &surface_area, vector_surface_map &surface_normal){
         /*!
-         * Compute the surface areas of each of the faces in the gauss domains
+         * Compute the surface areas and normals of each of the faces in the gauss domains
          * 
          * :param const std::vector< integrateMap > &weights: The weights of each of the nodes in true-space for each gauss point
          * :param scalar_surface_map &surface_area: The computed surface areas
+         * :param vector_surface_map &surface_normal: The computed surface normals
          */
 
         integrateMap::const_iterator itiM;
-        std::map< unsigned int, double >::iterator itr;
+        std::map< unsigned int, double >::iterator itr_sa;
+        std::map< unsigned int, std::vector< double > >::iterator itr_sn;
 
         //Initialize the surface_area vector
         surface_area.resize(weights.size());
+        surface_normal.resize(weights.size());
 
         //Loop over the gauss domains
         for (unsigned int gp=0; gp<weights.size(); gp++){
@@ -1565,19 +1569,37 @@ namespace overlap{
                 //Loop over the planes
                 for (unsigned int j=0; j<itiM->second.planes.size(); j++){
 
-                    itr = surface_area[gp].find(itiM->second.planes[j]);
+                    itr_sa = surface_area[gp].find(itiM->second.planes[j]);
+                    itr_sn = surface_normal[gp].find(itiM->second.planes[j]);
 
                     //Insert the plane if new
-                    if (itr == surface_area[gp].end()){
+                    if (itr_sa == surface_area[gp].end()){
                         surface_area[gp].emplace(itiM->second.planes[j], itiM->second.area(j));
+                        surface_normal[gp].emplace(itiM->second.planes[j], itiM->second.das[j]);
                     }
                     //Add to the plane if it exists already
                     else{
-                        itr->second += itiM->second.area(j);
+                        itr_sa->second += itiM->second.area(j);
+                        for (unsigned int i=0; i<itr_sn->second.size(); i++){itr_sn->second[i] += itiM->second.das[j][i];}
                     }
                 }
             }
+
+//            std::cout << "gp: " << gp << "\n";
+            for (auto ittmp = surface_normal[gp].begin(); ittmp!=surface_normal[gp].end(); ittmp++){
+                auto area = surface_area[gp].find(ittmp->first);
+                if (area == surface_area[gp].end()){
+                    std::cout << "Error: surface area for normal plane not found\n";
+                    assert(1==0);
+                }
+                else{
+//                    std::cout << " face: " << ittmp->first << "area: " << area->second << " , da: "; elib::print(ittmp->second);
+                    for (unsigned int i=0; i<ittmp->second.size(); i++){ittmp->second[i] /= area->second;}
+                }
+            }
         }
+
+
         return;
     }
 
@@ -1630,12 +1652,12 @@ namespace overlap{
 
     void perform_surface_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, std::vector< double > > > &result){
         /*!
-        Perform the surface integration of a scalar value. Returns the integrated value at each of the surface of the gauss points
-
-        :param std::map< unsigned int, double > &values: The values at each of the micro-points
-        :param std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point
-        :param std::vector< std::map< unsigned int, double > > result: The result of the integration over each of the faces
-        */
+         * Perform the surface integration of a scalar value. Returns the integrated value at each of the surface of the gauss points
+         * 
+         * :param std::map< unsigned int, double > &values: The values at each of the micro-points
+         * :param std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point
+         * :param std::vector< std::map< unsigned int, std::vector< double > > > result: The result of the integration over each of the faces
+         */
 
         //Set up an iterator for the value map
         std::map< unsigned int, std::vector< double > >::const_iterator itv;
@@ -1676,6 +1698,70 @@ namespace overlap{
                     }
                 }
             }
+        }
+    }
+
+    void perform_symmetric_tensor_surface_traction_integration(const std::map< unsigned int, std::vector< double > > &tensor, 
+                                                               const std::vector< integrateMap > &weights,
+                                                               std::vector< std::map< unsigned int, std::vector< double > > > &result){
+        /*!
+         * Integrate the fluxes of the symmetric tensor over the surfaces (assumes 3D) return will be a traction weighted by the area
+         * 
+         * :param const std::map< unsigned int, std::vector< double > > &tensor: The symmetric tensors in voigt notation i.e.
+         *     tensor = t11, t22, t33, t23, t13, t12
+         * :param std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point
+         * :param std::vector< std::map< unsigned int, double > > result: The result of the integration over each of the faces
+         */
+        
+        //Set up an iterator for the value map
+        std::map< unsigned int, std::vector< double > >::const_iterator itv; //The tensor value iterator
+        integrateMap::const_iterator itiM; //The integration map iterator
+        std::map< unsigned int, std::vector< double > >::iterator itr; //The result iterator
+
+        //Initialize the result vector
+        result.resize(weights.size());
+
+        //Loop over the gauss points
+        for (unsigned int gp=0; gp<weights.size(); gp++){
+        
+           //Loop over the micro-node weights
+           for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
+
+               //Find the value of the function at the current node
+               itv = tensor.find(itiM->first);
+               if (itv == tensor.end()){
+                   std::cout << "Error: node " << itiM->first << " not found in values\n";
+                   assert(1==0);
+               }
+
+               //Loop over the planes
+               for (unsigned int j=0; j<itiM->second.planes.size(); j++){
+                   itr = result[gp].find(itiM->second.planes[j]);
+
+                   //Compute the traction - Assumes 3D
+                   std::vector< double > traction = std::vector< FloatType >(3, 0);
+                   traction[0] = itiM->second.das[j][0]*itv->second[0]
+                                +itiM->second.das[j][1]*itv->second[5]
+                                +itiM->second.das[j][2]*itv->second[4];
+
+                   traction[1] = itiM->second.das[j][0]*itv->second[5]
+                                +itiM->second.das[j][1]*itv->second[1]
+                                +itiM->second.das[j][2]*itv->second[3];
+
+                   traction[2] = itiM->second.das[j][0]*itv->second[4]
+                                +itiM->second.das[j][1]*itv->second[3]
+                                +itiM->second.das[j][2]*itv->second[2];
+
+                   //Insert the plane if new
+                   if (itr == result[gp].end()){
+                       result[gp].emplace(itiM->second.planes[j], traction);
+                   }
+                   //Add to the plane if it exists already
+                   else{
+                       for (unsigned int i=0; i<traction.size(); i++){ itr->second[i] += traction[i];}
+                   }
+               }
+           }
         }
     }
 
@@ -2680,7 +2766,9 @@ namespace overlap{
 
 //        std::cout << "compute volume\n";
         compute_volume();
-        compute_surface_area();
+//        std::cout << "compute surface area normal\n";
+        compute_surface_area_normal();
+//        std::cout << "compute density\n";
 //        std::cout << "compute density\n";
         compute_density(micro_density);
 //        std::cout << "compute center of mass\n";
@@ -2707,12 +2795,12 @@ namespace overlap{
         return 0;
     }
 
-    int MicromorphicFilter::compute_surface_area(){
+    int MicromorphicFilter::compute_surface_area_normal(){
         /*!
-         * Compute the surface areas of each of the filter's gauss domains
+         * Compute the surface areas and average normals of each of the filter's gauss domains
          */
 
-        overlap::compute_surface_area(material_weights, surface_area);
+        overlap::compute_surface_area_normal(material_weights, surface_area, surface_normal);
         return 0;
     }
 
@@ -2764,10 +2852,23 @@ namespace overlap{
         /*!
          * Compute the symmetric microstress (i.e. the volume average of the micro-scale's Cauchy stress)
          * 
-         * :param const std::map< unsigned int, std::vector< double > > &micro_cauchy:
+         * :param const std::map< unsigned int, std::vector< double > > &micro_cauchy: The micro-scale cauchy stresses. It is 
+         *     assumed they are symmetric and stored in the form (s11, s22, s33, s23, s13, s12)
          */
         
         perform_volume_integration(micro_cauchy, material_weights, symmetric_microstress);
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_stress_fluxes(const std::map< unsigned int, std::vector< double > > &micro_cauchy){
+        /*!
+         * Compute the stress fluxes through the each of the surfaces of the gauss points.
+         * 
+         * :param const std::map< unsigned int, std::vector< double > > &micro_cauchy: The micro-scale cauchy stresses. It is 
+         *     assumed they are symmetric and stored in the form (s11, s22, s33, s23, s13, s12)
+         */
+
+        perform_symmetric_tensor_surface_traction_integration(micro_cauchy, material_weights, stress_fluxes);
         return 0;
     }
 
@@ -3117,6 +3218,14 @@ namespace overlap{
             for (auto it=surface_area[gp].begin(); it!=surface_area[gp].end(); it++){
                 file << "   " << it->first << ", " << it->second << "\n";
             }
+            file << "  *SURFACE NORMALS (plane, N1, N2, ...)\n";
+            for (auto it=surface_normal[gp].begin(); it!=surface_normal[gp].end(); it++){
+                file << "   " << it->first;
+                for (unsigned int i=0; i<it->second.size(); i++){
+                    file << ", " << it->second[i];
+                }
+                file << "\n";
+            }
             file << "  *DENSITY, " << density[gp] << "\n";
             file << "  *LOCAL MASS CENTER, ";
             for (unsigned int i=0; i<local_center_of_mass[gp].size(); i++){
@@ -3146,6 +3255,8 @@ namespace overlap{
         micro_material_local_coordinates.clear();
         dof_weights.clear();
         material_weights.clear();
+        surface_area.clear();
+        surface_normal.clear();
         return 0;
     }
 

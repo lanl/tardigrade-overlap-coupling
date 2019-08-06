@@ -48,16 +48,28 @@ def rotation_matrix(random=True, angles=None):
 
 def stress(x, t):
     principal = np.diag([2.0*x[0], 0.0, 0.0])*t
-    Q = rotation_matrix()
-    return Q.dot(principal).dot(Q.T)
+
+    #Rotate the principle axes of the stress by some random amount
+    #To introduce heterogeneity into the stress field
+    Qrand = rotation_matrix()
+    stress = Qrand.dot(principal).dot(Qrand)
+
+    #Rotate the stress by the body rotation
+    Qbody= body_rotation(x, t)
+
+    return Qbody.dot(stress).dot(Qbody.T)
 
 def voigt(A):
     order = [(0, 0), (1, 1), (2, 2), (1, 2), (0, 2), (0, 1), (2, 1), (2, 0), (1, 0)]
     return np.array([A[i,j] for i,j in order])
 
-def transformation(x, t):
+def body_rotation(x, t):
     angles = t*np.array([np.pi/2, -np.pi/5, np.pi/3])
-    Q = rotation_matrix(random=False, angles=angles)
+    return rotation_matrix(random=False, angles=angles)
+
+def transformation(x, t):
+    Q = body_rotation(x, t)
+
     C = t*np.array([[ 1.00,  0.20, -0.05],\
                     [ 0.20, -0.40, -0.20],\
                     [-0.05, -0.20, -0.10]]) + np.eye(3);

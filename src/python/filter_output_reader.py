@@ -71,6 +71,7 @@ class GaussPointInformation(object):
         self.local_mass_center = [] #The local mass center associated with the gauss point
         self.global_mass_center = [] #The global mass center associated with the gauss point
         self.surface_area = [] #The surface area of the faces associated with the gauss point
+        self.surface_normal = [] #The average normal of the faces associated with the gauss point
         
     def __repr__(self, offset=0):
         out_str = " "*offset + "Gauss Point Information\n"
@@ -116,6 +117,16 @@ class GaussPointInformation(object):
                 out_str += " "*offset + "  "
                 out_str += "{0:3d} : ".format(key)
                 out_str += "{0:1.4f}\n".format(sa[key])
+            out_str += "\n"
+            
+        out_str += " "*offset + " Surface Normals:\n";
+        for sn in self.surface_normal:
+            for key in sn.keys():
+                out_str += " "*offset + "  "
+                out_str += "{0:3d} : ".format(key)
+                for sni in sn[key]:
+                    out_str += "{0:+1.4f}, ".format(sni)
+                out_str += "\n"
             out_str += "\n"
         
         return out_str
@@ -198,6 +209,12 @@ def read_output_data(output_fn):
             faces = (surface_areas[:, 0]+0.5).flatten().astype(int)
             values = surface_areas[:, 1:].flatten()
             gpinfo.surface_area.append(dict([(f, v) for f, v in zip(faces, values)]))
+            
+        elif "*SURFACE NORMALS" in sline[0]:
+            surface_normals = read_values(of)
+            faces = (surface_normals[:, 0]+0.5).flatten().astype(int)
+            values = surface_normals[:, 1:]
+            gpinfo.surface_normal.append(dict([(f, v) for f, v in zip(faces, values)]))
             
         elif "*" in sline[0]:
             print("Warning: unknown keyword detected")

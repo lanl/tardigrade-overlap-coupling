@@ -447,12 +447,13 @@ namespace overlap{
             //Mass/geometric properties
             elib::vec volume;
             scalar_surface_map surface_area;
+            vector_surface_map surface_normal;
             elib::vec density;
             elib::vecOfvec local_center_of_mass;
             elib::vecOfvec center_of_mass;
 
             int compute_volume();
-            int compute_surface_area();
+            int compute_surface_area_normal();
             int compute_density(const std::map< unsigned int, double > &micro_density);
             int compute_centers_of_mass(const std::map< unsigned int, double > &micro_density);
 
@@ -461,8 +462,10 @@ namespace overlap{
 
             //Stress properties
             int compute_symmetric_microstress(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
+            int compute_stress_fluxes(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
             
             vecOfvec symmetric_microstress;
+            std::vector< std::map< unsigned int, std::vector< FloatType > > > stress_fluxes;
 
     };
     
@@ -520,6 +523,9 @@ namespace overlap{
     void compute_surface_area(const std::vector< integrateMap > &weights, scalar_surface_map &surface_areas);
     void perform_surface_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, double > > &result);
     void perform_surface_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, std::vector< double > > > &result);
+    void perform_symmetric_tensor_surface_traction_integration(const std::map< unsigned int, std::vector< double > > &tensor, 
+                                                               const std::vector< integrateMap > &weights,
+                                                               std::vector< std::map< unsigned int, std::vector< double > > > &result);
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,
                                     const std::map< unsigned int, unsigned int >* dns_node_to_col_map,
