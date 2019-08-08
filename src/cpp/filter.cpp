@@ -593,9 +593,13 @@ namespace filter{
         return 0;
     }
 
-    int assemble_micro_density(const elib::vecOfvec &data, const input_format mp_format, std::map< unsigned int, double > &micro_density){
+    int assemble_micro_density(const elib::vecOfvec &data, const input_format &mp_format, std::map< unsigned int, double > &micro_density){
         /*!
          * Assemble the micro-density map for use in homogenizing the density
+         * 
+         * :const elib::vecOfvec &data: The data array read from the DNS file
+         * :const input_format &mp_format: The format of the material point lines
+         * :std::map< unsigned int, double > &micro_density: The extracted data
          */
         
         auto idit = mp_format.find("ID");
@@ -611,6 +615,38 @@ namespace filter{
 
             if ((unsigned int)((*dataline)[0]+0.5) == 1){
                 micro_density.emplace((*dataline)[ idit->second[0] ], (*dataline)[ densityit->second[0] ]);
+            }
+        }
+        return 0;
+    }
+
+    int assemble_micro_stress(const elib::vecOfvec &data, const input_format &mp_format,
+                              std::map< unsigned int, std::vector< double > > &micro_stress){
+        /*!
+         * Assemble the micro-stress map for use in computing the micromorphic stress measures
+         * 
+         * :const elib::vecOfvec &data: The data array read from the DNS file
+         * :const input_format &mp_format: The format of the material point lines
+         * :std::map< unsigned int, std::vector< double > > &micro_stress: The extracted data
+         */
+
+        auto idit = mp_format.find("ID");
+        auto stressit = mp_format.find("STRESS");
+
+        if ((idit == mp_format.end()) || (stressit == mp_format.end())){
+            std::cout << "MPFORMAT:\n"; print(mp_format);
+            std::cerr << "Error: stress or id not defined in *MPFORMAT\n";
+            return 1;
+        }
+
+        for (auto dataline = data.begin(); dataline!=data.end(); dataline++){
+
+            if ((unsigned int)((*dataline)[0]+0.5) == 1){
+                std::vector< double > stress(stressit->second[1]);
+                for (unsigned int i=0; i<stressit->second[1]; i++){
+                    stress[i] = (*dataline)[stressit->second[0]+i];
+                }
+                micro_stress.emplace((*dataline)[ idit->second[0] ], stress);
             }
         }
         return 0;
@@ -802,6 +838,15 @@ namespace filter{
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             std::cout << "filter: " << filter->first << "\n";
             filter->second.compute_mass_properties(micro_density);
+        }
+
+        //Compute the stress properties of the filters
+        std::cout << "Computing Stress Properties\n";
+        std::map< unsigned int, std::vector< double > > micro_stress;
+        assemble_micro_stress(data, mp_format, micro_stress);
+        
+        for (auto filter=filters.begin(); filter!=filters.end(); filter++){
+            filter->second.compute_stress_properties(micro_stress);
         }
 
         //Construct the shapefunction matrix if required

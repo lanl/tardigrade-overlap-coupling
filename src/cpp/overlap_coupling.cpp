@@ -2764,16 +2764,27 @@ namespace overlap{
          * :param std::map< unsigned int , double> &density: The densities of the micro points
          */
 
-//        std::cout << "compute volume\n";
         compute_volume();
-//        std::cout << "compute surface area normal\n";
         compute_surface_area_normal();
-//        std::cout << "compute density\n";
-//        std::cout << "compute density\n";
         compute_density(micro_density);
-//        std::cout << "compute center of mass\n";
         compute_centers_of_mass(micro_density);
         return 0;
+    }
+
+    int MicromorphicFilter::compute_stress_properties(const std::map< unsigned int, std::vector< double > > &micro_stress){
+        /*!
+         * Compute the stress properties of the homogenized DNS.
+         * 
+         * :param std::map< unsigned int, std::vector< double > > &micro_stress: The stresses of the micro-points.
+         */
+
+         compute_symmetric_microstress(micro_stress);
+         compute_traction(micro_stress);
+         construct_cauchy_normal_matrix();
+//         std::cout << "linear_momentum_A:\n" << linear_momentum_A << "\n";
+//
+//         assert(1==0);
+         return 0;
     }
 
     int MicromorphicFilter::compute_volume(){
@@ -2857,18 +2868,48 @@ namespace overlap{
          */
         
         perform_volume_integration(micro_cauchy, material_weights, symmetric_microstress);
+
+        //Divide by the volume
+        for (unsigned int gp=0; gp<symmetric_microstress.size(); gp++){
+            for (unsigned int i=0; i<symmetric_microstress[gp].size(); i++){symmetric_microstress[gp][i] /= volume[gp];}
+        }
+
         return 0;
     }
 
-    int MicromorphicFilter::compute_stress_fluxes(const std::map< unsigned int, std::vector< double > > &micro_cauchy){
+    int MicromorphicFilter::compute_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy){
         /*!
-         * Compute the stress fluxes through the each of the surfaces of the gauss points.
+         * Compute the traction of the micro-cauchy stress through the each of the surfaces of the gauss points.
          * 
          * :param const std::map< unsigned int, std::vector< double > > &micro_cauchy: The micro-scale cauchy stresses. It is 
          *     assumed they are symmetric and stored in the form (s11, s22, s33, s23, s13, s12)
          */
 
-        perform_symmetric_tensor_surface_traction_integration(micro_cauchy, material_weights, stress_fluxes);
+        perform_symmetric_tensor_surface_traction_integration(micro_cauchy, material_weights, traction);
+
+        //Divide by the surface area
+        for (unsigned int gp=0; gp<traction.size(); gp++){
+            for (auto face=traction[gp].begin(); face!=traction[gp].end(); face++){
+                auto area = surface_area[gp].find(face->first);
+                if (area == surface_area[gp].end()){
+                    std::cerr << "Error: face " << face->first << "not found in surface areas\n";
+                    assert(1==0);
+                }
+                for (unsigned int i=0; i<face->second.size(); i++){
+                    face->second[i] /= area->second;
+                }
+            }
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::construct_cauchy_normal_matrix(){
+        /*!
+         * Construct the normal matrix that when dotted with the vector of the Cauchy stress at the gauss domain 
+         * CGs will produce the surface tractions
+         */
+
+        overlap::construct_cauchy_normal_matrix(surface_normal, linear_momentum_A);
         return 0;
     }
 
@@ -3237,6 +3278,18 @@ namespace overlap{
                 file << center_of_mass[gp][i] << ", ";
             }
             file << "\n";
+            file << "  *SYMMETRIC MICROSTRESS\n";
+            file << "   ";
+            for (unsigned int i=0; i<symmetric_microstress[gp].size(); i++){
+                if (i==0){
+                    file << symmetric_microstress[gp][i];
+                }
+                else{
+                    file << ", " << symmetric_microstress[gp][i];
+                }
+            }
+            file << "\n";
+            
         }
         file.flush();
         return 0;
@@ -3255,8 +3308,20 @@ namespace overlap{
         micro_material_local_coordinates.clear();
         dof_weights.clear();
         material_weights.clear();
+
+        //Clear average quantities
+
+        //Mass and geometry
+        volume.clear();
         surface_area.clear();
         surface_normal.clear();
+        density.clear();
+        local_center_of_mass.clear();
+        center_of_mass.clear();
+
+        //Stresses
+        symmetric_microstress.clear();
+        traction.clear();
         return 0;
     }
 
@@ -3292,5 +3357,125 @@ namespace overlap{
         std::vector< double > d = subtract(p, a);
         double distance = dot(d, n);
         return fuzzy_equals(distance, 0);
+    }
+
+    void construct_cauchy_normal_matrix(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
+                                        Eigen::MatrixXd &A){
+        /*!
+         * Construct the normal matrix which can project the Cauchy stresses at the Gauss points to the tractions on each of the 
+         * surfaces. Assumes a 3D Cauchy stress.
+         * 
+         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals: The vector of maps from the 
+         *     gauss domain's face number to the normal of that face.
+         * :param Eigen::MatrixXd &A: The normal matrix
+         */
+        
+        //Determine the size of the A matrix
+        unsigned int nrows, ncols;
+        unsigned int nstress = 9;
+        unsigned int dim = 3;
+        nrows = 0;
+        ncols = nstress*surface_normals.size(); //9 components of the non-symmetric cauchy stress for each gauss point
+        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
+            nrows += dim*surface_normals[gp].size();
+
+        }
+
+        //Resize A
+        A = Eigen::MatrixXd(nrows, ncols);
+
+        //Iterate over the gauss points
+        unsigned int row0, col0;
+        row0 = col0 = 0;
+
+        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
+
+            for (auto face = surface_normals[gp].begin(); face != surface_normals[gp].end(); face++){
+                //Set the values in the A matrix
+                A(row0 + 0, col0 + 0) = face->second[0];
+                A(row0 + 0, col0 + 7) = face->second[2];
+                A(row0 + 0, col0 + 8) = face->second[1];
+                A(row0 + 1, col0 + 1) = face->second[1];
+                A(row0 + 1, col0 + 5) = face->second[0];
+                A(row0 + 1, col0 + 6) = face->second[2];
+                A(row0 + 2, col0 + 2) = face->second[2];
+                A(row0 + 2, col0 + 3) = face->second[1];
+                A(row0 + 2, col0 + 4) = face->second[0];
+
+                row0 += dim; //Increment row0
+            }
+            col0 += nstress; //Increment col0
+        }
+    }
+
+    void construct_linear_momentum_surface_external_force(
+             const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
+             const std::vector< std::map< unsigned int, std::vector< double > > > &face_tractions,
+             const std::vector< std::map< unsigned int, double > > &face_areas,
+             std::vector< double > &surface_external_force){
+        /*!
+         * Construct the surface force acting on the nodes of the finite element
+         * 
+         * :param const std::vector< std::map< unsigned int, double > > &face_shapefunctions: The shapefunctions at the 
+         *     gauss domain centroids.
+         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &face_tractions: The tractions on the 
+         *     gauss domain faces.
+         * :param const std::vector< std::map< unsigned int, double > > &face_areas: The areas of each of the gauss domain faces in 
+         *     global coordinates.
+         * :param std::vector< double > &surface_external_force: The external surface force vector
+         */
+
+        unsigned int dim = 3;
+        surface_external_force.clear();
+
+        //Make sure the incoming vectors have a non-zero size
+        unsigned int ngpts = face_shapefunctions.size();
+        if (ngpts == 0){
+            std::cerr << "Error: no gauss points defined in face_shapefunctions\n";
+            assert(1==0);
+        }
+        if (ngpts != face_tractions.size()){
+            std::cerr << "Error: face_tractions doesn't have as many gauss points as face_shapefunctions\n";
+            std::cerr << "       face_tractions.size(): " << face_tractions.size() << "\n";
+            std::cerr << "       face_shapefunctions.size(): " << ngpts << "\n";
+            assert(1==0);
+        }
+        if (ngpts != face_areas.size()){
+            std::cerr << "Error: face_areas doesn't have as many gauss points as face_shapefunctions\n";
+            std::cerr << "       face_areas.size(): " << face_areas.size() << "\n";
+            std::cerr << "       face_shapefunctions.size(): " << ngpts << "\n";
+            assert(1==0);
+        }
+
+        //Initialize the surface external force vector.
+        surface_external_force = std::vector< double >(dim*face_shapefunctions[0].begin()->second.size(), 0);
+
+        //Loop over the gauss points
+        for (unsigned int gp=0; gp<face_shapefunctions.size(); gp++){
+            //Loop over the faces
+            for (auto face=face_shapefunctions[gp].begin(); face!=face_shapefunctions[gp].end(); face++){
+                auto traction = face_tractions[gp].find(face->first);
+                auto area = face_areas[gp].find(face->first);
+
+                if (traction == face_tractions[gp].end()){
+                    std::cerr << "Error: Face " << face->first << " not found in tractions.\n";
+                    assert(1==0);
+                }
+                if (area == face_areas[gp].end()){
+                    std::cerr << "Error: Face " << face->first << " not found in areas.\n";
+                    assert(1==0);
+                }
+
+                //Iterate through the element's nodes
+                for (unsigned int n=0; n<face->second.size(); n++){
+                    //Loop over the tractions indices
+                    for (unsigned int i=0; i<traction->second.size(); i++){
+                        //N_node(x)*traction(x)*area
+                        surface_external_force[dim*n + i] += face->second[n]*traction->second[i]*area->second;
+                    }
+                }
+                
+            }
+        }
     }
 }

@@ -387,6 +387,9 @@ namespace overlap{
             int compute_mass_properties(const std::map< unsigned int, double > &micro_density);
             int get_cg_phis(elib::vecOfvec &cg_phis);
 
+            //Compute stress properties
+            int compute_stress_properties(const std::map< unsigned int, std::vector< double > > &micro_stress);
+
             //Construct the contributions to the shape-function matrix of the filter
             int add_shapefunction_matrix_contribution(const std::map< unsigned int, unsigned int > &macro_node_to_col,
                                                       const std::map< unsigned int, unsigned int > &micro_node_to_row,
@@ -452,8 +455,13 @@ namespace overlap{
             elib::vecOfvec local_center_of_mass;
             elib::vecOfvec center_of_mass;
 
+            Eigen::MatrixXd linear_momentum_A;
+
+            int construct_cauchy_normal_matrix();
+
             int compute_volume();
             int compute_surface_area_normal();
+            int form_cauchy_normal_matrix();
             int compute_density(const std::map< unsigned int, double > &micro_density);
             int compute_centers_of_mass(const std::map< unsigned int, double > &micro_density);
 
@@ -462,10 +470,10 @@ namespace overlap{
 
             //Stress properties
             int compute_symmetric_microstress(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
-            int compute_stress_fluxes(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
+            int compute_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
             
             vecOfvec symmetric_microstress;
-            std::vector< std::map< unsigned int, std::vector< FloatType > > > stress_fluxes;
+            std::vector< std::map< unsigned int, std::vector< FloatType > > > traction;
 
     };
     
@@ -497,9 +505,13 @@ namespace overlap{
     int normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3, std::vector< double > &normal, double tolr=1e-6, double tola=1e-6);
 
     void print_vertex(const vertex_t &vertex);
+
     void print_vector(const std::vector< FloatType > &vector);
+
     void print_matrix(const std::vector< std::vector< FloatType > > &matrix);
+
     void print_planeMap(const planeMap &planes);
+
     void print_coordinateMap(const std::map< unsigned int, std::vector< FloatType > > &coordinates);    
 
     void add_planes_to_container(std::vector< voro::wall_plane > &planes, voro::container &container);
@@ -512,20 +524,49 @@ namespace overlap{
                                         voro::container *container, integrateMap &points, std::map< unsigned int,
                                         FloatType > &boundary_node_volumes);
 
-    void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices, const int &index, std::vector< double > &centroid);
+    void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices,
+                            const int &index, std::vector< double > &centroid);
 
     void map_planes_to_voro(const planeMap &planes, std::vector< voro::wall_plane > &vplanes, int j=0);
+
     void map_domain_to_voro(const MicroPoint &domains, std::vector< voro::wall_plane > &vplanes);
+
     void apply_nansons_relation(const std::vector< double > &N, const double &JdA, const vecOfvec &Finv, std::vector< double > &nda);
-    void perform_volume_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< double > &result);
-    void perform_volume_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result);
-    void perform_position_weighted_volume_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::vector< double > > &result);
+
+    void perform_volume_integration( const std::map< unsigned int, double > &values,
+                                     const std::vector< integrateMap > &weights,
+                                      std::vector< double > &result);
+
+    void perform_volume_integration( const std::map< unsigned int, std::vector< double > > &values,
+                                     const std::vector< integrateMap > &weights,
+                                     std::vector< std::vector< double > > &result);
+
+    void perform_position_weighted_volume_integration( const std::map< unsigned int, double > &values,
+                                                       const std::vector< integrateMap > &weights,
+                                                       std::vector< std::vector< double > > &result);
+
     void compute_surface_area(const std::vector< integrateMap > &weights, scalar_surface_map &surface_areas);
-    void perform_surface_integration( const std::map< unsigned int, double > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, double > > &result);
-    void perform_surface_integration( const std::map< unsigned int, std::vector< double > > &values, const std::vector< integrateMap > &weights, std::vector< std::map< unsigned int, std::vector< double > > > &result);
+
+    void perform_surface_integration( const std::map< unsigned int, double > &values,
+                                      const std::vector< integrateMap > &weights,
+                                      std::vector< std::map< unsigned int, double > > &result);
+
+    void perform_surface_integration( const std::map< unsigned int, std::vector< double > > &values,
+                                      const std::vector< integrateMap > &weights,
+                                      std::vector< std::map< unsigned int, std::vector< double > > > &result);
+
     void perform_symmetric_tensor_surface_traction_integration(const std::map< unsigned int, std::vector< double > > &tensor, 
                                                                const std::vector< integrateMap > &weights,
                                                                std::vector< std::map< unsigned int, std::vector< double > > > &result);
+    void construct_cauchy_normal_matrix(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
+                                        Eigen::MatrixXd &A);
+
+    void construct_linear_momentum_surface_external_force(
+             const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
+             const std::vector< std::map< unsigned int, std::vector< double > > > &face_tractions,
+             const std::vector< std::map< unsigned int, double > > &face_areas,
+             std::vector< double > &surface_external_force);
+
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,
                                     const std::map< unsigned int, unsigned int >* dns_node_to_col_map,
@@ -538,6 +579,7 @@ namespace overlap{
                                     unsigned int num_micro_free,
                                     std::vector< T > &tripletList,
                                     unsigned int n_macro_dof=12, unsigned int n_micro_dof=3);
+
         void solve_for_projector(const SpMat &A, const SpMat &B, SpMat &X);
         SpMat form_sparsematrix(const std::vector< T > &tripletList, unsigned int nrows, unsigned int ncols, const bool &ignore_dup);
         SpMat extract_block(const SpMat &A, unsigned int start_row, unsigned int start_col, unsigned int nrows, unsigned int ncols);

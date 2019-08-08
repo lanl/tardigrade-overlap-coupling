@@ -47,12 +47,13 @@ def rotation_matrix(random=True, angles=None):
     return Rz.dot(Ry.dot(Rx))
 
 def stress(x, t):
-    principal = np.diag([2.0*x[0], 0.0, 0.0])*t
+#    principal = np.diag([2.0*x[0], 0.0, 0.0])*t
+    principal = np.diag([2, -1, 3])
 
     #Rotate the principle axes of the stress by some random amount
     #To introduce heterogeneity into the stress field
-    Qrand = rotation_matrix()
-    stress = Qrand.dot(principal).dot(Qrand)
+    Qrand = rotation_matrix(random=False, angles=np.zeros(3))
+    stress = Qrand.dot(principal).dot(Qrand.T)
 
     #Rotate the stress by the body rotation
     Qbody= body_rotation(x, t)
@@ -98,7 +99,7 @@ header += "of any true material. It exists merely to demonstrate the filter's\n"
 header += "capabilities.\n"
 f.write(header)
 
-input_format = "*MPFORMAT, ID, 1, 1, POSITION, 2, 3, DENSITY, 5, 1, STRESS, 7, 9\n"
+input_format = "*MPFORMAT, ID, 1, 1, POSITION, 2, 3, DENSITY, 5, 1, STRESS, 6, 9\n"
 input_format += "*DOFFORMAT, ID, 1, 1, POSITION, 2, 3\n"
 
 f.write(input_format)

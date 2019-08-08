@@ -39,7 +39,8 @@ namespace filter{
     int find_current_time_format1(std::ifstream &file, elib::vecOfvec &data, double &time);
 
     //!Data collection commands
-    int assemble_micro_density(const elib::vecOfvec &data, const input_format mp_format, std::map< unsigned int, double > &micro_density);
+    int assemble_micro_density(const elib::vecOfvec &data, const input_format &mp_format, std::map< unsigned int, double > &micro_density);
+    int assemble_micro_stress(const elib::vecOfvec &data, const input_format &mp_format, std::map< unsigned int, double > &micro_stress);
 
     int get_position(const elib::vec &dataline, const input_format &format, unsigned int &node_id, elib::vec &position);
 

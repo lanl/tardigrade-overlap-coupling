@@ -16,17 +16,20 @@ def read_values(datafile):
     kwdata = np.array([float(s) for s in sline])
         
     last_pos = datafile.tell()
+    #print(line)
     line = datafile.readline()
-    while not ("*" in line):
+    #print(line)
+    while ((line != "") and (not ("*" in line))):
         if (len(line)==0):
             last_pos = datafile.tell()
             line = datafile.readline().strip()
             continue
         sline = [v.strip() for v in line.split(',') if len(v.strip())>0]
         kwdata = np.vstack([kwdata, [float(s) for s in sline]])
-        x = datafile.tell()
+        #x = datafile.tell()
+        last_pos = datafile.tell()
         line = datafile.readline().strip()
-    datafile.seek(x)
+    datafile.seek(last_pos)
     return kwdata
 
 class MicromorphicFilterData(object):
@@ -66,12 +69,16 @@ class GaussPointInformation(object):
     A class which stores gauss point information
     """
     def __init__(self):
+        #Mass and Geometric properties
         self.volume = [] #The volume of the gauss domain
         self.density = [] #The density at the gauss point
         self.local_mass_center = [] #The local mass center associated with the gauss point
         self.global_mass_center = [] #The global mass center associated with the gauss point
         self.surface_area = [] #The surface area of the faces associated with the gauss point
         self.surface_normal = [] #The average normal of the faces associated with the gauss point
+        
+        #Stress properties
+        self.symmetric_microstress = []
         
     def __repr__(self, offset=0):
         out_str = " "*offset + "Gauss Point Information\n"
@@ -127,6 +134,13 @@ class GaussPointInformation(object):
                 for sni in sn[key]:
                     out_str += "{0:+1.4f}, ".format(sni)
                 out_str += "\n"
+            out_str += "\n"
+            
+        out_str += " "*offset + " Symmetric Microstress:\n";
+        for sm in self.symmetric_microstress:
+            out_str += " "*offset + "  "
+            for smi in sm:
+                out_str += "{0:+2.4e}, ".format(smi)
             out_str += "\n"
         
         return out_str
@@ -215,6 +229,10 @@ def read_output_data(output_fn):
             faces = (surface_normals[:, 0]+0.5).flatten().astype(int)
             values = surface_normals[:, 1:]
             gpinfo.surface_normal.append(dict([(f, v) for f, v in zip(faces, values)]))
+            
+        elif "*SYMMETRIC MICROSTRESS" in sline[0]:
+            sm = read_values(of)
+            gpinfo.symmetric_microstress.append(np.copy(sm));
             
         elif "*" in sline[0]:
             print("Warning: unknown keyword detected")
