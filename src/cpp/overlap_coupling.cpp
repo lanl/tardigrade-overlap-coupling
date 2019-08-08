@@ -2991,6 +2991,9 @@ namespace overlap{
          compute_couple_traction(micro_stress);
          construct_couple_least_squares();
          construct_first_moment_surface_external_couple();
+
+         std::cout << "surface_external_couple:\n"; print_vector(surface_external_couple);
+
          construct_first_moment_symm_cauchy_couple();
          construct_first_moment_constraint_matrix();
          //TODO: Add construction of body couple term
@@ -4315,11 +4318,18 @@ namespace overlap{
         //Add the surface external force to d
         d += Eigen::Map< const EigVec >(surface_external_couple.data(), nconstraints, 1);
 
+        std::cout << "d1:\n" << d << "\n";
+
         //Add the cauchy-symmetric microstress couple
         d += Eigen::Map< const EigVec >(symm_cauchy_couple.data(), nconstraints, 1);
 
+        if (((d == d).array()).all()){
+            std::cout << "d:\n" << d << "\n";
+        }
+
         //Add the body external couple to d
         if (body_external_couple.size() == nconstraints){
+            assert(1==2);
             d += Eigen::Map< const EigVec >(body_external_couple.data(), nconstraints, 1);
         }
         else if (body_external_couple.size() > 0){
@@ -4329,6 +4339,7 @@ namespace overlap{
 
         //Subtract the kinetic couple from d
         if (kinetic_couple.size() == nconstraints){
+            assert(2==3);
             d -= Eigen::Map< const EigVec>(kinetic_couple.data(), nconstraints, 1);
         }
         else if (kinetic_couple.size() > 0){
