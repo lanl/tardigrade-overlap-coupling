@@ -65,8 +65,7 @@ namespace elib{
             void get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
                                      vecOfvec &value);
 
-            void get_global_shapefunction_gradient(const vec &local_coordinates, const int& node,
-                                                   vec &value);
+            void get_global_shapefunction_gradients(const vec &local_coordinates, vecOfvec &dNdx, bool use_reference = false);
 
             void get_jacobian(const vec &local_coordinates, const vecOfvec &reference_coordinates,
                               vecOfvec &jacobian);
@@ -77,7 +76,7 @@ namespace elib{
                                           double tolr=1e-9, double tola=1e-9, unsigned int maxiter=20, unsigned int maxls=5);
 
             virtual void get_shape_functions(const vec &local_coordinates, vec &result){} //Must be over-ridden
-            virtual void get_local_grad_shape_functions(const vec &local_coordiantes, vecOfvec &result){} //Must be over-ridden
+            virtual void get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result){} //Must be over-ridden
             virtual bool local_point_inside(const vec &local_coordinates, const double tol=1e-9){return false;} //Must be over-ridden
 
             bool bounding_box_contains_point(const vec &x);

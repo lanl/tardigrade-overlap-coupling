@@ -201,6 +201,42 @@ namespace elib{
         return;
     }
 
+    void Element::get_global_shapefunction_gradients(const vec &local_coordinates, vecOfvec &dNdx, bool use_reference){
+        /*!
+         * Compute the gradient of the shape functions w.r.t. the global coordinates.
+         * 
+         * :param const vec &local_coordinates: The local coordinates at which to 
+         *     compute the shape function gradients.
+         * :param vecOfvec &dNdx: The gradients of the shape functions in the global
+         *     reference frame.
+         * :param bool &use_reference: Boolean indicating if the reference coordinates should be used
+         */
+
+        vecOfvec dNdxi, dxdxi, dxidx;
+        get_local_grad_shape_functions(local_coordinates, dNdxi);
+
+        if (use_reference){
+            get_local_gradient(reference_nodes, local_coordinates, dxdxi);
+        }
+
+        else{
+            get_local_gradient(nodes, local_coordinates, dxdxi);
+        }
+
+        invert(dxdxi, dxidx);
+
+        dNdx.resize(nodes.size());
+        for (unsigned int n=0; n<nodes.size(); n++){
+            dNdx[n] = std::vector< double >(nodes[n].size(), 0);
+            for (unsigned int i=0; i<nodes[n].size(); i++){
+                for (unsigned int j=0; j<dxidx.size(); j++){
+                    dNdx[n][i] += dNdxi[n][j]*dxidx[j][i];
+                }
+            }
+        }
+        return; 
+    }
+
     void Element::get_global_gradient(const vec &nodal_values, const vec &local_coordinates,
                                       vec &value){
         /*!

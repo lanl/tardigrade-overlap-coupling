@@ -430,6 +430,62 @@ int test_interpolate(elib::Element &element, std::ofstream &results){
     return 0;
 }
 
+int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &local_test_point, std::ofstream &results){
+    /*!
+     * Test the computation of the gradient of the shape functions w.r.t. the global coordinates.
+     * 
+     * :param elib::Element element: The element to be tested
+     * :param elib::vec local_test_point: A point in local coordinates to use as the test point.
+     * :param std::ofstream &results: The output file to write the results to
+     */
+    
+    double eps = 1e-6;
+
+    elib::vec global_test_point;
+    element.interpolate(element.nodes, local_test_point, global_test_point);
+    
+    elib::vec delta = global_test_point;
+    elib::vec xtmp, xi, N0, Ntmp;
+    elib::vecOfvec dNdx_num(element.nodes.size());
+    for (unsigned int n=0; n<dNdx_num.size(); n++){
+        dNdx_num[n] = elib::vec(element.nodes[n].size(), 0);
+    }
+
+    //Compute the initial value of xi
+    element.compute_local_coordinates(global_test_point, xi);
+
+    //Compute the initial values of the shape functions
+    element.get_shape_functions(xi, N0);
+
+    for (unsigned int i=0; i<element.nodes[0].size(); i++){
+
+        //Perturb the global coordinates
+        delta[i] *= 1+eps;
+
+        //Compute the local coordinates of the perturbed global coordinates
+        element.compute_local_coordinates(delta, xi);
+        
+        //Compute the new shape-function values
+        element.get_shape_functions(xi, Ntmp);
+
+        //Set the values of the estimated gradient
+        for (unsigned int n=0; n<Ntmp.size(); n++){dNdx_num[n][i] = (Ntmp[n] - N0[n])/(global_test_point[i]*eps);}
+
+        delta[i] /= 1+eps;
+    }
+
+    elib::vecOfvec dNdx;
+    element.get_global_shapefunction_gradients(local_test_point, dNdx);
+
+    if (!fuzzy_equals(dNdx_num, dNdx)){
+        results << element.name.c_str() << "_test_get_global_shapefunction_gradients & False\n";
+        return 1;
+    }
+
+    results << element.name.c_str() << "_test_get_global_shapefunction_gradients & True\n";
+    return 0;
+}
+
 int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     /*!
     Test the computation of the gradient with respect to the local coordinates
@@ -741,7 +797,7 @@ int test_build_element_from_string(elib::Element &element, std::ofstream &result
     return 0;
 }
 
-int test_element_functionality(elib::Element &element, elib::vec &xtest, bool isoutside, std::ofstream &results){
+int test_element_functionality(elib::Element &element, elib::vec &global_test_point, bool isoutside, std::ofstream &results){
     /*!
     Test the provided element's functionality
 
@@ -751,13 +807,22 @@ int test_element_functionality(elib::Element &element, elib::vec &xtest, bool is
     */
 
     test_interpolate(element, results);
-    test_get_local_gradient(element, results);
+    if (!isoutside){
+        test_get_local_gradient(element, results);
+    }
     test_get_global_gradient(element, results);
-    test_compute_local_coordinates(element, xtest, isoutside, results);
+    test_compute_local_coordinates(element, global_test_point, isoutside, results);
     test_get_jacobian(element, results);
     test_bounding_box_contains_point(element, results);
     test_contains_point(element, results);
     test_build_element_from_string(element, results);
+    if (!isoutside){
+        elib::vec local_test_point;
+        int clc_result = element.compute_local_coordinates(global_test_point, local_test_point);
+        if (clc_result == 0){
+            test_get_global_shapefunction_gradients(element, local_test_point, results);
+        }
+    }
 
     return 0;
 }
