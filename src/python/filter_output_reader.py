@@ -79,6 +79,7 @@ class GaussPointInformation(object):
         
         #Stress properties
         self.symmetric_microstress = []
+        self.cauchy_stress = []
         
     def __repr__(self, offset=0):
         out_str = " "*offset + "Gauss Point Information\n"
@@ -143,6 +144,13 @@ class GaussPointInformation(object):
                 out_str += "{0:+2.4e}, ".format(smi)
             out_str += "\n"
         
+        out_str += " "*offset + " Cauchy Stress:\n";
+        for cs in self.cauchy_stress:
+            out_str += " "*offset + "  "
+            for csi in cs:
+                out_str += "{0:+2.4e}, ".format(csi)
+            out_str += "\n"
+
         return out_str
         
 def read_output_data(output_fn):
@@ -233,6 +241,10 @@ def read_output_data(output_fn):
         elif "*SYMMETRIC MICROSTRESS" in sline[0]:
             sm = read_values(of)
             gpinfo.symmetric_microstress.append(np.copy(sm));
+
+        elif "*CAUCHY STRESS" in sline[0]:
+            cs = read_values(of)
+            gpinfo.cauchy_stress.append(np.copy(cs))
             
         elif "*" in sline[0]:
             print("Warning: unknown keyword detected")

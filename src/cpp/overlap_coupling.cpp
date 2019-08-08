@@ -2662,6 +2662,8 @@ namespace overlap{
 //        material_overlap.compute_weights(material_id_numbers, micro_material_local_coordinates, material_weights, use_dns_bounds);
         material_overlap.compute_weights(micro_material_local_coordinates, material_weights, use_dns_bounds);
 
+        //Compute the shapefunctions at the gauss domain face centroids
+        compute_face_centroid_shapefunctions();
 
         //Transform the volumes and normals
         elib::vecOfvec jacobian;
@@ -2768,6 +2770,7 @@ namespace overlap{
         compute_surface_area_normal();
         compute_density(micro_density);
         compute_centers_of_mass(micro_density);
+        compute_com_shapefunction_gradients();
         return 0;
     }
 
@@ -2780,11 +2783,44 @@ namespace overlap{
 
          compute_symmetric_microstress(micro_stress);
          compute_traction(micro_stress);
-         construct_cauchy_normal_matrix();
-//         std::cout << "linear_momentum_A:\n" << linear_momentum_A << "\n";
-//
-//         assert(1==0);
+         construct_cauchy_least_squares();
+         construct_linear_momentum_surface_external_force();
+         construct_linear_momentum_constraint_matrix();
+         construct_linear_momentum_d_vector();
+         compute_cauchy_stress();
          return 0;
+    }
+
+    int MicromorphicFilter::construct_linear_momentum_d_vector(){
+        /*!
+         * Construct the d vector for the constrained least squares calculation 
+         * of the cauchy stress
+         */
+
+        overlap::construct_linear_momentum_d_vector(linear_momentum_C.rows(),
+                                                    surface_external_force, body_external_force, kinetic_force,
+                                                    linear_momentum_d);
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_cauchy_stress(){
+        /*!
+         * Compute the Cauchy stress using a constrained least squares technique
+         */
+
+        Eigen::MatrixXd x;
+        solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, linear_momentum_C, linear_momentum_d, x);
+
+        //Extract the Cauchy stresses
+        cauchy_stress.resize(symmetric_microstress.size());
+        unsigned int nstress = x.rows()/cauchy_stress.size();
+        for (unsigned int gp=0; gp<cauchy_stress.size(); gp++){
+            cauchy_stress[gp].resize(nstress);
+            for (unsigned int i=0; i<nstress; i++){
+                cauchy_stress[gp][i] = x(nstress*gp + i);
+            }
+        }
+        return 0;
     }
 
     int MicromorphicFilter::compute_volume(){
@@ -2849,12 +2885,15 @@ namespace overlap{
         
 //        std::cout << "computing local coordinates\n";
         local_center_of_mass.resize(center_of_mass.size());
+        com_shapefunction_values.resize(center_of_mass.size());
         for (unsigned int gp=0; gp<density.size(); gp++){
             for (unsigned int i=0; i<center_of_mass[gp].size(); i++){
                 center_of_mass[gp][i] /= volume[gp]*density[gp];
             }
             element->compute_local_coordinates(center_of_mass[gp], local_center_of_mass[gp]);
+            element->get_shape_functions(local_center_of_mass[gp], com_shapefunction_values[gp]);
         }
+
 
         return 0;
     }
@@ -2903,13 +2942,68 @@ namespace overlap{
         return 0;
     }
 
-    int MicromorphicFilter::construct_cauchy_normal_matrix(){
+    int MicromorphicFilter::construct_cauchy_least_squares(){
         /*!
          * Construct the normal matrix that when dotted with the vector of the Cauchy stress at the gauss domain 
-         * CGs will produce the surface tractions
+         * CGs will produce the surface traction vector b;
          */
 
-        overlap::construct_cauchy_normal_matrix(surface_normal, linear_momentum_A);
+        overlap::construct_cauchy_least_squares(surface_normal, traction, linear_momentum_A, linear_momentum_b);
+        return 0;
+    }
+
+    int MicromorphicFilter::construct_linear_momentum_surface_external_force(){
+        /*!
+         * Construct the external force applied on the surfaces of the gauss domains.
+         */
+         overlap::construct_linear_momentum_surface_external_force(face_shapefunctions, traction,
+                                                                   surface_area, surface_external_force);
+         return 0;
+    }
+
+    int MicromorphicFilter::construct_linear_momentum_constraint_matrix(){
+        /*!
+         * Construct the constraint matrix for the balance of linear momentum.
+         */
+
+        overlap::construct_linear_momentum_constraint_matrix(com_shapefunction_gradients, volume, linear_momentum_C);
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_face_centroid_shapefunctions(){
+        /*!
+         * Compute the shapefunction values at the centroids of the gauss-domain faces
+         */
+
+        //Get a reference to the gauss domains
+        const std::vector< MicroPoint >* gauss_domains = material_overlap.get_gauss_domains();
+
+        //Initialize the face_shapefunctions vector
+        face_shapefunctions.resize(gauss_domains->size());
+
+        //Loop over the gauss domains
+        unsigned int index = 0;
+        for (auto domain = gauss_domains->begin(); domain!=gauss_domains->end(); domain++){
+            for (unsigned int fc=0; fc<(*domain).face_centroids.size(); fc++){
+                std::vector< FloatType > fc_shapefunctions;
+                element->get_shape_functions((*domain).face_centroids[fc], fc_shapefunctions);
+                face_shapefunctions[index].emplace((*domain).planes[fc], fc_shapefunctions);
+            }
+            index++;
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_com_shapefunction_gradients(){
+        /*!
+         * Compute the global gradients of the shapefunctions at the centers of mass
+         */
+        
+        com_shapefunction_gradients.resize(local_center_of_mass.size());
+
+        for (unsigned int lcom=0; lcom<local_center_of_mass.size(); lcom++){
+            element->get_global_shapefunction_gradients(local_center_of_mass[lcom], com_shapefunction_gradients[lcom]);
+        }
         return 0;
     }
 
@@ -3289,6 +3383,17 @@ namespace overlap{
                 }
             }
             file << "\n";
+            file << "  *CAUCHY STRESS\n";
+            file << "   ";
+            for (unsigned int i=0; i<cauchy_stress[gp].size(); i++){
+                if (i==0){
+                    file << cauchy_stress[gp][i];
+                }
+                else{
+                    file << ", " << cauchy_stress[gp][i];
+                }
+            }
+            file << "\n";
             
         }
         file.flush();
@@ -3322,6 +3427,9 @@ namespace overlap{
         //Stresses
         symmetric_microstress.clear();
         traction.clear();
+        surface_external_force.clear();
+        body_external_force.clear();
+        kinetic_force.clear();
         return 0;
     }
 
@@ -3359,15 +3467,19 @@ namespace overlap{
         return fuzzy_equals(distance, 0);
     }
 
-    void construct_cauchy_normal_matrix(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
-                                        Eigen::MatrixXd &A){
+    void construct_cauchy_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
+                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_tractions,
+                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b){
         /*!
-         * Construct the normal matrix which can project the Cauchy stresses at the Gauss points to the tractions on each of the 
+         * Construct the normal matrix which can project the Cauchy stresses at the Gauss points to the traction vector b on each of the 
          * surfaces. Assumes a 3D Cauchy stress.
          * 
          * :param const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals: The vector of maps from the 
          *     gauss domain's face number to the normal of that face.
+         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &surface_tractions: The vector of maps from the 
+         *     gauss domain's face number to the surface traction on that face.
          * :param Eigen::MatrixXd &A: The normal matrix
+         * :param Eigen::MatrixXd &b: The traction vector
          */
         
         //Determine the size of the A matrix
@@ -3381,8 +3493,16 @@ namespace overlap{
 
         }
 
+        if (surface_tractions.size() != surface_normals.size()){
+            std::cerr << "Error: surface_tractions should have the same size as surface_normals\n";
+            std::cerr << "       surface_normals.size(): " << surface_normals.size() << "\n";
+            std::cerr << "       surface_tractions.size(): " << surface_tractions.size() << "\n";
+            assert(1==0);
+        }
+
         //Resize A
-        A = Eigen::MatrixXd(nrows, ncols);
+        A = Eigen::MatrixXd::Zero(nrows, ncols);
+        b = Eigen::MatrixXd::Zero(nrows, 1);
 
         //Iterate over the gauss points
         unsigned int row0, col0;
@@ -3401,6 +3521,16 @@ namespace overlap{
                 A(row0 + 2, col0 + 2) = face->second[2];
                 A(row0 + 2, col0 + 3) = face->second[1];
                 A(row0 + 2, col0 + 4) = face->second[0];
+
+                auto traction = surface_tractions[gp].find(face->first);
+                if (traction == surface_tractions[gp].end()){
+                    std::cerr << "Error: surface traction for face " << face->first << " not found\n";
+                    assert(1==0);
+                }
+
+                b(row0 + 0, 0) = traction->second[0];
+                b(row0 + 1, 0) = traction->second[1];
+                b(row0 + 2, 0) = traction->second[2];
 
                 row0 += dim; //Increment row0
             }
@@ -3468,14 +3598,155 @@ namespace overlap{
 
                 //Iterate through the element's nodes
                 for (unsigned int n=0; n<face->second.size(); n++){
-                    //Loop over the tractions indices
+                    //Loop over the traction's indices
                     for (unsigned int i=0; i<traction->second.size(); i++){
                         //N_node(x)*traction(x)*area
                         surface_external_force[dim*n + i] += face->second[n]*traction->second[i]*area->second;
                     }
                 }
-                
             }
         }
+        return;
     }
+
+    void construct_linear_momentum_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+                                                     const std::vector< FloatType > &volume,
+                                                     Eigen::MatrixXd &C){
+        /*!
+         * Construct the linear momentum constraint matrix i.e. the divergence of the Cauchy stress
+         * 
+         * :param const std::vector< vecOfvec > &cg_shapefunction_gradients: The global gradients of the shapefunctions 
+         *     at the gauss points.
+         * :param const std::vector< FloatType > &volume: The volume of the gauss domains
+         * :param Eigen::MatrixXd &C: The constraint matrix.
+         */
+        
+        //Assume the problem is 3D
+        unsigned int dim=3;
+        unsigned int nstress=9;
+
+        //Make sure at least one gauss domain is defined
+        unsigned int ngpts = cg_shapefunction_gradients.size();
+        if (ngpts == 0){
+            std::cerr << "Error: At least one Gauss point must be defined.\n";
+            assert(1==0);
+        }
+
+        if (ngpts != volume.size()){
+            std::cerr << "Error: The number of shapefunction gradients and volumes is not equal.\n";
+            std::cerr << "       cg_shapefunction_gradients.size(): " << ngpts << "\n";
+            std::cerr << "       volume.size(): " << volume.size() << "\n";
+            assert(1==0);
+        }
+
+        //Initialize the C matrix
+        C = Eigen::MatrixXd::Zero(dim*cg_shapefunction_gradients[0].size(), nstress*cg_shapefunction_gradients.size());
+
+        //Loop over the gauss domains
+        for (unsigned int gp=0; gp<cg_shapefunction_gradients.size(); gp++){
+            //Loop over the nodes
+            for (unsigned int n=0; n<cg_shapefunction_gradients[gp].size(); n++){
+                C(dim*n+0, nstress*gp + 0) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(dim*n+0, nstress*gp + 7) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(dim*n+0, nstress*gp + 8) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(dim*n+1, nstress*gp + 1) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(dim*n+1, nstress*gp + 5) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(dim*n+1, nstress*gp + 6) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(dim*n+2, nstress*gp + 2) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(dim*n+2, nstress*gp + 3) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(dim*n+2, nstress*gp + 4) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
+            }
+        }
+
+        return;
+    }
+
+    void solve_constrained_least_squares(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
+                                         const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
+                                         Eigen::MatrixXd &x){
+        /*!
+         * Solve a least squares problem to minimize ||Ax - b|| while subject to the equality 
+         * constraint Cx = d
+         * 
+         * :param const Eigen::MatrixXd &A: The least-squares matrix (nequations, nvariables)
+         * :param const Eigen::MatrixXd &b: The solution vector for the least-squares matrix (nvariables, 1)
+         * :param const Eigen::MatrixXd &C: The constraint matrix (nconstraints, nvariables)
+         * :param const Eigen::MatrixXd &d: The solution vector for the constraint matrix (nvariables, 1)
+         * :param Eigen::MatrixXd &x: The optimal solution for the free variables.
+         */
+
+        unsigned int nvariables = A.cols();
+        unsigned int nconstraints = C.rows();
+
+        if (nconstraints > nvariables){
+            std::cerr << "Error: more constraints than variables. Least squares should be\n";
+            std::cerr << "       performed on the constraint matrix.\n";
+            assert(1==0);
+        }
+
+        //Construct the M matrix
+        Eigen::MatrixXd M = Eigen::MatrixXd::Zero(nvariables+nconstraints, nvariables+nconstraints);
+        M.block(0, 0, nvariables, nvariables) = 2*A.transpose()*A;
+        M.block(0, nvariables, nvariables, nconstraints) = C.transpose();
+        M.block(nvariables, 0, nconstraints, nvariables) = C;
+
+        //Form the RHS vector
+        Eigen::MatrixXd RHS = Eigen::MatrixXd::Zero(nvariables + nconstraints, 1);
+        RHS.block(0, 0, nvariables, 1) = 2*A.transpose()*b;
+        RHS.block(nvariables, 0, nconstraints, 1) = d;
+
+        //Solve the system
+        Eigen::MatrixXd solution = M.partialPivLu().solve(RHS);
+
+        //Return the variables
+        x = solution.block(0, 0, nvariables, 1);
+        return;
+    }
+
+    void construct_linear_momentum_d_vector(const unsigned int nconstraints,
+                                            const std::vector< FloatType > &surface_external_force,
+                                            const std::vector< FloatType > &body_external_force,
+                                            const std::vector< FloatType > &kinetic_force,
+                                            Eigen::MatrixXd &d){
+        /*!
+         * Construct the d vector for contrained least squares given the equation
+         * \int_{\Omega} N_{,j} sigma_{ji} dv = \int_{\partial \Omega} N n_{j} \sigma_{ji} da - \int_{\partial \Omega} \rho\left(b_i - a_i\right) dv\\
+         * :param const unsigned int nconstraints: The number of constraint equations.
+         * :param const std::vector< FloatType > &surface_external_force: The external tractions acting on the body.
+         * :param const std::vector< FloatType > &body_external_force: The body force external forces acting on the body.
+         * :param const std::vector< FloatType > &kinetic_force: The kinetic force acting on the body.
+         * :param Eigen::MatrixXd &d: The d vector to be constructed.
+         */
+
+        d = Eigen::MatrixXd::Zero(nconstraints, 1);
+
+        if (surface_external_force.size() != nconstraints){
+            std::cout << "Error: the external tractions on the body and the constraint matrix must be defined.\n";
+            assert(1==0);
+        }
+
+        //Add the surface external force to d
+        d += Eigen::Map< const EigVec >(surface_external_force.data(), nconstraints, 1);
+
+        //Subtract the body external force to d
+        if (body_external_force.size() == nconstraints){
+            d += Eigen::Map< const EigVec >(body_external_force.data(), nconstraints, 1);
+        }
+        else if (body_external_force.size() > 0){
+            std::cout << "Error: The external body force vector is not the same size as the surface traction vector.\n";
+            assert(1==0);
+        }
+
+        //Add the kinetic force to d
+        if (kinetic_force.size() == nconstraints){
+            d -= Eigen::Map< const EigVec>(kinetic_force.data(), nconstraints, 1);
+        }
+        else if (kinetic_force.size() > 0){
+            std::cout << "Error: The kinetic force vector is not the same size as the surface traction vector.\n";
+            assert(1==0);
+        }
+
+        return;
+    }
+
 }

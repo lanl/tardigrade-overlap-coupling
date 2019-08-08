@@ -457,7 +457,6 @@ namespace overlap{
 
             Eigen::MatrixXd linear_momentum_A;
 
-            int construct_cauchy_normal_matrix();
 
             int compute_volume();
             int compute_surface_area_normal();
@@ -471,9 +470,29 @@ namespace overlap{
             //Stress properties
             int compute_symmetric_microstress(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
             int compute_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
+            int construct_cauchy_least_squares();
+            int construct_linear_momentum_surface_external_force();
+            int construct_linear_momentum_constraint_matrix();
+            int construct_linear_momentum_d_vector();
+            int compute_cauchy_stress();
             
             vecOfvec symmetric_microstress;
+            vecOfvec cauchy_stress;
             std::vector< std::map< unsigned int, std::vector< FloatType > > > traction;
+            std::vector< FloatType > surface_external_force;
+            std::vector< FloatType > body_external_force;
+            std::vector< FloatType > kinetic_force;
+
+            //Shapefunction properties
+            int compute_face_centroid_shapefunctions();
+            int compute_com_shapefunction_gradients();
+
+            std::vector< std::map< unsigned int, std::vector< FloatType > > > face_shapefunctions;
+            vecOfvec com_shapefunction_values;
+            std::vector< vecOfvec > com_shapefunction_gradients;
+            Eigen::MatrixXd linear_momentum_b;
+            Eigen::MatrixXd linear_momentum_C;
+            Eigen::MatrixXd linear_momentum_d;
 
     };
     
@@ -558,14 +577,29 @@ namespace overlap{
     void perform_symmetric_tensor_surface_traction_integration(const std::map< unsigned int, std::vector< double > > &tensor, 
                                                                const std::vector< integrateMap > &weights,
                                                                std::vector< std::map< unsigned int, std::vector< double > > > &result);
-    void construct_cauchy_normal_matrix(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
-                                        Eigen::MatrixXd &A);
+    void construct_cauchy_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
+                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_tractions,
+                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b);
 
     void construct_linear_momentum_surface_external_force(
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_tractions,
              const std::vector< std::map< unsigned int, double > > &face_areas,
              std::vector< double > &surface_external_force);
+
+    void construct_linear_momentum_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+                                                     const std::vector< FloatType > &volume,
+                                                     Eigen::MatrixXd &C);
+
+    void solve_constrained_least_squares(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
+                                         const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
+                                         Eigen::MatrixXd &x);
+
+    void construct_linear_momentum_d_vector(const unsigned int nconstraints,
+                                            const std::vector< FloatType > &surface_external_force,
+                                            const std::vector< FloatType > &body_external_force,
+                                            const std::vector< FloatType > &kinetic_force,
+                                            Eigen::MatrixXd &d);
 
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,
