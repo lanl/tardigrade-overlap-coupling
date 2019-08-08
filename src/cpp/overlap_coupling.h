@@ -456,6 +456,7 @@ namespace overlap{
             elib::vecOfvec center_of_mass;
 
             Eigen::MatrixXd linear_momentum_A;
+            Eigen::MatrixXd first_moment_A;
 
 
             int compute_volume();
@@ -470,18 +471,38 @@ namespace overlap{
             //Stress properties
             int compute_symmetric_microstress(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
             int compute_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
+            int compute_couple_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
             int construct_cauchy_least_squares();
+            int construct_couple_least_squares();
+
             int construct_linear_momentum_surface_external_force();
+            int construct_first_moment_surface_external_couple();
+            int construct_first_moment_symm_cauchy_couple();
+
             int construct_linear_momentum_constraint_matrix();
+            int construct_first_moment_constraint_matrix();
+
             int construct_linear_momentum_d_vector();
+            int construct_first_moment_d_vector();
+
             int compute_cauchy_stress();
-            
+            int compute_couple_stress();            
+
             vecOfvec symmetric_microstress;
             vecOfvec cauchy_stress;
+            vecOfvec couple_stress;
             std::vector< std::map< unsigned int, std::vector< FloatType > > > traction;
+            std::vector< std::map< unsigned int, std::vector< FloatType > > > couple_traction;
+
             std::vector< FloatType > surface_external_force;
+            std::vector< FloatType > surface_external_couple;
+            std::vector< FloatType > symm_cauchy_couple;
+
             std::vector< FloatType > body_external_force;
             std::vector< FloatType > kinetic_force;
+
+            std::vector< FloatType > body_external_couple;
+            std::vector< FloatType > kinetic_couple;
 
             //Shapefunction properties
             int compute_face_centroid_shapefunctions();
@@ -493,6 +514,10 @@ namespace overlap{
             Eigen::MatrixXd linear_momentum_b;
             Eigen::MatrixXd linear_momentum_C;
             Eigen::MatrixXd linear_momentum_d;
+
+            Eigen::MatrixXd first_moment_b;
+            Eigen::MatrixXd first_moment_C;
+            Eigen::MatrixXd first_moment_d;
 
     };
     
@@ -576,9 +601,14 @@ namespace overlap{
 
     void perform_symmetric_tensor_surface_traction_integration(const std::map< unsigned int, std::vector< double > > &tensor, 
                                                                const std::vector< integrateMap > &weights,
+                                                               const vecOfvec &centers_of_mass,
                                                                std::vector< std::map< unsigned int, std::vector< double > > > &result);
     void construct_cauchy_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
                                         const std::vector< std::map< unsigned int, std::vector< double > > > &surface_tractions,
+                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b);
+
+    void construct_couple_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
+                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples,
                                         Eigen::MatrixXd &A, Eigen::MatrixXd &b);
 
     void construct_linear_momentum_surface_external_force(
@@ -587,9 +617,24 @@ namespace overlap{
              const std::vector< std::map< unsigned int, double > > &face_areas,
              std::vector< double > &surface_external_force);
 
+    void construct_first_moment_surface_external_couple(
+             const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
+             const std::vector< std::map< unsigned int, std::vector< double > > > &face_couples,
+             const std::vector< std::map< unsigned int, double > > &face_areas,
+             std::vector< double > &surface_external_couple);
+
+    void construct_first_moment_symm_cauchy_couple(const vecOfvec &com_shapefunctions,
+                                                   const vecOfvec &symmetric_microstress, const vecOfvec &cauchy_stress,
+                                                   const std::vector< double > &volume,
+                                                   std::vector< double > &symm_cauchy_couple);
+
     void construct_linear_momentum_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
                                                      const std::vector< FloatType > &volume,
                                                      Eigen::MatrixXd &C);
+
+    void construct_first_moment_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+                                                  const std::vector< FloatType > &volume,
+                                                  Eigen::MatrixXd &C);
 
     void solve_constrained_least_squares(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
                                          const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
@@ -600,6 +645,13 @@ namespace overlap{
                                             const std::vector< FloatType > &body_external_force,
                                             const std::vector< FloatType > &kinetic_force,
                                             Eigen::MatrixXd &d);
+
+    void construct_first_moment_d_vector(const unsigned int nconstraints,
+                                         const std::vector< FloatType > &surface_external_couple,
+                                         const std::vector< FloatType > &symm_cauchy_couple,
+                                         const std::vector< FloatType > &body_external_couple,
+                                         const std::vector< FloatType > &kinetic_couple,
+                                         Eigen::MatrixXd &d);
 
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,

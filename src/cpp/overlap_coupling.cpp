@@ -1765,6 +1765,199 @@ namespace overlap{
         }
     }
 
+    void perform_symmetric_tensor_surface_couple_traction_integration(
+             const std::map< unsigned int, std::vector< double > > &tensor,
+             const std::vector< integrateMap > &weights,
+             const vecOfvec &centers_of_mass,
+             std::vector< std::map< unsigned int, std::vector< double > > > &result){
+        /*!
+         * Integrate the couple fluxes of the symmetric tensor over the surfaces (assumes 3D) return will be a couple traction
+         * weighted by the area.
+         * 
+         * :param const std::map< unsigned int, std::vector< double > > &tensor: The symmetric tensors in voigt notation i.e.
+         *     tensor = t11, t22, t33, t23, t13, t12
+         * :param const std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point
+         * :param const vecOfvec &centers_of_mass: The centers of mass of the gauss points.
+         * :param std::vector< std::map< unsigned int, double > > result: The result of the integration over each of the faces
+         */
+        
+        //Set up an iterator for the value map
+        std::map< unsigned int, std::vector< double > >::const_iterator itv; //The tensor value iterator
+        integrateMap::const_iterator itiM; //The integration map iterator
+        std::map< unsigned int, std::vector< double > >::iterator itr; //The result iterator
+
+        //Initialize the result vector
+        result.resize(weights.size());
+
+        //Initialize the center of mass and xi vectors
+        std::vector< double > center_of_mass;
+        std::vector< double > xi;
+
+        //Loop over the gauss points
+        for (unsigned int gp=0; gp<weights.size(); gp++){
+            center_of_mass = centers_of_mass[gp];
+            xi.resize(center_of_mass.size());
+
+            //Loop over the micro-node weights
+            for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
+
+                //Find the value of the tensor at the current node
+                itv = tensor.find(itiM->first);
+                if (itv == tensor.end()){
+                    std::cout << "Error: node " << itiM->first << " not found in values\n";
+                    assert(1==0);
+                }
+
+
+                for (unsigned int j=0; j<itiM->second.planes.size(); j++){
+                    itr = result[gp].find(itiM->second.planes[j]);
+
+                    //Compute the xi vector
+                    for (unsigned int i=0; i<xi.size(); i++){xi[i] = itiM->second.face_centroids[j][i] - center_of_mass[i];}
+
+                    //Compute the couple traction - Assumes 3D
+                    std::vector< double > couple_traction(9, 0);
+                    couple_traction[0] = itiM->second.das[j][0]*itv->second[0]*xi[0]
+                                       + itiM->second.das[j][1]*itv->second[5]*xi[0]
+                                       + itiM->second.das[j][2]*itv->second[4]*xi[0];
+
+                    couple_traction[1] = itiM->second.das[j][0]*itv->second[5]*xi[1]
+                                       + itiM->second.das[j][1]*itv->second[1]*xi[1]
+                                       + itiM->second.das[j][2]*itv->second[3]*xi[1];
+
+                    couple_traction[2] = itiM->second.das[j][0]*itv->second[4]*xi[2]
+                                       + itiM->second.das[j][1]*itv->second[3]*xi[2]
+                                       + itiM->second.das[j][2]*itv->second[2]*xi[2];
+
+                    couple_traction[3] = itiM->second.das[j][0]*itv->second[5]*xi[2]
+                                       + itiM->second.das[j][1]*itv->second[1]*xi[2]
+                                       + itiM->second.das[j][2]*itv->second[3]*xi[2];
+
+                    couple_traction[4] = itiM->second.das[j][0]*itv->second[0]*xi[2]
+                                       + itiM->second.das[j][1]*itv->second[5]*xi[2]
+                                       + itiM->second.das[j][2]*itv->second[4]*xi[2];
+
+                    couple_traction[5] = itiM->second.das[j][0]*itv->second[0]*xi[1]
+                                       + itiM->second.das[j][1]*itv->second[5]*xi[1]
+                                       + itiM->second.das[j][2]*itv->second[4]*xi[1];
+
+                    couple_traction[6] = itiM->second.das[j][0]*itv->second[4]*xi[1]
+                                       + itiM->second.das[j][1]*itv->second[3]*xi[1]
+                                       + itiM->second.das[j][2]*itv->second[2]*xi[1];
+
+                    couple_traction[7] = itiM->second.das[j][0]*itv->second[4]*xi[0]
+                                       + itiM->second.das[j][1]*itv->second[3]*xi[0]
+                                       + itiM->second.das[j][2]*itv->second[2]*xi[0];
+
+                    couple_traction[8] = itiM->second.das[j][0]*itv->second[5]*xi[0]
+                                       + itiM->second.das[j][1]*itv->second[1]*xi[0]
+                                       + itiM->second.das[j][2]*itv->second[3]*xi[0];
+
+                   //Insert the plane if new
+                   if (itr == result[gp].end()){
+                       result[gp].emplace(itiM->second.planes[j], couple_traction);
+                   }
+                   //Add to the plane if it exists already
+                   else{
+                       for (unsigned int i=0; i<couple_traction.size(); i++){ itr->second[i] += couple_traction[i];}
+                   }
+                }
+            }
+        }
+        return; 
+    }
+
+    void construct_couple_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
+                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples,
+                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b){
+        /*!
+         * Construct the normal matrix which can project the couple stresses at the Gauss points to the couple traction vector b 
+         * on each of the surfaces. Assumes a 3D couple stress.
+         * 
+         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals: The vector of maps from the 
+         *     gauss domain's face number to the normal of that face.
+         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples: The vector of maps from the 
+         *     gauss domain's face number to the surface couple traction on that face.
+         * :param Eigen::MatrixXd &A: The normal matrix
+         * :param Eigen::MatrixXd &b: The couple traction vector
+         */
+
+        //Determine the size of the A matrix
+        unsigned int nrows, ncols;
+        unsigned int nstress = 27;
+        unsigned int dim = 9;
+        nrows = 0;
+        ncols = nstress*surface_normals.size(); //27 components of the couple stress for each gauss point
+        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
+            nrows += dim*surface_normals[gp].size();
+
+        }
+
+        if (surface_couples.size() != surface_normals.size()){
+            std::cerr << "Error: surface_couples should have the same size as surface_normals\n";
+            std::cerr << "       surface_normals.size(): " << surface_normals.size() << "\n";
+            std::cerr << "       surface_couples.size(): " << surface_couples.size() << "\n";
+            assert(1==0);
+        }
+
+        //Resize A and b
+        A = Eigen::MatrixXd::Zero(nrows, ncols);
+        b = Eigen::MatrixXd::Zero(nrows, 1);
+
+        //Iterate over the gauss points
+        unsigned int row0, col0;
+        row0 = col0 = 0;
+
+        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
+
+            for (auto face = surface_normals[gp].begin(); face != surface_normals[gp].end(); face++){
+                //Set the values in the A matrix
+
+                A(row0 + 0, col0 +  0) = face->second[0];
+                A(row0 + 0, col0 +  7) = face->second[2];
+                A(row0 + 0, col0 +  8) = face->second[1];
+                A(row0 + 1, col0 + 10) = face->second[1];
+                A(row0 + 1, col0 + 14) = face->second[0];
+                A(row0 + 1, col0 + 15) = face->second[2];
+                A(row0 + 2, col0 + 20) = face->second[2];
+                A(row0 + 2, col0 + 21) = face->second[1];
+                A(row0 + 2, col0 + 22) = face->second[0];
+                A(row0 + 3, col0 + 11) = face->second[2];
+                A(row0 + 3, col0 + 12) = face->second[1];
+                A(row0 + 3, col0 + 13) = face->second[0];
+                A(row0 + 4, col0 +  2) = face->second[2];
+                A(row0 + 4, col0 +  3) = face->second[1];
+                A(row0 + 4, col0 +  4) = face->second[0];
+                A(row0 + 5, col0 +  1) = face->second[1];
+                A(row0 + 5, col0 +  5) = face->second[0];
+                A(row0 + 5, col0 +  6) = face->second[2];
+                A(row0 + 6, col0 + 19) = face->second[1];
+                A(row0 + 6, col0 + 23) = face->second[0];
+                A(row0 + 6, col0 + 24) = face->second[2];
+                A(row0 + 7, col0 + 18) = face->second[0];
+                A(row0 + 7, col0 + 25) = face->second[2];
+                A(row0 + 7, col0 + 26) = face->second[1];
+                A(row0 + 8, col0 +  9) = face->second[0];
+                A(row0 + 8, col0 + 16) = face->second[2];
+                A(row0 + 8, col0 + 17) = face->second[1];
+
+                auto couple = surface_couples[gp].find(face->first);
+                if (couple == surface_couples[gp].end()){
+                    std::cerr << "Error: surface couple for face " << face->first << " not found\n";
+                    assert(1==0);
+                }
+
+                for (unsigned int i=0; i<dim; i++){
+                    b(row0 + i, 0) = couple->second[i];
+                }
+
+                row0 += dim; //Increment row0
+            }
+            col0 += nstress; //Increment col0
+        }
+        return;
+    }
+
     void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_col_map,
                                 const std::map< unsigned int, unsigned int >* dns_node_to_row_map,
                                 const std::vector< unsigned int > &macro_node_ids,
@@ -2781,13 +2974,33 @@ namespace overlap{
          * :param std::map< unsigned int, std::vector< double > > &micro_stress: The stresses of the micro-points.
          */
 
+         //Compute the symmetric microstress
          compute_symmetric_microstress(micro_stress);
+
+         //Compute the Cauchy stress
          compute_traction(micro_stress);
          construct_cauchy_least_squares();
          construct_linear_momentum_surface_external_force();
          construct_linear_momentum_constraint_matrix();
+         //TODO: Add construction of body force term
+         //TODO: Add construction of kinetic force term
          construct_linear_momentum_d_vector();
          compute_cauchy_stress();
+
+         //Compute the couple stress
+         compute_couple_traction(micro_stress);
+         construct_couple_least_squares();
+         construct_first_moment_surface_external_couple();
+         construct_first_moment_symm_cauchy_couple();
+         construct_first_moment_constraint_matrix();
+         //TODO: Add construction of body couple term
+         //TODO: Add construction of kinetic couple term
+         construct_first_moment_d_vector();
+         compute_couple_stress();
+         for (unsigned int gp=0; gp<couple_stress.size(); gp++){
+             std::cout << "gp " << gp << ": "; print_vector(couple_stress[gp]);
+         }
+
          return 0;
     }
 
@@ -2800,6 +3013,19 @@ namespace overlap{
         overlap::construct_linear_momentum_d_vector(linear_momentum_C.rows(),
                                                     surface_external_force, body_external_force, kinetic_force,
                                                     linear_momentum_d);
+        return 0;
+    }
+
+    int MicromorphicFilter::construct_first_moment_d_vector(){
+        /*!
+         * Construct the d vector for the constrained first moment of momentum calculation
+         * of the couple stress
+         */
+
+        overlap::construct_first_moment_d_vector(first_moment_C.rows(),
+                                                 surface_external_couple, symm_cauchy_couple,
+                                                 body_external_couple, kinetic_couple,
+                                                 first_moment_d);
         return 0;
     }
 
@@ -2818,6 +3044,26 @@ namespace overlap{
             cauchy_stress[gp].resize(nstress);
             for (unsigned int i=0; i<nstress; i++){
                 cauchy_stress[gp][i] = x(nstress*gp + i);
+            }
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_couple_stress(){
+        /*!
+         * Compute the couple stress using a constrained least squares technique
+         */
+
+        Eigen::MatrixXd x;
+        solve_constrained_least_squares(first_moment_A, first_moment_b, first_moment_C, first_moment_d, x);
+
+        //Extract the couple stresses assuming 3d
+        couple_stress.resize(cauchy_stress.size());
+        unsigned int nstress = x.rows()/couple_stress.size();
+        for (unsigned int gp=0; gp<couple_stress.size(); gp++){
+            couple_stress[gp].resize(nstress);
+            for (unsigned int i=0; i<nstress; i++){
+                couple_stress[gp][i] = x(nstress*gp + i);
             }
         }
         return 0;
@@ -2942,6 +3188,35 @@ namespace overlap{
         return 0;
     }
 
+    int MicromorphicFilter::compute_couple_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy){
+        /*!
+         * Compute the couple traction of the micro-cauchy stress through the each of the surfaces of the gauss points.
+         * 
+         * :param const std::map< unsigned int, std::vector< double > > &micro_cauchy: The micro-scale cauchy stresses. It is 
+         *     assumed they are symmetric and stored in the form (s11, s22, s33, s23, s13, s12)
+         */
+
+        perform_symmetric_tensor_surface_couple_traction_integration(micro_cauchy, material_weights, center_of_mass, couple_traction);
+
+        //Divide by the surface area
+        for (unsigned int gp=0; gp<couple_traction.size(); gp++){
+//            std::cout << "gp: " << gp << "\n";
+            for (auto face=couple_traction[gp].begin(); face!=couple_traction[gp].end(); face++){
+                auto area = surface_area[gp].find(face->first);
+                if (area == surface_area[gp].end()){
+                    std::cerr << "Error: face " << face->first << "not found in surface areas\n";
+                    assert(1==0);
+                }
+                for (unsigned int i=0; i<face->second.size(); i++){
+                    face->second[i] /= area->second;
+                }
+//                std::cout << " " << face->first << ": "; print_vector(face->second);
+            }
+        }
+
+        return 0;
+    }
+
     int MicromorphicFilter::construct_cauchy_least_squares(){
         /*!
          * Construct the normal matrix that when dotted with the vector of the Cauchy stress at the gauss domain 
@@ -2952,6 +3227,15 @@ namespace overlap{
         return 0;
     }
 
+    int MicromorphicFilter::construct_couple_least_squares(){
+        /*!
+         * Construct the normal matrix that when dotted with the vector of the couple stress at the gauss domain 
+         * CGs will produce the surface couple vector b;
+         */
+
+        overlap::construct_couple_least_squares(surface_normal, couple_traction, first_moment_A, first_moment_b);
+        return 0;
+    }
     int MicromorphicFilter::construct_linear_momentum_surface_external_force(){
         /*!
          * Construct the external force applied on the surfaces of the gauss domains.
@@ -2961,12 +3245,41 @@ namespace overlap{
          return 0;
     }
 
+    int MicromorphicFilter::construct_first_moment_surface_external_couple(){
+        /*!
+         * Construct the external couple applied on the surfaces of the gauss domains
+         */
+         overlap::construct_first_moment_surface_external_couple(face_shapefunctions, couple_traction,
+                                                                 surface_area, surface_external_couple);
+         return 0;
+    }
+
+    int MicromorphicFilter::construct_first_moment_symm_cauchy_couple(){
+        /*!
+         * Construct the couple resulting from the difference between the Cauchy stress and symmetric microstress
+         */
+         overlap::construct_first_moment_symm_cauchy_couple(com_shapefunction_values,
+                                                            symmetric_microstress, cauchy_stress,
+                                                            volume,
+                                                            symm_cauchy_couple);
+         return 0;
+    }
+
     int MicromorphicFilter::construct_linear_momentum_constraint_matrix(){
         /*!
          * Construct the constraint matrix for the balance of linear momentum.
          */
 
         overlap::construct_linear_momentum_constraint_matrix(com_shapefunction_gradients, volume, linear_momentum_C);
+        return 0;
+    }
+
+    int MicromorphicFilter::construct_first_moment_constraint_matrix(){
+        /*!
+         * Construct the constraint matrix for the balance of the first moment of momentum.
+         */
+
+        overlap::construct_first_moment_constraint_matrix(com_shapefunction_gradients, volume, first_moment_C);
         return 0;
     }
 
@@ -3426,10 +3739,23 @@ namespace overlap{
 
         //Stresses
         symmetric_microstress.clear();
+        cauchy_stress.clear();
+        couple_stress.clear();
+
+        //Tractions
         traction.clear();
+        couple_traction.clear();
+
+        //Force vectors
         surface_external_force.clear();
         body_external_force.clear();
         kinetic_force.clear();
+
+        //Force vectors
+        surface_external_couple.clear();
+        symm_cauchy_couple.clear();
+        body_external_couple.clear();
+        kinetic_couple.clear();
         return 0;
     }
 
@@ -3609,6 +3935,144 @@ namespace overlap{
         return;
     }
 
+    void construct_first_moment_surface_external_couple(
+             const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
+             const std::vector< std::map< unsigned int, std::vector< double > > > &face_couples,
+             const std::vector< std::map< unsigned int, double > > &face_areas,
+             std::vector< double > &surface_external_couple){
+        /*!
+         * Construct the surface force acting on the nodes of the finite element
+         * 
+         * :param const std::vector< std::map< unsigned int, double > > &face_shapefunctions: The shapefunctions at the 
+         *     gauss domain centroids.
+         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &face_couples: The couple tractions on the 
+         *     gauss domain faces.
+         * :param const std::vector< std::map< unsigned int, double > > &face_areas: The areas of each of the gauss domain faces in 
+         *     global coordinates.
+         * :param std::vector< double > &surface_external_force: The external surface couple vector
+         */
+
+        unsigned int ncouple = 9;
+        surface_external_couple.clear();
+
+        //Make sure the incoming vectors have a non-zero size
+        unsigned int ngpts = face_shapefunctions.size();
+        if (ngpts == 0){
+            std::cerr << "Error: no gauss points defined in face_shapefunctions\n";
+            assert(1==0);
+        }
+        if (ngpts != face_couples.size()){
+            std::cerr << "Error: face_couples doesn't have as many gauss points as face_shapefunctions\n";
+            std::cerr << "       face_couples.size(): " << face_couples.size() << "\n";
+            std::cerr << "       face_shapefunctions.size(): " << ngpts << "\n";
+            assert(1==0);
+        }
+        if (ngpts != face_areas.size()){
+            std::cerr << "Error: face_areas doesn't have as many gauss points as face_shapefunctions\n";
+            std::cerr << "       face_areas.size(): " << face_areas.size() << "\n";
+            std::cerr << "       face_shapefunctions.size(): " << ngpts << "\n";
+            assert(1==0);
+        }
+
+        //Initialize the surface external force vector.
+        surface_external_couple = std::vector< double >(ncouple*face_shapefunctions[0].begin()->second.size(), 0);
+
+        //Loop over the gauss points
+        for (unsigned int gp=0; gp<face_shapefunctions.size(); gp++){
+            //Loop over the faces
+            for (auto face=face_shapefunctions[gp].begin(); face!=face_shapefunctions[gp].end(); face++){
+                auto couple = face_couples[gp].find(face->first);
+                auto area = face_areas[gp].find(face->first);
+
+                if (couple == face_couples[gp].end()){
+                    std::cerr << "Error: Face " << face->first << " not found in couples.\n";
+                    assert(1==0);
+                }
+                if (area == face_areas[gp].end()){
+                    std::cerr << "Error: Face " << face->first << " not found in areas.\n";
+                    assert(1==0);
+                }
+
+                //Iterate through the element's nodes
+                for (unsigned int n=0; n<face->second.size(); n++){
+
+                    //Assign the couple's indices
+                    for (unsigned int i=0; i<ncouple; i++){
+                        surface_external_couple[ncouple*n + i] += face->second[n]*couple->second[i]*area->second;
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    void construct_first_moment_symm_cauchy_couple(const vecOfvec &com_shapefunctions,
+                                                   const vecOfvec &symmetric_microstress, const vecOfvec &cauchy_stress,
+                                                   const std::vector< double > &volume,
+                                                   std::vector< double > &symm_cauchy_couple){
+        /*!
+         * Compute the couple resulting from the difference between the Cauchy and symmetric microstress
+         * 
+         * :param const vecOfvec &com_shapefunctions: The shapefunction values at the centers of mass
+         * :param const vecOfvec &symmetric_microstress: The values of the symmetric micro-stress at the gauss points
+         * :param const vecOfvec &cauchy_stress: The values of the cauchy stress at the gauss points
+         * :param const std::vector< double > &volume: The volume associated with the gauss point.
+         * :param std::vector< double > &symm_cauchy_couple: The couple resulting from the difference between 
+         *      the Cauchy and symmetric microstress.
+         */
+
+        unsigned int ncouple = 9;
+        symm_cauchy_couple.clear();
+
+        //Make sure the incoming vectors have a non-zero size
+        unsigned int ngpts = com_shapefunctions.size();
+        if (ngpts == 0){
+            std::cerr << "Error: no gauss points defined in com_shapefunctions\n";
+            assert(1==0);
+        }
+        if (ngpts != symmetric_microstress.size()){
+            std::cerr << "Error: symmetric_microstress doesn't have as many gauss points as com_shapefunctions\n";
+            std::cerr << "       symmetric_microstress.size(): " << symmetric_microstress.size() << "\n";
+            std::cerr << "       com_shapefunctions.size(): " << ngpts << "\n";
+            assert(1==0);
+        }
+        if (ngpts != cauchy_stress.size()){
+            std::cerr << "Error: cauchy_stress doesn't have as many gauss points as com_shapefunctions\n";
+            std::cerr << "       cauchy_stress.size(): " << cauchy_stress.size() << "\n";
+            std::cerr << "       com_shapefunctions.size(): " << ngpts << "\n";
+            assert(1==0);
+        }
+        if (ngpts != volume.size()){
+            std::cerr << "Error: volume doesn't have as many gauss points as com_shapefunctions\n";
+            std::cerr << "       volume.size(): " << volume.size() << "\n";
+            std::cerr << "       com_shapefunctions.size(): " << ngpts << "\n";
+            assert(1==0);
+        }
+
+        //Initialize symm_cauchy_couple
+        symm_cauchy_couple = std::vector< double >(com_shapefunctions[0].size()*ncouple, 0);
+
+        //Iterate through the gauss points
+        for (unsigned int gp=0; gp<ngpts; gp++){
+
+            //Iterate through the element's nodes
+            for (unsigned int n=0; n<com_shapefunctions[gp].size(); n++){
+                //Assign the couple's indices. Require transpose of Voigt so doing this explicitly
+                symm_cauchy_couple[ncouple*n + 0] += com_shapefunctions[gp][n]*(cauchy_stress[gp][0] - symmetric_microstress[gp][0]);
+                symm_cauchy_couple[ncouple*n + 1] += com_shapefunctions[gp][n]*(cauchy_stress[gp][1] - symmetric_microstress[gp][1]);
+                symm_cauchy_couple[ncouple*n + 2] += com_shapefunctions[gp][n]*(cauchy_stress[gp][2] - symmetric_microstress[gp][2]);
+                symm_cauchy_couple[ncouple*n + 3] += com_shapefunctions[gp][n]*(cauchy_stress[gp][6] - symmetric_microstress[gp][6]);
+                symm_cauchy_couple[ncouple*n + 4] += com_shapefunctions[gp][n]*(cauchy_stress[gp][7] - symmetric_microstress[gp][7]);
+                symm_cauchy_couple[ncouple*n + 5] += com_shapefunctions[gp][n]*(cauchy_stress[gp][8] - symmetric_microstress[gp][8]);
+                symm_cauchy_couple[ncouple*n + 6] += com_shapefunctions[gp][n]*(cauchy_stress[gp][3] - symmetric_microstress[gp][3]);
+                symm_cauchy_couple[ncouple*n + 7] += com_shapefunctions[gp][n]*(cauchy_stress[gp][4] - symmetric_microstress[gp][4]);
+                symm_cauchy_couple[ncouple*n + 8] += com_shapefunctions[gp][n]*(cauchy_stress[gp][5] - symmetric_microstress[gp][5]);
+             }
+
+        }
+
+    }
+
     void construct_linear_momentum_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
                                                      const std::vector< FloatType > &volume,
                                                      Eigen::MatrixXd &C){
@@ -3655,6 +4119,76 @@ namespace overlap{
                 C(dim*n+2, nstress*gp + 2) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
                 C(dim*n+2, nstress*gp + 3) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
                 C(dim*n+2, nstress*gp + 4) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
+            }
+        }
+
+        return;
+    }
+
+    void construct_first_moment_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+                                                  const std::vector< FloatType > &volume,
+                                                  Eigen::MatrixXd &C){
+        /*!
+         * Construct the first moment of momentum constraint matrix i.e. the divergence of the couple stress
+         * 
+         * :param const std::vector< vecOfvec > &cg_shapefunction_gradients: The global gradients of the shapefunctions 
+         *     at the gauss points.
+         * :param const std::vector< FloatType > &volume: The volume of the gauss domains
+         * :param Eigen::MatrixXd &C: The constraint matrix.
+         */
+        
+        //Assume the problem is 3D
+        unsigned int ncouple=9;
+        unsigned int nstress=27;
+
+        //Make sure at least one gauss domain is defined
+        unsigned int ngpts = cg_shapefunction_gradients.size();
+        if (ngpts == 0){
+            std::cerr << "Error: At least one Gauss point must be defined.\n";
+            assert(1==0);
+        }
+
+        if (ngpts != volume.size()){
+            std::cerr << "Error: The number of shapefunction gradients and volumes is not equal.\n";
+            std::cerr << "       cg_shapefunction_gradients.size(): " << ngpts << "\n";
+            std::cerr << "       volume.size(): " << volume.size() << "\n";
+            assert(1==0);
+        }
+
+        //Initialize the C matrix
+        C = Eigen::MatrixXd::Zero(ncouple*cg_shapefunction_gradients[0].size(), nstress*cg_shapefunction_gradients.size());
+
+        //Loop over the gauss domains
+        for (unsigned int gp=0; gp<cg_shapefunction_gradients.size(); gp++){
+            //Loop over the nodes
+            for (unsigned int n=0; n<cg_shapefunction_gradients[gp].size(); n++){
+                C(ncouple*n + 0, nstress*gp +  0) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 0, nstress*gp +  7) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 0, nstress*gp +  8) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 1, nstress*gp + 10) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 1, nstress*gp + 14) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 1, nstress*gp + 15) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 2, nstress*gp + 20) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 2, nstress*gp + 21) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 2, nstress*gp + 22) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 3, nstress*gp + 11) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 3, nstress*gp + 12) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 3, nstress*gp + 13) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 4, nstress*gp +  2) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 4, nstress*gp +  3) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 4, nstress*gp +  4) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 5, nstress*gp +  1) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 5, nstress*gp +  5) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 5, nstress*gp +  6) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 6, nstress*gp + 19) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 6, nstress*gp + 23) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 6, nstress*gp + 24) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 7, nstress*gp + 18) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 7, nstress*gp + 25) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 7, nstress*gp + 26) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 8, nstress*gp +  9) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 8, nstress*gp + 16) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 8, nstress*gp + 17) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
             }
         }
 
@@ -3710,7 +4244,7 @@ namespace overlap{
                                             Eigen::MatrixXd &d){
         /*!
          * Construct the d vector for contrained least squares given the equation
-         * \int_{\Omega} N_{,j} sigma_{ji} dv = \int_{\partial \Omega} N n_{j} \sigma_{ji} da - \int_{\partial \Omega} \rho\left(b_i - a_i\right) dv\\
+         * \int_{\Omega} N_{,j} sigma_{ji} dv = \int_{\partial \Omega} N n_{j} \sigma_{ji} da - \int_{\Omega} \rho\left(b_i - a_i\right) dv\\
          * :param const unsigned int nconstraints: The number of constraint equations.
          * :param const std::vector< FloatType > &surface_external_force: The external tractions acting on the body.
          * :param const std::vector< FloatType > &body_external_force: The body force external forces acting on the body.
@@ -3728,7 +4262,7 @@ namespace overlap{
         //Add the surface external force to d
         d += Eigen::Map< const EigVec >(surface_external_force.data(), nconstraints, 1);
 
-        //Subtract the body external force to d
+        //Add the body external force to d
         if (body_external_force.size() == nconstraints){
             d += Eigen::Map< const EigVec >(body_external_force.data(), nconstraints, 1);
         }
@@ -3737,7 +4271,7 @@ namespace overlap{
             assert(1==0);
         }
 
-        //Add the kinetic force to d
+        //Subtract the kinetic force from d
         if (kinetic_force.size() == nconstraints){
             d -= Eigen::Map< const EigVec>(kinetic_force.data(), nconstraints, 1);
         }
@@ -3749,4 +4283,59 @@ namespace overlap{
         return;
     }
 
+    void construct_first_moment_d_vector(const unsigned int nconstraints,
+                                         const std::vector< FloatType > &surface_external_couple,
+                                         const std::vector< FloatType > &symm_cauchy_couple,
+                                         const std::vector< FloatType > &body_external_couple,
+                                         const std::vector< FloatType > &kinetic_couple,
+                                         Eigen::MatrixXd &d){
+        /*!
+         * Construct the d vector for contrained least squares given the equation
+         * \int_{\Omega} N_{,k} m_{kij} dv = \int_{\partial \Omega} N n_{k} m_{kij} da + \int_{Omega} N (\sigma_{ji} - s_{ji}\right) dv + \int_{\Omega} \rho\left(l_{ij} - \omega_{ij}\right) dv\\
+         * :param const unsigned int nconstraints: The number of constraint equations.
+         * :param const std::vector< FloatType > &surface_external_couple: The external couples acting on the body.
+         * :param const std::vector< FloatType > &symm_cauchy_couple: The couple resulting from the difference between the Cauchy
+         *     and symmetric microstress.
+         * :param const std::vector< FloatType > &body_external_couple: The body couple external forces acting on the body.
+         * :param const std::vector< FloatType > &kinetic_couple: The kinetic couple acting on the body.
+         * :param Eigen::MatrixXd &d: The d vector to be constructed.
+         */
+
+        d = Eigen::MatrixXd::Zero(nconstraints, 1);
+
+        if (surface_external_couple.size() != nconstraints){
+            std::cout << "Error: the external couples on the body and the constraint matrix must be defined.\n";
+            assert(1==0);
+        }
+        if (symm_cauchy_couple.size() != nconstraints){
+            std::cout << "Error: the cauchy - symmetric microstress couples on the body and the constraint matrix must be defined.\n";
+            assert(1==0);
+        }
+
+        //Add the surface external force to d
+        d += Eigen::Map< const EigVec >(surface_external_couple.data(), nconstraints, 1);
+
+        //Add the cauchy-symmetric microstress couple
+        d += Eigen::Map< const EigVec >(symm_cauchy_couple.data(), nconstraints, 1);
+
+        //Add the body external couple to d
+        if (body_external_couple.size() == nconstraints){
+            d += Eigen::Map< const EigVec >(body_external_couple.data(), nconstraints, 1);
+        }
+        else if (body_external_couple.size() > 0){
+            std::cout << "Error: The external body couple vector is not the same size as the surface external couple vector.\n";
+            assert(1==0);
+        }
+
+        //Subtract the kinetic couple from d
+        if (kinetic_couple.size() == nconstraints){
+            d -= Eigen::Map< const EigVec>(kinetic_couple.data(), nconstraints, 1);
+        }
+        else if (kinetic_couple.size() > 0){
+            std::cout << "Error: The kinetic couple vector is not the same size as the surface external couple vector.\n";
+            assert(1==0);
+        }
+
+        return;
+    }
 }
