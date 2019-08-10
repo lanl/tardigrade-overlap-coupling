@@ -377,10 +377,16 @@ namespace overlap{
 
         //Map the planes to voro::wall_plane objects
         std::vector< voro::wall_plane > vplanes;
-//        std::cout << "element_planes:\n";
-//        print_planeMap(element_planes);
-//        assert(1==0);
         map_planes_to_voro(element_planes, vplanes);
+
+        //Add the planes to the external surface id vector
+        external_face_ids.resize(gauss_points.size());
+        for (unsigned int gp=0; gp<gauss_points.size(); gp++){
+            external_face_ids[gp].resize(element_planes.size());
+            for (unsigned int i=0; i<element_planes.size(); i++){
+                external_face_ids[gp][i] = i;
+            }
+        }
 
         //Construct the container
 //        std::vector< unsigned int > gpt_nums(gauss_points.size());
@@ -529,6 +535,8 @@ namespace overlap{
                 int bni=0;
                 for (auto dpit=dns_planes.begin(); dpit!=dns_planes.end(); dpit++){
                     bounding_faces.emplace(-(planes.size() + bni), std::pair< std::vector< FloatType > , std::vector< FloatType > >(dpit->first, dpit->second));
+                    external_face_ids[gd].push_back(planes.size() + bni);
+                    bni++;
                 }
                 
                 map_planes_to_voro(dns_planes, planes, planes.size());
@@ -575,6 +583,13 @@ namespace overlap{
         Get a pointer to the gauss domains
         */
         return &gauss_domains;
+    }
+
+    const std::vector< std::vector< unsigned int > >* OverlapCoupling::get_external_face_ids() const{
+        /*!
+         * Get a pointer to the external face ids vector
+         */
+        return &external_face_ids;
     }
 
     const planeMap* OverlapCoupling::get_element_planes() const{
@@ -933,18 +948,25 @@ namespace overlap{
         return 0;
     }
 
-    bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr, const double tola){
+    bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr, const double tola, bool opposite_is_unique){
         /*!
-        Compare vectors to determine if they are in the same direction.
-
-        :param std::vector< double > v1: The first vector
-        :param std::vector< double > v2: The second vector
-
-        The dot product is computed and checked if it is nearly equal to 1.
-        */
+         * Compare vectors to determine if they are in the same direction.
+         * 
+         * :param std::vector< double > v1: The first vector
+         * :param std::vector< double > v2: The second vector
+         * :param const double tolr: The relative tolerance
+         * :param const double tola: The absolute tolerance
+         * :param bool opposite_is_unique: If true, vectors in opposite directions are different.
+         * 
+         * The dot product is computed and checked if it is nearly equal to 1.
+         */
 
         double factor = sqrt(dot(v1, v1)*dot(v2, v2));
         double result = dot(v1, v2)/factor;
+        if (!opposite_is_unique){
+//            std::cout << "result: " << result << "\n";
+            result = std::abs(result);
+        }
         return fuzzy_equals(result, 1, tolr, tola);
     }
 
@@ -1886,10 +1908,23 @@ namespace overlap{
         unsigned int nrows, ncols;
         unsigned int nstress = 27;
         unsigned int dim = 9;
+
+        //Find the faces that are unique
+        std::vector< std::map< unsigned int, std::vector< double > > > unique_normals(surface_normals.size());
+        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
+            id_unique_vectors(surface_normals[gp], unique_normals[gp], false);
+
+//            std::cout << "gp " << gp << "\n";
+//            for (auto un=unique_normals[gp].begin(); un!=unique_normals[gp].end(); un++){
+//                std::cout << un->first << ": "; print_vector(un->second);
+//            }
+        }
+
         nrows = 0;
         ncols = nstress*surface_normals.size(); //27 components of the couple stress for each gauss point
         for (unsigned int gp=0; gp<surface_normals.size(); gp++){
-            nrows += dim*surface_normals[gp].size();
+//            nrows += dim*surface_normals[gp].size();
+            nrows += dim*unique_normals[gp].size();
 
         }
 
@@ -1908,38 +1943,40 @@ namespace overlap{
         unsigned int row0, col0;
         row0 = col0 = 0;
 
-        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
+//        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
+        for (unsigned int gp=0; gp<unique_normals.size(); gp++){
 
-            for (auto face = surface_normals[gp].begin(); face != surface_normals[gp].end(); face++){
+//            for (auto face = surface_normals[gp].begin(); face != surface_normals[gp].end(); face++){
+            for (auto face = unique_normals[gp].begin(); face != unique_normals[gp].end(); face++){
                 //Set the values in the A matrix
 
                 A(row0 + 0, col0 +  0) = face->second[0];
-                A(row0 + 0, col0 +  7) = face->second[2];
-                A(row0 + 0, col0 +  8) = face->second[1];
+                A(row0 + 0, col0 +  9) = face->second[1];
+                A(row0 + 0, col0 + 18) = face->second[2];
+                A(row0 + 1, col0 +  1) = face->second[0];
                 A(row0 + 1, col0 + 10) = face->second[1];
-                A(row0 + 1, col0 + 14) = face->second[0];
-                A(row0 + 1, col0 + 15) = face->second[2];
+                A(row0 + 1, col0 + 19) = face->second[2];
+                A(row0 + 2, col0 +  2) = face->second[0];
+                A(row0 + 2, col0 + 11) = face->second[1];
                 A(row0 + 2, col0 + 20) = face->second[2];
-                A(row0 + 2, col0 + 21) = face->second[1];
-                A(row0 + 2, col0 + 22) = face->second[0];
-                A(row0 + 3, col0 + 11) = face->second[2];
+                A(row0 + 3, col0 +  3) = face->second[0];
                 A(row0 + 3, col0 + 12) = face->second[1];
-                A(row0 + 3, col0 + 13) = face->second[0];
-                A(row0 + 4, col0 +  2) = face->second[2];
-                A(row0 + 4, col0 +  3) = face->second[1];
+                A(row0 + 3, col0 + 21) = face->second[2];
                 A(row0 + 4, col0 +  4) = face->second[0];
-                A(row0 + 5, col0 +  1) = face->second[1];
+                A(row0 + 4, col0 + 13) = face->second[1];
+                A(row0 + 4, col0 + 22) = face->second[2];
                 A(row0 + 5, col0 +  5) = face->second[0];
-                A(row0 + 5, col0 +  6) = face->second[2];
-                A(row0 + 6, col0 + 19) = face->second[1];
-                A(row0 + 6, col0 + 23) = face->second[0];
+                A(row0 + 5, col0 + 14) = face->second[1];
+                A(row0 + 5, col0 + 23) = face->second[2];
+                A(row0 + 6, col0 +  6) = face->second[0];
+                A(row0 + 6, col0 + 15) = face->second[1];
                 A(row0 + 6, col0 + 24) = face->second[2];
-                A(row0 + 7, col0 + 18) = face->second[0];
+                A(row0 + 7, col0 +  7) = face->second[0];
+                A(row0 + 7, col0 + 16) = face->second[1];
                 A(row0 + 7, col0 + 25) = face->second[2];
-                A(row0 + 7, col0 + 26) = face->second[1];
-                A(row0 + 8, col0 +  9) = face->second[0];
-                A(row0 + 8, col0 + 16) = face->second[2];
+                A(row0 + 8, col0 +  8) = face->second[0];
                 A(row0 + 8, col0 + 17) = face->second[1];
+                A(row0 + 8, col0 + 26) = face->second[2];
 
                 auto couple = surface_couples[gp].find(face->first);
                 if (couple == surface_couples[gp].end()){
@@ -2991,8 +3028,21 @@ namespace overlap{
          compute_couple_traction(micro_stress);
          construct_couple_least_squares();
          construct_first_moment_surface_external_couple();
-
-         std::cout << "surface_external_couple:\n"; print_vector(surface_external_couple);
+//         std::cout << "surface_external_couple:\n";
+//         for (unsigned int i=0; i<surface_external_couple.size(); i++){
+//             std::cout << surface_external_couple[i] << "\n";
+//         }
+//         std::cout << "first_moment_A:\n";
+//         for (unsigned int i=0; i<6; i++){
+//             std::cout << "face " << i << "\n";
+//             std::cout << first_moment_A.block(9*i, 0, 9, 27) << "\n";
+//         }
+//         for (unsigned int r=0; r<first_moment_A.rows(); r++){
+//             std::cout << first_moment_A.row(r).sum() << "\n";
+//         }
+//         for (unsigned int r=0; r<first_moment_A.cols(); r++){
+//             std::cout << first_moment_A.col(r).sum() << "\n";
+//         }
 
          construct_first_moment_symm_cauchy_couple();
          construct_first_moment_constraint_matrix();
@@ -3000,9 +3050,11 @@ namespace overlap{
          //TODO: Add construction of kinetic couple term
          construct_first_moment_d_vector();
          compute_couple_stress();
-         for (unsigned int gp=0; gp<couple_stress.size(); gp++){
-             std::cout << "gp " << gp << ": "; print_vector(couple_stress[gp]);
-         }
+//         std::cout << "couple_stress:\n";
+//         for (unsigned int gp=0; gp<couple_stress.size(); gp++){
+//             std::cout << "gp " << gp << ": "; print_vector(couple_stress[gp]);
+//         }
+//         assert(1==0);
 
          return 0;
     }
@@ -3243,8 +3295,10 @@ namespace overlap{
         /*!
          * Construct the external force applied on the surfaces of the gauss domains.
          */
+         const std::vector< std::vector< unsigned int > > *external_face_ids = material_overlap.get_external_face_ids();
          overlap::construct_linear_momentum_surface_external_force(face_shapefunctions, traction,
-                                                                   surface_area, surface_external_force);
+                                                                   surface_area, *external_face_ids,
+                                                                   surface_external_force);
          return 0;
     }
 
@@ -3252,8 +3306,10 @@ namespace overlap{
         /*!
          * Construct the external couple applied on the surfaces of the gauss domains
          */
+         const std::vector< std::vector< unsigned int > > *external_face_ids = material_overlap.get_external_face_ids();
          overlap::construct_first_moment_surface_external_couple(face_shapefunctions, couple_traction,
-                                                                 surface_area, surface_external_couple);
+                                                                 surface_area, *external_face_ids,
+                                                                 surface_external_couple);
          return 0;
     }
 
@@ -3871,6 +3927,7 @@ namespace overlap{
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_tractions,
              const std::vector< std::map< unsigned int, double > > &face_areas,
+             const std::vector< std::vector< unsigned int > > &external_face_ids,
              std::vector< double > &surface_external_force){
         /*!
          * Construct the surface force acting on the nodes of the finite element
@@ -3881,6 +3938,8 @@ namespace overlap{
          *     gauss domain faces.
          * :param const std::vector< std::map< unsigned int, double > > &face_areas: The areas of each of the gauss domain faces in 
          *     global coordinates.
+         * :param const std::vector< std::vector< unsigned int > > &external_face_ids: The id numbers of faces which are the boundaries 
+         *     of the filter.
          * :param std::vector< double > &surface_external_force: The external surface force vector
          */
 
@@ -3913,6 +3972,12 @@ namespace overlap{
         for (unsigned int gp=0; gp<face_shapefunctions.size(); gp++){
             //Loop over the faces
             for (auto face=face_shapefunctions[gp].begin(); face!=face_shapefunctions[gp].end(); face++){
+                //check if the face is an external face
+                auto extface = std::find(external_face_ids[gp].begin(), external_face_ids[gp].end(), face->first);
+                if (extface == external_face_ids[gp].end()){
+                    continue;
+                }
+
                 auto traction = face_tractions[gp].find(face->first);
                 auto area = face_areas[gp].find(face->first);
 
@@ -3942,6 +4007,7 @@ namespace overlap{
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_couples,
              const std::vector< std::map< unsigned int, double > > &face_areas,
+             const std::vector< std::vector< unsigned int > > &external_face_ids,
              std::vector< double > &surface_external_couple){
         /*!
          * Construct the surface force acting on the nodes of the finite element
@@ -3952,6 +4018,8 @@ namespace overlap{
          *     gauss domain faces.
          * :param const std::vector< std::map< unsigned int, double > > &face_areas: The areas of each of the gauss domain faces in 
          *     global coordinates.
+         * :param const std::vector< std::vector< unsigned int > > &external_face_ids: The id numbers of faces which are the boundaries 
+         *     of the filter.
          * :param std::vector< double > &surface_external_force: The external surface couple vector
          */
 
@@ -3984,6 +4052,12 @@ namespace overlap{
         for (unsigned int gp=0; gp<face_shapefunctions.size(); gp++){
             //Loop over the faces
             for (auto face=face_shapefunctions[gp].begin(); face!=face_shapefunctions[gp].end(); face++){
+                //check if the face is an external face
+                auto extface = std::find(external_face_ids[gp].begin(), external_face_ids[gp].end(), face->first);
+                if (extface == external_face_ids[gp].end()){
+                    continue;
+                }
+
                 auto couple = face_couples[gp].find(face->first);
                 auto area = face_areas[gp].find(face->first);
 
@@ -4162,36 +4236,37 @@ namespace overlap{
         C = Eigen::MatrixXd::Zero(ncouple*cg_shapefunction_gradients[0].size(), nstress*cg_shapefunction_gradients.size());
 
         //Loop over the gauss domains
-        for (unsigned int gp=0; gp<cg_shapefunction_gradients.size(); gp++){
+        for (unsigned int gp=0; gp<ngpts; gp++){
             //Loop over the nodes
             for (unsigned int n=0; n<cg_shapefunction_gradients[gp].size(); n++){
+
                 C(ncouple*n + 0, nstress*gp +  0) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 0, nstress*gp +  7) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 0, nstress*gp +  8) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 0, nstress*gp +  9) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 0, nstress*gp + 18) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 1, nstress*gp +  1) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
                 C(ncouple*n + 1, nstress*gp + 10) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 1, nstress*gp + 14) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 1, nstress*gp + 15) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 1, nstress*gp + 19) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 2, nstress*gp +  2) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 2, nstress*gp + 11) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
                 C(ncouple*n + 2, nstress*gp + 20) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 2, nstress*gp + 21) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 2, nstress*gp + 22) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 3, nstress*gp + 11) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 3, nstress*gp +  3) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
                 C(ncouple*n + 3, nstress*gp + 12) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 3, nstress*gp + 13) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 4, nstress*gp +  2) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 4, nstress*gp +  3) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 3, nstress*gp + 21) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
                 C(ncouple*n + 4, nstress*gp +  4) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 5, nstress*gp +  1) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 4, nstress*gp + 13) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 4, nstress*gp + 22) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
                 C(ncouple*n + 5, nstress*gp +  5) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 5, nstress*gp +  6) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 6, nstress*gp + 19) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 6, nstress*gp + 23) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 5, nstress*gp + 14) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 5, nstress*gp + 23) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 6, nstress*gp +  6) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 6, nstress*gp + 15) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
                 C(ncouple*n + 6, nstress*gp + 24) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 7, nstress*gp + 18) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 7, nstress*gp +  7) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                C(ncouple*n + 7, nstress*gp + 16) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
                 C(ncouple*n + 7, nstress*gp + 25) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 7, nstress*gp + 26) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 8, nstress*gp +  9) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 8, nstress*gp + 16) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+                C(ncouple*n + 8, nstress*gp +  8) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
                 C(ncouple*n + 8, nstress*gp + 17) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                C(ncouple*n + 8, nstress*gp + 26) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
             }
         }
 
@@ -4233,7 +4308,19 @@ namespace overlap{
         RHS.block(nvariables, 0, nconstraints, 1) = d;
 
         //Solve the system
-        Eigen::MatrixXd solution = M.partialPivLu().solve(RHS);
+        Eigen::MatrixXd solution = M.colPivHouseholderQr().solve(RHS);
+        double relative_error = (M*solution - RHS).norm()/std::max((M*solution).norm(), RHS.norm());
+
+        if (relative_error > 1e-6){
+              double numerator = (C*solution.block(0, 0, nvariables, 1) - d).norm();
+              double T1norm = (C*solution.block(0, 0, nvariables, 1)).norm();
+              double T2norm = (d.norm());
+              double constraint_error = numerator/std::max(T1norm, T2norm);
+//            double constraint_error = (C*solution.block(nvariables, 0, nconstraints, 1) - d).norm()/std::max((C*solution.block(nvariables, 0, nconstraints, 1)).norm(), d.norm());
+            std::cerr << "Warning: Relative error is larger than threshold.\n";
+            std::cerr << "         Relative error  : " << relative_error << "\n";
+            std::cerr << "         Constraint error: " << constraint_error << "\n";
+        }
 
         //Return the variables
         x = solution.block(0, 0, nvariables, 1);
@@ -4318,14 +4405,8 @@ namespace overlap{
         //Add the surface external force to d
         d += Eigen::Map< const EigVec >(surface_external_couple.data(), nconstraints, 1);
 
-        std::cout << "d1:\n" << d << "\n";
-
         //Add the cauchy-symmetric microstress couple
         d += Eigen::Map< const EigVec >(symm_cauchy_couple.data(), nconstraints, 1);
-
-        if (((d == d).array()).all()){
-            std::cout << "d:\n" << d << "\n";
-        }
 
         //Add the body external couple to d
         if (body_external_couple.size() == nconstraints){
@@ -4347,6 +4428,46 @@ namespace overlap{
             assert(1==0);
         }
 
+        return;
+    }
+
+    void id_unique_vectors(const std::map< unsigned int, std::vector< double > > &vectors,
+                           std::map< unsigned int, std::vector< double > > &unique,
+                           double tolr, double tola, bool opposite_is_unique){
+        /*!
+         * Identify a subset of the incoming vectors that are in unique directions. Note that 
+         * if opposite_is_unique is false (the default) vectors in opposite directions are id'd 
+         * as equivalent since they are linear combinations of each-other.
+         * 
+         * :param const std::map< unsigned int, std::vector< double > > &vectors: The set of vectors to compare.
+         * :param std::map< unsigned int, std::vector< double > > &unique: A set of unique vectors
+         * :param double tolr: The relative tolerance
+         * :param double tola: The absolute tolerance
+         * :param bool opposite_is_unique: If false, vectors facing in exactly opposite directions are not unique.
+         */
+        
+        unique.clear();
+        if (vectors.size() == 0){
+            return;
+        }
+
+        bool is_unique;
+        for (auto vector=vectors.begin(); vector!=vectors.end(); vector++){
+            is_unique = true;
+
+            for (auto u = unique.begin(); u!=unique.end(); u++){
+//                std::cout << "vector: "; print_vector(vector->second);
+//                std::cout << "u: "; print_vector(u->second);
+//                std::cout << "opposite_is_unique: " << opposite_is_unique << "\n";
+                if (compare_vector_directions(vector->second, u->second, tolr, tola, opposite_is_unique)){
+                    is_unique=false;
+                    break;
+                }
+            }
+            if (is_unique){
+                unique.emplace(vector->first, vector->second);
+            }
+        }
         return;
     }
 }

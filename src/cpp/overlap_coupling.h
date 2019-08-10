@@ -138,6 +138,8 @@ namespace overlap{
             const vecOfvec* get_dns_bounds() const;
             const std::vector< MicroPoint >* get_gauss_domains() const;
 
+            const std::vector< std::vector< unsigned int > >* get_external_face_ids() const;
+
             void print_element() const;
 
         protected:
@@ -151,6 +153,7 @@ namespace overlap{
 
             std::vector< MicroPoint > gauss_domains;
             std::map< unsigned int, FloatType> boundary_node_volumes;
+            std::vector< std::vector< unsigned int > > external_face_ids;
 //            voro::container element_container;
 //            voro::container dns_container;
 
@@ -544,7 +547,7 @@ namespace overlap{
 
     bool fuzzy_equals(const std::vector< double > &a, const std::vector< double > &b, const double tolr=1e-6, const double tola=1e-6);
 
-    bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr=1e-6, const double tola=1e-6);
+    bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr=1e-6, const double tola=1e-6, bool opposite_is_unique=true);
 
     int normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3, std::vector< double > &normal, double tolr=1e-6, double tola=1e-6);
 
@@ -615,12 +618,14 @@ namespace overlap{
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_tractions,
              const std::vector< std::map< unsigned int, double > > &face_areas,
+             const std::vector< std::vector< unsigned int > > &external_face_ids,
              std::vector< double > &surface_external_force);
 
     void construct_first_moment_surface_external_couple(
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_couples,
              const std::vector< std::map< unsigned int, double > > &face_areas,
+             const std::vector< std::vector< unsigned int > > &external_face_ids,
              std::vector< double > &surface_external_couple);
 
     void construct_first_moment_symm_cauchy_couple(const vecOfvec &com_shapefunctions,
@@ -652,6 +657,10 @@ namespace overlap{
                                          const std::vector< FloatType > &body_external_couple,
                                          const std::vector< FloatType > &kinetic_couple,
                                          Eigen::MatrixXd &d);
+
+    void id_unique_vectors(const std::map< unsigned int, std::vector< double > > &vectors,
+                           std::map< unsigned int, std::vector< double > > &unique,
+                           double tolr=1e-6, double tola=1e-6, bool opposite_is_unique=false);
 
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,
