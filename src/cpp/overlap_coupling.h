@@ -137,6 +137,8 @@ namespace overlap{
             const planeMap* get_dns_planes() const;
             const vecOfvec* get_dns_bounds() const;
             const std::vector< MicroPoint >* get_gauss_domains() const;
+            const std::vector< vecOfvec >* get_domain_vertices() const;
+            const std::vector< std::vector< std::vector< unsigned int > > >* get_vertex_planes() const;
 
             const std::vector< std::vector< unsigned int > >* get_external_face_ids() const;
 
@@ -150,6 +152,8 @@ namespace overlap{
             planeMap dns_planes;
             vecOfvec element_bounds;
             vecOfvec dns_bounds;
+            std::vector< vecOfvec > domain_vertices;
+            std::vector< std::vector< std::vector< unsigned int > > > vertex_planes;
 
             std::vector< MicroPoint > gauss_domains;
             std::map< unsigned int, FloatType> boundary_node_volumes;
@@ -256,6 +260,7 @@ namespace overlap{
                           }
 
                       }
+
 //            MicroPoint(const MicroPoint &p){
 //                /*!
 //                Copy constructor
@@ -491,8 +496,13 @@ namespace overlap{
             int compute_cauchy_stress();
             int compute_couple_stress();            
 
+            int compute_vertices_cauchy_stress();
+            int compute_vertex_weights();
+
             vecOfvec symmetric_microstress;
             vecOfvec cauchy_stress;
+            std::vector< vecOfvec > vertex_cauchy;
+
             vecOfvec couple_stress;
             std::vector< std::map< unsigned int, std::vector< FloatType > > > traction;
             std::vector< std::map< unsigned int, std::vector< FloatType > > > couple_traction;
@@ -661,6 +671,13 @@ namespace overlap{
     void id_unique_vectors(const std::map< unsigned int, std::vector< double > > &vectors,
                            std::map< unsigned int, std::vector< double > > &unique,
                            double tolr=1e-6, double tola=1e-6, bool opposite_is_unique=false);
+
+    void compute_vertices_cauchy_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
+                                        const MicroPoint &gauss_domain,
+                                        const std::map< unsigned int, std::vector< FloatType > > &tractions,
+                                        vecOfvec &vertex_cauchy);
+
+    void compute_vertex_cauchy_stress(const vecOfvec &normals, const vecOfvec &tractions, std::vector< double > &cauchy_stress);
 
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,

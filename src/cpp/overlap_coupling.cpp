@@ -423,6 +423,8 @@ namespace overlap{
         vecOfvec points;
 
         gauss_domains.resize(gauss_points.size());
+        domain_vertices.resize(gauss_points.size());
+        vertex_planes.resize(gauss_points.size());
 
         unsigned int plane_num = 0;
 
@@ -438,6 +440,10 @@ namespace overlap{
             c.face_vertices( face_vertices );
             c.face_areas( areas );
             c.vertices(x, y, z, vertices);
+
+            //Set the number of vertices for the current gauss domain
+            vertex_planes[index].resize(vertices.size()/3);
+            for (unsigned int i=0; i<vertex_planes[index].size(); i++){vertex_planes[index][i].reserve(3);}
 
             //Prepare to populate the required values
             ifv = 0;
@@ -460,11 +466,15 @@ namespace overlap{
 
 //                std::cout << "normal: "; elib::print(normals[i]);
 
-                //Find the centroid of each of the face
+                //Find the centroid of each of the faces
                 find_face_centroid(face_vertices, vertices, ifv, points[i]);
 
                 //Set the face number
                 planes[i] = plane_num;
+
+                //Add the plane to the vertices which are included
+                for (int j=0; j<face_vertices[ifv]; j++){vertex_planes[index][face_vertices[ifv+1+j]].push_back(plane_num);}
+
                 plane_num++;
 
                 ifv += face_vertices[ifv]+1;
@@ -479,6 +489,14 @@ namespace overlap{
             //Add the point
             gauss_domains[index] = MicroPoint(c.volume(), centroid, {x, y, z}, planes, 
                                               areas, normals, points);
+
+            //Add the coordinates of the domain vertices
+            domain_vertices[index].resize(vertices.size()/3);
+            for (unsigned int i=0; i<vertices.size()/3; i++){
+                domain_vertices[index][i] = {vertices[3*i+0],
+                                             vertices[3*i+1],
+                                             vertices[3*i+2]};
+            }
 //            std::cout << "gauss domain " << index << "\n"; gauss_domains[index].print();
 //            assert(1==0);
 //            index++;
@@ -488,6 +506,7 @@ namespace overlap{
 
         //Free the memory associated with the container
         delete(container);
+
     }
 
     void OverlapCoupling::compute_weights(const std::map< unsigned int, std::vector< FloatType > > &positions,
@@ -583,6 +602,20 @@ namespace overlap{
         Get a pointer to the gauss domains
         */
         return &gauss_domains;
+    }
+
+    const std::vector< vecOfvec >* OverlapCoupling::get_domain_vertices() const{
+        /*
+        Get a pointer to the coordinates vertices which comprise the current gauss domain
+        */
+        return &domain_vertices;
+    }
+
+    const std::vector< std::vector< std::vector< unsigned int > > >* OverlapCoupling::get_vertex_planes() const{
+        /*
+        Get a pointer to the indices of the planes which go through the domain vertices
+        */
+        return &vertex_planes;
     }
 
     const std::vector< std::vector< unsigned int > >* OverlapCoupling::get_external_face_ids() const{
@@ -3016,6 +3049,7 @@ namespace overlap{
 
          //Compute the Cauchy stress
          compute_traction(micro_stress);
+         compute_vertices_cauchy_stress();
          construct_cauchy_least_squares();
          construct_linear_momentum_surface_external_force();
          construct_linear_momentum_constraint_matrix();
@@ -3110,6 +3144,17 @@ namespace overlap{
          */
 
         Eigen::MatrixXd x;
+
+        std::ofstream file("couple_lsq_test.txt");
+        if (file.is_open()){
+            file << "A:\n" << first_moment_A << "\n";
+            file << "b:\n" << first_moment_b << "\n";
+            file << "C:\n" << first_moment_C << "\n";
+            file << "d:\n" << first_moment_d << "\n";
+            file.flush();
+        }
+        assert(1==0);
+
         solve_constrained_least_squares(first_moment_A, first_moment_b, first_moment_C, first_moment_d, x);
 
         //Extract the couple stresses assuming 3d
@@ -3239,6 +3284,27 @@ namespace overlap{
                     face->second[i] /= area->second;
                 }
             }
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_vertices_cauchy_stress(){
+        /*!
+         * Compute the Cauchy stress at the Gauss domain vertices
+         */
+
+        const std::vector< std::vector< std::vector< unsigned int > > > *vertex_planes = material_overlap.get_vertex_planes();
+        const std::vector< MicroPoint > *gauss_domains = material_overlap.get_gauss_domains();
+        vecOfvec vertex_normals, vertex_tractions;
+
+        vertex_cauchy.clear();
+        vertex_cauchy.resize((*vertex_planes).size());
+
+        //Iterate through the gauss points
+        for (unsigned int gp=0; gp<(*vertex_planes).size(); gp++){
+
+           overlap::compute_vertices_cauchy_stress((*vertex_planes)[gp], (*gauss_domains)[gp], traction[gp], vertex_cauchy[gp]);
+
         }
         return 0;
     }
@@ -4467,6 +4533,104 @@ namespace overlap{
             if (is_unique){
                 unique.emplace(vector->first, vector->second);
             }
+        }
+        return;
+    }
+
+    void compute_vertex_cauchy_stress(const vecOfvec &normals, const vecOfvec &tractions, std::vector< double > &cauchy_stress){
+        /*!
+         * Compute the Cauchy stress from the traction associated with the provided normals
+         * 
+         * :param const vecOfvec &normals: The normal vectors
+         * :param const vecOfvec &traction: The surface tractions
+         * :param std::vector< double > &cauchy_stress: The re-constructed Cauchy stress 
+         */
+
+        //Construct the A matrix and b vector
+        Eigen::MatrixXd A = Eigen::MatrixXd::Zero(3*tractions.size(), 9);
+        Eigen::MatrixXd b(3*tractions.size(), 1);
+
+        //Set up a map for the cauchy stress
+        cauchy_stress.resize(9);
+        Eigen::Map< Eigen::MatrixXd > x(cauchy_stress.data(), 9, 1);
+
+        unsigned int row0=0;
+        for (auto n=normals.begin(); n!=normals.end(); n++){
+            A(row0+0, 0) = (*n)[0];
+            A(row0+0, 7) = (*n)[2];
+            A(row0+0, 8) = (*n)[1];
+            A(row0+1, 1) = (*n)[1];
+            A(row0+1, 5) = (*n)[0];
+            A(row0+1, 6) = (*n)[2];
+            A(row0+2, 2) = (*n)[2];
+            A(row0+2, 3) = (*n)[1];
+            A(row0+2, 4) = (*n)[0];
+
+            b(row0+0, 0) = tractions[row0/3][0];
+            b(row0+1, 0) = tractions[row0/3][1];
+            b(row0+2, 0) = tractions[row0/3][2];
+
+            row0 += 3;
+        }
+
+        //Perform the least squares solution
+        x = A.colPivHouseholderQr().solve(b);
+
+        return;
+    }
+
+    void compute_vertices_cauchy_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
+                                        const MicroPoint &domain,
+                                        const std::map< unsigned int, std::vector< FloatType > > &tractions,
+                                        vecOfvec &vertex_cauchy){
+        /*!
+         * Compute the cauchy stress at a series of vertices and their associated planes
+         * 
+         * :param std::vector< std::vector< unsigned int > > &vertex_planes: The id numbers of the planes associated with the vertex
+         * :param std::map< unsigned int, std::vector< FloatType > > &planes: The normal - point definitions of the planes
+         * :param std::map< unsigned int, std::vector< FloatType > > &tractions: The tractions associated with each plane
+         * :param vecOvec &vertex_cauchy: The cauchy stress at the vertices
+         */
+
+        vecOfvec vertex_normals; //The normals associated with the vertices
+        vecOfvec vertex_tractions; //The tractions associated with the vertices
+        
+        //Resize the Cauchy stress vector
+        vertex_cauchy.resize(vertex_planes.size());
+
+        //Iterate through the vertices
+        for (unsigned int v=0; v<vertex_planes.size(); v++){
+
+            //Assemble the normals and tractions
+            vertex_normals.clear(); 
+            vertex_normals.resize(vertex_planes[v].size());
+
+            vertex_tractions.clear();
+            vertex_tractions.resize(vertex_planes[v].size());
+
+            //Assemble the tractions and normals
+            for (unsigned int f=0; f<vertex_planes[v].size(); f++){
+
+                auto face = std::find(domain.planes.begin(), domain.planes.end(), vertex_planes[v][f]);
+                if (face == domain.planes.end()){
+                    std::cerr << "Error: vertex plane not found in element_planes\n";
+                    assert(1==0);
+                }
+
+                auto f_traction = tractions.find(vertex_planes[v][f]);
+                if (f_traction == tractions.end()){
+                    std::cerr << "Error: traction not found in traction\n";
+                    assert(1==0);
+                }
+
+                //Save the normal
+                vertex_normals[f] = domain.normal( std::distance( domain.planes.begin(), face) );
+
+                //Save the traction
+                vertex_tractions[f] = f_traction->second;
+            }
+
+            compute_vertex_cauchy_stress(vertex_normals, vertex_tractions, vertex_cauchy[v]);
         }
         return;
     }

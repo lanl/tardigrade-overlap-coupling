@@ -49,6 +49,9 @@ def rotation_matrix(random=True, angles=None):
 def stress(x, t):
 #    principal = np.diag([2.0*x[0], 0.0, 0.0])*t
     principal = np.diag([2, -1, 3])
+#    principal = np.array([[1, 6, 5],\
+#                          [9, 2, 4],\
+#                          [8, 7, 3]])
 
     #Rotate the principle axes of the stress by some random amount
     #To introduce heterogeneity into the stress field
