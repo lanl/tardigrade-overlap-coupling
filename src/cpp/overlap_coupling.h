@@ -480,24 +480,24 @@ namespace overlap{
             int compute_symmetric_microstress(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
             int compute_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
             int compute_couple_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
-            int construct_cauchy_least_squares();
+//            int construct_cauchy_least_squares();
+            int construct_linear_momentum_least_squares_matrix();
             int construct_couple_least_squares();
 
             int construct_linear_momentum_surface_external_force();
             int construct_first_moment_surface_external_couple();
             int construct_first_moment_symm_cauchy_couple();
 
-            int construct_linear_momentum_constraint_matrix();
+            int construct_weight_constraints();
             int construct_first_moment_constraint_matrix();
 
-            int construct_linear_momentum_d_vector();
+            int construct_linear_momentum_b_vector();
             int construct_first_moment_d_vector();
 
             int compute_cauchy_stress();
             int compute_couple_stress();            
 
             int compute_vertices_cauchy_stress();
-            int compute_vertex_weights();
 
             vecOfvec symmetric_microstress;
             vecOfvec cauchy_stress;
@@ -524,8 +524,9 @@ namespace overlap{
             std::vector< std::map< unsigned int, std::vector< FloatType > > > face_shapefunctions;
             vecOfvec com_shapefunction_values;
             std::vector< vecOfvec > com_shapefunction_gradients;
+            Eigen::MatrixXd weight_constraints;
             Eigen::MatrixXd linear_momentum_b;
-            Eigen::MatrixXd linear_momentum_C;
+//            Eigen::MatrixXd linear_momentum_C;
             Eigen::MatrixXd linear_momentum_d;
 
             Eigen::MatrixXd first_moment_b;
@@ -616,9 +617,9 @@ namespace overlap{
                                                                const std::vector< integrateMap > &weights,
                                                                const vecOfvec &centers_of_mass,
                                                                std::vector< std::map< unsigned int, std::vector< double > > > &result);
-    void construct_cauchy_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
-                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_tractions,
-                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b);
+//    void construct_cauchy_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
+//                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_tractions,
+//                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b);
 
     void construct_couple_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
                                         const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples,
@@ -643,9 +644,10 @@ namespace overlap{
                                                    const std::vector< double > &volume,
                                                    std::vector< double > &symm_cauchy_couple);
 
-    void construct_linear_momentum_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
-                                                     const std::vector< FloatType > &volume,
-                                                     Eigen::MatrixXd &C);
+    void construct_linear_momentum_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+                                                        const std::vector< FloatType > &volume,
+                                                        const std::vector< vecOfvec > &vertex_cauchy,
+                                                        Eigen::MatrixXd &C);
 
     void construct_first_moment_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
                                                   const std::vector< FloatType > &volume,
@@ -655,7 +657,7 @@ namespace overlap{
                                          const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
                                          Eigen::MatrixXd &x);
 
-    void construct_linear_momentum_d_vector(const unsigned int nconstraints,
+    void construct_linear_momentum_b_vector(const unsigned int nconstraints,
                                             const std::vector< FloatType > &surface_external_force,
                                             const std::vector< FloatType > &body_external_force,
                                             const std::vector< FloatType > &kinetic_force,
