@@ -3061,24 +3061,9 @@ namespace overlap{
 
          //Compute the couple stress
          compute_couple_traction(micro_stress);
+         compute_vertices_couple_stress();
          construct_couple_least_squares();
          construct_first_moment_surface_external_couple();
-//         std::cout << "surface_external_couple:\n";
-//         for (unsigned int i=0; i<surface_external_couple.size(); i++){
-//             std::cout << surface_external_couple[i] << "\n";
-//         }
-//         std::cout << "first_moment_A:\n";
-//         for (unsigned int i=0; i<6; i++){
-//             std::cout << "face " << i << "\n";
-//             std::cout << first_moment_A.block(9*i, 0, 9, 27) << "\n";
-//         }
-//         for (unsigned int r=0; r<first_moment_A.rows(); r++){
-//             std::cout << first_moment_A.row(r).sum() << "\n";
-//         }
-//         for (unsigned int r=0; r<first_moment_A.cols(); r++){
-//             std::cout << first_moment_A.col(r).sum() << "\n";
-//         }
-
          construct_first_moment_symm_cauchy_couple();
          construct_first_moment_constraint_matrix();
          //TODO: Add construction of body couple term
@@ -3356,6 +3341,24 @@ namespace overlap{
 
            overlap::compute_vertices_cauchy_stress((*vertex_planes)[gp], (*gauss_domains)[gp], traction[gp], vertex_cauchy[gp]);
 
+        }
+        return 0;
+    }
+
+    int MicromorphicFilter::compute_vertices_couple_stress(){
+        /*!
+         * Compute the higher order stress at the Gauss domain vertices
+         */
+        const std::vector< std::vector< std::vector< unsigned int > > > *vertex_planes = material_overlap.get_vertex_planes();
+        const std::vector< MicroPoint > *gauss_domains = material_overlap.get_gauss_domains();
+        vecOfvec vertex_normals;
+
+        vertex_hostress.clear();
+        vertex_hostress.resize((*vertex_planes).size());
+
+        //Iterate through the gauss points
+        for (unsigned int gp=0; gp<(*vertex_planes).size(); gp++){
+            overlap::compute_vertices_couple_stress((*vertex_planes)[gp], (*gauss_domains)[gp], couple_traction[gp], vertex_hostress[gp]);
         }
         return 0;
     }
@@ -4663,6 +4666,43 @@ namespace overlap{
         return;
     }
 
+    void compute_vertex_couple_stress(const vecOfvec &normals, const vecOfvec &couples, std::vector< double > &couple_stress){
+        /*!
+         * Compute the higher order stress from the traction associated with the provided normals
+         * 
+         * :param const vecOfvec &normals: The normal vectors
+         * :param const vecOfvec &couples: The surface couple tractions
+         * :param std::vector< double > &couple_stress: The re-constructed higher order stress 
+         */
+
+        //Construct the A matrix and b vector
+        Eigen::MatrixXd A = Eigen::MatrixXd::Zero(9*couples.size(), 27);
+        Eigen::MatrixXd b(9*couples.size(), 1);
+
+        //Set up a map for the couple stress
+        couple_stress.resize(27);
+        Eigen::Map< Eigen::MatrixXd > x(couple_stress.data(), couple_stress.size(), 1);
+
+        unsigned int row0=0;
+        for (auto n=normals.begin(); n!=normals.end(); n++){
+            for (unsigned int i=0; i<9; i++){
+
+                A(row0+i, 0+i) = (*n)[0];
+                A(row0+i, 9+i) = (*n)[1];
+                A(row0+i,18+i) = (*n)[2];
+
+                b(row0+i, 0) = couples[row0/9][i];
+            }
+            row0 += 9;
+        }
+
+        //Perform the least squares solution
+        x = A.colPivHouseholderQr().solve(b);
+
+        return;
+    }
+
+
     void compute_vertices_cauchy_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
                                         const MicroPoint &domain,
                                         const std::map< unsigned int, std::vector< FloatType > > &tractions,
@@ -4717,5 +4757,60 @@ namespace overlap{
             compute_vertex_cauchy_stress(vertex_normals, vertex_tractions, vertex_cauchy[v]);
         }
         return;
+    }
+
+    void compute_vertices_couple_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
+                                        const MicroPoint &domain,
+                                        const std::map< unsigned int, std::vector< FloatType > > &couple_tractions,
+                                        vecOfvec &vertex_hostress){
+        /*!
+         * Compute the higher order stress at a series of vertices and their associated planes
+         * 
+         * :param std::vector< std::vector< unsigned int > > &vertex_planes: The id numbers of the planes associated with the vertex
+         * :param std::map< unsigned int, std::vector< FloatType > > &planes: The normal - point definitions of the planes
+         * :param std::map< unsigned int, std::vector< FloatType > > &couple_tractions: The couple_tractions associated with each plane
+         * :param vecOvec &vertex_hostress: The higher order stress at the vertices
+         */
+
+        vecOfvec vertex_normals; //The normals associated with the vertices
+        vecOfvec vertex_couples; //The couple tractions associated with the vertices
+
+        //Resize the couple stress vector
+        vertex_hostress.resize(vertex_planes.size());
+
+        //Iterate through the vertices
+        for (unsigned int v=0; v<vertex_planes.size(); v++){
+
+            //Assemble the normals and couple tractions
+            vertex_normals.clear(); 
+            vertex_normals.resize(vertex_planes[v].size());
+
+            vertex_couples.clear();
+            vertex_couples.resize(vertex_planes[v].size());
+
+            //Assemble the tractions and normals
+            for (unsigned int f=0; f<vertex_planes[v].size(); f++){
+
+                auto face = std::find(domain.planes.begin(), domain.planes.end(), vertex_planes[v][f]);
+                if (face == domain.planes.end()){
+                    std::cerr << "Error: vertex plane not found in element_planes\n";
+                    assert(1==0);
+                }
+
+                auto f_traction = couple_tractions.find(vertex_planes[v][f]);
+                if (f_traction == couple_tractions.end()){
+                    std::cerr << "Error: couple traction not found in couple_tractions\n";
+                    assert(1==0);
+                }
+
+                //Save the normal
+                vertex_normals[f] = domain.normal( std::distance( domain.planes.begin(), face) );
+
+                //Save the couple traction
+                vertex_couples[f] = f_traction->second;
+            }
+
+            compute_vertex_couple_stress(vertex_normals, vertex_couples, vertex_hostress[v]);
+        }
     }
 }

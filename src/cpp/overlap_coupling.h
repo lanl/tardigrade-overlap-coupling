@@ -498,10 +498,12 @@ namespace overlap{
             int compute_couple_stress();            
 
             int compute_vertices_cauchy_stress();
+            int compute_vertices_couple_stress();
 
             vecOfvec symmetric_microstress;
             vecOfvec cauchy_stress;
             std::vector< vecOfvec > vertex_cauchy;
+            std::vector< vecOfvec > vertex_hostress;
 
             vecOfvec couple_stress;
             std::vector< std::map< unsigned int, std::vector< FloatType > > > traction;
@@ -679,7 +681,15 @@ namespace overlap{
                                         const std::map< unsigned int, std::vector< FloatType > > &tractions,
                                         vecOfvec &vertex_cauchy);
 
+    void compute_vertices_couple_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
+                                        const MicroPoint &gauss_domain,
+                                        const std::map< unsigned int, std::vector< FloatType > > &couple_tractions,
+                                        vecOfvec &vertex_hostress);
+
+
     void compute_vertex_cauchy_stress(const vecOfvec &normals, const vecOfvec &tractions, std::vector< double > &cauchy_stress);
+
+    void compute_vertex_couple_stress(const vecOfvec &normals, const vecOfvec &couples, std::vector< double > &couple_stress);
 
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,
