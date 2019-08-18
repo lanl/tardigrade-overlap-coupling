@@ -3049,7 +3049,21 @@ namespace overlap{
 
          //Compute the Cauchy stress
          compute_traction(micro_stress);
+//         std::cout << "traction:\n";
+//         for (unsigned int i=0; i<traction.size(); i++){
+//             std::cout << " gauss domain " << i << "\n";
+//             for (auto face=traction[i].begin(); face!=traction[i].end(); face++){
+//                 std::cout << face->first << ": "; elib::print(face->second);
+//             }
+//         }
          compute_vertices_cauchy_stress();
+//         std::cout << "vertex cauchy:\n";
+//         for (unsigned int i=0; i<vertex_cauchy.size(); i++){
+//             std::cout << " vertex " << i << "\n";
+//             for (unsigned int j=0; j<vertex_cauchy[i].size(); j++){
+//                 std::cout << "  "; elib::print(vertex_cauchy[i][j]);
+//             }
+//         }
 //         construct_cauchy_least_squares();
          construct_linear_momentum_surface_external_force();
          construct_linear_momentum_least_squares_matrix();
@@ -3068,7 +3082,7 @@ namespace overlap{
          construct_first_moment_least_squares_matrix();
          //TODO: Add construction of body couple term
          //TODO: Add construction of kinetic couple term
-         construct_first_moment_d_vector();
+         construct_first_moment_b_vector();
          compute_couple_stress();
 //         std::cout << "couple_stress:\n";
 //         for (unsigned int gp=0; gp<couple_stress.size(); gp++){
@@ -3091,16 +3105,16 @@ namespace overlap{
         return 0;
     }
 
-    int MicromorphicFilter::construct_first_moment_d_vector(){
+    int MicromorphicFilter::construct_first_moment_b_vector(){
         /*!
          * Construct the d vector for the constrained first moment of momentum calculation
          * of the couple stress
          */
 
-        overlap::construct_first_moment_d_vector(first_moment_C.rows(),
+        overlap::construct_first_moment_b_vector(first_moment_A.rows(),
                                                  surface_external_couple, symm_cauchy_couple,
                                                  body_external_couple, kinetic_couple,
-                                                 first_moment_d);
+                                                 first_moment_b);
         return 0;
     }
 
@@ -3154,7 +3168,7 @@ namespace overlap{
          */
 
         Eigen::MatrixXd w;
-        solve_constrained_least_squares(first_moment_C, first_moment_d, weight_constraints, linear_momentum_d, w);
+        solve_constrained_least_squares(first_moment_A, first_moment_b, weight_constraints, linear_momentum_d, w);
         std::vector< double > weights(w.data(), w.data() + w.size());
 
         process_weight_vector_to_results(weights, vertex_hostress, couple_stress);
@@ -3287,7 +3301,6 @@ namespace overlap{
          */
 
         const std::vector< std::vector< std::vector< unsigned int > > > *vertex_planes = material_overlap.get_vertex_planes();
-        const std::vector< MicroPoint > *gauss_domains = material_overlap.get_gauss_domains();
         vecOfvec vertex_normals, vertex_tractions;
 
         vertex_cauchy.clear();
@@ -3296,7 +3309,7 @@ namespace overlap{
         //Iterate through the gauss points
         for (unsigned int gp=0; gp<(*vertex_planes).size(); gp++){
 
-           overlap::compute_vertices_cauchy_stress((*vertex_planes)[gp], (*gauss_domains)[gp], traction[gp], vertex_cauchy[gp]);
+           overlap::compute_vertices_cauchy_stress((*vertex_planes)[gp], surface_normal[gp], traction[gp], vertex_cauchy[gp]);
 
         }
         return 0;
@@ -3307,7 +3320,6 @@ namespace overlap{
          * Compute the higher order stress at the Gauss domain vertices
          */
         const std::vector< std::vector< std::vector< unsigned int > > > *vertex_planes = material_overlap.get_vertex_planes();
-        const std::vector< MicroPoint > *gauss_domains = material_overlap.get_gauss_domains();
         vecOfvec vertex_normals;
 
         vertex_hostress.clear();
@@ -3315,7 +3327,7 @@ namespace overlap{
 
         //Iterate through the gauss points
         for (unsigned int gp=0; gp<(*vertex_planes).size(); gp++){
-            overlap::compute_vertices_couple_stress((*vertex_planes)[gp], (*gauss_domains)[gp], couple_traction[gp], vertex_hostress[gp]);
+            overlap::compute_vertices_couple_stress((*vertex_planes)[gp], surface_normal[gp], couple_traction[gp], vertex_hostress[gp]);
         }
         return 0;
     }
@@ -3415,7 +3427,7 @@ namespace overlap{
          * Construct the least squares matrix for the balance of the first moment of momentum.
          */
 
-        overlap::construct_first_moment_least_squares_matrix(com_shapefunction_gradients, volume, vertex_hostress, first_moment_C);
+        overlap::construct_first_moment_least_squares_matrix(com_shapefunction_gradients, volume, vertex_hostress, first_moment_A);
         return 0;
     }
 
@@ -3853,6 +3865,7 @@ namespace overlap{
                     file << ", " << couple_stress[gp][i];
                 }
             }
+            file << "\n";
             
         }
         file.flush();
@@ -4523,7 +4536,7 @@ namespace overlap{
         return;
     }
 
-    void construct_first_moment_d_vector(const unsigned int nconstraints,
+    void construct_first_moment_b_vector(const unsigned int nconstraints,
                                          const std::vector< FloatType > &surface_external_couple,
                                          const std::vector< FloatType > &symm_cauchy_couple,
                                          const std::vector< FloatType > &body_external_couple,
@@ -4538,7 +4551,7 @@ namespace overlap{
          *     and symmetric microstress.
          * :param const std::vector< FloatType > &body_external_couple: The body couple external forces acting on the body.
          * :param const std::vector< FloatType > &kinetic_couple: The kinetic couple acting on the body.
-         * :param Eigen::MatrixXd &d: The d vector to be constructed.
+         * :param Eigen::MatrixXd &d: The b vector to be constructed.
          */
 
         d = Eigen::MatrixXd::Zero(nconstraints, 1);
@@ -4701,14 +4714,14 @@ namespace overlap{
 
 
     void compute_vertices_cauchy_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
-                                        const MicroPoint &domain,
+                                        const std::map< unsigned int, std::vector< FloatType > > &normals,
                                         const std::map< unsigned int, std::vector< FloatType > > &tractions,
                                         vecOfvec &vertex_cauchy){
         /*!
          * Compute the cauchy stress at a series of vertices and their associated planes
          * 
          * :param std::vector< std::vector< unsigned int > > &vertex_planes: The id numbers of the planes associated with the vertex
-         * :param std::map< unsigned int, std::vector< FloatType > > &planes: The normal - point definitions of the planes
+         * :param std::map< unsigned int, std::vector< FloatType > > &normals: The normals associated with each plane
          * :param std::map< unsigned int, std::vector< FloatType > > &tractions: The tractions associated with each plane
          * :param vecOvec &vertex_cauchy: The cauchy stress at the vertices
          */
@@ -4732,9 +4745,9 @@ namespace overlap{
             //Assemble the tractions and normals
             for (unsigned int f=0; f<vertex_planes[v].size(); f++){
 
-                auto face = std::find(domain.planes.begin(), domain.planes.end(), vertex_planes[v][f]);
-                if (face == domain.planes.end()){
-                    std::cerr << "Error: vertex plane not found in element_planes\n";
+                auto f_normal = normals.find(vertex_planes[v][f]);
+                if (f_normal == normals.end()){
+                    std::cerr << "Error: vertex plane not found in normals\n";
                     assert(1==0);
                 }
 
@@ -4745,7 +4758,7 @@ namespace overlap{
                 }
 
                 //Save the normal
-                vertex_normals[f] = domain.normal( std::distance( domain.planes.begin(), face) );
+                vertex_normals[f] = f_normal->second;
 
                 //Save the traction
                 vertex_tractions[f] = f_traction->second;
@@ -4757,14 +4770,14 @@ namespace overlap{
     }
 
     void compute_vertices_couple_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
-                                        const MicroPoint &domain,
+                                        const std::map< unsigned int, std::vector< FloatType > > &normals,
                                         const std::map< unsigned int, std::vector< FloatType > > &couple_tractions,
                                         vecOfvec &vertex_hostress){
         /*!
          * Compute the higher order stress at a series of vertices and their associated planes
          * 
          * :param std::vector< std::vector< unsigned int > > &vertex_planes: The id numbers of the planes associated with the vertex
-         * :param std::map< unsigned int, std::vector< FloatType > > &planes: The normal - point definitions of the planes
+         * :param std::map< unsigned int, std::vector< FloatType > > &normals: The normals associated with each plane
          * :param std::map< unsigned int, std::vector< FloatType > > &couple_tractions: The couple_tractions associated with each plane
          * :param vecOvec &vertex_hostress: The higher order stress at the vertices
          */
@@ -4788,9 +4801,9 @@ namespace overlap{
             //Assemble the tractions and normals
             for (unsigned int f=0; f<vertex_planes[v].size(); f++){
 
-                auto face = std::find(domain.planes.begin(), domain.planes.end(), vertex_planes[v][f]);
-                if (face == domain.planes.end()){
-                    std::cerr << "Error: vertex plane not found in element_planes\n";
+                auto f_normal = normals.find(vertex_planes[v][f]);
+                if (f_normal == normals.end()){
+                    std::cerr << "Error: vertex plane not found in normals\n";
                     assert(1==0);
                 }
 
@@ -4801,7 +4814,7 @@ namespace overlap{
                 }
 
                 //Save the normal
-                vertex_normals[f] = domain.normal( std::distance( domain.planes.begin(), face) );
+                vertex_normals[f] = f_normal->second;
 
                 //Save the couple traction
                 vertex_couples[f] = f_traction->second;

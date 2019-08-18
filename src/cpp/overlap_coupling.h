@@ -492,7 +492,7 @@ namespace overlap{
             int construct_first_moment_least_squares_matrix();
 
             int construct_linear_momentum_b_vector();
-            int construct_first_moment_d_vector();
+            int construct_first_moment_b_vector();
 
             int compute_cauchy_stress();
             int compute_couple_stress();            
@@ -532,7 +532,7 @@ namespace overlap{
             Eigen::MatrixXd linear_momentum_d;
 
             Eigen::MatrixXd first_moment_b;
-            Eigen::MatrixXd first_moment_C;
+//            Eigen::MatrixXd first_moment_C;
             Eigen::MatrixXd first_moment_d;
 
     };
@@ -666,7 +666,7 @@ namespace overlap{
                                             const std::vector< FloatType > &kinetic_force,
                                             Eigen::MatrixXd &d);
 
-    void construct_first_moment_d_vector(const unsigned int nconstraints,
+    void construct_first_moment_b_vector(const unsigned int nconstraints,
                                          const std::vector< FloatType > &surface_external_couple,
                                          const std::vector< FloatType > &symm_cauchy_couple,
                                          const std::vector< FloatType > &body_external_couple,
@@ -678,12 +678,12 @@ namespace overlap{
                            double tolr=1e-6, double tola=1e-6, bool opposite_is_unique=false);
 
     void compute_vertices_cauchy_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
-                                        const MicroPoint &gauss_domain,
+                                        const std::map< unsigned int, std::vector< FloatType > > &normals,
                                         const std::map< unsigned int, std::vector< FloatType > > &tractions,
                                         vecOfvec &vertex_cauchy);
 
     void compute_vertices_couple_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
-                                        const MicroPoint &gauss_domain,
+                                        const std::map< unsigned int, std::vector< FloatType > > &normals,
                                         const std::map< unsigned int, std::vector< FloatType > > &couple_tractions,
                                         vecOfvec &vertex_hostress);
 

@@ -78,8 +78,9 @@ class GaussPointInformation(object):
         self.surface_normal = [] #The average normal of the faces associated with the gauss point
         
         #Stress properties
-        self.symmetric_microstress = []
-        self.cauchy_stress = []
+        self.symmetric_microstress = [] #The symmetric micro-stress (volume average of micro-stress)
+        self.cauchy_stress = [] #The Cauchy stress (surface average of tractions)
+        self.ho_stress = [] #The Higher-order stress (surface average of tractions dyad relative position)
         
     def __repr__(self, offset=0):
         out_str = " "*offset + "Gauss Point Information\n"
@@ -149,6 +150,13 @@ class GaussPointInformation(object):
             out_str += " "*offset + "  "
             for csi in cs:
                 out_str += "{0:+2.4e}, ".format(csi)
+            out_str += "\n"
+
+        out_str += " "*offset + " Higher order Stress:\n";
+        for hos in self.ho_stress:
+            out_str += " "*offset + "  "
+            for hosi in hos:
+                out_str += "{0:+2.4e}, ".format(hosi)
             out_str += "\n"
 
         return out_str
@@ -245,6 +253,10 @@ def read_output_data(output_fn):
         elif "*CAUCHY STRESS" in sline[0]:
             cs = read_values(of)
             gpinfo.cauchy_stress.append(np.copy(cs))
+
+        elif "*HIGHER ORDER STRESS" in sline[0]:
+            hos = read_values(of)
+            gpinfo.ho_stress.append(np.copy(hos))
             
         elif "*" in sline[0]:
             print("Warning: unknown keyword detected")
