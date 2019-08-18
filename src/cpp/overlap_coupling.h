@@ -482,14 +482,14 @@ namespace overlap{
             int compute_couple_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
 //            int construct_cauchy_least_squares();
             int construct_linear_momentum_least_squares_matrix();
-            int construct_couple_least_squares();
+//            int construct_couple_least_squares();
 
             int construct_linear_momentum_surface_external_force();
             int construct_first_moment_surface_external_couple();
             int construct_first_moment_symm_cauchy_couple();
 
             int construct_weight_constraints();
-            int construct_first_moment_constraint_matrix();
+            int construct_first_moment_least_squares_matrix();
 
             int construct_linear_momentum_b_vector();
             int construct_first_moment_d_vector();
@@ -651,9 +651,10 @@ namespace overlap{
                                                         const std::vector< vecOfvec > &vertex_cauchy,
                                                         Eigen::MatrixXd &C);
 
-    void construct_first_moment_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
-                                                  const std::vector< FloatType > &volume,
-                                                  Eigen::MatrixXd &C);
+    void construct_first_moment_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+                                                     const std::vector< FloatType > &volume,
+                                                     const std::vector< vecOfvec > &vertex_hostress,
+                                                     Eigen::MatrixXd &C);
 
     void solve_constrained_least_squares(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
                                          const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
@@ -690,6 +691,12 @@ namespace overlap{
     void compute_vertex_cauchy_stress(const vecOfvec &normals, const vecOfvec &tractions, std::vector< double > &cauchy_stress);
 
     void compute_vertex_couple_stress(const vecOfvec &normals, const vecOfvec &couples, std::vector< double > &couple_stress);
+
+    void process_weight_vector_to_results(const std::vector< double > &weights, const std::vector< vecOfvec > &values, vecOfvec &results);
+
+    void convert_weight_vector_to_array(const std::vector< double > &weights, const std::vector< vecOfvec > &values, vecOfvec &array);
+
+    void convert_weights_to_vector(const std::vector< double > &weights, const vecOfvec &values, std::vector< double > &output);
 
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,

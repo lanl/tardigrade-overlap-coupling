@@ -1922,111 +1922,111 @@ namespace overlap{
         return; 
     }
 
-    void construct_couple_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
-                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples,
-                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b){
-        /*!
-         * Construct the normal matrix which can project the couple stresses at the Gauss points to the couple traction vector b 
-         * on each of the surfaces. Assumes a 3D couple stress.
-         * 
-         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals: The vector of maps from the 
-         *     gauss domain's face number to the normal of that face.
-         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples: The vector of maps from the 
-         *     gauss domain's face number to the surface couple traction on that face.
-         * :param Eigen::MatrixXd &A: The normal matrix
-         * :param Eigen::MatrixXd &b: The couple traction vector
-         */
-
-        //Determine the size of the A matrix
-        unsigned int nrows, ncols;
-        unsigned int nstress = 27;
-        unsigned int dim = 9;
-
-        //Find the faces that are unique
-        std::vector< std::map< unsigned int, std::vector< double > > > unique_normals(surface_normals.size());
-        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
-            id_unique_vectors(surface_normals[gp], unique_normals[gp], false);
-
-//            std::cout << "gp " << gp << "\n";
-//            for (auto un=unique_normals[gp].begin(); un!=unique_normals[gp].end(); un++){
-//                std::cout << un->first << ": "; print_vector(un->second);
-//            }
-        }
-
-        nrows = 0;
-        ncols = nstress*surface_normals.size(); //27 components of the couple stress for each gauss point
-        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
-//            nrows += dim*surface_normals[gp].size();
-            nrows += dim*unique_normals[gp].size();
-
-        }
-
-        if (surface_couples.size() != surface_normals.size()){
-            std::cerr << "Error: surface_couples should have the same size as surface_normals\n";
-            std::cerr << "       surface_normals.size(): " << surface_normals.size() << "\n";
-            std::cerr << "       surface_couples.size(): " << surface_couples.size() << "\n";
-            assert(1==0);
-        }
-
-        //Resize A and b
-        A = Eigen::MatrixXd::Zero(nrows, ncols);
-        b = Eigen::MatrixXd::Zero(nrows, 1);
-
-        //Iterate over the gauss points
-        unsigned int row0, col0;
-        row0 = col0 = 0;
-
+//    void construct_couple_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
+//                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples,
+//                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b){
+//        /*!
+//         * Construct the normal matrix which can project the couple stresses at the Gauss points to the couple traction vector b 
+//         * on each of the surfaces. Assumes a 3D couple stress.
+//         * 
+//         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals: The vector of maps from the 
+//         *     gauss domain's face number to the normal of that face.
+//         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples: The vector of maps from the 
+//         *     gauss domain's face number to the surface couple traction on that face.
+//         * :param Eigen::MatrixXd &A: The normal matrix
+//         * :param Eigen::MatrixXd &b: The couple traction vector
+//         */
+//
+//        //Determine the size of the A matrix
+//        unsigned int nrows, ncols;
+//        unsigned int nstress = 27;
+//        unsigned int dim = 9;
+//
+//        //Find the faces that are unique
+//        std::vector< std::map< unsigned int, std::vector< double > > > unique_normals(surface_normals.size());
 //        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
-        for (unsigned int gp=0; gp<unique_normals.size(); gp++){
-
-//            for (auto face = surface_normals[gp].begin(); face != surface_normals[gp].end(); face++){
-            for (auto face = unique_normals[gp].begin(); face != unique_normals[gp].end(); face++){
-                //Set the values in the A matrix
-
-                A(row0 + 0, col0 +  0) = face->second[0];
-                A(row0 + 0, col0 +  9) = face->second[1];
-                A(row0 + 0, col0 + 18) = face->second[2];
-                A(row0 + 1, col0 +  1) = face->second[0];
-                A(row0 + 1, col0 + 10) = face->second[1];
-                A(row0 + 1, col0 + 19) = face->second[2];
-                A(row0 + 2, col0 +  2) = face->second[0];
-                A(row0 + 2, col0 + 11) = face->second[1];
-                A(row0 + 2, col0 + 20) = face->second[2];
-                A(row0 + 3, col0 +  3) = face->second[0];
-                A(row0 + 3, col0 + 12) = face->second[1];
-                A(row0 + 3, col0 + 21) = face->second[2];
-                A(row0 + 4, col0 +  4) = face->second[0];
-                A(row0 + 4, col0 + 13) = face->second[1];
-                A(row0 + 4, col0 + 22) = face->second[2];
-                A(row0 + 5, col0 +  5) = face->second[0];
-                A(row0 + 5, col0 + 14) = face->second[1];
-                A(row0 + 5, col0 + 23) = face->second[2];
-                A(row0 + 6, col0 +  6) = face->second[0];
-                A(row0 + 6, col0 + 15) = face->second[1];
-                A(row0 + 6, col0 + 24) = face->second[2];
-                A(row0 + 7, col0 +  7) = face->second[0];
-                A(row0 + 7, col0 + 16) = face->second[1];
-                A(row0 + 7, col0 + 25) = face->second[2];
-                A(row0 + 8, col0 +  8) = face->second[0];
-                A(row0 + 8, col0 + 17) = face->second[1];
-                A(row0 + 8, col0 + 26) = face->second[2];
-
-                auto couple = surface_couples[gp].find(face->first);
-                if (couple == surface_couples[gp].end()){
-                    std::cerr << "Error: surface couple for face " << face->first << " not found\n";
-                    assert(1==0);
-                }
-
-                for (unsigned int i=0; i<dim; i++){
-                    b(row0 + i, 0) = couple->second[i];
-                }
-
-                row0 += dim; //Increment row0
-            }
-            col0 += nstress; //Increment col0
-        }
-        return;
-    }
+//            id_unique_vectors(surface_normals[gp], unique_normals[gp], false);
+//
+////            std::cout << "gp " << gp << "\n";
+////            for (auto un=unique_normals[gp].begin(); un!=unique_normals[gp].end(); un++){
+////                std::cout << un->first << ": "; print_vector(un->second);
+////            }
+//        }
+//
+//        nrows = 0;
+//        ncols = nstress*surface_normals.size(); //27 components of the couple stress for each gauss point
+//        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
+////            nrows += dim*surface_normals[gp].size();
+//            nrows += dim*unique_normals[gp].size();
+//
+//        }
+//
+//        if (surface_couples.size() != surface_normals.size()){
+//            std::cerr << "Error: surface_couples should have the same size as surface_normals\n";
+//            std::cerr << "       surface_normals.size(): " << surface_normals.size() << "\n";
+//            std::cerr << "       surface_couples.size(): " << surface_couples.size() << "\n";
+//            assert(1==0);
+//        }
+//
+//        //Resize A and b
+//        A = Eigen::MatrixXd::Zero(nrows, ncols);
+//        b = Eigen::MatrixXd::Zero(nrows, 1);
+//
+//        //Iterate over the gauss points
+//        unsigned int row0, col0;
+//        row0 = col0 = 0;
+//
+////        for (unsigned int gp=0; gp<surface_normals.size(); gp++){
+//        for (unsigned int gp=0; gp<unique_normals.size(); gp++){
+//
+////            for (auto face = surface_normals[gp].begin(); face != surface_normals[gp].end(); face++){
+//            for (auto face = unique_normals[gp].begin(); face != unique_normals[gp].end(); face++){
+//                //Set the values in the A matrix
+//
+//                A(row0 + 0, col0 +  0) = face->second[0];
+//                A(row0 + 0, col0 +  9) = face->second[1];
+//                A(row0 + 0, col0 + 18) = face->second[2];
+//                A(row0 + 1, col0 +  1) = face->second[0];
+//                A(row0 + 1, col0 + 10) = face->second[1];
+//                A(row0 + 1, col0 + 19) = face->second[2];
+//                A(row0 + 2, col0 +  2) = face->second[0];
+//                A(row0 + 2, col0 + 11) = face->second[1];
+//                A(row0 + 2, col0 + 20) = face->second[2];
+//                A(row0 + 3, col0 +  3) = face->second[0];
+//                A(row0 + 3, col0 + 12) = face->second[1];
+//                A(row0 + 3, col0 + 21) = face->second[2];
+//                A(row0 + 4, col0 +  4) = face->second[0];
+//                A(row0 + 4, col0 + 13) = face->second[1];
+//                A(row0 + 4, col0 + 22) = face->second[2];
+//                A(row0 + 5, col0 +  5) = face->second[0];
+//                A(row0 + 5, col0 + 14) = face->second[1];
+//                A(row0 + 5, col0 + 23) = face->second[2];
+//                A(row0 + 6, col0 +  6) = face->second[0];
+//                A(row0 + 6, col0 + 15) = face->second[1];
+//                A(row0 + 6, col0 + 24) = face->second[2];
+//                A(row0 + 7, col0 +  7) = face->second[0];
+//                A(row0 + 7, col0 + 16) = face->second[1];
+//                A(row0 + 7, col0 + 25) = face->second[2];
+//                A(row0 + 8, col0 +  8) = face->second[0];
+//                A(row0 + 8, col0 + 17) = face->second[1];
+//                A(row0 + 8, col0 + 26) = face->second[2];
+//
+//                auto couple = surface_couples[gp].find(face->first);
+//                if (couple == surface_couples[gp].end()){
+//                    std::cerr << "Error: surface couple for face " << face->first << " not found\n";
+//                    assert(1==0);
+//                }
+//
+//                for (unsigned int i=0; i<dim; i++){
+//                    b(row0 + i, 0) = couple->second[i];
+//                }
+//
+//                row0 += dim; //Increment row0
+//            }
+//            col0 += nstress; //Increment col0
+//        }
+//        return;
+//    }
 
     void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_col_map,
                                 const std::map< unsigned int, unsigned int >* dns_node_to_row_map,
@@ -3062,10 +3062,10 @@ namespace overlap{
          //Compute the couple stress
          compute_couple_traction(micro_stress);
          compute_vertices_couple_stress();
-         construct_couple_least_squares();
+//         construct_couple_least_squares();
          construct_first_moment_surface_external_couple();
          construct_first_moment_symm_cauchy_couple();
-         construct_first_moment_constraint_matrix();
+         construct_first_moment_least_squares_matrix();
          //TODO: Add construction of body couple term
          //TODO: Add construction of kinetic couple term
          construct_first_moment_d_vector();
@@ -3138,39 +3138,13 @@ namespace overlap{
          * Compute the Cauchy stress using a constrained least squares technique
          */
 
-        Eigen::MatrixXd x;
+//        Eigen::MatrixXd x;
 //        solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, linear_momentum_C, linear_momentum_d, x);
         Eigen::MatrixXd w;
         solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, weight_constraints, linear_momentum_d, w);
+        std::vector< double > weights(w.data(), w.data() + w.size());
+        process_weight_vector_to_results(weights, vertex_cauchy, cauchy_stress);
 
-        //Convert the weights to the Cauchy stresses
-        cauchy_stress.resize(symmetric_microstress.size());
-        unsigned int nstress;
-        double weight;
-        unsigned int col0 = 0;
-        const std::vector< vecOfvec >* domain_vertices = material_overlap.get_domain_vertices();
-
-        for (unsigned int gp=0; gp<cauchy_stress.size(); gp++){
-            nstress = vertex_cauchy[gp][0].size();
-            cauchy_stress[gp] = std::vector< FloatType >(nstress, 0);
-            for (unsigned int v=0; v<(*domain_vertices)[gp].size(); v++){
-                weight = w(col0 + v);
-                for (unsigned int i=0; i<nstress; i++){
-                    cauchy_stress[gp][i] += weight*vertex_cauchy[gp][v][i];
-                }
-            }
-            col0 += (*domain_vertices)[gp].size();
-        }
-
-//        //Extract the Cauchy stresses
-//        cauchy_stress.resize(symmetric_microstress.size());
-//        unsigned int nstress = x.rows()/cauchy_stress.size();
-//        for (unsigned int gp=0; gp<cauchy_stress.size(); gp++){
-//            cauchy_stress[gp].resize(nstress);
-//            for (unsigned int i=0; i<nstress; i++){
-//                cauchy_stress[gp][i] = x(nstress*gp + i);
-//            }
-//        }
         return 0;
     }
 
@@ -3179,29 +3153,12 @@ namespace overlap{
          * Compute the couple stress using a constrained least squares technique
          */
 
-        Eigen::MatrixXd x;
+        Eigen::MatrixXd w;
+        solve_constrained_least_squares(first_moment_C, first_moment_d, weight_constraints, linear_momentum_d, w);
+        std::vector< double > weights(w.data(), w.data() + w.size());
 
-        std::ofstream file("couple_lsq_test.txt");
-        if (file.is_open()){
-            file << "A:\n" << first_moment_A << "\n";
-            file << "b:\n" << first_moment_b << "\n";
-            file << "C:\n" << first_moment_C << "\n";
-            file << "d:\n" << first_moment_d << "\n";
-            file.flush();
-        }
-        assert(1==0);
+        process_weight_vector_to_results(weights, vertex_hostress, couple_stress);
 
-        solve_constrained_least_squares(first_moment_A, first_moment_b, first_moment_C, first_moment_d, x);
-
-        //Extract the couple stresses assuming 3d
-        couple_stress.resize(cauchy_stress.size());
-        unsigned int nstress = x.rows()/couple_stress.size();
-        for (unsigned int gp=0; gp<couple_stress.size(); gp++){
-            couple_stress[gp].resize(nstress);
-            for (unsigned int i=0; i<nstress; i++){
-                couple_stress[gp][i] = x(nstress*gp + i);
-            }
-        }
         return 0;
     }
 
@@ -3401,16 +3358,16 @@ namespace overlap{
 //        overlap::construct_cauchy_least_squares(surface_normal, traction, linear_momentum_A, linear_momentum_b);
 //        return 0;
 //    }
-
-    int MicromorphicFilter::construct_couple_least_squares(){
-        /*!
-         * Construct the normal matrix that when dotted with the vector of the couple stress at the gauss domain 
-         * CGs will produce the surface couple vector b;
-         */
-
-        overlap::construct_couple_least_squares(surface_normal, couple_traction, first_moment_A, first_moment_b);
-        return 0;
-    }
+//
+//    int MicromorphicFilter::construct_couple_least_squares(){
+//        /*!
+//         * Construct the normal matrix that when dotted with the vector of the couple stress at the gauss domain 
+//         * CGs will produce the surface couple vector b;
+//         */
+//
+//        overlap::construct_couple_least_squares(surface_normal, couple_traction, first_moment_A, first_moment_b);
+//        return 0;
+//    }
     int MicromorphicFilter::construct_linear_momentum_surface_external_force(){
         /*!
          * Construct the external force applied on the surfaces of the gauss domains.
@@ -3453,12 +3410,12 @@ namespace overlap{
         return 0;
     }
 
-    int MicromorphicFilter::construct_first_moment_constraint_matrix(){
+    int MicromorphicFilter::construct_first_moment_least_squares_matrix(){
         /*!
-         * Construct the constraint matrix for the balance of the first moment of momentum.
+         * Construct the least squares matrix for the balance of the first moment of momentum.
          */
 
-        overlap::construct_first_moment_constraint_matrix(com_shapefunction_gradients, volume, first_moment_C);
+        overlap::construct_first_moment_least_squares_matrix(com_shapefunction_gradients, volume, vertex_hostress, first_moment_C);
         return 0;
     }
 
@@ -3886,6 +3843,16 @@ namespace overlap{
                 }
             }
             file << "\n";
+            file << "  *HIGHER ORDER STRESS\n";
+            file << "   ";
+            for (unsigned int i=0; i<couple_stress[gp].size(); i++){
+                if (i==0){
+                    file << couple_stress[gp][i];
+                }
+                else{
+                    file << ", " << couple_stress[gp][i];
+                }
+            }
             
         }
         file.flush();
@@ -4349,21 +4316,23 @@ namespace overlap{
 
         }
 
-        //Incorporate the 
+        //Incorporate the C2 matrix into the C matrix
         C *= C2;
 
         return;
     }
 
-    void construct_first_moment_constraint_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
-                                                  const std::vector< FloatType > &volume,
-                                                  Eigen::MatrixXd &C){
+    void construct_first_moment_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+                                                     const std::vector< FloatType > &volume,
+                                                     const std::vector< vecOfvec > &vertex_hostress,
+                                                     Eigen::MatrixXd &C){
         /*!
-         * Construct the first moment of momentum constraint matrix i.e. the divergence of the couple stress
+         * Construct the first moment of momentum least squares matrix i.e. the divergence of the couple stress
          * 
          * :param const std::vector< vecOfvec > &cg_shapefunction_gradients: The global gradients of the shapefunctions 
          *     at the gauss points.
          * :param const std::vector< FloatType > &volume: The volume of the gauss domains
+         * :param const std::vector< vecOfvec > &vertex_hostress: The higher order stress at the gauss domain vertices
          * :param Eigen::MatrixXd &C: The constraint matrix.
          */
         
@@ -4387,6 +4356,13 @@ namespace overlap{
 
         //Initialize the C matrix
         C = Eigen::MatrixXd::Zero(ncouple*cg_shapefunction_gradients[0].size(), nstress*cg_shapefunction_gradients.size());
+
+        //Initialize the C2 matrix
+        unsigned int a2cols = 0;
+        for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
+            a2cols += vertex_hostress[gp].size();
+        }
+        Eigen::MatrixXd C2 = Eigen::MatrixXd::Zero(C.cols(), a2cols);
 
         //Loop over the gauss domains
         for (unsigned int gp=0; gp<ngpts; gp++){
@@ -4422,6 +4398,27 @@ namespace overlap{
                 C(ncouple*n + 8, nstress*gp + 26) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
             }
         }
+
+        //Construct C2
+        unsigned int row0, col0;
+        row0 = col0 = 0;
+        for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
+
+            for (unsigned int v=0; v<vertex_hostress[gp].size(); v++){
+
+                for (unsigned int i=0; i<vertex_hostress[gp][v].size(); i++){
+                    C2(row0+i, col0+v) = vertex_hostress[gp][v][i];
+                }
+
+            }
+
+            row0 += nstress;
+            col0 += vertex_hostress[gp].size(); //Increment col0
+
+        }
+
+        //Incorporate the C2 matrix into the C matrix
+        C *= C2;
 
         return;
     }
@@ -4812,5 +4809,98 @@ namespace overlap{
 
             compute_vertex_couple_stress(vertex_normals, vertex_couples, vertex_hostress[v]);
         }
+    }
+
+    void process_weight_vector_to_results(const std::vector< double > &weights, const std::vector< vecOfvec > &values, vecOfvec &results){
+        /*!
+         * Process a monolithic weight vector into the interpolated values
+         * 
+         * :param const std::vector< double > &weights: The monolithic weight vector
+         * :param const std::vector< vecOfvec > &values: The values associated with the weights
+         * :param vecOfvec &array: The output array
+         */
+
+        vecOfvec weight_array;
+        convert_weight_vector_to_array(weights, values, weight_array);
+        
+        results.resize(weight_array.size());
+        for (unsigned int i=0; i<weight_array.size(); i++){
+            convert_weights_to_vector(weight_array[i], values[i], results[i]);
+        }
+        return;
+    }
+
+    void convert_weight_vector_to_array(const std::vector< double > &weights, const std::vector< vecOfvec > &values, vecOfvec &array){
+        /*!
+         * Convert a monolithic vector of weights to an array broken up by which value collection they belong to
+         * 
+         * :param const std::vector< double > &weights: The monolithic weight vector
+         * :param const std::vector< vecOfvec > &values: The values associated with the weights
+         * :param vecOfvec &array: The array of weights
+         */
+
+        if (weights.size() == 0){
+            std::cerr << "Error: weights cannot have a size of zero.\n";
+            assert(1==0);
+        }
+
+        if (values.size() == 0){
+            std::cerr << "Error: values cannot have a size of zero.\n";
+            assert(1==0);
+        }
+
+        array.resize(values.size());
+        unsigned int index = 0;
+        for (unsigned int i=0; i<values.size(); i++){
+            array[i].resize(values[i].size());
+            for (unsigned int j=0; j<values[i].size(); j++){
+                array[i][j] = weights[index];
+                index++;
+            }
+            if (index > weights.size()){
+                std::cerr << "Error: more values than weights\n";
+                assert(1==0);
+            }
+        }
+        if (index != weights.size()){
+            std::cerr << "Error: more weights than values\n";
+            assert(1==0);
+        }
+
+    }
+
+    void convert_weights_to_vector(const std::vector< double > &weights, const vecOfvec &values, std::vector< double > &output){
+        /*!
+         * Convert a vector of weights and the associated values to the interpolated result vector
+         * 
+         * :param vecOfvec &weights: The weights of each of the values.
+         * :param vecOfvec &values: The vector associated with each of the weights.
+         * :param std::vector< double > &output: The output vector
+         */
+
+        if (weights.size() == 0){
+            std::cerr << "Error: weights cannot have a size of zero.\n";
+            assert(1==0);
+        }
+
+        if (weights.size() != values.size()){
+            std::cerr << "Error: weights and values must have the same size.\n";
+            assert(1==0);
+        }
+
+        output.resize(values[0].size(), 0);
+
+        for (unsigned int i=0; i<weights.size(); i++){
+            if (values[i].size() != output.size()){
+                std::cerr << "Error: values " << i << " has a different size than expected.\n";
+                std::cerr << "       expected size: " << output.size() << "\n";
+                std::cerr << "       values[" << i << "] size: " << values[i].size() << "\n";
+            }
+
+            for (unsigned int j=0; j<values[i].size(); j++){
+                output[j] += weights[i]*values[i][j];
+            }
+        }
+        return;
     }
 }
