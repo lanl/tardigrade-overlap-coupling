@@ -398,6 +398,9 @@ namespace overlap{
             //Compute stress properties
             int compute_stress_properties(const std::map< unsigned int, std::vector< double > > &micro_stress);
 
+            //Compute deformation properties
+            int compute_deformation_properties();
+
             //Construct the contributions to the shape-function matrix of the filter
             int add_shapefunction_matrix_contribution(const std::map< unsigned int, unsigned int > &macro_node_to_col,
                                                       const std::map< unsigned int, unsigned int > &micro_node_to_row,
@@ -491,6 +494,8 @@ namespace overlap{
             int construct_weight_constraints();
             int construct_first_moment_least_squares_matrix();
 
+            int construct_hostress_constraint();
+
             int construct_linear_momentum_b_vector();
             int construct_first_moment_b_vector();
 
@@ -534,6 +539,17 @@ namespace overlap{
             Eigen::MatrixXd first_moment_b;
 //            Eigen::MatrixXd first_moment_C;
             Eigen::MatrixXd first_moment_d;
+
+            Eigen::MatrixXd hostress_constraint_matrix;
+            Eigen::MatrixXd hostress_constraint_rhs;
+
+            //Deformation measures
+            int construct_deformation_gradient();
+            int construct_micro_deformation_measure();
+            int construct_micro_deformation_gradient_measure();
+            vecOfvec deformation_gradient;
+            vecOfvec micro_deformation;
+            vecOfvec micro_deformation_gradient;
 
     };
     
@@ -658,7 +674,7 @@ namespace overlap{
 
     void solve_constrained_least_squares(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
                                          const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
-                                         Eigen::MatrixXd &x);
+                                         Eigen::MatrixXd &x, bool min_x=false);
 
     void construct_linear_momentum_b_vector(const unsigned int nconstraints,
                                             const std::vector< FloatType > &surface_external_force,
@@ -687,6 +703,12 @@ namespace overlap{
                                         const std::map< unsigned int, std::vector< FloatType > > &couple_tractions,
                                         vecOfvec &vertex_hostress);
 
+    void construct_hostress_constraint(const vector_surface_map &normal,
+                                       const std::vector< std::map< unsigned int, std::vector< FloatType > > > &traction,
+                                       const vecOfvec &center_of_mass,
+                                       const std::vector< std::vector< unsigned int > > &external_face_ids,
+                                       Eigen::MatrixXd &C,
+                                       Eigen::MatrixXd &d);
 
     void compute_vertex_cauchy_stress(const vecOfvec &normals, const vecOfvec &tractions, std::vector< double > &cauchy_stress);
 

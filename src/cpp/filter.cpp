@@ -887,6 +887,11 @@ namespace filter{
             populate_reference_coordinates(data, shared_dof_material, mp_format, dof_format, reference_coordinates);
         }
 
+        std::cout << "Compute deformation properties\n";
+        for (auto filter=filters.begin(); filter!=filters.end(); filter++){
+            filter->second.compute_deformation_properties();
+        }
+
         for (auto filter = filters.begin(); filter!=filters.end(); filter++){
             filter->second.write_to_file(output_file);
         }

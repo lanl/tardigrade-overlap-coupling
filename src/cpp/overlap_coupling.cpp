@@ -3075,7 +3075,8 @@ namespace overlap{
 
          //Compute the couple stress
          compute_couple_traction(micro_stress);
-         compute_vertices_couple_stress();
+//         compute_vertices_couple_stress();
+         construct_hostress_constraint();
 //         construct_couple_least_squares();
          construct_first_moment_surface_external_couple();
          construct_first_moment_symm_cauchy_couple();
@@ -3084,13 +3085,33 @@ namespace overlap{
          //TODO: Add construction of kinetic couple term
          construct_first_moment_b_vector();
          compute_couple_stress();
-//         std::cout << "couple_stress:\n";
+//         std::cout << "couple stress:\n";
 //         for (unsigned int gp=0; gp<couple_stress.size(); gp++){
-//             std::cout << "gp " << gp << ": "; print_vector(couple_stress[gp]);
+//             for (unsigned int i=0; i<3; i++){
+//                 for (unsigned int j=0; j<9; j++){
+//                     printf("%+1.6f ", couple_stress[gp][3*i + j]);
+//                 }
+//                 std::cout << "\n";
+//             }
+//             std::cout << "\n";
 //         }
 //         assert(1==0);
 
          return 0;
+    }
+
+    int MicromorphicFilter::construct_hostress_constraint(){
+        /*!
+         * Compute the constraint matrix and rhs vector arising from the 
+         * constraint that on the higher order stress term that
+         * n_k^1 (m_{kij}^1 - m_{kij}^2) = n_k^1 \sigma_{ki} \left(x_j^2 - x_i^2\right)
+         * for two gauss domains 1 and 2
+         */
+        
+        const std::vector< std::vector< unsigned int > > *external_face_ids = material_overlap.get_external_face_ids();
+        overlap::construct_hostress_constraint(surface_normal, traction, center_of_mass,
+            *external_face_ids, hostress_constraint_matrix, hostress_constraint_rhs);
+        return 0;
     }
 
     int MicromorphicFilter::construct_linear_momentum_b_vector(){
@@ -3155,7 +3176,7 @@ namespace overlap{
 //        Eigen::MatrixXd x;
 //        solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, linear_momentum_C, linear_momentum_d, x);
         Eigen::MatrixXd w;
-        solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, weight_constraints, linear_momentum_d, w);
+        solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, weight_constraints, linear_momentum_d, w, true);
         std::vector< double > weights(w.data(), w.data() + w.size());
         process_weight_vector_to_results(weights, vertex_cauchy, cauchy_stress);
 
@@ -3167,11 +3188,23 @@ namespace overlap{
          * Compute the couple stress using a constrained least squares technique
          */
 
-        Eigen::MatrixXd w;
-        solve_constrained_least_squares(first_moment_A, first_moment_b, weight_constraints, linear_momentum_d, w);
-        std::vector< double > weights(w.data(), w.data() + w.size());
+        Eigen::MatrixXd x;
+        solve_constrained_least_squares(first_moment_A, first_moment_b, hostress_constraint_matrix, hostress_constraint_rhs, x, true);
 
-        process_weight_vector_to_results(weights, vertex_hostress, couple_stress);
+        couple_stress.resize(cauchy_stress.size());
+        unsigned int nhostress = first_moment_A.cols()/cauchy_stress.size();
+        for (unsigned int gp=0; gp<couple_stress.size(); gp++){
+            couple_stress[gp].resize(nhostress);
+            for (unsigned int i=0; i<nhostress; i++){
+                couple_stress[gp][i] = x(nhostress*gp + i, 0);
+            }
+        }
+
+//        Eigen::MatrixXd w;
+//        solve_constrained_least_squares(first_moment_A, first_moment_b, weight_constraints, linear_momentum_d, w);
+//        std::vector< double > weights(w.data(), w.data() + w.size());
+//
+//        process_weight_vector_to_results(weights, vertex_hostress, couple_stress);
 
         return 0;
     }
@@ -3918,6 +3951,239 @@ namespace overlap{
         return 0;
     }
 
+    int MicromorphicFilter::compute_deformation_properties(){
+        /*!
+         * Compute deformation properties of the filter
+         */
+        
+        construct_deformation_gradient();
+        construct_micro_deformation_measure();
+        construct_micro_deformation_gradient_measure();
+        return 0;
+    }
+
+    int MicromorphicFilter::construct_deformation_gradient(){
+        /*!
+         * Construct the deformation gradient at the centers of mass
+         */
+
+        //Get the displacements of the nodes
+        vecOfvec displacements(dof_values.size());
+        for (unsigned int node=0; node<dof_values.size(); node++){
+            displacements[node] = std::vector< double >(dof_values[node].begin(), dof_values[node].begin() + 3);
+        }
+
+        //Compute the deformation gradient
+        vecOfvec displacement_gradient;
+        deformation_gradient.resize(local_center_of_mass.size());
+        for (unsigned int com = 0; com<local_center_of_mass.size(); com++){
+            element->get_global_gradient(displacements, local_center_of_mass[com], element->reference_nodes, displacement_gradient);
+            deformation_gradient[com].resize(9);
+            deformation_gradient[com][0] = 1 + displacement_gradient[0][0];
+            deformation_gradient[com][1] = 1 + displacement_gradient[1][1];
+            deformation_gradient[com][2] = 1 + displacement_gradient[2][2];
+            deformation_gradient[com][3] =     displacement_gradient[1][2];
+            deformation_gradient[com][4] =     displacement_gradient[0][2];
+            deformation_gradient[com][5] =     displacement_gradient[0][1];
+            deformation_gradient[com][6] =     displacement_gradient[2][1];
+            deformation_gradient[com][7] =     displacement_gradient[2][0];
+            deformation_gradient[com][8] =     displacement_gradient[1][0];
+        }
+        
+        return 0;
+    }
+
+    int MicromorphicFilter::construct_micro_deformation_measure(){
+        /*!
+         * Construct the micro-deformation measure $\Psi_{IJ} = F_{iI} \chi_{iJ}$
+         */
+
+        //Get the micro-deformation values
+        vecOfvec microdisplacement(dof_values.size());
+        for (unsigned int node=0; node<dof_values.size(); node++){
+            microdisplacement[node] = std::vector< double > (dof_values[node].begin()+3, dof_values[node].end());
+        }
+
+        elib::vec chi;
+
+
+        micro_deformation.resize(local_center_of_mass.size());
+        for (unsigned int com=0; com<local_center_of_mass.size(); com++){
+            element->interpolate(microdisplacement, local_center_of_mass[com], chi);
+            chi[0] += 1;
+            chi[1] += 1;
+            chi[2] += 1;
+
+            micro_deformation[com].resize(chi.size());
+            micro_deformation[com][0] = deformation_gradient[com][0]*chi[0]
+                                      + deformation_gradient[com][7]*chi[7]
+                                      + deformation_gradient[com][8]*chi[8];
+            micro_deformation[com][1] = deformation_gradient[com][1]*chi[1] 
+                                      + deformation_gradient[com][5]*chi[5]
+                                      + deformation_gradient[com][6]*chi[6];
+            micro_deformation[com][2] = deformation_gradient[com][2]*chi[2]
+                                      + deformation_gradient[com][3]*chi[3]
+                                      + deformation_gradient[com][4]*chi[4];
+            micro_deformation[com][3] = deformation_gradient[com][1]*chi[3]
+                                      + deformation_gradient[com][5]*chi[4]
+                                      + deformation_gradient[com][6]*chi[2];
+            micro_deformation[com][4] = deformation_gradient[com][0]*chi[4]
+                                      + deformation_gradient[com][7]*chi[2]
+                                      + deformation_gradient[com][8]*chi[3];
+            micro_deformation[com][5] = deformation_gradient[com][0]*chi[5]
+                                      + deformation_gradient[com][7]*chi[6]
+                                      + deformation_gradient[com][8]*chi[1];
+            micro_deformation[com][6] = deformation_gradient[com][2]*chi[6]
+                                      + deformation_gradient[com][3]*chi[1]
+                                      + deformation_gradient[com][4]*chi[5];
+            micro_deformation[com][7] = deformation_gradient[com][2]*chi[7]
+                                      + deformation_gradient[com][3]*chi[8]
+                                      + deformation_gradient[com][4]*chi[0];
+            micro_deformation[com][8] = deformation_gradient[com][1]*chi[8]
+                                      + deformation_gradient[com][5]*chi[0]
+                                      + deformation_gradient[com][6]*chi[7];
+
+
+        }
+
+        return 0;
+    }
+
+    int MicromorphicFilter::construct_micro_deformation_gradient_measure(){
+        /*!
+         * Construct the micro-deformation gradient mesaure $\Gamma_{IJK} = F_{iI} \chi_{iJ, K}$
+         */
+
+        //Get the micro-deformation values
+        vecOfvec microdisplacement(dof_values.size());
+        for (unsigned int node=0; node<dof_values.size(); node++){
+            microdisplacement[node] = std::vector< double > (dof_values[node].begin()+3, dof_values[node].end());
+        }
+
+        vecOfvec gradchi_mat;
+        elib::vec gradchi;
+        vecOfvec order = {{0, 0},
+                          {1, 1},
+                          {2, 2},
+                          {1, 2},
+                          {0, 2},
+                          {0, 1},
+                          {2, 1},
+                          {2, 0},
+                          {1, 0}};
+
+        vecOfvec order_m = {{0, 5, 4},
+                            {8, 1, 3},
+                            {7, 6, 2}};
+        
+
+        unsigned int i, j;
+
+        micro_deformation_gradient.resize(local_center_of_mass.size());
+        for (unsigned int com=0; com<local_center_of_mass.size(); com++){
+            element->get_global_gradient(microdisplacement, local_center_of_mass[com], element->reference_nodes, gradchi_mat);
+
+            //Convert gradchi_mat to Voigt notation
+            gradchi.resize(gradchi_mat.size(), gradchi_mat[0].size());
+
+            for (unsigned int I=0; I<gradchi_mat.size(); I++){
+                i = order[I][0];
+                j = order[I][1];
+                for (unsigned int k=0; k<gradchi_mat[I].size(); k++){
+                    gradchi[gradchi_mat.size()*i + order_m[j][k]] = gradchi_mat[I][k];
+                }
+            }
+
+            //Compute the micro_deformation_gradient measure
+            micro_deformation_gradient[com].resize(gradchi.size());
+            micro_deformation_gradient[com][ 0] = deformation_gradient[com][ 0]*gradchi[ 0]+
+                                                  deformation_gradient[com][ 7]*gradchi[18]+
+                                                  deformation_gradient[com][ 8]*gradchi[ 9];
+            micro_deformation_gradient[com][ 1] = deformation_gradient[com][ 0]*gradchi[ 1]+
+                                                  deformation_gradient[com][ 7]*gradchi[19]+
+                                                  deformation_gradient[com][ 8]*gradchi[10];
+            micro_deformation_gradient[com][ 2] = deformation_gradient[com][ 0]*gradchi[ 2]+
+                                                  deformation_gradient[com][ 7]*gradchi[20]+
+                                                  deformation_gradient[com][ 8]*gradchi[11];
+            micro_deformation_gradient[com][ 3] = deformation_gradient[com][ 0]*gradchi[ 3]+
+                                                  deformation_gradient[com][ 7]*gradchi[21]+
+                                                  deformation_gradient[com][ 8]*gradchi[12];
+            micro_deformation_gradient[com][ 4] = deformation_gradient[com][ 0]*gradchi[ 4]+
+                                                  deformation_gradient[com][ 7]*gradchi[22]+
+                                                  deformation_gradient[com][ 8]*gradchi[13];
+            micro_deformation_gradient[com][ 5] = deformation_gradient[com][ 0]*gradchi[ 5]+
+                                                  deformation_gradient[com][ 7]*gradchi[23]+
+                                                  deformation_gradient[com][ 8]*gradchi[14];
+            micro_deformation_gradient[com][ 6] = deformation_gradient[com][ 0]*gradchi[ 6]+
+                                                  deformation_gradient[com][ 7]*gradchi[24]+
+                                                  deformation_gradient[com][ 8]*gradchi[15];
+            micro_deformation_gradient[com][ 7] = deformation_gradient[com][ 0]*gradchi[ 7]+
+                                                  deformation_gradient[com][ 7]*gradchi[25]+
+                                                  deformation_gradient[com][ 8]*gradchi[16];
+            micro_deformation_gradient[com][ 8] = deformation_gradient[com][ 0]*gradchi[ 8]+
+                                                  deformation_gradient[com][ 7]*gradchi[26]+
+                                                  deformation_gradient[com][ 8]*gradchi[17];
+            micro_deformation_gradient[com][ 9] = deformation_gradient[com][ 1]*gradchi[ 9]+
+                                                  deformation_gradient[com][ 5]*gradchi[ 0]+
+                                                  deformation_gradient[com][ 6]*gradchi[18];
+            micro_deformation_gradient[com][10] = deformation_gradient[com][ 1]*gradchi[10]+
+                                                  deformation_gradient[com][ 5]*gradchi[ 1]+
+                                                  deformation_gradient[com][ 6]*gradchi[19];
+            micro_deformation_gradient[com][11] = deformation_gradient[com][ 1]*gradchi[11]+
+                                                  deformation_gradient[com][ 5]*gradchi[ 2]+
+                                                  deformation_gradient[com][ 6]*gradchi[20];
+            micro_deformation_gradient[com][12] = deformation_gradient[com][ 1]*gradchi[12]+
+                                                  deformation_gradient[com][ 5]*gradchi[ 3]+
+                                                  deformation_gradient[com][ 6]*gradchi[21];
+            micro_deformation_gradient[com][13] = deformation_gradient[com][ 1]*gradchi[13]+
+                                                  deformation_gradient[com][ 5]*gradchi[ 4]+
+                                                  deformation_gradient[com][ 6]*gradchi[22];
+            micro_deformation_gradient[com][14] = deformation_gradient[com][ 1]*gradchi[14]+
+                                                  deformation_gradient[com][ 5]*gradchi[ 5]+
+                                                  deformation_gradient[com][ 6]*gradchi[23];
+            micro_deformation_gradient[com][15] = deformation_gradient[com][ 1]*gradchi[15]+
+                                                  deformation_gradient[com][ 5]*gradchi[ 6]+
+                                                  deformation_gradient[com][ 6]*gradchi[24];
+            micro_deformation_gradient[com][16] = deformation_gradient[com][ 1]*gradchi[16]+
+                                                  deformation_gradient[com][ 5]*gradchi[ 7]+
+                                                  deformation_gradient[com][ 6]*gradchi[25];
+            micro_deformation_gradient[com][17] = deformation_gradient[com][ 1]*gradchi[17]+
+                                                  deformation_gradient[com][ 5]*gradchi[ 8]+
+                                                  deformation_gradient[com][ 6]*gradchi[26];
+            micro_deformation_gradient[com][18] = deformation_gradient[com][ 2]*gradchi[18]+
+                                                  deformation_gradient[com][ 3]*gradchi[ 9]+
+                                                  deformation_gradient[com][ 4]*gradchi[ 0];
+            micro_deformation_gradient[com][19] = deformation_gradient[com][ 2]*gradchi[19]+
+                                                  deformation_gradient[com][ 3]*gradchi[10]+
+                                                  deformation_gradient[com][ 4]*gradchi[ 1];
+            micro_deformation_gradient[com][20] = deformation_gradient[com][ 2]*gradchi[20]+
+                                                  deformation_gradient[com][ 3]*gradchi[11]+
+                                                  deformation_gradient[com][ 4]*gradchi[ 2];
+            micro_deformation_gradient[com][21] = deformation_gradient[com][ 2]*gradchi[21]+
+                                                  deformation_gradient[com][ 3]*gradchi[12]+
+                                                  deformation_gradient[com][ 4]*gradchi[ 3];
+            micro_deformation_gradient[com][22] = deformation_gradient[com][ 2]*gradchi[22]+
+                                                  deformation_gradient[com][ 3]*gradchi[13]+
+                                                  deformation_gradient[com][ 4]*gradchi[ 4];
+            micro_deformation_gradient[com][23] = deformation_gradient[com][ 2]*gradchi[23]+
+                                                  deformation_gradient[com][ 3]*gradchi[14]+
+                                                  deformation_gradient[com][ 4]*gradchi[ 5];
+            micro_deformation_gradient[com][24] = deformation_gradient[com][ 2]*gradchi[24]+
+                                                  deformation_gradient[com][ 3]*gradchi[15]+
+                                                  deformation_gradient[com][ 4]*gradchi[ 6];
+            micro_deformation_gradient[com][25] = deformation_gradient[com][ 2]*gradchi[25]+
+                                                  deformation_gradient[com][ 3]*gradchi[16]+
+                                                  deformation_gradient[com][ 4]*gradchi[ 7];
+            micro_deformation_gradient[com][26] = deformation_gradient[com][ 2]*gradchi[26]+
+                                                  deformation_gradient[com][ 3]*gradchi[17]+
+                                                  deformation_gradient[com][ 4]*gradchi[ 8];
+            
+        }
+
+
+        return 0;
+    }
+
     std::vector< double > subtract(const std::vector< double > &a, const std::vector< double > &b){
         /*!
          * Subtract two vectors c = a - b
@@ -4370,75 +4636,86 @@ namespace overlap{
         //Initialize the C matrix
         C = Eigen::MatrixXd::Zero(ncouple*cg_shapefunction_gradients[0].size(), nstress*cg_shapefunction_gradients.size());
 
-        //Initialize the C2 matrix
-        unsigned int a2cols = 0;
-        for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
-            a2cols += vertex_hostress[gp].size();
-        }
-        Eigen::MatrixXd C2 = Eigen::MatrixXd::Zero(C.cols(), a2cols);
+//        //Initialize the C2 matrix
+//        unsigned int a2cols = 0;
+//        for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
+//            a2cols += vertex_hostress[gp].size();
+//        }
+//        Eigen::MatrixXd C2 = Eigen::MatrixXd::Zero(C.cols(), a2cols);
 
         //Loop over the gauss domains
         for (unsigned int gp=0; gp<ngpts; gp++){
             //Loop over the nodes
             for (unsigned int n=0; n<cg_shapefunction_gradients[gp].size(); n++){
 
-                C(ncouple*n + 0, nstress*gp +  0) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 0, nstress*gp +  9) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 0, nstress*gp + 18) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 1, nstress*gp +  1) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 1, nstress*gp + 10) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 1, nstress*gp + 19) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 2, nstress*gp +  2) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 2, nstress*gp + 11) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 2, nstress*gp + 20) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 3, nstress*gp +  3) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 3, nstress*gp + 12) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 3, nstress*gp + 21) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 4, nstress*gp +  4) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 4, nstress*gp + 13) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 4, nstress*gp + 22) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 5, nstress*gp +  5) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 5, nstress*gp + 14) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 5, nstress*gp + 23) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 6, nstress*gp +  6) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 6, nstress*gp + 15) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 6, nstress*gp + 24) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 7, nstress*gp +  7) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 7, nstress*gp + 16) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 7, nstress*gp + 25) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(ncouple*n + 8, nstress*gp +  8) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(ncouple*n + 8, nstress*gp + 17) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(ncouple*n + 8, nstress*gp + 26) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-            }
-        }
-
-        //Construct C2
-        unsigned int row0, col0;
-        row0 = col0 = 0;
-        for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
-
-            for (unsigned int v=0; v<vertex_hostress[gp].size(); v++){
-
-                for (unsigned int i=0; i<vertex_hostress[gp][v].size(); i++){
-                    C2(row0+i, col0+v) = vertex_hostress[gp][v][i];
+                for (unsigned int i=0; i<ncouple; i++){
+                    C(ncouple*n + i, nstress*gp + i +  0) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+                    C(ncouple*n + i, nstress*gp + i +  9) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+                    C(ncouple*n + i, nstress*gp + i + 18) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
                 }
 
+//                C(ncouple*n + 0, nstress*gp +  0) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(ncouple*n + 0, nstress*gp +  9) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(ncouple*n + 0, nstress*gp + 18) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(ncouple*n + 1, nstress*gp +  1) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(ncouple*n + 1, nstress*gp + 10) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(ncouple*n + 1, nstress*gp + 19) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(ncouple*n + 2, nstress*gp +  2) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(ncouple*n + 2, nstress*gp + 11) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(ncouple*n + 2, nstress*gp + 20) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(ncouple*n + 3, nstress*gp +  3) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(ncouple*n + 3, nstress*gp + 12) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(ncouple*n + 3, nstress*gp + 21) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(ncouple*n + 4, nstress*gp +  4) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(ncouple*n + 4, nstress*gp + 13) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(ncouple*n + 4, nstress*gp + 22) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(ncouple*n + 5, nstress*gp +  5) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(ncouple*n + 5, nstress*gp + 14) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(ncouple*n + 5, nstress*gp + 23) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(ncouple*n + 6, nstress*gp +  6) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(ncouple*n + 6, nstress*gp + 15) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(ncouple*n + 6, nstress*gp + 24) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(ncouple*n + 7, nstress*gp +  7) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(ncouple*n + 7, nstress*gp + 16) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(ncouple*n + 7, nstress*gp + 25) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(ncouple*n + 8, nstress*gp +  8) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(ncouple*n + 8, nstress*gp + 17) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(ncouple*n + 8, nstress*gp + 26) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
             }
-
-            row0 += nstress;
-            col0 += vertex_hostress[gp].size(); //Increment col0
-
         }
 
-        //Incorporate the C2 matrix into the C matrix
-        C *= C2;
+//        //Assert that the distance between the higher order stress and the average of the vertex higher order stress should be minimized
+//        for (unsigned int i=0; i<ncouple*ngpts; i++){
+//            C(ncouple*cg_shapefunction_gradients[0].size() + i, i) = 1;
+//        }
+//
+//        //Construct C2
+//        unsigned int row0, col0;
+//        row0 = col0 = 0;
+//        for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
+//
+//            for (unsigned int v=0; v<vertex_hostress[gp].size(); v++){
+//
+//                for (unsigned int i=0; i<vertex_hostress[gp][v].size(); i++){
+//                    C2(row0+i, col0+v) = vertex_hostress[gp][v][i];
+//                }
+//
+//            }
+//
+//            row0 += nstress;
+//            col0 += vertex_hostress[gp].size(); //Increment col0
+//
+//        }
+//
+//        //Incorporate the C2 matrix into the C matrix
+//        C *= C2;
 
         return;
     }
 
     void solve_constrained_least_squares(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
                                          const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
-                                         Eigen::MatrixXd &x){
+                                         Eigen::MatrixXd &x, bool min_x){
         /*!
          * Solve a least squares problem to minimize ||Ax - b|| while subject to the equality 
          * constraint Cx = d
@@ -4448,6 +4725,7 @@ namespace overlap{
          * :param const Eigen::MatrixXd &C: The constraint matrix (nconstraints, nvariables)
          * :param const Eigen::MatrixXd &d: The solution vector for the constraint matrix (nvariables, 1)
          * :param Eigen::MatrixXd &x: The optimal solution for the free variables.
+         * :param bool min_x: Force the solution to minimize x (useful for degenerate A)
          */
 
         unsigned int nvariables = A.cols();
@@ -4459,11 +4737,20 @@ namespace overlap{
             assert(1==0);
         }
 
+        //Check if the right hand side is zero
+        if ((b.norm() < 1e-9) && (d.norm() < 1e-9)){
+            x = Eigen::MatrixXd::Zero(nvariables, 1);
+            return;
+        }
+
         //Construct the M matrix
         Eigen::MatrixXd M = Eigen::MatrixXd::Zero(nvariables+nconstraints, nvariables+nconstraints);
         M.block(0, 0, nvariables, nvariables) = 2*A.transpose()*A;
         M.block(0, nvariables, nvariables, nconstraints) = C.transpose();
         M.block(nvariables, 0, nconstraints, nvariables) = C;
+        if(min_x){
+            M.block(0, 0, nvariables, nvariables) += 2*Eigen::MatrixXd::Identity(nvariables, nvariables);
+        }
 
         //Form the RHS vector
         Eigen::MatrixXd RHS = Eigen::MatrixXd::Zero(nvariables + nconstraints, 1);
@@ -4819,9 +5106,35 @@ namespace overlap{
                 //Save the couple traction
                 vertex_couples[f] = f_traction->second;
             }
+//            std::cout << "vertex_normals:\n";
+//            for (unsigned int i=0; i<vertex_normals.size(); i++){
+//                for (unsigned int j=0; j<vertex_normals[i].size(); j++){
+//                    printf("%+1.6f ", vertex_normals[i][j]);
+//                }
+//                std::cout << "\n";
+//            }
+
+//            std::cout << "vertex_couples:\n";
+//            for (unsigned int i=0; i<vertex_couples.size(); i++){
+//                for (unsigned int j=0; j<vertex_couples[i].size(); j++){
+//                    printf("%+1.6f ", vertex_couples[i][j]);
+//                }
+//                std::cout << "\n";
+//            }
 
             compute_vertex_couple_stress(vertex_normals, vertex_couples, vertex_hostress[v]);
         }
+//        std::cout << "vertex ho stress\n";
+//        for (unsigned int i=0; i<vertex_hostress.size(); i++){
+//            for (unsigned int j=0; j<3; j++){
+//                for (unsigned int k=0; k<9; k++){
+//                    printf("%+1.6f ", vertex_hostress[i][3*j + k]);
+////                    std::cout << vertex_hostress[i][3*j + k] << " ";
+//                }
+//                std::cout << "\n";
+//            }
+//            std::cout << "\n";
+//        }
     }
 
     void process_weight_vector_to_results(const std::vector< double > &weights, const std::vector< vecOfvec > &values, vecOfvec &results){
@@ -4914,6 +5227,141 @@ namespace overlap{
                 output[j] += weights[i]*values[i][j];
             }
         }
+        return;
+    }
+
+    void construct_hostress_constraint(const vector_surface_map &normal,
+                                       const std::vector< std::map< unsigned int, std::vector< FloatType > > > &traction,
+                                       const vecOfvec &center_of_mass,
+                                       const std::vector< std::vector< unsigned int > > &external_face_ids,
+                                       Eigen::MatrixXd &C,
+                                       Eigen::MatrixXd &d){
+        /*!
+         * Compute the constraint matrix and right hand side vector for the higher order couple stress between two 
+         * Gauss domains that
+         * n_j^1 \left(m_{jik}^1 - m_{jik}^2\right) = n_j^1 \sigma_{ji}\left(x_k^2 - x_k^1\right)
+         * 
+         * :param const vector_surface_map &normal: The surfaces of the gauss domain
+         * :param const std::vector< std::map< unsigned int, std::vector< FloatType > > > &traction: The traction on the surfaces
+         * :param const vecOfvec &center_of_mass; The centers of mass of the gauss domains.
+         * :param const std::vector< std::vector< unsigned int > > &The faces which are the outside of the filter domain
+         * :param Eigen::MatrixXd &C: The constraint matrix
+         * :param Eigen::MatrixXd &d: The right hand side constraint vector
+         */
+
+        //Set values
+        unsigned int nhostress = 27;
+        unsigned int nstress = 9;
+        unsigned int ngp = center_of_mass.size();
+
+        //Loop over the gauss points to find the neighboring cell ids
+        std::map< unsigned int, std::vector< unsigned int > > neighbors;
+        unsigned int min_id=0;
+        bool first_pass=true;
+        for (unsigned int gp=0; gp<ngp; gp++){
+            std::vector< unsigned int > gp_faces;
+            
+            for (auto f=normal[gp].begin(); f != normal[gp].end(); f++){
+                //Skip past external faces
+                if (std::count(external_face_ids[gp].begin(), external_face_ids[gp].end(), f->first)){
+                    continue;
+                }
+                
+                gp_faces.push_back(f->first);
+                if (!first_pass){
+                    min_id = std::min(f->first, min_id);
+                }
+                else{
+                    min_id = f->first;
+                    first_pass = false;
+                }
+            }
+
+            neighbors.emplace(gp, gp_faces);
+        }
+
+        //Get the unique set of gauss point face pairs
+        std::map< unsigned int, std::map< unsigned int, std::vector< double > > > gauss_pairs;
+        unsigned int n_constraints=0;
+
+        for (unsigned int gp=0; gp<ngp; gp++){
+            for (auto neighbor = neighbors[gp].begin(); neighbor!=neighbors[gp].end(); neighbor++){
+                auto n = normal[gp].find(*neighbor);
+                if (n == normal[gp].end()){
+                    std::cout << "Error: surface not found in normals\n";
+                    assert(1==0);
+                }
+
+                if (gauss_pairs.find(*neighbor-min_id) != gauss_pairs.end()){
+                    continue;
+                }
+                else if (gauss_pairs.find(gp) == gauss_pairs.end()){
+                    std::map< unsigned int, std::vector< double > > submap;
+                    submap.emplace(*neighbor-min_id, n->second);
+                    gauss_pairs.emplace(gp, submap);
+                    n_constraints++;
+                }
+                else{
+                    gauss_pairs[gp].emplace(*neighbor-min_id, n->second);
+                    n_constraints++;
+                }
+            }
+        }
+
+        //Initialize C and d
+        C = Eigen::MatrixXd::Zero(n_constraints*nstress, ngp*nhostress);
+        d = Eigen::MatrixXd::Zero(n_constraints*nstress, 1);
+
+        //Construct constraint matrix and rhs
+        //Iterate over the gauss pairs
+        unsigned int constraint_number = 0;
+        for (auto gp=gauss_pairs.begin(); gp!=gauss_pairs.end(); gp++){
+            //Iterate over the linked gauss points
+            for (auto n=gp->second.begin(); n!=gp->second.end(); n++){
+                //Form the constraint matrix
+                for (unsigned int i=0; i<nstress; i++){
+                    C(nstress*constraint_number + i, nhostress*gp->first + i +  0) = n->second[0];
+                    C(nstress*constraint_number + i, nhostress*gp->first + i +  9) = n->second[1];
+                    C(nstress*constraint_number + i, nhostress*gp->first + i + 18) = n->second[2];
+
+                    C(nstress*constraint_number + i, nhostress*n->first + i +  0) = -n->second[0];
+                    C(nstress*constraint_number + i, nhostress*n->first + i +  9) = -n->second[1];
+                    C(nstress*constraint_number + i, nhostress*n->first + i + 18) = -n->second[2];
+                }
+
+                //Get the appropriate traction vector
+                auto t = traction[gp->first].find(n->first + min_id);
+                if (t == traction[gp->first].end()){
+                    std::cerr << "Error: neighbor not found in traction.\n";
+                    assert(1==0);
+                }
+
+                //Form the rhs vector
+                d(nstress*constraint_number + 0) = t->second[0]*(center_of_mass[n->first][0] - center_of_mass[gp->first][0]);
+                d(nstress*constraint_number + 1) = t->second[1]*(center_of_mass[n->first][1] - center_of_mass[gp->first][1]);
+                d(nstress*constraint_number + 2) = t->second[2]*(center_of_mass[n->first][2] - center_of_mass[gp->first][2]);
+                d(nstress*constraint_number + 3) = t->second[1]*(center_of_mass[n->first][2] - center_of_mass[gp->first][2]);
+                d(nstress*constraint_number + 4) = t->second[0]*(center_of_mass[n->first][2] - center_of_mass[gp->first][2]);
+                d(nstress*constraint_number + 5) = t->second[0]*(center_of_mass[n->first][1] - center_of_mass[gp->first][1]);
+                d(nstress*constraint_number + 6) = t->second[2]*(center_of_mass[n->first][1] - center_of_mass[gp->first][1]);
+                d(nstress*constraint_number + 7) = t->second[2]*(center_of_mass[n->first][0] - center_of_mass[gp->first][0]);
+                d(nstress*constraint_number + 8) = t->second[1]*(center_of_mass[n->first][0] - center_of_mass[gp->first][0]);
+
+                constraint_number++;
+            }
+        }
+
+//        std::ofstream tmp_file ("ho_constraint.txt");
+//        tmp_file << "C:\n" << C << "\n";
+//
+//        tmp_file << "d:\n" << d << "\n";
+//
+//        tmp_file.flush();
+//
+//        tmp_file.close();
+//        
+//        assert(1==0);
+        
         return;
     }
 }
