@@ -307,7 +307,36 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
     element.get_local_grad_shape_functions({0.1, -0.2, 0.3}, local_grad_shape_functions);
 
     if (!fuzzy_equals(answer, local_grad_shape_functions)){
-        results << "test_Hex8_get_local_grad_shape_functions & False\n";
+        results << "test_Hex8_get_local_grad_shape_functions (test 1) & False\n";
+        return 1;
+    }
+
+    //Test for a distorted element
+    nodes = {{3.13443, -0.61357,  1.90472},
+             {4.24588,  1.41151,  3.82988},
+             {3.97724,  1.34621,  4.43285},
+             {2.86579, -0.678866, 2.50769},
+             {3.95241, -0.996794, 1.71353},
+             {5.06385,  1.02829,  3.63869},
+             {4.79521,  0.96299,  4.24166},
+             {3.68377, -1.06209,  2.3165}};
+
+    element = elib::Hex8(node_ids, nodes, qrule);
+    element.get_shape_functions({    0.1,     -0.2,     0.3},  sf0);
+    element.get_shape_functions({0.1+eps,     -0.2,     0.3}, sfpx);
+    element.get_shape_functions({    0.1, -0.2+eps,     0.3}, sfpy);
+    element.get_shape_functions({    0.1,     -0.2, 0.3+eps}, sfpz);
+
+    for (unsigned int i=0; i<8; i++){
+        answer[i][0] = (sfpx[i] - sf0[i])/eps;
+        answer[i][1] = (sfpy[i] - sf0[i])/eps;
+        answer[i][2] = (sfpz[i] - sf0[i])/eps;
+    }
+
+    element.get_local_grad_shape_functions({0.1, -0.2, 0.3}, local_grad_shape_functions);
+
+    if (!fuzzy_equals(answer, local_grad_shape_functions)){
+        results << "test_Hex8_get_local_grad_shape_functions (test 2) & False\n";
         return 1;
     }
 
@@ -445,7 +474,7 @@ int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &l
     element.interpolate(element.nodes, local_test_point, global_test_point);
     
     elib::vec delta = global_test_point;
-    elib::vec xtmp, xi, N0, Ntmp;
+    elib::vec xtmp, xi, xip, xim, N0, Ntmpp, Ntmpm;
     elib::vecOfvec dNdx_num(element.nodes.size());
     for (unsigned int n=0; n<dNdx_num.size(); n++){
         dNdx_num[n] = elib::vec(element.nodes[n].size(), 0);
@@ -459,19 +488,32 @@ int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &l
 
     for (unsigned int i=0; i<element.nodes[0].size(); i++){
 
-        //Perturb the global coordinates
+        //Perturb the global coordinates positively
         delta[i] *= 1+eps;
 
-        //Compute the local coordinates of the perturbed global coordinates
-        element.compute_local_coordinates(delta, xi);
+        //Compute the local coordinates of the positively perturbed global coordinates
+        element.compute_local_coordinates(delta, xip);
         
         //Compute the new shape-function values
-        element.get_shape_functions(xi, Ntmp);
+        element.get_shape_functions(xip, Ntmpp);
+
+        //Remove the positive perturbation
+        delta[i] /= 1+eps;
+
+        //Perturb the global coordinates negatively
+        delta[i] *= 1-eps;
+
+        //Compute the local coordinates of the negatively perturbed global coordinates
+        element.compute_local_coordinates(delta, xim);
+
+        //Compute the new shape-function values
+        element.get_shape_functions(xim, Ntmpm);
 
         //Set the values of the estimated gradient
-        for (unsigned int n=0; n<Ntmp.size(); n++){dNdx_num[n][i] = (Ntmp[n] - N0[n])/(global_test_point[i]*eps);}
+        for (unsigned int n=0; n<Ntmpp.size(); n++){dNdx_num[n][i] = (Ntmpp[n] - Ntmpm[n])/(2*global_test_point[i]*eps);}
 
-        delta[i] /= 1+eps;
+        //Remove the negative perturbation
+        delta[i] /= 1-eps;
     }
 
     elib::vecOfvec dNdx;
@@ -498,7 +540,7 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
 
     double eps = 1e-6;
     elib::vec scalar_answer(3, 0), scalar_result(3, 0);
-    double sg0, sgpx, sgpy, sgpz;
+    double sg0, sgpx, sgpy, sgpz, sgmx, sgmy, sgmz;
 
     //Form the scalar field at the nodes
     elib::vec scalar_nodal_values(element.nodes.size());
@@ -511,14 +553,17 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     element.interpolate(scalar_nodal_values, {-0.2+eps,     0.4,     0.64}, sgpx);
     element.interpolate(scalar_nodal_values, {    -0.2, 0.4+eps,     0.64}, sgpy);
     element.interpolate(scalar_nodal_values, {    -0.2,     0.4, 0.64+eps}, sgpz);
+    element.interpolate(scalar_nodal_values, {-0.2-eps,     0.4,     0.64}, sgmx);
+    element.interpolate(scalar_nodal_values, {    -0.2, 0.4-eps,     0.64}, sgmy);
+    element.interpolate(scalar_nodal_values, {    -0.2,     0.4, 0.64-eps}, sgmz);
 
     //Compute the numeric gradient
-    scalar_answer[0] = (sgpx - sg0)/eps;
-    scalar_answer[1] = (sgpy - sg0)/eps;
-    scalar_answer[2] = (sgpz - sg0)/eps;
+    scalar_answer[0] = (sgpx - sgmx)/(2*eps);
+    scalar_answer[1] = (sgpy - sgmy)/(2*eps);
+    scalar_answer[2] = (sgpz - sgmz)/(2*eps);
 
     //Compute the element result
-    element.get_local_gradient(scalar_nodal_values, {0.1, -0.2, 0.3}, scalar_result);
+    element.get_local_gradient(scalar_nodal_values, {-0.2, 0.4, 0.64}, scalar_result);
 
     if (!fuzzy_equals(scalar_answer, scalar_result)){
         std::cerr << "scalar_answer: "; print(scalar_answer);
@@ -880,6 +925,27 @@ int test_Hex8_functionality(std::ofstream &results){
 
     tef_return = test_element_functionality(element, xtest, isoutside, results);
 
+    if (tef_return > 0){
+        return tef_return;
+    }
+
+
+    // Test another distorted element
+    nodes = {{3.13443, -0.61357,  1.90472},
+             {4.24588,  1.41151,  3.82988},
+             {3.97724,  1.34621,  4.43285},
+             {2.86579, -0.678866, 2.50769},
+             {3.95241, -0.996794, 1.71353},
+             {5.06385,  1.02829,  3.63869},
+             {4.79521,  0.96299,  4.24166},
+             {3.68377, -1.06209,  2.3165}};
+
+    element = elib::Hex8(node_ids, nodes, qrule);
+
+    xtest = {4.38002, 0.56885, 3.65742};
+    isoutside = false;
+
+    tef_return = test_element_functionality(element, xtest, isoutside, results);
     if (tef_return > 0){
         return tef_return;
     }
