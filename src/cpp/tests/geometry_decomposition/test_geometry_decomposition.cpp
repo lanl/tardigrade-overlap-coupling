@@ -146,9 +146,7 @@ int test_getUnitToTetMap(std::ofstream &results){
      * Test the computation of the map between the unit tetrahedra and an 
      * arbitrary tetrahedron.
      * 
-     * :param const matrixType &nodes: The nodes of the arbitrary tetrahedron.
-     * :param matrixType &A: The mapping matrix A
-     * :param vectorType &d: The shift vector d
+     * :param std::ofstream &results: The output file
      */
 
     matrixType localNodes = {{ 0, 0, 0},
@@ -175,6 +173,19 @@ int test_getUnitToTetMap(std::ofstream &results){
 
     results << "test_getUnitToTetMap & True\n";
     return 0;
+}
+
+int test_getTetQuadrature(std::ofstream &results){
+    /*!
+     * Test the quadrature points for the tetrahedron.
+     * 
+     * 
+     * :param std::ofstream &results: The output file
+     */
+    
+    for (unsigned int order=0; order<4; order++){
+
+    } 
 }
 
 int main(){
