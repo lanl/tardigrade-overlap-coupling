@@ -199,6 +199,82 @@ namespace vectorTools{
         return 0;
     }
 
+    template<typename T>
+    std::vector< T > cross(const std::vector< T > &a, const std::vector< T > &b){
+        /*!
+         * Compute the cross product of two vectors i.e. a x b
+         * Note that if a and b are 2D vectors a 3D vector for c will be returned
+         * 
+         * TODO: Generalize this to n dimensions
+         * 
+         * :param std::vector< T > &a: The first vector
+         * :param std::vector< T > &b: The second vector
+         */
+
+         std::vector< T > c;
+         cross(a, b, c);
+         return c;
+    }
+
+    template<typename T>
+    int dot(const std::vector< T > &a, const std::vector< T > &b, T &v){
+        /*!
+         * Compute the dot product of two vectors i.e. v = a_i b_i
+         * 
+         * :param std::vector< T > &a: The first vector
+         * :param std::vector< T > &b: The second vector
+         * :param T &v: The output quantity
+         */
+
+        //Get the size and perform error handing
+        size_type size = a.size();
+        if (size != b.size()){
+            throw std::length_error("vectors must be the same size to add");
+        }
+
+        //Set v to null
+        v = 0;
+
+        for (size_type i=0; i<size; i++){
+            v += a[i]*b[i];
+        }
+        return 0;
+    }
+
+    template<typename T>
+    T dot(const std::vector< T > &a, const std::vector< T > &b){
+        /*!
+         * Compute the dot product of two vectors i.e. v = a_i b_i
+         * 
+         * :param std::vector< T > &a: The first vector
+         * :param std::vector< T > &b: The second vector
+         */
+
+        T v;
+        dot(a, b, v);
+        return v;
+    }
+
+    template<typename T>
+    std::vector< T > dot(const std::vector< std::vector< T > > &A, const std::vector< T > &b){
+        /*!
+         * Compute the dot product between a matrix and a vector resulting i.e. c_i = A_ij b_j
+         * 
+         * :param std::vector< std::vector< T > > &A: The matrix
+         * :param std::vector< T > &b: The vector
+         */
+
+        size_type size = A.size();
+
+        std::vector< T > c(size);
+
+        unsigned int i=0;
+        for (auto A_i=A.begin(); A_i!=A.end(); A_i++, i++){
+            c[i] = dot(*A_i, b);
+        }
+        return c;
+    }
+
     //Printing Utilities
     template<typename T>
     int print(std::vector< T > &v){

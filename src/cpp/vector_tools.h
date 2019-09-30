@@ -63,6 +63,18 @@ namespace vectorTools{
     template<typename T>
     int cross(const std::vector< T > &a, const std::vector< T > &b, std::vector< T > &c);
 
+    template<typename T>
+    std::vector< T > cross(const std::vector< T > &a, const std::vector< T > &b);
+
+    template<typename T>
+    int dot(const std::vector< T > &a, const std::vector< T > &b, T &c);
+
+    template<typename T>
+    T dot(const std::vector< T > &a, const std::vector< T > &b);
+
+    template<typename T>
+    std::vector< T > dot(const std::vector< std::vector< T > > &A, const std::vector< T > &b);
+
     //Printing Utilities
     template<typename T>
     int print(std::vector< T > &v);

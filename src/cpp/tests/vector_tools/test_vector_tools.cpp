@@ -252,7 +252,54 @@ int test_cross(std::ofstream &results){
         return 1;
     }
 
+    c = vectorTools::cross(a, b);
+
+    if (!fuzzy_equals(c, {-27, 0, 9})){
+        results << "test_cross (test 3) & False\n";
+        return 1;
+    }
+
     results << "test_cross & True\n";
+    return 0;
+}
+
+int test_dot(std::ofstream &results){
+    /*!
+     * Test the computation of the dot product of two vectors
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    vectorType a = { 1, 2, 3};
+    vectorType b = {-1, 7, 6};
+    floatType c;
+    
+    vectorTools::dot(a, b, c);
+
+    if (!fuzzy_equals(c, -1 + 14 + 18)){
+        results << "test_dot (test 1) & False\n";
+        return 1;
+    }
+
+    c = vectorTools::dot(a, b);
+    if (!fuzzy_equals(c, -1 + 14 + 18)){
+        results << "test_dot (test 2) & False\n";
+        return 1;
+    }
+
+    matrixType A = {{1, 2, 3},
+                    {4, 5, 6},
+                    {7, 8, 9}};
+    vectorType d;
+
+    d = vectorTools::dot(A, a);
+
+    if (!fuzzy_equals(d, {14, 32, 50})){
+        results << "test_dot (test 3) & False\n";
+        return 1;
+    }
+
+    results << "test_dot & True\n";
     return 0;
 }
 
@@ -277,6 +324,7 @@ int main(){
     //Test the utility functions
     test_computeMean(results);
     test_cross(results);
+    test_dot(results);
 
     //Close the results file
     results.close();
