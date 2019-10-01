@@ -604,5 +604,6 @@ namespace vectorTools{
             xmat = qrSolver.solve(bmat);
             return x;
         }
+
     #endif
 }

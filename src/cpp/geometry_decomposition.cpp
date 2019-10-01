@@ -354,4 +354,101 @@ namespace gDecomp{
         return 0;
     }
 
+    int findPointOfIntersection(const std::vector< faceType > &planes, vectorType &point, bool &solveFlag){
+        /*!
+         * Find the point of intersection of three planes if it exists
+         * 
+         * :param const std::vector< faceType > &planes: A vector of pairs of the form (normal, point)
+         *     where normal is the normal of the surface and point is a point on that surface
+         * :param vectorType &point: The point of intersection
+         * :param bool &solveFlag: A flag indicating that a unique solution was found
+         */
+
+        if (planes.size() != 3){
+            std::cerr << "Error: Three planes must be provided\n";
+            assert(1==0);
+            return 1;
+        }
+
+        //Form the matrix equations
+        vectorType Avec;
+        vectorType b(3);
+
+        unsigned int i=0;
+        for (auto plane=planes.begin(); plane!=planes.end(); plane++, i++){
+            Avec.insert(Avec.end(), plane->first.begin(), plane->first.end());
+            b[i] = vectorTools::dot(plane->first, plane->second);
+        }
+
+        unsigned int rank;
+        point = vectorTools::solveLinearSystem(Avec, b, 3, 3, rank);
+        
+        if (rank != 3){
+            solveFlag = false;
+        }
+        else{
+            solveFlag = true;
+        }
+        return 0;
+    }
+
+    int findAllPointsOfIntersection(const std::vector< faceType > &planes, matrixType &intersectionPoints,
+        floatType tolr, floatType tola){
+        /*!
+         * Find all of the points of intersection of the set of planes removing duplicates
+         * 
+         * :param const std::vector< faceType > &planes: A vector of planes of the form (normal, point)
+         *     where normal is the normal of the surface and point is a point on that surface.
+         * :param matrixType &intersectoinPoints: The points of intersection between the faces.
+         * :param floatType tolr: The relative tolerance
+         * :param floatType tola: The absolute tolerance
+         */
+
+        intersectionPoints.clear();
+        vectorType point;
+        bool intersects;
+
+        unsigned int i=0;
+        for (auto p=planes.begin(); p!=planes.end()-2; p++, i++){
+
+            unsigned int j=i+1;
+            for (auto q=planes.begin()+i+1; q!=planes.end()-1; q++, j++){
+
+                if (!vectorTools::isParallel(p->first, q->first)){
+
+                    unsigned int k=j+1;
+                    for (auto r=planes.begin()+j+1; r!=planes.end(); r++, k++){
+
+                        findPointOfIntersection({*p, *q, *r}, point, intersects);
+
+                        if (intersects){
+
+                            if (!isDuplicate(point, intersectionPoints)){
+                                intersectionPoints.resize(intersectionPoints.size() + 1);
+                                intersectionPoints.back() = point;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+    bool isDuplicate(const vectorType &point, const matrixType &points){
+        /*!
+         * Check to see if point is a duplicate of a value in points
+         * 
+         * :param const vectorType &point: The point in question
+         * :param const matrixType &points: The collection of points to check
+         */
+
+        bool duplicate=false;
+
+        for (auto p=points.begin(); p!=points.end(); p++){
+            duplicate = vectorTools::fuzzyEquals(*p, point);
+            if (duplicate){return duplicate;}
+        }
+        return duplicate;
+    }
 }

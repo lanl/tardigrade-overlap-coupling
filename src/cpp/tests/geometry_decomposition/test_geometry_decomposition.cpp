@@ -406,11 +406,149 @@ int test_findMidpoints(std::ofstream &results){
                                     {3.0, 1.5, 1.0}};
 
     if (!vectorTools::fuzzyEquals(midpointsAnswer, midpointsSolution)){
-        results << "test_fintMidpoints (test 1) & False\n";
+        results << "test_findMidpoints (test 1) & False\n";
         return 1;
     }
 
     results << "test_findMidpoints & True\n";
+    return 0;
+}
+
+int test_findPointOfIntersection(std::ofstream &results){
+    /*!
+     * Test the computation of the point of intersection of three planes
+     * 
+     * :param std::ofstream &results: The output file
+     */
+    
+    std::vector< gDecomp::faceType > planes = {std::pair< vectorType, vectorType >({1, 0, 0}, {1.0, 0.5, 0.5}),
+                                               std::pair< vectorType, vectorType >({0, 1, 0}, {0.5, 1.0, 0.5}),
+                                               std::pair< vectorType, vectorType >({0, 0, 1}, {0.5, 0.5, 1.0})};
+
+    vectorType pointAnswer;
+    bool solveFlag;
+    gDecomp::findPointOfIntersection(planes, pointAnswer, solveFlag);
+
+    if (!vectorTools::fuzzyEquals(pointAnswer, {1, 1, 1})){
+        results << "test_findPointOfIntersection (test 1) & False\n";
+        return 1;
+    }
+
+    if (!solveFlag){
+        results << "test_findPointOfIntersection (test 2) & False\n";
+        return 1;
+    }
+
+    planes = {std::pair< vectorType, vectorType >({1, 0, 0}, {1.0, 0.5, 0.5}),
+              std::pair< vectorType, vectorType >({0, 1, 0}, {0.5, 1.0, 0.5}),
+              std::pair< vectorType, vectorType >({0, 1, 0}, {0.5, 0.5, 1.0})};
+
+    gDecomp::findPointOfIntersection(planes, pointAnswer, solveFlag);
+
+    if (solveFlag){
+        results << "test_findPointOfIntersection (test 3) & False\n";
+        return 1;
+    }
+
+    results << "test_findPointOfIntersection & True\n";
+    return 0;
+}
+
+int test_findAllPointsOfIntersection(std::ofstream &results){
+    /*!
+     * Test for the utility which finds all of the points of 
+     * intersection of a set of planes.
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    std::vector< gDecomp::faceType > hexFaces = {std::pair<vectorType, vectorType>({ 1, 0, 0}, { 1, 0, 0}),
+                                                 std::pair<vectorType, vectorType>({-1, 0, 0}, {-1, 0, 0}),
+                                                 std::pair<vectorType, vectorType>({ 0, 1, 0}, { 0, 1, 0}),
+                                                 std::pair<vectorType, vectorType>({ 0,-1, 0}, { 0,-1, 0}),
+                                                 std::pair<vectorType, vectorType>({ 0, 0, 1}, { 0, 0, 1}),
+                                                 std::pair<vectorType, vectorType>({ 0, 0,-1}, { 0, 0,-1})};
+
+    matrixType intersectionAnswers = {{ 1, 1, 1},
+                                      { 1, 1,-1},
+                                      { 1,-1, 1},
+                                      { 1,-1,-1},
+                                      {-1, 1, 1},
+                                      {-1, 1,-1},
+                                      {-1,-1, 1},
+                                      {-1,-1,-1}};
+
+    matrixType intersectionPoints;
+    gDecomp::findAllPointsOfIntersection(hexFaces, intersectionPoints);
+
+    if (!vectorTools::fuzzyEquals(intersectionPoints, intersectionAnswers)){
+        results << "test_findAllPointsOfIntersection (test 1) & False\n";
+        return 1;
+    }
+
+    std::vector< gDecomp::faceType > faces = {std::pair<vectorType, vectorType>({-1.000000000, 0.000000000, 0.000000000}, {0.000000000, 0.000000000, 0.000000000}),
+                                              std::pair<vectorType, vectorType>({0.000000000, -1.000000000, 0.000000000}, {0.000000000, 0.000000000, 0.000000000}),
+                                              std::pair<vectorType, vectorType>({0.000000000, 0.000000000, -1.000000000}, {0.000000000, 0.000000000, 0.000000000}),
+                                              std::pair<vectorType, vectorType>({0.577350269, 0.577350269, 0.577350269}, {1.000000000, 0.000000000, 0.000000000}),
+                                              std::pair<vectorType, vectorType>({0.707106781, -0.707106781, 0.000000000}, {0.361803399, 0.361803399, 0.138196601}),
+                                              std::pair<vectorType, vectorType>({0.000000000, -1.000000000, 0.000000000}, {0.138196601, 0.361803399, 0.138196601}),
+                                              std::pair<vectorType, vectorType>({0.000000000, -0.707106781, 0.707106781}, {0.138196601, 0.361803399, 0.361803399})};
+
+    intersectionAnswers = { {-0.000000000, -0.000000000, -0.000000000},
+                            {-0.000000000, -0.000000000, 1.000000000},
+                            {-0.000000000, 1.000000000, -0.000000000},
+                            {-0.000000000, 0.361803399, -0.000000000},
+                            {-0.000000000, 0.361803399, 0.638196601},
+                            {-0.000000000, 0.500000000, 0.500000000},
+                            {-0.000000000, 0.361803399, 0.361803399},
+                            {1.000000000, -0.000000000, -0.000000000},
+                            {0.500000000, 0.500000000, -0.000000000},
+                            {0.638196601, 0.361803399, -0.000000000},
+                            {0.361803399, 0.361803399, -0.000000000},
+                            {0.361803399, 0.361803399, 0.276393202},
+                            {0.333333333, 0.333333333, 0.333333333},
+                            {0.276393202, 0.361803399, 0.361803399},
+                            {0.361803399, 0.361803399, 0.361803399}};
+
+    gDecomp::findAllPointsOfIntersection(faces, intersectionPoints);
+
+    if (!vectorTools::fuzzyEquals(intersectionPoints, intersectionAnswers)){
+        results << "test_findAllPointsOfIntersection (test 2) & False\n";
+        return 1;
+    }
+
+
+    results << "test_findAllPointsOfIntersection & True\n";
+    return 0;
+}
+
+int test_isDuplicate(std::ofstream &results){
+    /*!
+     * Test of the utility for detecting duplicates in 
+     * collections of points.
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    vectorType v = {1, 2, 3};
+    matrixType m = {{2, 3,  4},
+                    {5, 6,  7},
+                    {8, 9, 10},
+                    {11, 12, 13}};
+
+    if (gDecomp::isDuplicate(v, m)){
+        results << "test_isDuplicate (test 1) & False\n";
+        return 1;
+    }
+
+    v = {5, 6, 7};
+    if (!gDecomp::isDuplicate(v, m)){
+        results << "test_isDuplicate (test 2) & False\n";
+        return 1;
+
+    }
+
+    results << "test_isDuplicate & True\n";
     return 0;
 }
 
@@ -436,6 +574,9 @@ int main(){
     test_getFacePoints(results);
     test_volumeToTets(results);
     test_findMidpoints(results);
+    test_findPointOfIntersection(results);
+    test_findAllPointsOfIntersection(results);
+    test_isDuplicate(results);
 
     //Close the results file
     results.close();

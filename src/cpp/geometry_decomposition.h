@@ -18,6 +18,7 @@
 #include<math.h>
 #include<assert.h>
 #include<string.h>
+#define USE_EIGEN
 #include<vector_tools.h>
 
 namespace gDecomp{
@@ -51,6 +52,13 @@ namespace gDecomp{
 
     int findMidpoints(const vectorType &p, const matrixType &points, matrixType &midpoints,
         double tolr=1e-9, double tola=1e-9);
+
+    int findPointOfIntersection(const std::vector< faceType > &planes, vectorType &point, bool &solveFlag);
+
+    int findAllPointsOfIntersection(const std::vector< faceType > &planes, matrixType &intersectionPoints,
+        floatType tolr=1e-9, floatType tola=1e-9);
+
+    bool isDuplicate(const vectorType &point, const matrixType &points);
 }
 
 #endif
