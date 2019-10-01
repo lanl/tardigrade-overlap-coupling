@@ -62,6 +62,11 @@ namespace gDecomp{
 
     int determineInteriorPoints(const vectorType &pInside, const matrixType &points, const std::vector< faceType > &faces,
         std::vector< unsigned int > &interiorPoints, floatType tolr=1e-9, floatType tola=1e-9);
+
+    int midpointsToFaces(const vectorType &p, const matrixType &midpoints, std::vector< faceType > &faces);
+
+    int getVolumeSubdomainAsTets(const unsigned int index, const matrixType &domainPoints, const std::vector< faceType > &faces,
+        std::vector< matrixType > &subdomainTets);
 }
 
 #endif

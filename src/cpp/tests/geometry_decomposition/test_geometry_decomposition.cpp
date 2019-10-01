@@ -598,6 +598,159 @@ int test_determineInteriorPoints(std::ofstream &results){
     return 0;
 }
 
+int test_midpointsToFaces(std::ofstream &results){
+    /*!
+     * Test the mapping of the calculated midpoints to the 
+     * faces.
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    std::vector< gDecomp::faceType > tetFaces = {std::pair<vectorType, vectorType>({-1.000000000,  0.000000000,  0.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.000000000, -1.000000000,  0.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.000000000,  0.000000000, -1.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.577350269,  0.577350269,  0.577350269},
+                                                                                   { 1.000000000,  0.000000000,  0.000000000})};
+
+    matrixType points = {{0.585410197, 0.138196601, 0.138196601},
+                         {0.138196601, 0.138196601, 0.138196601},
+                         {0.138196601, 0.138196601, 0.585410197},
+                         {0.138196601, 0.585410197, 0.138196601}};
+
+    std::vector< gDecomp::faceType > answerFaces = {std::pair<vectorType, vectorType>({-1.000000000,  0.000000000,  0.000000000},
+                                                                                      { 0.361803399,  0.138196601,  0.138196601}),
+                                                    std::pair<vectorType, vectorType>({-0.707106781,  0.000000000,  0.707106781},
+                                                                                      { 0.361803399,  0.138196601,  0.361803399}),
+                                                    std::pair<vectorType, vectorType>({-0.707106781,  0.707106781,  0.000000000},
+                                                                                      { 0.361803399,  0.361803399,  0.138196601}),
+                                                    std::pair<vectorType, vectorType>({ 1.000000000,  0.000000000,  0.000000000},
+                                                                                      { 0.361803399,  0.138196601,  0.138196601}),
+                                                    std::pair<vectorType, vectorType>({ 0.000000000,  0.000000000,  1.000000000},
+                                                                                      { 0.138196601,  0.138196601,  0.361803399}),
+                                                    std::pair<vectorType, vectorType>({ 0.000000000,  1.000000000,  0.000000000},
+                                                                                      { 0.138196601,  0.361803399,  0.138196601}),
+                                                    std::pair<vectorType, vectorType>({ 0.707106781,  0.000000000, -0.707106781},
+                                                                                      { 0.361803399,  0.138196601,  0.361803399}),
+                                                    std::pair<vectorType, vectorType>({ 0.000000000,  0.000000000, -1.000000000},
+                                                                                      { 0.138196601,  0.138196601,  0.361803399}),
+                                                    std::pair<vectorType, vectorType>({ 0.000000000,  0.707106781, -0.707106781},
+                                                                                      { 0.138196601,  0.361803399,  0.361803399}),
+                                                    std::pair<vectorType, vectorType>({ 0.707106781, -0.707106781,  0.000000000},
+                                                                                      { 0.361803399,  0.361803399,  0.138196601}),
+                                                    std::pair<vectorType, vectorType>({ 0.000000000, -1.000000000,  0.000000000},
+                                                                                      { 0.138196601,  0.361803399,  0.138196601}),
+                                                    std::pair<vectorType, vectorType>({ 0.000000000, -0.707106781,  0.707106781},
+                                                                                      { 0.138196601,  0.361803399,  0.361803399})};
+
+    matrixType midpoints;
+    std::vector< gDecomp::faceType > midpointFaces;
+
+    for (unsigned int gpt=0; gpt<4; gpt++){
+        gDecomp::findMidpoints(points[gpt], points, midpoints);
+        gDecomp::midpointsToFaces(points[gpt], midpoints, midpointFaces);
+
+        for (unsigned int f=0; f<3; f++){
+            if (!vectorTools::fuzzyEquals(answerFaces[gpt*4 + f].first, midpointFaces[f].first) &&
+                !vectorTools::fuzzyEquals(answerFaces[gpt*4 + f].second, midpointFaces[f].second)){
+                results << "test_midpointsToFaces (test 1) & False\n";
+                return 1;
+            }
+        }
+
+        results << "test_midpointsToFaces & True\n";
+        return 0;
+    }
+
+    unsigned int i=0;
+    for (auto mF=midpointFaces.begin(); mF!=midpointFaces.end(); mF++, i++){
+        vectorTools::print(mF->first); std::cout << " | "; vectorTools::print(mF->second);
+    }
+
+    return 0;
+}
+
+int test_getVolumeSubdomainAsTets(std::ofstream &results){
+    /*!
+     * Test the decomposition of a volume's subdomain into 
+     * tetrahedra. This requires only the planes which form 
+     * the volume and a collection of points inside each of 
+     * the subdomains.
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    std::vector< gDecomp::faceType > tetFaces = {std::pair<vectorType, vectorType>({-1.000000000,  0.000000000,  0.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.000000000, -1.000000000,  0.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.000000000,  0.000000000, -1.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.577350269,  0.577350269,  0.577350269},
+                                                                                   { 1.000000000,  0.000000000,  0.000000000})};
+
+    matrixType points = {{0.585410197, 0.138196601, 0.138196601},
+                         {0.138196601, 0.138196601, 0.138196601},
+                         {0.138196601, 0.138196601, 0.585410197},
+                         {0.138196601, 0.585410197, 0.138196601}};
+
+    std::vector< matrixType > subdomainTets;
+    
+    vectorType subdomainVolumes(points.size(), 0);
+    vectorType tetVolumesAnswer = {0.03980327668541683, 0.04725683661041613, 0.03980327668541683, 0.03980327668541683};
+
+    for (unsigned int index=0; index<points.size(); index++){
+        gDecomp::getVolumeSubdomainAsTets(index, points, tetFaces, subdomainTets);
+        
+        for (auto tet=subdomainTets.begin(); tet!=subdomainTets.end(); tet++){
+            subdomainVolumes[index] += gDecomp::getTetVolume(*tet);
+        }
+    }
+
+    if (!vectorTools::fuzzyEquals(tetVolumesAnswer, subdomainVolumes)){
+        results << "test_getVolumeSubdomainAsTets (test 1) & False\n";
+        return 1;
+    }
+
+    std::vector< gDecomp::faceType > hexFaces = {std::pair<vectorType, vectorType>({ 1, 0, 0}, { 1, 0, 0}),
+                                                 std::pair<vectorType, vectorType>({-1, 0, 0}, {-1, 0, 0}),
+                                                 std::pair<vectorType, vectorType>({ 0, 1, 0}, { 0, 1, 0}),
+                                                 std::pair<vectorType, vectorType>({ 0,-1, 0}, { 0,-1, 0}),
+                                                 std::pair<vectorType, vectorType>({ 0, 0, 1}, { 0, 0, 1}),
+                                                 std::pair<vectorType, vectorType>({ 0, 0,-1}, { 0, 0,-1})};
+
+    matrixType hexPoints = {{-1, -1, -1},
+                            { 1, -1, -1},
+                            { 1,  1, -1},
+                            {-1,  1, -1},
+                            {-1, -1,  1},
+                            { 1, -1,  1},
+                            { 1,  1,  1},
+                            {-1,  1,  1}};
+    hexPoints /=std::sqrt(3);
+
+    subdomainVolumes = vectorType(hexPoints.size(), 0);
+    vectorType hexVolumesAnswer = {1, 1, 1, 1, 1, 1, 1, 1};
+
+    for (unsigned int index=0; index<hexPoints.size(); index++){
+        gDecomp::getVolumeSubdomainAsTets(index, hexPoints, hexFaces, subdomainTets);
+        
+        for (auto tet=subdomainTets.begin(); tet!=subdomainTets.end(); tet++){
+            subdomainVolumes[index] += gDecomp::getTetVolume(*tet);
+        }
+    }
+
+    if (!vectorTools::fuzzyEquals(hexVolumesAnswer, subdomainVolumes)){
+        results << "test_getVolumeSubdomainAsTets (test 2) & False\n";
+        return 1;
+    }
+
+    results << "test_getVolumeSubdomainAsTets & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -624,6 +777,8 @@ int main(){
     test_findAllPointsOfIntersection(results);
     test_isDuplicate(results);
     test_determineInteriorPoints(results);
+    test_midpointsToFaces(results);
+    test_getVolumeSubdomainAsTets(results);
 
     //Close the results file
     results.close();

@@ -305,6 +305,9 @@ namespace gDecomp{
         std::vector< matrixType > faceTets;
 
         for (auto fpi=facePointIndices.begin(); fpi!=facePointIndices.end(); fpi++){
+            if ((*fpi).size() < 3){
+                continue;
+            }
             vectorTools::getValuesByIndex(points, *fpi, facePoints);
             faceTets = getTets(c, facePoints);
 
@@ -494,5 +497,87 @@ namespace gDecomp{
             }
         }
         return 0;
+    }
+
+    int midpointsToFaces(const vectorType &p, const matrixType &midpoints, std::vector< faceType > &faces){
+        /*!
+         * Convert a collection of midpoints between a set of points to
+         * a collection of faces relative to point p
+         * 
+         * :param const vectorType &p: The point which is located inside of the faces (ndim)
+         * :param const matrixType &midpoints: The points in question (npoints, ndim)
+         * :param std::vector< faceType > &faces: The faces which bound the domain.
+         */
+
+        //Initialize values
+        vectorType normal;
+        vectorType point;
+
+        faces.clear();
+
+        for (auto mp=midpoints.begin(); mp!=midpoints.end(); mp++){
+            normal = (*mp - p)/vectorTools::l2norm(*mp - p);
+            faces.push_back(faceType(normal, *mp));
+        }
+        return 0;
+    }
+
+    int getVolumeSubdomainAsTets(const unsigned int index, const matrixType &domainPoints, const std::vector< faceType > &faces,
+        std::vector< matrixType > &subdomainTets){
+        /*!
+         * Get a subdomain of the volume in the form of tetrahedra
+         * 
+         * :param const unsigned int index: The index of the domain points to use to compute the subdomain.
+         * :param const matrixType &domainPoints: The collection of points within each of the subdomains.
+         * :param std::vector< faceType > &faces: A vector of planes of the form (normal, point)
+         *     where normal is the normal of the surface and point is a point on that surface
+         * :param std::vector< matrixType > &subdomainTets: The subdomain broken up into tetrahedra
+         */
+
+        //Clear the subdomain
+        subdomainTets.clear();
+
+        //Find the midpoints between the domain points
+        matrixType midpoints;
+        findMidpoints(domainPoints[index], domainPoints, midpoints);
+
+        //Find the faces corresponding to the midpoints and join them with the faces
+        std::vector< faceType > domainFaces;
+        midpointsToFaces(domainPoints[index], midpoints, domainFaces);
+        domainFaces.insert(domainFaces.end(), faces.begin(), faces.end());
+
+        //Find all of the points of intersection
+        matrixType extremePoints;
+        findAllPointsOfIntersection(domainFaces, extremePoints);
+
+        //Find the subset of the extreme points that are interior points
+        std::vector< unsigned int > interiorPointsIndices;
+        determineInteriorPoints(domainPoints[index], extremePoints, domainFaces, interiorPointsIndices);
+
+        //Extract the interior points
+        matrixType interiorPoints;
+        vectorTools::getValuesByIndex(extremePoints, interiorPointsIndices, interiorPoints);
+
+        //Get the tetrahedra of the volume
+        volumeToTets(domainFaces, interiorPoints, subdomainTets);
+        return 0;
+
+//        //Get the points which are on the faces
+//        std::vector< std::vector< unsigned int > > facePointsIndices;
+//        getFacePoints(domainFaces, interiorPoints, facePointsIndices);
+//
+//        //Identify faces with three or more points
+//        unsigned int i=0;
+//        std::vector< unsigned int > faceIndices;
+//        for (auto fPI=facePointsIndices.begin(), fPI!=facePointsIndices.end(); fPI++, i++){
+//            if ((*fPi).size() >= 3){
+//                faceIndices.push_back(i);
+//            }
+//        }
+
+        //Get the tetrahedra of the decomposed subdomain
+        
+
+
     }
 }
