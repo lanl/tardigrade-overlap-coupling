@@ -137,12 +137,186 @@ namespace gDecomp{
                       {0.0000000000000000, 0.0000000000000000, 0.5000000000000000}};
             weights = {0.2177650698804054, 0.2177650698804054, 0.2177650698804054,
                        0.2177650698804054, 0.0214899534130631, 0.0214899534130631,
-                       0.0214899534130631, 0.0214899534130631  0.0214899534130631,
+                       0.0214899534130631, 0.0214899534130631, 0.0214899534130631,
                        0.0214899534130631};
         }
         else{
             std::cerr << "Error: order not supported\n";
             assert(1==0);
         }
+        return 0;
     }
+
+    int findPointsOnFace(const vectorType &n, const vectorType &q, const matrixType &points,
+                         std::vector< unsigned int > &surfacePoints,
+                         double tolr, double tola){
+        /*!
+         * Determine which points lie on the face
+         * 
+         * :param const vectorType &n: The face normal
+         * :param const vectorType &q: A point on the face
+         * :param const matrixType &points: The points to search (npoints, ndim)
+         * :param double tolr: The relative tolerance
+         * :param double tola: The absolute tolerance
+         */
+
+        //Set the tolerance
+        double tol = tolr*vectorTools::l2norm(q) + tola;
+        
+        //Clear out any data in surfacePoints
+        surfacePoints.clear();
+
+        //Begin iteration through the points
+        unsigned int i=0;
+        double d;
+        for (auto it = points.begin(); it!=points.end(); it++, i++){
+            d = vectorTools::dot(n, *it - q);
+            if (abs(d)<=tol){
+                surfacePoints.push_back(i);
+            }
+        }
+        return 0;
+    }
+
+    int orderPlanarPoints(const matrixType &points, std::vector< unsigned int > &orderedIndices){
+        /*!
+         * Order a collection of points such that they are ordered in a CCW fashion.
+         * 
+         * :param const matrixType &points: The points to order (npoints, ndim)
+         */
+
+        //Make sure there are points in points
+        if (points.size()==0){
+            orderedIndices = {};
+            return 0;
+        }
+        else if (points.size()==1){
+            orderedIndices = {0};
+            return 0;
+        }
+        else if (points.size()==2){
+            orderedIndices = {0, 1};
+            return 0;
+        }
+
+        //Compute the centroid
+        vectorType c = vectorTools::computeMean(points);
+
+        //Compute the unit vector pointing to node 1
+        vectorType d = points[0] - c;
+        d /= vectorTools::l2norm(d);
+
+        //Compute the unit normal vector
+        vectorType n = vectorTools::cross(d, points[1] - c);
+        if (vectorTools::fuzzyEquals(vectorTools::l2norm(n), 0.)){
+            std::cerr << "Error: the normal vector has zero length. The points are not co-planar.\n";
+            assert(1==0);
+        }
+        n /= vectorTools::l2norm(n);
+    
+        //Compute the unit orthogonal vector to node 1
+        vectorType e = vectorTools::cross(n, d);
+        e /= vectorTools::l2norm(e);
+
+        //angle vector
+        vectorType angles;
+        angles.reserve(points.size());
+        angles.push_back(0);
+
+        //Iterate through the remaining points
+        vectorType f;
+        floatType x, y;
+        for (auto p = points.begin() + 1; p!=points.end(); p++){
+            f = *p - c;
+            x = vectorTools::dot(d, f);
+            y = vectorTools::dot(e, f);
+            angles.push_back(std::atan2(y, x));
+        }
+
+        //Get the indices required to sort the array
+        orderedIndices = vectorTools::argsort(angles);
+        return 0;
+    }
+
+    int getFacePoints(const std::vector< faceType > &faces, const matrixType &points,
+        std::vector< std::vector< unsigned int > > &indexFaces){
+        /*!
+         * Collect the points located on each face ordered CCW
+         * 
+         * :param const std::vector< faceType > &faces: A vector of faces defined by pairs 
+         *     of vectorTypes (normal, point) where normal is the normal of the face and 
+         *     and point is a point on the face.
+         * :param matrixType points: A collection of points (npoints, ndim)
+         * :param std::vector< std::vector< unsigned int > > &indexFaces: A vector of the indices 
+         *     of the points located on each face (nfaces, npointsOnFace).
+         */
+
+        //Reserve enough memory for the indices
+        indexFaces.resize(faces.size());
+
+        std::vector< unsigned int > pointsOnFace;
+        std::vector< unsigned int > argSortPoints;
+        std::vector< unsigned int > orderedPointsOnFace;
+        matrixType subPoints;
+
+        //Iterate through the faces
+        unsigned int i=0;
+        for (auto face=faces.begin(); face!=faces.end(); face++, i++){
+            findPointsOnFace(face->first, face->second, points, pointsOnFace);
+
+            if (pointsOnFace.size() <=3){ //We don't need to sort the points if there are less than four
+                indexFaces[i] = pointsOnFace;
+            }
+            else{
+                //Get the points on the face
+                vectorTools::getValuesByIndex(points, pointsOnFace, subPoints);
+                
+                //Sort the points CCW and store them
+                orderPlanarPoints(subPoints, argSortPoints);
+                vectorTools::getValuesByIndex(pointsOnFace, argSortPoints, orderedPointsOnFace);
+                indexFaces[i] = orderedPointsOnFace;
+            }
+        }
+        return 0;
+    }
+
+    int volumeToTets(const std::vector< faceType > &faces, const matrixType &points,
+        std::vector< matrixType > &tets){
+        /*!
+         * Deconstruct a volume into a collection of tetrahedra
+         * 
+         * :param std::vector< faceType > &faces: A vector of faces defined by pairs 
+         *     of vectorTypes (normal, point) where normal is the normal of the face and 
+         *     and point is a point on the face.
+         * :param matrixType points: A collection of points (npoints, ndim)
+         * :param std::vector< matrixType > &tets: The tetrahedra which describe the volume
+         */
+
+        //Compute the centroid of the points
+        vectorType c = vectorTools::computeMean(points);
+
+        //Get the indices of the points associated with each face
+        std::vector< std::vector< unsigned int > > facePointIndices;
+        getFacePoints(faces, points, facePointIndices);
+
+        //Compute the tetrahedra
+        tets.clear();
+        matrixType facePoints;
+        std::vector< matrixType > faceTets;
+
+        for (auto fpi=facePointIndices.begin(); fpi!=facePointIndices.end(); fpi++){
+            vectorTools::getValuesByIndex(points, *fpi, facePoints);
+            faceTets = getTets(c, facePoints);
+
+            unsigned int i0 = tets.size();            
+            tets.resize(tets.size() + faceTets.size());
+            for (auto fT=faceTets.begin(); fT!=faceTets.end(); fT++, i0++){
+                tets[i0] = *fT;
+            }
+        }
+        return 0;
+    }
+
+    
+
 }
