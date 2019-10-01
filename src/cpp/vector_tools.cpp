@@ -430,6 +430,29 @@ namespace vectorTools{
         return true;
     }
 
+    template<typename T>
+    bool isParallel(const std::vector< T > &v1, const std::vector< T > &v2){
+        /*!
+         * Compare two vectors and determine if they are parallel
+         * 
+         * :param std::vector< T > &v1: The first vector
+         * :param std::vector< T > &v2: The second vector
+         */
+
+        //Recast the incoming vectors as double
+        std::vector< double > v1d(v1.begin(), v1.end());
+        std::vector< double > v2d(v2.begin(), v2.end());
+
+        //Compute the unit vector for each
+        std::vector< double > nv1 = v1d/l2norm(v1d);
+        std::vector< double > nv2 = v2d/l2norm(v2d);
+
+        //Compute the distance
+        double d = std::abs(dot(nv1, nv2));
+
+        return fuzzyEquals(d, 1.);
+    }
+
     //Access Utilities
     template <typename T>
     int getValuesByIndex(const std::vector< T > &v, const std::vector< size_type > &indices,

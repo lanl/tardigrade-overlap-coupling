@@ -557,6 +557,45 @@ int test_solveLinearSystem(std::ofstream &results){
     return 0;
 }
 
+int test_isParallel(std::ofstream &results){
+    /*!
+     * Test the utility that tests if two vectors are parallel or not
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    vectorType v1 = {1, 2, 3};
+    vectorType v2 = {2, 4, 6};
+
+    if (!vectorTools::isParallel(v1, v2)){
+        results << "test_isParallel (test 1) & False\n";
+        return 1;
+    }
+
+    v1 = {0, 2, 3};
+    if (vectorTools::isParallel(v1, v2)){
+        results << "test_isParallel (test 2) & False\n";
+        return 1;
+    }
+
+    std::vector< int > v3 = {1, 2, 3};
+    std::vector< int > v4 = {2, 4, 6};
+
+    if (!vectorTools::isParallel(v3, v4)){
+        results << "test_isParallel (test 3) & False\n";
+        return 1;
+    }
+
+    v3[0] = 0;
+    if (vectorTools::isParallel(v3, v4)){
+        results << "test_isParallel (test 4) & False\n";
+        return 1;
+    }
+
+    results << "test_isParallel & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -586,6 +625,7 @@ int main(){
     test_getValuesByIndex(results);
     test_appendVectors(results);
     test_solveLinearSystem(results);
+    test_isParallel(results);
 
     //Close the results file
     results.close();

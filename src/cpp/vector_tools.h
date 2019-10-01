@@ -108,6 +108,9 @@ namespace vectorTools{
     template<typename T>
     bool equals(const std::vector< std::vector< T > > &a, const std::vector< std::vector< T > > &b);
 
+    template<typename T>
+    bool isParallel(const std::vector< T > &v1, const std::vector< T > &v2);
+
     //Access Utilities
     template <typename T>
     int getValuesByIndex(const std::vector< T > &v, const std::vector< size_type > &indices,
