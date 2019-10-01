@@ -317,6 +317,41 @@ namespace gDecomp{
         return 0;
     }
 
-    
+    int findMidpoints(const vectorType &p, const matrixType &points, matrixType &midpoints, 
+        floatType tolr, floatType tola){
+        /*!
+         * Find the midpoints between the point p and a collection of points removing any 
+         * midpoints which have a distance of zero away from the point p
+         * 
+         * :param const vectorType &p: The origin point (ndim)
+         * :param const matrixType &points: The points to interpolate betwen (npoints, ndim)
+         * :param matrixType &midpoints: The midpoints
+         * :param floatType tolr: The relative tolerance
+         * :param floatType tola: The absolute tolerance
+         */
+
+        //Compute the distances
+        vectorType distances(points.size(), 0);
+        floatType meanDistance = 0;
+
+        unsigned int i=0;
+        for (auto point=points.begin(); point!=points.end(); point++, i++){
+            distances[i] = vectorTools::l2norm(*point - p);
+            meanDistance += distances[i]/points.size();
+        }
+
+        //Compute the tolerance
+        floatType tol = tolr*meanDistance + tola;
+
+        //Compute the midpoints
+        i=0;
+        midpoints.clear();
+        for (auto point=points.begin(); point!=points.end(); point++, i++){
+            if (distances[i]>=tol){
+                midpoints.push_back(0.5*((*point) - p) + p);
+            }
+        }
+        return 0;
+    }
 
 }

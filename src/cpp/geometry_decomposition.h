@@ -48,6 +48,9 @@ namespace gDecomp{
 
     int volumeToTets(const std::vector< faceType > &faces, const matrixType &points,
         std::vector< matrixType > &tets);
+
+    int findMidpoints(const vectorType &p, const matrixType &points, matrixType &midpoints,
+        double tolr=1e-9, double tola=1e-9);
 }
 
 #endif

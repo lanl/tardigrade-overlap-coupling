@@ -384,6 +384,36 @@ int test_volumeToTets(std::ofstream &results){
     return 0;
 }
 
+int test_findMidpoints(std::ofstream &results){
+    /*!
+     * Test the computation of the midpoints between a 
+     * point and a collection of points.
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    vectorType p = {1, 2, 3};
+    matrixType points = {{3, 4, 5},
+                         {6, 1, 4},
+                         {1, 2, 3},
+                         {5, 1,-1}};
+
+    matrixType midpointsAnswer;
+    gDecomp::findMidpoints(p, points, midpointsAnswer);
+
+    matrixType midpointsSolution = {{2.0, 3.0, 4.0},
+                                    {3.5, 1.5, 3.5},
+                                    {3.0, 1.5, 1.0}};
+
+    if (!vectorTools::fuzzyEquals(midpointsAnswer, midpointsSolution)){
+        results << "test_fintMidpoints (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_findMidpoints & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -405,6 +435,7 @@ int main(){
     test_orderPlanarPoints(results);
     test_getFacePoints(results);
     test_volumeToTets(results);
+    test_findMidpoints(results);
 
     //Close the results file
     results.close();
