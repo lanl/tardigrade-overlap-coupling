@@ -303,6 +303,33 @@ int test_dot(std::ofstream &results){
     return 0;
 }
 
+int test_l2norm(std::ofstream &results){
+    /*!
+     * Test the computation of the l2norm of vectors and matrices
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    vectorType a = {1, 2, 3};
+    matrixType A = {{1, 2, 3, 4},
+                    {5, 6, 7, 8}};
+
+    double r = vectorTools::l2norm(a);
+    if (!fuzzy_equals(r, 3.7416573867739413)){
+        results << "test_l2norm (test 1) & False\n";
+        return 1;
+    }
+
+    r = vectorTools::l2norm(A);
+    if (!fuzzy_equals(r, 14.2828568570857)){
+        results << "test_l2norm (test 2) & False\n";
+        return 1;
+    }
+
+    results << "test_l2norm & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -325,6 +352,7 @@ int main(){
     test_computeMean(results);
     test_cross(results);
     test_dot(results);
+    test_l2norm(results);
 
     //Close the results file
     results.close();

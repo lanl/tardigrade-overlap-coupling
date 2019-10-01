@@ -75,6 +75,12 @@ namespace vectorTools{
     template<typename T>
     std::vector< T > dot(const std::vector< std::vector< T > > &A, const std::vector< T > &b);
 
+    template<typename T>
+    double l2norm(const std::vector< T > &v);
+
+    template<typename T>
+    double l2norm(const std::vector< std::vector< T > > &A);
+
     //Printing Utilities
     template<typename T>
     int print(std::vector< T > &v);

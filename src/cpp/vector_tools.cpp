@@ -275,6 +275,32 @@ namespace vectorTools{
         return c;
     }
 
+    template<typename T>
+    double l2norm(const std::vector< T > &v){
+        /*!
+         * Compute the l2 norm of the vector v i.e. (v_i v_i)^(0.5)
+         * 
+         * :param const std::vector< T > &v: The vector to compute the norm of
+         */
+
+        return std::sqrt(dot(v, v));
+    }
+
+    template<typename T>
+    double l2norm(const std::vector< std::vector < T > > &A){
+        /*!
+         * Compute the l2 norm of the matrix A i.e. (A_ij A_ij)^(0.5)
+         * 
+         * :param const std::vector< std::vector< T > > &A: The matrix to compute the norm of
+         */
+
+        double v=0;
+        for (auto it=A.begin(); it!=A.end(); it++){
+            v += dot(*it, *it);
+        }
+        return std::sqrt(v);
+    }
+
     //Printing Utilities
     template<typename T>
     int print(std::vector< T > &v){
