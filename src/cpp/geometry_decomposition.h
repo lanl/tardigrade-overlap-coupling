@@ -59,6 +59,9 @@ namespace gDecomp{
         floatType tolr=1e-9, floatType tola=1e-9);
 
     bool isDuplicate(const vectorType &point, const matrixType &points);
+
+    int determineInteriorPoints(const vectorType &pInside, const matrixType &points, const std::vector< faceType > &faces,
+        std::vector< unsigned int > &interiorPoints, floatType tolr=1e-9, floatType tola=1e-9);
 }
 
 #endif

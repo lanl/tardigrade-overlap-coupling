@@ -552,6 +552,52 @@ int test_isDuplicate(std::ofstream &results){
     return 0;
 }
 
+int test_determineInteriorPoints(std::ofstream &results){
+    /*!
+     * Test the identification of the points located inside of the 
+     * domain.
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    std::vector< gDecomp::faceType > faces = {std::pair<vectorType, vectorType>({-1.000000000, 0.000000000, 0.000000000}, {0.000000000, 0.000000000, 0.000000000}),
+                                              std::pair<vectorType, vectorType>({0.000000000, -1.000000000, 0.000000000}, {0.000000000, 0.000000000, 0.000000000}),
+                                              std::pair<vectorType, vectorType>({0.000000000, 0.000000000, -1.000000000}, {0.000000000, 0.000000000, 0.000000000}),
+                                              std::pair<vectorType, vectorType>({0.577350269, 0.577350269, 0.577350269}, {1.000000000, 0.000000000, 0.000000000}),
+                                              std::pair<vectorType, vectorType>({0.707106781, -0.707106781, 0.000000000}, {0.361803399, 0.361803399, 0.138196601}),
+                                              std::pair<vectorType, vectorType>({0.000000000, -1.000000000, 0.000000000}, {0.138196601, 0.361803399, 0.138196601}),
+                                              std::pair<vectorType, vectorType>({0.000000000, -0.707106781, 0.707106781}, {0.138196601, 0.361803399, 0.361803399})};
+
+    matrixType points = { {-0.000000000, -0.000000000, -0.000000000},
+                          {-0.000000000, -0.000000000, 1.000000000},
+                          {-0.000000000, 1.000000000, -0.000000000},
+                          {-0.000000000, 0.361803399, -0.000000000},
+                          {-0.000000000, 0.361803399, 0.638196601},
+                          {-0.000000000, 0.500000000, 0.500000000},
+                          {-0.000000000, 0.361803399, 0.361803399},
+                          {1.000000000, -0.000000000, -0.000000000},
+                          {0.500000000, 0.500000000, -0.000000000},
+                          {0.638196601, 0.361803399, -0.000000000},
+                          {0.361803399, 0.361803399, -0.000000000},
+                          {0.361803399, 0.361803399, 0.276393202},
+                          {0.333333333, 0.333333333, 0.333333333},
+                          {0.276393202, 0.361803399, 0.361803399},
+                          {0.361803399, 0.361803399, 0.361803399}};
+
+    std::vector< unsigned int > interiorPointsAnswers = {2, 3, 5, 6, 8, 10, 11, 13};
+
+    std::vector< unsigned int > interiorPoints;
+    gDecomp::determineInteriorPoints({0.1381966, 0.5854102, 0.1381966}, points, faces, interiorPoints);
+
+    if (!vectorTools::equals(interiorPointsAnswers, interiorPoints)){
+        results << "test_determineInteriorPoints (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_determineInteriorPoints & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -577,6 +623,7 @@ int main(){
     test_findPointOfIntersection(results);
     test_findAllPointsOfIntersection(results);
     test_isDuplicate(results);
+    test_determineInteriorPoints(results);
 
     //Close the results file
     results.close();

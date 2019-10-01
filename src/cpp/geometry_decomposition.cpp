@@ -451,4 +451,48 @@ namespace gDecomp{
         }
         return duplicate;
     }
+
+    int determineInteriorPoints(const vectorType &pInside, const matrixType &points, const std::vector< faceType > &faces,
+        std::vector< unsigned int > &interiorPoints, floatType tolr, floatType tola){
+        /*!
+         * Determine which points are interior points
+         * 
+         * :param const vectorType &pInside: A point which is known to be located inside of the body
+         * :param const matrixType &points: The points to test (npoints, ndim)
+         * :param const std::vector< faceType > &faces: A vector of planes of the form (normal, point)
+         *     where normal is the normal of the surface and point is a point on that surface
+         * :param std::vector< unsigned int > &interiorPoints: The indices of the points which have 
+         *     been identified as being inside or on the surface of the domain.
+         * :param floatType tolr: The relative tolerance
+         * :param floatType tola: The absolute tolerance
+         */
+
+        interiorPoints.clear();
+        vectorType d, e;
+        bool isInside = true;
+        double tol;
+
+        unsigned int i=0;
+        for (auto p=points.begin(); p!=points.end(); p++, i++){
+            d = *p - pInside;
+            isInside = true;
+
+            for (auto face=faces.begin(); face!=faces.end(); face++){
+                e = face->second - pInside;
+
+                tol = std::fmax(vectorTools::l2norm(d), vectorTools::l2norm(e))*tolr + tola;
+
+                if (tol<vectorTools::dot(face->first, d-e)){
+                    isInside = false;
+                    break;
+                }
+            }
+
+            if (isInside){
+                interiorPoints.resize(interiorPoints.size() + 1);
+                interiorPoints.back() = i;
+            }
+        }
+        return 0;
+    }
 }
