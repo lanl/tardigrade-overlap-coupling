@@ -67,6 +67,8 @@ namespace gDecomp{
 
     int getVolumeSubdomainAsTets(const unsigned int index, const matrixType &domainPoints, const std::vector< faceType > &faces,
         std::vector< matrixType > &subdomainTets);
+
+    int mapLocalTetPointsToGlobal(const matrixType &tet, const matrixType &localPoints, matrixType &globalPoints);
 }
 
 #endif

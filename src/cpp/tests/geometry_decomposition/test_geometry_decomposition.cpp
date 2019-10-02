@@ -751,6 +751,42 @@ int test_getVolumeSubdomainAsTets(std::ofstream &results){
     return 0;
 }
 
+int test_mapLocalTetPointsToGlobal(std::ofstream &results){
+    /*!
+     * Test the mapping of local tet points to global coordinates
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    matrixType tet = {{1.39293837, 0.57227867, 0.45370291},
+                      {1.10262954, 1.43893794, 0.84621292},
+                      {1.9615284,  1.36965948, 0.9618638 },
+                      {0.78423504, 0.68635603, 1.45809941}};
+
+    matrixType testPoints = {{0.0, 0.0, 0.0},
+                             {1.0, 0.0, 0.0},
+                             {0.0, 1.0, 0.0},
+                             {0.0, 0.0, 1.0},
+                             {0.25, 0.25, 0.25}};
+
+    matrixType globalSolutions = {{1.39293837, 0.57227867, 0.45370291},
+                                  {1.10262954, 1.43893794, 0.84621292},
+                                  {1.9615284,  1.36965948, 0.9618638 },
+                                  {0.78423504, 0.68635603, 1.45809941},
+                                  {1.31033284, 1.01680803, 0.92996976}};
+
+    matrixType globalAnswers;
+    gDecomp::mapLocalTetPointsToGlobal(tet, testPoints, globalAnswers);
+
+    if (!vectorTools::fuzzyEquals(globalAnswers, globalSolutions)){
+        results << "test_mapLocalTetPointsToGlobal (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_mapLocalTetPointsToglobal & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -779,6 +815,7 @@ int main(){
     test_determineInteriorPoints(results);
     test_midpointsToFaces(results);
     test_getVolumeSubdomainAsTets(results);
+    test_mapLocalTetPointsToGlobal(results);
 
     //Close the results file
     results.close();

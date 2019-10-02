@@ -561,23 +561,33 @@ namespace gDecomp{
         //Get the tetrahedra of the volume
         volumeToTets(domainFaces, interiorPoints, subdomainTets);
         return 0;
+    }
 
-//        //Get the points which are on the faces
-//        std::vector< std::vector< unsigned int > > facePointsIndices;
-//        getFacePoints(domainFaces, interiorPoints, facePointsIndices);
-//
-//        //Identify faces with three or more points
-//        unsigned int i=0;
-//        std::vector< unsigned int > faceIndices;
-//        for (auto fPI=facePointsIndices.begin(), fPI!=facePointsIndices.end(); fPI++, i++){
-//            if ((*fPi).size() >= 3){
-//                faceIndices.push_back(i);
-//            }
-//        }
+    int mapLocalTetPointsToGlobal(const matrixType &tet, const matrixType &localPoints, matrixType &globalPoints){
+        /*!
+         * Map points defined in the tetrahedron's local coordinates to their global coordinates
+         * 
+         * :param const matrixType &tet: The global nodes of the tetrahedron
+         * :param const matrixType &localPoints: The local coordinates of the points to be mapped
+         * :param matrixType &globalPoints: The global coordinates of the points
+         */
 
-        //Get the tetrahedra of the decomposed subdomain
-        
+        //Resize globalPoints
+        globalPoints.resize(localPoints.size());
 
+        //The mapping terms
+        matrixType A;
+        vectorType d;
 
+        //Get the map
+        getUnitToTetMap(tet, A, d);
+
+        //Apply the map to the points
+        unsigned int n=0;
+        for (auto point=localPoints.begin(); point!=localPoints.end(); point++, n++){
+            //Apply the mapping
+            globalPoints[n] = vectorTools::dot(A, *point) + d;
+        }
+        return 0;
     }
 }
