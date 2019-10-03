@@ -73,6 +73,8 @@ namespace gDecomp{
     int writeTetsToFile(const std::string &fileName, const std::vector< matrixType > &tets);
 
     int readTetsFromFile(const std::string &fileName, std::vector< matrixType > &tets);
+
+    int removeDuplicateFaces(std::vector< faceType > &faces, const floatType tolr=1e-9, const floatType tola=1e-9);
 }
 
 #endif

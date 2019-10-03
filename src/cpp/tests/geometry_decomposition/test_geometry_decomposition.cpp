@@ -830,6 +830,57 @@ int test_tetIO(std::ofstream &results){
     return 0;
 }
 
+int test_removeDuplicateFaces(std::ofstream &results){
+    /*!
+     * Test the utility for removing faces which are identical.
+     * 
+     * :param std::ofstreaqm &results: The output file
+     */
+
+    std::vector< gDecomp::faceType > tetFaces = {std::pair<vectorType, vectorType>({-1.000000000,  0.000000000,  0.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.000000000, -1.000000000,  0.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.000000000,  0.000000000, -1.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.577350269,  0.577350269,  0.577350269},
+                                                                                   { 1.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.000000000,  0.000000000, -1.000000000},
+                                                                                   { 1.000000000,  1.000000000,  0.000000000})};
+
+    std::vector< gDecomp::faceType > uniqueFaces = {std::pair<vectorType, vectorType>({-1.000000000,  0.000000000,  0.000000000},
+                                                                                      { 0.000000000,  0.000000000,  0.000000000}),
+                                                    std::pair<vectorType, vectorType>({ 0.000000000, -1.000000000,  0.000000000},
+                                                                                      { 0.000000000,  0.000000000,  0.000000000}),
+                                                    std::pair<vectorType, vectorType>({ 0.000000000,  0.000000000, -1.000000000},
+                                                                                      { 0.000000000,  0.000000000,  0.000000000}),
+                                                    std::pair<vectorType, vectorType>({ 0.577350269,  0.577350269,  0.577350269},
+                                                                                      { 1.000000000,  0.000000000,  0.000000000})};
+   
+
+    gDecomp::removeDuplicateFaces(tetFaces);
+
+    if (tetFaces.size()!=4){
+        results << "test_removeDuplicateFaces (test 1) & False\n";
+        return 1;
+    }
+
+    unsigned int i=0;
+    for (auto face=tetFaces.begin(); face!=tetFaces.end(); face++, i++){
+        if (!vectorTools::fuzzyEquals(face->first, uniqueFaces[i].first)){
+            results << "test_removeDuplicateFaces (test 2) & False\n";
+            return 1;
+        }
+        if (!vectorTools::fuzzyEquals(face->second, uniqueFaces[i].second)){
+            results << "test_removeDuplicateFaces (test 2) & False\n";
+            return 1;
+        }
+    }
+
+    results << "test_removeDuplicateFaces & True\n";
+    return 0; 
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -860,6 +911,7 @@ int main(){
     test_getVolumeSubdomainAsTets(results);
     test_mapLocalTetPointsToGlobal(results);
     test_tetIO(results);
+    test_removeDuplicateFaces(results);
 
     //Close the results file
     results.close();

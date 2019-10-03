@@ -545,6 +545,7 @@ namespace gDecomp{
         std::vector< faceType > domainFaces;
         midpointsToFaces(domainPoints[index], midpoints, domainFaces);
         domainFaces.insert(domainFaces.end(), faces.begin(), faces.end());
+        removeDuplicateFaces(domainFaces);
 
         //Find all of the points of intersection
         matrixType extremePoints;
@@ -652,11 +653,58 @@ namespace gDecomp{
             }     
 
             testTets.close();
+            std::remove(fileName.c_str());
         }
         else{
             std::cerr << "Error: file cannot be opened.\n";
             return 1;
         }
         return 0;
+    }
+
+    int removeDuplicateFaces(std::vector< faceType > &faces, const floatType tolr, const floatType tola){
+        /*!
+         * Remove duplicate faces from a vector of faces
+         * 
+         * :param std::vector< faceType > : A vector of planes of the form (normal, point)
+         *     where normal is the normal of the surface and point is a point on that surface
+         * :param const floatType tolr: The relative tolerance
+         * :param const floatType tola: The absolute tolerance
+         */
+
+        std::vector< unsigned int > uniqueFaces;
+        uniqueFaces.reserve(faces.size());
+        uniqueFaces.push_back(0);
+
+        double tol, d;
+        bool isUnique;
+
+        unsigned int i=1;
+        for (auto face=faces.begin()+1; face!=faces.end(); face++, i++){
+            isUnique = true;
+            //Compare the current face to all previous faces
+            for (auto compFace=faces.begin(); compFace!=faces.begin()+i; compFace++){
+                //Check if the normals are parallel (I'm not going to allow faces with opposite 
+                //normals but which are otherwise identical)
+                if (vectorTools::isParallel(face->first, compFace->first)){
+                    //Check if the distance between the planes is zero
+                    tol = tolr*std::max(vectorTools::l2norm(face->second), vectorTools::l2norm(compFace->second)) + tola;
+                    
+                    d = vectorTools::dot(face->first, compFace->second - face->second);
+                    if (abs(d)<=tol){
+                        isUnique = false;
+                        break;
+                    }
+                }
+            }
+            if (isUnique){
+                uniqueFaces.push_back(i);
+            }
+        }
+
+        std::vector< faceType > unique;
+        vectorTools::getValuesByIndex(faces, uniqueFaces, unique);
+        faces = unique;
+        return 1;
     }
 }
