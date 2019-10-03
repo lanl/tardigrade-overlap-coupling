@@ -596,6 +596,28 @@ int test_isParallel(std::ofstream &results){
     return 0;
 }
 
+int test_dyadic(std::ofstream &results){
+    /*!
+     * Test the computation of the dyadic product between two vectors
+     * 
+     * :param std::ofstream &results:
+     */
+
+    vectorType v1 = {1, 2, 3};
+    vectorType v2 = {4, 5, 6};
+    matrixType A = vectorTools::dyadic(v1, v2);
+
+    if (!vectorTools::fuzzyEquals(A, {{ 4,  5,  6},
+                                      { 8, 10, 12},
+                                      {12, 15, 18}})){
+        results << "test_dyadic (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_dyadic & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -626,6 +648,7 @@ int main(){
     test_appendVectors(results);
     test_solveLinearSystem(results);
     test_isParallel(results);
+    test_dyadic(results);
 
     //Close the results file
     results.close();

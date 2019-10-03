@@ -314,6 +314,39 @@ namespace vectorTools{
         return std::sqrt(v);
     }
 
+    template<typename T>
+    std::vector< std::vector< T > > dyadic(const std::vector< T > &a, const std::vector< T > &b){
+        /*!
+         * Compute the dyadic product between two vectors returning a matrix i.e. A_ij = a_i b_j;
+         */
+
+        std::vector< std::vector< T > > A;
+        dyadic(a, b, A);
+        return A;
+    }
+
+    template<typename T>
+    int dyadic(const std::vector< T > &a, const std::vector< T > &b, std::vector< std::vector< T > > &A){
+        /*!
+         * Compute the dyadic product between two vectors return a matrix i.e. A_ij = a_i b_j
+         * 
+         * :param const std::vector< T > &a: The first vector
+         * :param const std::vector< T > &b: The second vector
+         * :param std::vector< std::vector< T > > &A: The returned matrix
+         */
+
+        A.resize(a.size());
+        unsigned int i=0;
+        for (auto ai=a.begin(); ai!=a.end(); ai++, i++){
+            A[i].resize(b.size());
+            unsigned int j=0;
+            for (auto bj=b.begin(); bj!=b.end(); bj++, j++){
+                A[i][j] = (*ai)*(*bj);
+            }
+        }
+        return 0;
+    }
+
     //Comparison Utilities
     template< typename T >
     bool fuzzyEquals(const T &a, const T &b, double tolr, double tola){
