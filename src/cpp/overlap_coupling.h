@@ -48,6 +48,7 @@
 #pragma GCC diagnostic pop
 #endif
 
+#include<geometry_decomposition.h>
 
 //#include<Eigen/Dense>
 
@@ -434,6 +435,8 @@ namespace overlap{
             int clear_microscale();
 
         protected:
+            bool use_weights = false; //!Boolean indicating if the weighted approach should be used.
+
             unsigned int filter_id;
 	    std::unique_ptr<elib::Element> element;
             unsigned int filter_dim;
@@ -466,6 +469,9 @@ namespace overlap{
             elib::vecOfvec local_center_of_mass;
             elib::vecOfvec center_of_mass;
 
+            elib::vec lengthscale;
+            std::vector< std::vector< elib::vecOfvec > > dNdxXiTilde;
+
             Eigen::MatrixXd linear_momentum_A;
             Eigen::MatrixXd first_moment_A;
 
@@ -475,6 +481,7 @@ namespace overlap{
             int form_cauchy_normal_matrix();
             int compute_density(const std::map< unsigned int, double > &micro_density);
             int compute_centers_of_mass(const std::map< unsigned int, double > &micro_density);
+            int computeLengthscale();
 
             //Degree of freedom properties
             vecOfvec dof_values;
@@ -507,10 +514,12 @@ namespace overlap{
 
             vecOfvec symmetric_microstress;
             vecOfvec cauchy_stress;
+            std::vector< vecOfvec > cauchy_stress_variation;
             std::vector< vecOfvec > vertex_cauchy;
             std::vector< vecOfvec > vertex_hostress;
 
             vecOfvec couple_stress;
+            std::vector< vecOfvec > couple_stress_variation;
             std::vector< std::map< unsigned int, std::vector< FloatType > > > traction;
             std::vector< std::map< unsigned int, std::vector< FloatType > > > couple_traction;
 
@@ -534,7 +543,7 @@ namespace overlap{
             Eigen::MatrixXd weight_constraints;
             Eigen::MatrixXd linear_momentum_b;
 //            Eigen::MatrixXd linear_momentum_C;
-            Eigen::MatrixXd linear_momentum_d;
+            Eigen::MatrixXd weight_d;
 
             Eigen::MatrixXd first_moment_b;
 //            Eigen::MatrixXd first_moment_C;
@@ -544,12 +553,27 @@ namespace overlap{
             Eigen::MatrixXd hostress_constraint_rhs;
 
             //Deformation measures
+            int construct_dof_gradients();
+            int construct_displacement_gradient();
+            int construct_chi();
+            int construct_gradchi();
             int construct_deformation_gradient();
-            int construct_micro_deformation_measure();
-            int construct_micro_deformation_gradient_measure();
+            int construct_right_cauchy_green();
+            int construct_Psi();
+            int construct_Gamma();
+            vecOfvec displacement_gradient;
+            vecOfvec chi;
+            vecOfvec gradchi;
+
             vecOfvec deformation_gradient;
-            vecOfvec micro_deformation;
-            vecOfvec micro_deformation_gradient;
+            vecOfvec right_cauchy_green;
+            vecOfvec Psi;
+            vecOfvec Gamma;
+
+            double linear_momentum_error;
+            double first_moment_error;            
+            double linear_momentum_relative_error;
+            double first_moment_relative_error;
 
     };
     
@@ -631,6 +655,8 @@ namespace overlap{
                                       const std::vector< integrateMap > &weights,
                                       std::vector< std::map< unsigned int, std::vector< double > > > &result);
 
+    void computeLengthscale( const std::vector< integrateMap > &weights, const elib::vecOfvec &centerOfMass, elib::vec &result);
+
     void perform_symmetric_tensor_surface_traction_integration(const std::map< unsigned int, std::vector< double > > &tensor, 
                                                                const std::vector< integrateMap > &weights,
                                                                const vecOfvec &centers_of_mass,
@@ -665,12 +691,12 @@ namespace overlap{
     void construct_linear_momentum_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
                                                         const std::vector< FloatType > &volume,
                                                         const std::vector< vecOfvec > &vertex_cauchy,
-                                                        Eigen::MatrixXd &C);
+                                                        Eigen::MatrixXd &C, bool use_weights=true);
 
     void construct_first_moment_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
                                                      const std::vector< FloatType > &volume,
                                                      const std::vector< vecOfvec > &vertex_hostress,
-                                                     Eigen::MatrixXd &C);
+                                                     Eigen::MatrixXd &C, bool use_weights=true);
 
     void solve_constrained_least_squares(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
                                          const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
@@ -720,6 +746,45 @@ namespace overlap{
 
     void convert_weights_to_vector(const std::vector< double > &weights, const vecOfvec &values, std::vector< double > &output);
 
+    void solve_row_deficient_divergence_matrix(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
+                                               const unsigned int &num_nodes, std::vector< Eigen::MatrixXd > &solutions);
+
+    void first_moment_cauchy_matrix(const vecOfvec &com_shape_functions, const std::vector< double > &volume,
+                                    Eigen::MatrixXd &A);
+    void first_moment_hostress_matrix(const std::vector< vecOfvec > &com_shape_function_gradient, const std::vector< double > &volume,
+                                      Eigen::MatrixXd &A);
+    void full_first_moment_matrix(const vecOfvec &com_shape_functions, const std::vector< vecOfvec >  &com_shape_function_graidents,
+                                  const std::vector< double > &volume, Eigen::MatrixXd &A);
+    void full_linear_momentum_matrix(const std::vector< vecOfvec > &com_shape_function_gradient, const std::vector< double > &volume,
+                                     Eigen::MatrixXd &A);
+    void linear_momentum_cauchy_matrix(const std::vector< vecOfvec > &com_shape_function_gradient,
+                                       const std::vector< double > &volume, Eigen::MatrixXd &A);
+    void full_balance_equation_matrix(const vecOfvec &com_shape_functions, const std::vector< vecOfvec >  &com_shape_function_graidents,
+                                      const std::vector< double > &volume, Eigen::MatrixXd &A);
+
+    void compute_first_moment_symm_microstress_contribution(const vecOfvec &com_shape_functions, const std::vector< double > &volume,
+                                                            const vecOfvec &symm_microstress, std::vector< double > &b);
+
+    void construct_linear_momentum_rhs(const std::vector< double > &surface_external_force,
+                                       const std::vector< double > &body_external_force, 
+                                       const std::vector< double > &kinetic_force,
+                                       std::vector< double > &linear_momentum_rhs);
+
+    void construct_first_moment_rhs(const std::vector< double > &surface_external_couple,
+                                    const std::vector< double > &body_external_couple,
+                                    const std::vector< double > &kinetic_couple,
+                                    const std::vector< double > &symmetric_contribution,
+                                    std::vector< double > &first_moment_rhs);
+
+    void construct_balance_equation_rhs(const std::vector< double > &surface_external_force,
+                                        const std::vector< double > &body_external_force, 
+                                        const std::vector< double > &kinetic_force, 
+                                        const std::vector< double > &surface_external_couple,
+                                        const std::vector< double > &body_external_couple,
+                                        const std::vector< double > &kinetic_couple,
+                                        const std::vector< double > &symmetric_contribution,
+                                        std::vector< double > &balance_equation_rhs);
+
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,
                                     const std::map< unsigned int, unsigned int >* dns_node_to_col_map,
@@ -737,6 +802,12 @@ namespace overlap{
         SpMat form_sparsematrix(const std::vector< T > &tripletList, unsigned int nrows, unsigned int ncols, const bool &ignore_dup);
         SpMat extract_block(const SpMat &A, unsigned int start_row, unsigned int start_col, unsigned int nrows, unsigned int ncols);
     #endif
+
+    void microPointToPlanes(const MicroPoint &gaussDomain, std::vector< gDecomp::faceType > &planes);
+
+    void computedNdxXitilde(const std::vector< MicroPoint > &gaussDomains, const elib::vecOfvec &localCenterOfMass,
+        const elib::vec &lengthscale, std::unique_ptr<elib::Element> &element,
+        std::vector< std::vector< elib::vecOfvec > > &dNdxXitilde, unsigned int order=1);
 //    QRsolver form_solver(SpMat &A);
 }
 
