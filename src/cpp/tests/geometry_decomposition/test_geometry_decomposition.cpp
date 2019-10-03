@@ -787,6 +787,49 @@ int test_mapLocalTetPointsToGlobal(std::ofstream &results){
     return 0;
 }
 
+int test_tetIO(std::ofstream &results){
+    /*!
+     * Test the ability to write tetrahedra to a file
+     * and read tetrahedra from a file.
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    std::vector< matrixType > tets = {{{ 1,  2,  3},
+                                      { 4,  5,  6},
+                                      { 7,  8,  9},
+                                      {10, 11, 12}},
+                                     {{13, 14, 15},
+                                      {16, 17, 18},
+                                      {19, 20, 21},
+                                      {22, 23, 24}},
+                                     {{25, 26, 27},
+                                      {28, 29, 30},
+                                      {31, 32, 33},
+                                      {34, 35, 36}}};
+
+    std::string fileName("test.tets");
+    gDecomp::writeTetsToFile(fileName, tets);
+    std::vector< matrixType > readTets;
+    if (gDecomp::readTetsFromFile(fileName, readTets) != 0){
+        results << "test_writeTetsToFile (test 1) & False\n";
+        results << "test_readTetsFromFile (test 1) & False\n";
+        return 1;
+    }
+
+    unsigned int n=0;
+    for (auto tet=readTets.begin(); tet!=readTets.end(); tet++, n++){
+        if (!vectorTools::fuzzyEquals(*tet, tets[n])){
+            results << "test_writeTetsToFile (test 1) & False\n";
+            results << "test_readTetsFromFile (test 2) & False\n";
+        }
+    }
+
+    results << "test_writeTetsToFile & True\n";
+    results << "test_readTetsFromFile & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -816,6 +859,7 @@ int main(){
     test_midpointsToFaces(results);
     test_getVolumeSubdomainAsTets(results);
     test_mapLocalTetPointsToGlobal(results);
+    test_tetIO(results);
 
     //Close the results file
     results.close();

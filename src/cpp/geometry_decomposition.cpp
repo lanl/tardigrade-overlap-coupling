@@ -590,4 +590,73 @@ namespace gDecomp{
         }
         return 0;
     }
+
+    int writeTetsToFile(const std::string &fileName, const std::vector< matrixType > &tets){
+        /*!
+         * Write the tets to a file. The format is a list of three comma separated coordinates 
+         * followed by a carriage return. Every four points defines a tet.
+         * 
+         * :param const std::string &fileName: The filename to write to
+         * :param const std::vector< matrixType > &tets: The tetrahedra to be written to a file.
+         */
+
+        std::ofstream outFile(fileName);
+        for (auto tet=tets.begin(); tet!=tets.end(); tet++){
+            for (auto point=(*tet).begin(); point!=(*tet).end(); point++){
+                outFile << (*point)[0];
+                for (auto pi=(*point).begin()+1; pi!=(*point).end(); pi++){
+                    outFile << ", " << (*pi);
+                }
+                outFile << "\n";
+            }
+        }
+        outFile.close();
+        return 0;
+    }
+
+    int readTetsFromFile(const std::string &fileName, std::vector< matrixType > &tets){
+        /*!
+         * Read a collection of tets from a file. The format is a list of three comma separated coordinates 
+         * followed by a carriage return. Every four points defines a tet.
+         * 
+         * :param const std::string &fileName: The filename to read from
+         * :param const std::vector< matrixType > &tets: The tetrahedra read from the file.
+         */
+
+        std::ifstream testTets(fileName);
+        std::string line;
+        std::stringstream ss;
+        std::string subStr;
+        std::vector< floatType > point;
+        matrixType tet(4);
+
+        unsigned int iter=0;
+        if (testTets.is_open()){
+            while (std::getline(testTets, line)){
+                point.clear();
+                if (iter>=4){
+                    tets.resize(tets.size() + 1);
+                    tets.back() = tet;
+                    iter = 0;
+                }
+
+                ss = std::stringstream(line);
+
+                while (ss.good()){
+                    std::getline(ss, subStr, ',' );
+                    point.push_back(std::stod(subStr));
+                }
+                tet[iter] = point; 
+
+                iter++;
+            }     
+
+            testTets.close();
+        }
+        else{
+            std::cerr << "Error: file cannot be opened.\n";
+            return 1;
+        }
+        return 0;
+    }
 }

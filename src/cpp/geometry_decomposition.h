@@ -69,6 +69,10 @@ namespace gDecomp{
         std::vector< matrixType > &subdomainTets);
 
     int mapLocalTetPointsToGlobal(const matrixType &tet, const matrixType &localPoints, matrixType &globalPoints);
+
+    int writeTetsToFile(const std::string &fileName, const std::vector< matrixType > &tets);
+
+    int readTetsFromFile(const std::string &fileName, std::vector< matrixType > &tets);
 }
 
 #endif
