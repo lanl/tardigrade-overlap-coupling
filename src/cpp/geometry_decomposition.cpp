@@ -527,6 +527,9 @@ namespace gDecomp{
         /*!
          * Get a subdomain of the volume in the form of tetrahedra
          * 
+         * TODO: Sometimes the simplest possible representation is not found and more tets than are necessary are
+         *       created. It may be worth while seeking to optimize this in the future.
+         * 
          * :param const unsigned int index: The index of the domain points to use to compute the subdomain.
          * :param const matrixType &domainPoints: The collection of points within each of the subdomains.
          * :param std::vector< faceType > &faces: A vector of planes of the form (normal, point)
@@ -540,12 +543,14 @@ namespace gDecomp{
         //Find the midpoints between the domain points
         matrixType midpoints;
         findMidpoints(domainPoints[index], domainPoints, midpoints);
+//        std::cout << "midpoints:\n"; vectorTools::print(midpoints);
 
         //Find the faces corresponding to the midpoints and join them with the faces
         std::vector< faceType > domainFaces;
         midpointsToFaces(domainPoints[index], midpoints, domainFaces);
         domainFaces.insert(domainFaces.end(), faces.begin(), faces.end());
         removeDuplicateFaces(domainFaces);
+//        std::cout << "domainFaces:\n"; print(domainFaces);
 
         //Find all of the points of intersection
         matrixType extremePoints;
@@ -706,5 +711,19 @@ namespace gDecomp{
         vectorTools::getValuesByIndex(faces, uniqueFaces, unique);
         faces = unique;
         return 1;
+    }
+
+    int print(const std::vector< faceType > &faces){
+        /*! 
+         * Print the contents of faces to the terminal
+         * 
+         * :param const std::vector< faceType > &faces: The vector of faces to print
+         */
+
+        for (auto face=faces.begin(); face != faces.end(); face++){
+            std::cout << face->first[0] << " " << face->first[1] << " " << face->first[2] << " | ";
+            std::cout << face->second[0] << " " << face->second[1] << " " << face->second[2] << "\n";
+        }
+        return 0;
     }
 }

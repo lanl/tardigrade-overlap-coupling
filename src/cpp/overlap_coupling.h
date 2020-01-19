@@ -115,7 +115,7 @@ namespace overlap{
             //! > Interface to 3D-quickhull
             vertex_t map_vector_to_quickhull(const std::vector< double > &vector) const;
             std::vector< double > map_quickhull_to_vector(const vertex_t &vertex) const;
-            void map_vectors_to_quickhull(const std::map< unsigned int, std::vector< FloatType > > &vectors, std::vector< vertex_t > &vertices) const;
+            void mapVectorsToQuickhull(const std::map< unsigned int, std::vector< FloatType > > &vectors, std::vector< vertex_t > &vertices) const;
             void map_quickhull_to_vectors(const std::vector< vertex_t > &vertices, vecOfvec &vectors) const;
 #if CONVEXLIB != AKUUKKA
             void extract_mesh_info(const mesh_t &mesh, vecOfvec &normals, vecOfvec &points) const;
@@ -177,22 +177,28 @@ namespace overlap{
         public:
             vecOfvec global_nodes;
             vecOfvec local_nodes;
+//            std::map< unsigned int, std::vector< double > > global_nodes;
+//            std::map< unsigned int, std::vector< double > > local_nodes;
             vecOfvec local_gpts;
-            std::vector< unsigned int > node_numbers;
+//            std::vector< unsigned int > node_numbers;
             std::vector< double > volumes;
             std::vector< double > densities;
-            vecOfvec coordinates;
+//            vecOfvec coordinates;
+            std::map< unsigned int, std::vector< double > > coordinates;
 
             //! > Constructors
             ParsedData(){}
 
+//            ParsedData(vecOfvec _global_nodes, vecOfvec _local_nodes, vecOfvec _local_gpts,
+//                       std::vector< unsigned int > _node_numbers, std::vector< double > _volumes,
+//                       std::vector< double > _densities, vecOfvec _coordinates){
             ParsedData(vecOfvec _global_nodes, vecOfvec _local_nodes, vecOfvec _local_gpts,
-                       std::vector< unsigned int > _node_numbers, std::vector< double > _volumes,
-                       std::vector< double > _densities, vecOfvec _coordinates){
+                       std::vector< double > _volumes, std::vector< double > _densities, 
+                       std::map< unsigned int, std::vector< double > > _coordinates){
                 global_nodes = _global_nodes;
                 local_nodes = _local_nodes;
                 local_gpts = _local_gpts;
-                node_numbers = _node_numbers;
+//                node_numbers = _node_numbers;
                 volumes = _volumes;
                 densities = _densities;
                 coordinates = _coordinates;
@@ -219,7 +225,7 @@ namespace overlap{
                           :param std::vector< double > pcoordinates: The coordinates of the particle which defined the cell
                           :param std::vector< int > iplanes: The exterior planes cutting the cell
                           :param std::vector< double > iareas: Areas of the surfaces corresponding to iplanes
-                          :param vecOfvec inormals: The normals corresponding to iplanes
+                          :param vecOfvec inormals: The unit normals corresponding to iplanes
                           :param vecOfvec iface_centroids: The centroids of the faces corresponding to iplanes
                           */
 
@@ -465,23 +471,20 @@ namespace overlap{
             elib::vec volume;
             scalar_surface_map surface_area;
             vector_surface_map surface_normal;
+            vector_surface_map surface_centroid;
             elib::vec density;
             elib::vecOfvec local_center_of_mass;
             elib::vecOfvec center_of_mass;
-
-            elib::vec lengthscale;
-            std::vector< std::vector< elib::vecOfvec > > dNdxXiTilde;
 
             Eigen::MatrixXd linear_momentum_A;
             Eigen::MatrixXd first_moment_A;
 
 
             int compute_volume();
-            int compute_surface_area_normal();
+            int compute_surface_information(const std::map <unsigned int, double > &micro_density);
             int form_cauchy_normal_matrix();
             int compute_density(const std::map< unsigned int, double > &micro_density);
             int compute_centers_of_mass(const std::map< unsigned int, double > &micro_density);
-            int computeLengthscale();
 
             //Degree of freedom properties
             vecOfvec dof_values;
@@ -491,7 +494,7 @@ namespace overlap{
             int compute_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
             int compute_couple_traction(const std::map< unsigned int, std::vector< double > > &micro_cauchy);
 //            int construct_cauchy_least_squares();
-            int construct_linear_momentum_least_squares_matrix();
+//            int construct_linear_momentum_least_squares_matrix();
 //            int construct_couple_least_squares();
 
             int construct_linear_momentum_surface_external_force();
@@ -499,15 +502,15 @@ namespace overlap{
             int construct_first_moment_symm_cauchy_couple();
 
             int construct_weight_constraints();
-            int construct_first_moment_least_squares_matrix();
+//            int construct_first_moment_least_squares_matrix();
 
-            int construct_hostress_constraint();
+//            int construct_hostress_constraint();
 
-            int construct_linear_momentum_b_vector();
-            int construct_first_moment_b_vector();
+//            int construct_linear_momentum_b_vector();
+//            int construct_first_moment_b_vector();
 
-            int compute_cauchy_stress();
-            int compute_couple_stress();            
+//            int compute_cauchy_stress();
+//            int compute_couple_stress();            
 
             int compute_vertices_cauchy_stress();
             int compute_vertices_couple_stress();
@@ -583,26 +586,18 @@ namespace overlap{
 
     ParsedData read_data_from_file(std::string filename);
 
-    std::vector< std::string > split(std::string s, char delimiter);
+    std::vector< std::string > split(std::string s, char delimiter); //Test function written
 
     template<typename Out>
-    void split(const std::string &s, char delimiter, Out result);
+    void split(const std::string &s, char delimiter, Out result); //Test function written
 
-    double dot(const std::vector< double > &a, const std::vector< double > &b);
+    double dot(const std::vector< double > &a, const std::vector< double > &b); //Test function written
 
-    std::vector< double > subtract(const std::vector< double > &a, const std::vector< double > &b);
+    bool point_on_surface(const std::vector< double > &p, const std::vector< double > &n, const std::vector< double > &a); //Test function written
 
-    bool point_on_surface(const std::vector< double > &p, const std::vector< double > &n, const std::vector< double > &a);
+    bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr=1e-6, const double tola=1e-6, bool opposite_is_unique=true); //Test function written
 
-    std::vector< double > cross(const std::vector< double > &a, const std::vector< double > &b);
-
-    bool fuzzy_equals(const double a, const double b, const double tolr=1e-6, const double tola=1e-6);
-
-    bool fuzzy_equals(const std::vector< double > &a, const std::vector< double > &b, const double tolr=1e-6, const double tola=1e-6);
-
-    bool compare_vector_directions(const std::vector< double > &v1, const std::vector< double > &v2, const double tolr=1e-6, const double tola=1e-6, bool opposite_is_unique=true);
-
-    int normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3, std::vector< double > &normal, double tolr=1e-6, double tola=1e-6);
+    int normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3, std::vector< double > &normal, double tolr=1e-6, double tola=1e-6); //Test function written
 
     void print_vertex(const vertex_t &vertex);
 
@@ -617,107 +612,112 @@ namespace overlap{
     void add_planes_to_container(std::vector< voro::wall_plane > &planes, voro::container &container);
 
     voro::container* construct_container(const std::map< unsigned int, std::vector< FloatType > > &point_coords,
-                                         const vecOfvec &bounds, std::vector< voro::wall_plane> &planes, double expand=1);
+                                         const vecOfvec &bounds, std::vector< voro::wall_plane> &planes, double expand=1); //Test function written
 
     void evaluate_container_information(const std::map< unsigned int, std::vector< FloatType > > &positions,
                                         const std::map< int, std::pair< std::vector< FloatType >, std::vector< FloatType > > > &bounding_faces,
                                         voro::container *container, integrateMap &points, std::map< unsigned int,
-                                        FloatType > &boundary_node_volumes);
+                                        FloatType > &boundary_node_volumes); //Implicitly tested in test_compute_weights
 
     void find_face_centroid(const std::vector< int > &face_vertices, const std::vector< double > &vertices,
-                            const int &index, std::vector< double > &centroid);
+                            const int &index, std::vector< double > &centroid); //Implicitly tested in test_construct_container
 
-    void map_planes_to_voro(const planeMap &planes, std::vector< voro::wall_plane > &vplanes, int j=0);
+    void map_planes_to_voro(const planeMap &planes, std::vector< voro::wall_plane > &vplanes, int j=0); //Implicitly tested in map_planes_to_voro
 
-    void map_domain_to_voro(const MicroPoint &domains, std::vector< voro::wall_plane > &vplanes);
+    void map_domain_to_voro(const MicroPoint &domains, std::vector< voro::wall_plane > &vplanes); //Implicitly tested in map_domain_to_voro
 
-    void apply_nansons_relation(const std::vector< double > &N, const double &JdA, const vecOfvec &Finv, std::vector< double > &nda);
+    void apply_nansons_relation(const std::vector< double > &N, const double &JdA, const vecOfvec &Finv, std::vector< double > &nda); //Test function written
 
     void perform_volume_integration( const std::map< unsigned int, double > &values,
                                      const std::vector< integrateMap > &weights,
-                                      std::vector< double > &result);
+                                      std::vector< double > &result); //Test function written
 
     void perform_volume_integration( const std::map< unsigned int, std::vector< double > > &values,
                                      const std::vector< integrateMap > &weights,
-                                     std::vector< std::vector< double > > &result);
+                                     std::vector< std::vector< double > > &result); //Test Function written
 
     void perform_position_weighted_volume_integration( const std::map< unsigned int, double > &values,
                                                        const std::vector< integrateMap > &weights,
-                                                       std::vector< std::vector< double > > &result);
+                                                       std::vector< std::vector< double > > &result); //Test Function written
 
-    void compute_surface_area(const std::vector< integrateMap > &weights, scalar_surface_map &surface_areas);
+    void compute_surface_information(const std::vector< integrateMap > &weights, const std::map< unsigned int, double > &micro_density,
+                                     scalar_surface_map &surface_area, vector_surface_map &surface_normal,
+                                     vector_surface_map &surface_centroid); //Test function written
 
     void perform_surface_integration( const std::map< unsigned int, double > &values,
                                       const std::vector< integrateMap > &weights,
-                                      std::vector< std::map< unsigned int, double > > &result);
+                                      std::vector< std::map< unsigned int, double > > &result); //Test function written
 
     void perform_surface_integration( const std::map< unsigned int, std::vector< double > > &values,
                                       const std::vector< integrateMap > &weights,
-                                      std::vector< std::map< unsigned int, std::vector< double > > > &result);
-
-    void computeLengthscale( const std::vector< integrateMap > &weights, const elib::vecOfvec &centerOfMass, elib::vec &result);
+                                      std::vector< std::map< unsigned int, std::vector< double > > > &result); //Test function written
 
     void perform_symmetric_tensor_surface_traction_integration(const std::map< unsigned int, std::vector< double > > &tensor, 
                                                                const std::vector< integrateMap > &weights,
-                                                               const vecOfvec &centers_of_mass,
-                                                               std::vector< std::map< unsigned int, std::vector< double > > > &result);
+                                                               std::vector< std::map< unsigned int, std::vector< double > > > &result); //Test function written
+
+    void perform_symmetric_tensor_surface_couple_traction_integration(
+            const std::map< unsigned int, std::vector< double > > &tensor, 
+            const std::vector< integrateMap > &weights,
+            const vector_surface_map &surface_centroid,
+            std::vector< std::map< unsigned int, std::vector< double > > > &result); //Test function written 
 //    void construct_cauchy_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
 //                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_tractions,
 //                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b);
-
-    void construct_couple_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
-                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples,
-                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b);
+//
+//    void construct_couple_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
+//                                        const std::vector< std::map< unsigned int, std::vector< double > > > &surface_couples,
+//                                        Eigen::MatrixXd &A, Eigen::MatrixXd &b);
 
     void construct_linear_momentum_surface_external_force(
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_tractions,
              const std::vector< std::map< unsigned int, double > > &face_areas,
              const std::vector< std::vector< unsigned int > > &external_face_ids,
-             std::vector< double > &surface_external_force);
+             std::vector< double > &surface_external_force); //Test function written
 
     void construct_first_moment_surface_external_couple(
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions,
              const std::vector< std::map< unsigned int, std::vector< double > > > &face_couples,
              const std::vector< std::map< unsigned int, double > > &face_areas,
              const std::vector< std::vector< unsigned int > > &external_face_ids,
-             std::vector< double > &surface_external_couple);
+             std::vector< double > &surface_external_couple); //Test function written
 
     void construct_first_moment_symm_cauchy_couple(const vecOfvec &com_shapefunctions,
                                                    const vecOfvec &symmetric_microstress, const vecOfvec &cauchy_stress,
                                                    const std::vector< double > &volume,
-                                                   std::vector< double > &symm_cauchy_couple);
+                                                   std::vector< double > &symm_cauchy_couple); //Test function written
 
-    void construct_linear_momentum_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
-                                                        const std::vector< FloatType > &volume,
-                                                        const std::vector< vecOfvec > &vertex_cauchy,
-                                                        Eigen::MatrixXd &C, bool use_weights=true);
+//    void construct_linear_momentum_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+//                                                        const std::vector< FloatType > &volume,
+//                                                        const std::vector< vecOfvec > &vertex_cauchy,
+//                                                        Eigen::MatrixXd &C, bool use_weights=true);
 
-    void construct_first_moment_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
-                                                     const std::vector< FloatType > &volume,
-                                                     const std::vector< vecOfvec > &vertex_hostress,
-                                                     Eigen::MatrixXd &C, bool use_weights=true);
+//    void construct_first_moment_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+//                                                     const std::vector< FloatType > &volume,
+//                                                     const std::vector< vecOfvec > &vertex_hostress,
+//                                                     Eigen::MatrixXd &C, bool use_weights=true);
 
     void solve_constrained_least_squares(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
                                          const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
-                                         Eigen::MatrixXd &x, bool min_x=false);
+                                         Eigen::MatrixXd &x, bool min_x=false); //Test function written
 
-    void construct_linear_momentum_b_vector(const unsigned int nconstraints,
-                                            const std::vector< FloatType > &surface_external_force,
-                                            const std::vector< FloatType > &body_external_force,
-                                            const std::vector< FloatType > &kinetic_force,
-                                            Eigen::MatrixXd &d);
+//    void construct_linear_momentum_b_vector(const unsigned int nconstraints,
+//                                            const std::vector< FloatType > &surface_external_force,
+//                                            const std::vector< FloatType > &body_external_force,
+//                                            const std::vector< FloatType > &kinetic_force,
+//                                            Eigen::MatrixXd &d);
 
-    void construct_first_moment_b_vector(const unsigned int nconstraints,
-                                         const std::vector< FloatType > &surface_external_couple,
-                                         const std::vector< FloatType > &symm_cauchy_couple,
-                                         const std::vector< FloatType > &body_external_couple,
-                                         const std::vector< FloatType > &kinetic_couple,
-                                         Eigen::MatrixXd &d);
+//    void construct_first_moment_b_vector(const unsigned int nconstraints,
+//                                         const std::vector< FloatType > &surface_external_couple,
+//                                         const std::vector< FloatType > &symm_cauchy_couple,
+//                                         const std::vector< FloatType > &body_external_couple,
+//                                         const std::vector< FloatType > &kinetic_couple,
+//                                         Eigen::MatrixXd &d);
 
     void id_unique_vectors(const std::map< unsigned int, std::vector< double > > &vectors,
                            std::map< unsigned int, std::vector< double > > &unique,
-                           double tolr=1e-6, double tola=1e-6, bool opposite_is_unique=false);
+                           double tolr=1e-6, double tola=1e-6, bool opposite_is_unique=false); //Test function written
 
     void compute_vertices_cauchy_stress(const std::vector< std::vector< unsigned int > > &vertex_planes,
                                         const std::map< unsigned int, std::vector< FloatType > > &normals,
@@ -729,12 +729,12 @@ namespace overlap{
                                         const std::map< unsigned int, std::vector< FloatType > > &couple_tractions,
                                         vecOfvec &vertex_hostress);
 
-    void construct_hostress_constraint(const vector_surface_map &normal,
-                                       const std::vector< std::map< unsigned int, std::vector< FloatType > > > &traction,
-                                       const vecOfvec &center_of_mass,
-                                       const std::vector< std::vector< unsigned int > > &external_face_ids,
-                                       Eigen::MatrixXd &C,
-                                       Eigen::MatrixXd &d);
+//    void construct_hostress_constraint(const vector_surface_map &normal,
+//                                       const std::vector< std::map< unsigned int, std::vector< FloatType > > > &traction,
+//                                       const vecOfvec &center_of_mass,
+//                                       const std::vector< std::vector< unsigned int > > &external_face_ids,
+//                                       Eigen::MatrixXd &C,
+//                                       Eigen::MatrixXd &d);
 
     void compute_vertex_cauchy_stress(const vecOfvec &normals, const vecOfvec &tractions, std::vector< double > &cauchy_stress);
 
@@ -750,31 +750,36 @@ namespace overlap{
                                                const unsigned int &num_nodes, std::vector< Eigen::MatrixXd > &solutions);
 
     void first_moment_cauchy_matrix(const vecOfvec &com_shape_functions, const std::vector< double > &volume,
-                                    Eigen::MatrixXd &A);
-    void first_moment_hostress_matrix(const std::vector< vecOfvec > &com_shape_function_gradient, const std::vector< double > &volume,
-                                      Eigen::MatrixXd &A);
+                                    Eigen::MatrixXd &A); //Test function written
+
+    void firstMomentHostressMatrix(const std::vector< vecOfvec > &com_shape_function_gradient,
+                                   const std::vector< double > &volume, Eigen::MatrixXd &A); //Test function written
+
     void full_first_moment_matrix(const vecOfvec &com_shape_functions, const std::vector< vecOfvec >  &com_shape_function_graidents,
-                                  const std::vector< double > &volume, Eigen::MatrixXd &A);
+                                  const std::vector< double > &volume, Eigen::MatrixXd &A); //Test function written
+
     void full_linear_momentum_matrix(const std::vector< vecOfvec > &com_shape_function_gradient, const std::vector< double > &volume,
-                                     Eigen::MatrixXd &A);
+                                     Eigen::MatrixXd &A); //Test function written
+
     void linear_momentum_cauchy_matrix(const std::vector< vecOfvec > &com_shape_function_gradient,
-                                       const std::vector< double > &volume, Eigen::MatrixXd &A);
+                                       const std::vector< double > &volume, Eigen::MatrixXd &A); //Test function written
+
     void full_balance_equation_matrix(const vecOfvec &com_shape_functions, const std::vector< vecOfvec >  &com_shape_function_graidents,
-                                      const std::vector< double > &volume, Eigen::MatrixXd &A);
+                                      const std::vector< double > &volume, Eigen::MatrixXd &A); //Test function written
 
     void compute_first_moment_symm_microstress_contribution(const vecOfvec &com_shape_functions, const std::vector< double > &volume,
-                                                            const vecOfvec &symm_microstress, std::vector< double > &b);
+                                                            const vecOfvec &symm_microstress, std::vector< double > &b); //Test function written
 
     void construct_linear_momentum_rhs(const std::vector< double > &surface_external_force,
                                        const std::vector< double > &body_external_force, 
                                        const std::vector< double > &kinetic_force,
-                                       std::vector< double > &linear_momentum_rhs);
+                                       std::vector< double > &linear_momentum_rhs); //Test function written
 
     void construct_first_moment_rhs(const std::vector< double > &surface_external_couple,
                                     const std::vector< double > &body_external_couple,
                                     const std::vector< double > &kinetic_couple,
                                     const std::vector< double > &symmetric_contribution,
-                                    std::vector< double > &first_moment_rhs);
+                                    std::vector< double > &first_moment_rhs); //Test function written
 
     void construct_balance_equation_rhs(const std::vector< double > &surface_external_force,
                                         const std::vector< double > &body_external_force, 
@@ -783,7 +788,7 @@ namespace overlap{
                                         const std::vector< double > &body_external_couple,
                                         const std::vector< double > &kinetic_couple,
                                         const std::vector< double > &symmetric_contribution,
-                                        std::vector< double > &balance_equation_rhs);
+                                        std::vector< double > &balance_equation_rhs); //Test function written
 
     #ifdef OVERLAP_LIBCOMPILE
         void construct_triplet_list(const std::map< unsigned int, unsigned int >* macro_node_to_row_map,
@@ -805,9 +810,6 @@ namespace overlap{
 
     void microPointToPlanes(const MicroPoint &gaussDomain, std::vector< gDecomp::faceType > &planes);
 
-    void computedNdxXitilde(const std::vector< MicroPoint > &gaussDomains, const elib::vecOfvec &localCenterOfMass,
-        const elib::vec &lengthscale, std::unique_ptr<elib::Element> &element,
-        std::vector< std::vector< elib::vecOfvec > > &dNdxXitilde, unsigned int order=1);
 //    QRsolver form_solver(SpMat &A);
 }
 

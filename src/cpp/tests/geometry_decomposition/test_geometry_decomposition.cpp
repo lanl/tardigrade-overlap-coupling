@@ -881,6 +881,41 @@ int test_removeDuplicateFaces(std::ofstream &results){
     return 0; 
 }
 
+int test_print(std::ofstream &results){
+    /*!
+     * Test to make sure the print test command works.
+     * 
+     * :param std::ofstream &results:
+     */
+
+    std::vector< gDecomp::faceType > tetFaces = {std::pair<vectorType, vectorType>({-1.000000000,  0.000000000,  0.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.000000000, -1.000000000,  0.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.000000000,  0.000000000, -1.000000000},
+                                                                                   { 0.000000000,  0.000000000,  0.000000000}),
+                                                 std::pair<vectorType, vectorType>({ 0.577350269,  0.577350269,  0.577350269},
+                                                                                   { 1.000000000,  0.000000000,  0.000000000})};
+
+    //Redirect std::cout
+    std::stringstream buffer;
+    std::streambuf * old = std::cout.rdbuf(buffer.rdbuf());
+    gDecomp::print(tetFaces);
+    std::string r = buffer.str();
+    //Reset std::cout
+    std::cout.rdbuf( old );
+
+    std::string answer("-1 0 0 | 0 0 0\n0 -1 0 | 0 0 0\n0 0 -1 | 0 0 0\n0.57735 0.57735 0.57735 | 1 0 0\n");
+
+    if (std::strcmp(r.c_str(), answer.c_str()) != 0){
+        results << "test_print (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_print & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -912,6 +947,7 @@ int main(){
     test_mapLocalTetPointsToGlobal(results);
     test_tetIO(results);
     test_removeDuplicateFaces(results);
+    test_print(results);
 
     //Close the results file
     results.close();

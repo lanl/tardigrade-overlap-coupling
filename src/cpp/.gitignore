@@ -2,3 +2,13 @@ overlap.txt
 element.zip
 filter.out
 *.pdf
+*.dat
+Adata.txt
+Atmp.txt
+Cdata.txt
+Mdata.txt
+Mtmp.txt
+.ipynb_checkpoints/*
+Untitled*.ipynb
+bdata.txt
+btmp.txt

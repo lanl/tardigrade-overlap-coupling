@@ -40,6 +40,10 @@ class MicromorphicFilterData(object):
         self.nodes = [] #The filter's nodes
         self.dof_values = [] #The filter's degree of freedom values
         self.gauss_point_info = GaussPointInformation() #The filter's values at the gauss points
+                
+        #Error metrics
+        self.linear_momentum_error = []
+        self.first_moment_error = []
         
     def __repr__(self):
         
@@ -81,6 +85,14 @@ class GaussPointInformation(object):
         self.symmetric_microstress = [] #The symmetric micro-stress (volume average of micro-stress)
         self.cauchy_stress = [] #The Cauchy stress (surface average of tractions)
         self.ho_stress = [] #The Higher-order stress (surface average of tractions dyad relative position)
+        self.cauchy_stress_variation = [] #The variation in the Cauchy stress
+        self.ho_stress_variation = [] #The variation in the higher order stress
+        
+        #Deformation measures
+        self.right_cauchy_green = [] #The right cauchy green deformation tensor
+        self.psi = [] #The micro deformation measure psi
+        self.gamma = [] #The micro deformation gradient measure gamma
+
         
     def __repr__(self, offset=0):
         out_str = " "*offset + "Gauss Point Information\n"
@@ -250,13 +262,40 @@ def read_output_data(output_fn):
             sm = read_values(of)
             gpinfo.symmetric_microstress.append(np.copy(sm));
 
-        elif "*CAUCHY STRESS" in sline[0]:
+        elif "*CAUCHY STRESS" == sline[0]:
             cs = read_values(of)
             gpinfo.cauchy_stress.append(np.copy(cs))
+            
+        elif "*CAUCHY STRESS VARIATION" in sline[0]:
+            csv = read_values(of)
+            gpinfo.cauchy_stress_variation.append(np.copy(csv))
 
-        elif "*HIGHER ORDER STRESS" in sline[0]:
+        elif "*HIGHER ORDER STRESS" == sline[0]:
             hos = read_values(of)
             gpinfo.ho_stress.append(np.copy(hos))
+            
+        elif "*HIGHER ORDER STRESS VARIATION" in sline[0]:
+            hosv = read_values(of)
+            gpinfo.ho_stress_variation.append(np.copy(hosv))
+            
+        elif "*RIGHT CAUCHY GREEN" in sline[0]:
+            rcg = read_values(of)
+            gpinfo.right_cauchy_green.append(np.copy(rcg))
+            
+        elif "*PSI" in sline[0]:
+            psi = read_values(of)
+            gpinfo.psi.append(np.copy(psi))
+            
+        elif "*GAMMA" in sline[0]:
+            gamma = read_values(of)
+            gpinfo.gamma.append(np.copy(gamma))
+            
+        elif "*LINEAR MOMENTUM ERROR" in sline[0]:
+            mfdata.linear_momentum_error = float(sline[1]), float(sline[2])
+            
+        elif "*FIRST MOMENT MOMENTUM ERROR" in sline[0]:
+            mfdata.first_moment_error = float(sline[1]), float(sline[2])
+            
             
         elif "*" in sline[0]:
             print("Warning: unknown keyword detected")

@@ -85,7 +85,7 @@ namespace overlap{
         return vector;
     }
 
-    void OverlapCoupling::map_vectors_to_quickhull(const std::map< unsigned int, std::vector< FloatType > > &vectors, std::vector< vertex_t > &vertices) const{
+    void OverlapCoupling::mapVectorsToQuickhull(const std::map< unsigned int, std::vector< FloatType > > &vectors, std::vector< vertex_t > &vertices) const{
         /*!
          * Map a collection of vectors to a vertex which can be read by 3D-quickhull
          * 
@@ -272,7 +272,7 @@ namespace overlap{
         */
         //!Map the coordinates to 3D-quickhull vertices
         std::vector< vertex_t > vertices;
-        map_vectors_to_quickhull(coordinates, vertices);
+        mapVectorsToQuickhull(coordinates, vertices);
 //        std::cout << "coordinates:\n[";
 //        for (unsigned int i=0; i<coordinates.size(); i++){
 //            std::cout << "[" << coordinates[i][0] << ", " << coordinates[i][1] << ", " << coordinates[i][2] << "],\n";
@@ -541,8 +541,6 @@ namespace overlap{
             //Construct the Voro++ planes from the gauss domain
             mp = &gauss_domains[gd];
             std::vector< voro::wall_plane > planes;
-//            std::cout << "gd: " << gd << "\n";
-//            (*mp).print();
             map_domain_to_voro(*mp, planes);
             bounding_faces.clear();
             for (unsigned int i=0; i<(*mp).planes.size(); i++){
@@ -551,20 +549,15 @@ namespace overlap{
             }
 
             if (use_dns_bounds){
-                int bni=0;
+                int bni=gauss_points.size();
                 for (auto dpit=dns_planes.begin(); dpit!=dns_planes.end(); dpit++){
                     bounding_faces.emplace(-(planes.size() + bni), std::pair< std::vector< FloatType > , std::vector< FloatType > >(dpit->first, dpit->second));
                     external_face_ids[gd].push_back(planes.size() + bni);
                     bni++;
                 }
                 
-                map_planes_to_voro(dns_planes, planes, planes.size());
+                map_planes_to_voro(dns_planes, planes, planes.size() + gauss_points.size());
             }
-
-//            for (auto tmpit=bounding_faces.begin(); tmpit!=bounding_faces.end(); tmpit++){
-//                std::cout << tmpit->first << ": normal: "; elib::print(tmpit->second.first);
-//                std::cout << "   : point: "; elib::print(tmpit->second.second);
-//            }
 
             //Construct the container
             container = construct_container(positions, element_bounds, planes);
@@ -574,9 +567,10 @@ namespace overlap{
 //            assert(1==0);
 
             if (points[gd].size() == 0 ){
-                gauss_domains[gd].print();
-                print_planeMap(dns_planes);
-                assert(-23==-22);
+                std::cout << "WARNING: NO MICRO-POINTS FOUND IN GAUSS DOMAIN " << gd << "\n";
+//                gauss_domains[gd].print();
+//                print_planeMap(dns_planes);
+//                assert(-23==-22);
             }
 
             delete(container);
@@ -710,7 +704,7 @@ namespace overlap{
 
         distances.reserve(normals.size());
         for (unsigned int i=0; i<normals.size(); i++){
-            distances.push_back(dot(normals[i], points[i]));
+            distances.push_back(vectorTools::dot(normals[i], points[i]));
         }
     }
 
@@ -766,7 +760,7 @@ namespace overlap{
         */
 
         std::vector< double > n = das[i];
-        double area = sqrt(dot(n, n));
+        double area = sqrt(vectorTools::dot(n, n));
         for (unsigned int j=0; j<n.size(); j++){n[j]/=area;}
         return n;
     }
@@ -779,7 +773,7 @@ namespace overlap{
         */
 
         std::vector< double > n = das[i];
-        return sqrt(dot(n, n));
+        return sqrt(vectorTools::dot(n, n));
     }
 
 
@@ -798,11 +792,17 @@ namespace overlap{
         std::vector< double > tmp;
         vecOfvec global_nodes;
         vecOfvec local_nodes;
+//        std::map< unsigned int, std::vector< double > > global_nodes;
+//        std::map< unsigned int, std::vector< double > > local_nodes;
         vecOfvec local_gpts;
-        std::vector< unsigned int > node_numbers;
+//        std::vector< unsigned int > node_numbers;
         std::vector< double > volumes;
         std::vector< double > densities;
-        vecOfvec coordinates;
+//        vecOfvec coordinates;
+
+        unsigned int id;
+        std::vector< double > coord(3);
+        std::map< unsigned int, std::vector< double > > coordinates;
 
         //Open the file
         file.open(filename.c_str());
@@ -818,6 +818,11 @@ namespace overlap{
             local_nodes.push_back({});
             for (unsigned int j=0; j<3; j++){global_nodes[i].push_back(::atof(split_line[j].c_str()));}
             for (unsigned int j=3; j<6; j++){local_nodes[i].push_back(::atof(split_line[j].c_str()));}
+//            for (unsigned int j=0; j<3; j++){coord[i] = ::atof(split_line[j].c_str());}
+//            global_nodes.emplace(i, coord);
+//            for (unsigned int j=3; j<6; j++){coord[i] = ::atof(split_line[j].c_str());}
+//            local_nodes.emplace(i, coord);
+
         }
 
         //Read in the gauss points of the element
@@ -831,14 +836,18 @@ namespace overlap{
         //Split the strings
         while (std::getline(file, line)){
             split_line = split(line, ' ');
-            node_numbers.push_back(::atoi(split_line[0].c_str()));
+//            node_numbers.push_back(::atoi(split_line[0].c_str()));
+            id = ::atoi(split_line[0].c_str());
             volumes.push_back(::atof(split_line[1].c_str()));
             densities.push_back(::atof(split_line[2].c_str()));
-            coordinates.push_back({});
-            for (unsigned int i=3; i<6; i++){coordinates.back().push_back(::atof(split_line[i].c_str()));}
+//            coordinates.push_back({});
+//            for (unsigned int i=3; i<6; i++){coordinates.back().push_back(::atof(split_line[i].c_str()));}
+            for (unsigned int i=3; i<6; i++){coord[i-3] = ::atof(split_line[i].c_str());}
+            coordinates.emplace(id, coord);
         }
 
-        return ParsedData(global_nodes, local_nodes, local_gpts, node_numbers, volumes, densities, coordinates);
+//        return ParsedData(global_nodes, local_nodes, local_gpts, node_numbers, volumes, densities, coordinates);
+        return ParsedData(global_nodes, local_nodes, local_gpts, volumes, densities, coordinates);
     }
 
     //!String parsing techniques from https://stackoverflow.com/questions/236129/how-do-i-iterate-over-the-words-of-a-string
@@ -882,54 +891,6 @@ namespace overlap{
         return result;
     }
 
-    std::vector< double > cross(const std::vector< double > &a, const std::vector< double > &b){
-        /*!
-        Compute the cross product between two (3d) vectors.
-
-        :param std::vector< double > a: The first vector
-        :param std::vector< double > b: The second vector
-        */
-
-        if ((a.size() != b.size()) || (a.size() != 3)){
-            std::cout << "Error: check vector dimensions\n";
-            assert(1==0);
-        }
-
-        std::vector< double > result(3,0);
-        result[0] = a[1]*b[2] - a[2]*b[1];
-        result[1] = -(a[0]*b[2] - a[2]*b[0]);
-        result[2] = a[0]*b[1] - a[1]*b[0];
-        return result;
-    }
-
-    bool fuzzy_equals(const double a, const double b, const double tolr, const double tola){
-        /*!
-        Compare two doubles to determine if they are equal.
-        */
-
-        double tol = fmin(tolr*fabs(a) + tola, tolr*fabs(b) + tola);
-        return fabs(a-b)<tol;
-    }
-
-    bool fuzzy_equals(const std::vector< double > &a, const std::vector< double > &b, const double tolr, const double tola){
-        /*!
-        Compare two vectors of doubles to determine if they are equal.
-        */
-
-        if (a.size() != b.size()){
-            return false;
-        }
-        else{
-            for (unsigned int i=0; i<a.size(); i++){
-                bool tmp = fuzzy_equals(a[i], b[i], tolr, tola);
-                if (!tmp){
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
     int normal_from_vertices(const vertex_t &p1, const vertex_t &p2, const vertex_t &p3, std::vector< double > &normal, double tolr, double tola){
         /*!
          * Compute the normal vector from three vertices. If the resulting area of the two vectors is smaller than the tolerance
@@ -956,16 +917,16 @@ namespace overlap{
         v2[2] = p3.z - p1.z;
 
         //Normalize v1 and v2
-        double v1_mag = sqrt(dot(v1, v1));
-        double v2_mag = sqrt(dot(v2, v2));
+        double v1_mag = sqrt(vectorTools::dot(v1, v1));
+        double v2_mag = sqrt(vectorTools::dot(v2, v2));
         for (unsigned int i=0; i<v1.size(); i++){v1[i]/=v1_mag;}
         for (unsigned int i=0; i<v2.size(); i++){v2[i]/=v2_mag;}
 
         //Compute the normal
-        normal = cross(v1, v2);
+        normal = vectorTools::cross(v1, v2);
 
         //Normalize the normal vector
-        double narea = dot(normal, normal);
+        double narea = vectorTools::dot(normal, normal);
         double mag = sqrt(narea);
         for (unsigned int i=0; i<normal.size(); i++){normal[i]/=mag;}
 
@@ -994,13 +955,13 @@ namespace overlap{
          * The dot product is computed and checked if it is nearly equal to 1.
          */
 
-        double factor = sqrt(dot(v1, v1)*dot(v2, v2));
-        double result = dot(v1, v2)/factor;
+        double factor = sqrt(vectorTools::dot(v1, v1)*vectorTools::dot(v2, v2));
+        double result = vectorTools::dot(v1, v2)/factor;
         if (!opposite_is_unique){
 //            std::cout << "result: " << result << "\n";
             result = std::abs(result);
         }
-        return fuzzy_equals(result, 1, tolr, tola);
+        return vectorTools::fuzzyEquals(result, 1., tolr, tola);
     }
 
     void print_vertex(const vertex_t &vertex){
@@ -1399,7 +1360,7 @@ namespace overlap{
 //        std::cout << "map planes to voro:\n";
 
         for (it=planes.begin(); it!=planes.end(); it++){
-            distance = overlap::dot(it->first, it->second);
+            distance = vectorTools::dot(it->first, it->second);
 //            std::cout << "  normal: " << it->first[0] << " " << it->first[1] << " " << it->first[2] << "\n";
 //            std::cout << "  face centroid: " << it->second[0] << " " << it->second[1] << " " << it->second[2] << "\n";
 //            std::cout << "  distance: " << distance << "\n";
@@ -1426,7 +1387,7 @@ namespace overlap{
 
         for (unsigned int i=0; i<n; i++){
             normal = domain.normal(i);
-            distance = overlap::dot(normal, domain.face_centroids[i]);
+            distance = vectorTools::dot(normal, domain.face_centroids[i]);
 //            std::cout << "  true plane id: " << domain.planes[i] << "\n";
 //            std::cout << "  voro plane id: " << -(domain.planes[i]+1) << "\n";
 //            std::cout << "  normal: " << normal[0] << " " << normal[1] << " " << normal[2] << "\n";
@@ -1518,7 +1479,6 @@ namespace overlap{
 
         //Set up an iterator for the value map
         std::map<unsigned int, double >::const_iterator itv;
-//        std::map<unsigned int, elib::vec>::const_iterator itp;
         integrateMap::const_iterator itiM;
 
         //Initialize the result vector
@@ -1531,7 +1491,6 @@ namespace overlap{
                 continue;
             }
             result[gp] = std::vector<double>(tmpit->second.coordinates.size(), 0);
-//            result[gp] = std::vector<double>(weights[gp].begin()->second.coordinates.size(), 0);
 
             for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
 
@@ -1541,16 +1500,9 @@ namespace overlap{
                     std::cout << "Error: node " << itiM->first << " not found in values\n";
                     assert(1==0);
                 }
-//                itp = positions.find(itiM->first);
-//                if (itp == positions.end()){
-//                    std::cout << "Error node " << itiM->first << " not found in positions\n";
-//                    assert(1==0);
-//                }
 
                 //Add the term to the integral.
-                for (unsigned int i=0; i<result[gp].size(); i++){
-                    result[gp][i] += itv->second*itiM->second.coordinates[i]*itiM->second.volume;
-                }
+                result[gp] += itv->second * itiM->second.coordinates * itiM->second.volume;
             }
         }
     }
@@ -1590,30 +1542,34 @@ namespace overlap{
                 if (itv->second.size() != result[gp].size()){
                     std::cout << "Error: result and value must have the same size\n";
                 }
-                for (unsigned int i=0; i<result[gp].size(); i++){
-                    result[gp][i] += itv->second[i]*itiM->second.volume;
-                }
+                result[gp] += itv->second * itiM->second.volume;
             }
         }
     }
 
-    void compute_surface_area_normal(const std::vector< integrateMap > &weights,
-                                     scalar_surface_map &surface_area, vector_surface_map &surface_normal){
+    void compute_surface_information(const std::vector< integrateMap > &weights,
+                                     const std::map< unsigned int, double > &micro_density,
+                                     scalar_surface_map &surface_area, vector_surface_map &surface_normal,
+                                     vector_surface_map &surface_centroid){
         /*!
-         * Compute the surface areas and normals of each of the faces in the gauss domains
+         * Compute the surface areas, normals, and centroids of each of the faces in the gauss domains
          * 
          * :param const std::vector< integrateMap > &weights: The weights of each of the nodes in true-space for each gauss point
          * :param scalar_surface_map &surface_area: The computed surface areas
          * :param vector_surface_map &surface_normal: The computed surface normals
+         * :param vector_surface_map &surface_centroid: The computed surface centroids
          */
 
         integrateMap::const_iterator itiM;
-        std::map< unsigned int, double >::iterator itr_sa;
-        std::map< unsigned int, std::vector< double > >::iterator itr_sn;
+        std::map< unsigned int, double >::iterator itr_sa, itr_sm;
+        std::map< unsigned int, std::vector< double > >::iterator itr_sn, itr_sc;
 
         //Initialize the surface_area vector
         surface_area.resize(weights.size());
         surface_normal.resize(weights.size());
+        scalar_surface_map surface_mass;
+        surface_mass.resize(weights.size());
+        surface_centroid.resize(weights.size());
 
         //Loop over the gauss domains
         for (unsigned int gp=0; gp<weights.size(); gp++){
@@ -1621,26 +1577,40 @@ namespace overlap{
             //Loop over the micro-node weights
             for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
 
+                //Find the micro-node density
+                auto density = micro_density.find(itiM->first);
+                if (density == micro_density.end()){
+                    std::cerr << "Error: Micro-point not found\n";
+                    assert(1==0);
+                }
+
                 //Loop over the planes
                 for (unsigned int j=0; j<itiM->second.planes.size(); j++){
 
                     itr_sa = surface_area[gp].find(itiM->second.planes[j]);
                     itr_sn = surface_normal[gp].find(itiM->second.planes[j]);
+                    itr_sm = surface_mass[gp].find(itiM->second.planes[j]);
+                    itr_sc = surface_centroid[gp].find(itiM->second.planes[j]);
 
                     //Insert the plane if new
                     if (itr_sa == surface_area[gp].end()){
                         surface_area[gp].emplace(itiM->second.planes[j], itiM->second.area(j));
                         surface_normal[gp].emplace(itiM->second.planes[j], itiM->second.das[j]);
+                        surface_mass[gp].emplace(itiM->second.planes[j], itiM->second.area(j)*density->second);
+                        surface_centroid[gp].emplace(itiM->second.planes[j], itiM->second.area(j)*density->second*itiM->second.face_centroids[j]);
                     }
                     //Add to the plane if it exists already
                     else{
                         itr_sa->second += itiM->second.area(j);
                         for (unsigned int i=0; i<itr_sn->second.size(); i++){itr_sn->second[i] += itiM->second.das[j][i];}
+                        itr_sm->second += itiM->second.area(j)*density->second;
+                        itr_sc->second += itiM->second.area(j)*density->second*itiM->second.face_centroids[j];
                     }
                 }
             }
 
 //            std::cout << "gp: " << gp << "\n";
+            //Compute the surface normal
             for (auto ittmp = surface_normal[gp].begin(); ittmp!=surface_normal[gp].end(); ittmp++){
                 auto area = surface_area[gp].find(ittmp->first);
                 if (area == surface_area[gp].end()){
@@ -1652,8 +1622,20 @@ namespace overlap{
                     for (unsigned int i=0; i<ittmp->second.size(); i++){ittmp->second[i] /= area->second;}
                 }
             }
+            
+            //Compute the surface centroid
+            for (auto ittmp = surface_centroid[gp].begin(); ittmp!=surface_centroid[gp].end(); ittmp++){
+                auto mass = surface_mass[gp].find(ittmp->first);
+                if (mass == surface_mass[gp].end()){
+                    std::cerr << "Error: surface mass for centroid not found\n";
+                    assert(1==0);
+                }
+                else{
+                    //std::cout << " face: " << ittmp->first << " mass: " << mass->second << ", centroid: "; elib::print(ittmp->second /=mass->second);
+                    ittmp->second /= mass->second;
+                }
+            }
         }
-
 
         return;
     }
@@ -1756,48 +1738,6 @@ namespace overlap{
         }
     }
 
-    void computeLengthscale(const std::vector< integrateMap > &weights, const elib::vecOfvec &centerOfMass, std::vector< double > &result){
-        /*!
-         * Compute the lengthscale of each of the Gauss domains from the integration map
-         * 
-         * :param const std::vector< integrateMap > &weights: The weights of each of the nodes in true space for each gauss point.
-         * :param const elib::vecOfvec &centerOfMass: The centers of mass of the domains
-         * :param elib::vec &result: The vector of lengthscales
-         */
-
-        //Initialize the result vector
-        result.resize(weights.size());
-
-        //Vector for the surface areas
-        double area = 0;
-
-        //Temporary vector for xi
-        elib::vec xi;
-
-        //Loop over the gauss points
-        for (unsigned int gp=0; gp<weights.size(); gp++){
-            area = 0;
-
-            //Loop over the micro-node weights
-            for (auto microNode=weights[gp].begin(); microNode!=weights[gp].end(); microNode++){
-                
-                //Loop over the planes
-                for (unsigned int n = 0; n<microNode->second.planes.size(); n++){
-                    area += microNode->second.area(n); //Add the area of the plane to the current tally of the area
-                    xi = subtract(microNode->second.face_centroids[n], centerOfMass[gp]); //Compute xi
-                    result[gp] += dot(xi, xi)*microNode->second.area(n); //Add the squared norm weighted by the area to the result
-                }
-            }
-
-            //Divide the current result by the accumulated area
-            result[gp] /= area;
-
-            //Take the square root
-            result[gp] = std::sqrt(result[gp]);
-        }
-        return;
-    }
-
     void perform_symmetric_tensor_surface_traction_integration(const std::map< unsigned int, std::vector< double > > &tensor, 
                                                                const std::vector< integrateMap > &weights,
                                                                std::vector< std::map< unsigned int, std::vector< double > > > &result){
@@ -1865,7 +1805,7 @@ namespace overlap{
     void perform_symmetric_tensor_surface_couple_traction_integration(
              const std::map< unsigned int, std::vector< double > > &tensor,
              const std::vector< integrateMap > &weights,
-             const vecOfvec &centers_of_mass,
+             const vector_surface_map &surface_centroid,
              std::vector< std::map< unsigned int, std::vector< double > > > &result){
         /*!
          * Integrate the couple fluxes of the symmetric tensor over the surfaces (assumes 3D) return will be a couple traction
@@ -1874,7 +1814,7 @@ namespace overlap{
          * :param const std::map< unsigned int, std::vector< double > > &tensor: The symmetric tensors in voigt notation i.e.
          *     tensor = t11, t22, t33, t23, t13, t12
          * :param const std::vector< integrateMap > weights: The weights of each of the nodes in true space for each gauss point
-         * :param const vecOfvec &centers_of_mass: The centers of mass of the gauss points.
+         * :param const vecOfvec &surface_centroid: The centers of mass of the surfaces.
          * :param std::vector< std::map< unsigned int, double > > result: The result of the integration over each of the faces
          */
         
@@ -1887,13 +1827,10 @@ namespace overlap{
         result.resize(weights.size());
 
         //Initialize the center of mass and xi vectors
-        std::vector< double > center_of_mass;
         std::vector< double > xi;
 
         //Loop over the gauss points
         for (unsigned int gp=0; gp<weights.size(); gp++){
-            center_of_mass = centers_of_mass[gp];
-            xi.resize(center_of_mass.size());
 
             //Loop over the micro-node weights
             for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
@@ -1909,8 +1846,16 @@ namespace overlap{
                 for (unsigned int j=0; j<itiM->second.planes.size(); j++){
                     itr = result[gp].find(itiM->second.planes[j]);
 
+                    //Get the face centroid
+                    auto center_of_mass = surface_centroid[gp].find(itiM->second.planes[j]);
+                    if (center_of_mass == surface_centroid[gp].end()){
+                        std::cerr << "Error: face " << j << " not found\n";
+                        assert(1==0);
+                    }
+
                     //Compute the xi vector
-                    for (unsigned int i=0; i<xi.size(); i++){xi[i] = itiM->second.face_centroids[j][i] - center_of_mass[i];}
+                    xi = itiM->second.face_centroids[j] - center_of_mass->second;
+//                    for (unsigned int i=0; i<xi.size(); i++){xi[i] = itiM->second.face_centroids[j][i] - center_of_mass[i];}
 
                     //Compute the couple traction - Assumes 3D
                     std::vector< double > couple_traction(9, 0);
@@ -2587,9 +2532,9 @@ namespace overlap{
 
         for (unsigned int i=0; i<num_micro_free; i++){
 
-            xtest = fuzzy_equals(Qtmp(num_micro_dof*i + 0),  0.32);
-            ytest = fuzzy_equals(Qtmp(num_micro_dof*i + 1),  1.00);
-            ztest = fuzzy_equals(Qtmp(num_micro_dof*i + 2), -3.42);
+            xtest = vectorTools::fuzzyEquals(Qtmp(num_micro_dof*i + 0),  0.32);
+            ytest = vectorTools::fuzzyEquals(Qtmp(num_micro_dof*i + 1),  1.00);
+            ztest = vectorTools::fuzzyEquals(Qtmp(num_micro_dof*i + 2), -3.42);
             if (!(xtest && ytest && ztest)){
                 std::cout << "i: " << i << "\n";
                 std::cout << "num_micro_free: " << num_micro_free << "\n";
@@ -2605,7 +2550,7 @@ namespace overlap{
         //Test if the solver solves correctly
         EigVec Dhans = BDhQsolver.solve(Qtmp);
 
-        if (!fuzzy_equals((Dhans - Dhtmp).norm(), 0)){
+        if (!vectorTools::fuzzyEquals((Dhans - Dhtmp).norm(), 0.)){
             std::cout << "Test 2 failed\n";
             return 2;
             assert(2==0);
@@ -2619,7 +2564,7 @@ namespace overlap{
         }
         solve_BDhQ(Qtmpvec, Dhvec);
         for (unsigned int i=0; i<Dhvec.size(); i++){
-            if (!fuzzy_equals(Dhvec[i], Dhans[i])){
+            if (!vectorTools::fuzzyEquals(Dhvec[i], Dhans[i])){
                 std::cout << "Test 3 failed\n";
                 return 3;
             }
@@ -2627,7 +2572,7 @@ namespace overlap{
 
         //Make sure that there are no non-zero terms in NQD
         SpMat NQD   = shapefunction.block( 0, 0, num_micro_dof*num_micro_free, num_macro_dof*num_macro_free);
-        if (!fuzzy_equals(NQD.norm(), 0)){
+        if (!vectorTools::fuzzyEquals(NQD.norm(), 0.)){
             std::cout << "Test 4 failed\n";
             return 4;
             assert(3==0);
@@ -2688,9 +2633,9 @@ namespace overlap{
         }
 
         for (unsigned int i=0; i<num_micro_ghost; i++){
-            xtest = fuzzy_equals(Qhtmp(num_micro_dof*i + 0),  0.32);
-            ytest = fuzzy_equals(Qhtmp(num_micro_dof*i + 1),  1.00);
-            ztest = fuzzy_equals(Qhtmp(num_micro_dof*i + 2), -3.42);
+            xtest = vectorTools::fuzzyEquals(Qhtmp(num_micro_dof*i + 0),  0.32);
+            ytest = vectorTools::fuzzyEquals(Qhtmp(num_micro_dof*i + 1),  1.00);
+            ztest = vectorTools::fuzzyEquals(Qhtmp(num_micro_dof*i + 2), -3.42);
             if (!(xtest && ytest && ztest)){
                 std::cout << "i: " << i << "\n";
                 std::cout << "num_micro_ghost: " << num_micro_ghost << "\n";
@@ -3072,11 +3017,10 @@ namespace overlap{
          */
 
         compute_volume();
-        compute_surface_area_normal();
+        compute_surface_information(micro_density);
         compute_density(micro_density);
         compute_centers_of_mass(micro_density);
         compute_com_shapefunction_gradients();
-        computeLengthscale();
         return 0;
     }
 
@@ -3092,68 +3036,15 @@ namespace overlap{
 
          //Compute the Cauchy stress
          compute_traction(micro_stress);
-//         std::cout << "traction:\n";
-//         for (unsigned int i=0; i<traction.size(); i++){
-//             std::cout << " gauss domain " << i << "\n";
-//             for (auto face=traction[i].begin(); face!=traction[i].end(); face++){
-//                 std::cout << face->first << ": "; elib::print(face->second);
-//             }
-//         }
-         if (use_weights){
-             compute_vertices_cauchy_stress();
-         }
-//         std::cout << "vertex cauchy:\n";
-//         for (unsigned int i=0; i<vertex_cauchy.size(); i++){
-//             std::cout << " vertex " << i << "\n";
-//             for (unsigned int j=0; j<vertex_cauchy[i].size(); j++){
-//                 std::cout << "  "; elib::print(vertex_cauchy[i][j]);
-//             }
-//         }
-//         construct_cauchy_least_squares();
+         compute_couple_traction(micro_stress);
+
          construct_linear_momentum_surface_external_force();
-         construct_linear_momentum_least_squares_matrix();
          //TODO: Add construction of body force term
          //TODO: Add construction of kinetic force term
-         construct_linear_momentum_b_vector();
-         construct_weight_constraints();
-         compute_cauchy_stress();
 
-         //Compute the couple stress
-         compute_couple_traction(micro_stress);
-         if (use_weights){
-             compute_vertices_couple_stress();
-         }
-         else{
-             construct_hostress_constraint();
-         }
-//         construct_couple_least_squares();
          construct_first_moment_surface_external_couple();
-         construct_first_moment_symm_cauchy_couple();
-         construct_first_moment_least_squares_matrix();
          //TODO: Add construction of body couple term
          //TODO: Add construction of kinetic couple term
-         construct_first_moment_b_vector();
-         compute_couple_stress();
-//         std::cout << "couple stress:\n";
-//         for (unsigned int gp=0; gp<couple_stress.size(); gp++){
-//             for (unsigned int i=0; i<3; i++){
-//                 for (unsigned int j=0; j<9; j++){
-//                     printf("%+1.6f ", couple_stress[gp][3*i + j]);
-//                 }
-//                 std::cout << "\n";
-//             }
-//             std::cout << "\n";
-//         }
-//         assert(1==0);
-
-//         std::cout << "couple_traction:\n";
-//         for (unsigned int gp=0; gp<couple_traction.size(); gp++){
-//             std::cout << " gp: " << gp << "\n";
-//             for (auto face = couple_traction[gp].begin(); face!=couple_traction[gp].end(); face++){
-//                 std::cout << "  " << face->first << ": "; elib::print(face->second);
-//             }
-//         }
-//         assert(1==0);
 
          Eigen::MatrixXd Abeqn;
          std::vector< double > symmetric_contribution;
@@ -3163,67 +3054,93 @@ namespace overlap{
                                         surface_external_couple, body_external_couple, kinetic_couple,
                                         symmetric_contribution, balance_equation_rhs);
 
-         computedNdxXitilde(*material_overlap.get_gauss_domains(), local_center_of_mass, lengthscale, element, dNdxXiTilde);
-
          full_balance_equation_matrix(com_shapefunction_values, com_shapefunction_gradients, volume, Abeqn);
 
-         Eigen::MatrixXd M = (Abeqn.transpose()*Abeqn) + Eigen::MatrixXd::Identity(Abeqn.cols(), Abeqn.cols());
+
+         Eigen::MatrixXd M = (Abeqn.transpose()*Abeqn) + 1e-9*Eigen::MatrixXd::Identity(Abeqn.cols(), Abeqn.cols());
          Eigen::Map< Eigen::MatrixXd > RHS(balance_equation_rhs.data(), balance_equation_rhs.size(), 1);
 
+//         std::ofstream tmpFile("aBalanceEquationMatrix.dat");
+//         tmpFile << Abeqn;
+//         tmpFile.flush();
+//         tmpFile.close();
+//         tmpFile = std::ofstream("balanceEquationRHS.dat");
+//         tmpFile << RHS;
+//         tmpFile.flush();
+//         tmpFile.close();
+//
 //         std::cout << "M shape: " << M.rows() << ", " << M.cols() << "\n";
 //         std::cout << "RHS shape: " << RHS.rows() << ", " << RHS.cols() << "\n";
 
          Eigen::MatrixXd x = M.colPivHouseholderQr().solve(Abeqn.transpose()*RHS);
-//         std::cout << "Error:\n" << (Abeqn*x - RHS) << "\n";
 
-         std::cout << "Error: " << (Abeqn*x - RHS).norm() << "\n";
-         std::cout << "Term1: " << (Abeqn*x).norm() << "\n";
-         std::cout << "Term2: " << (RHS).norm() << "\n";
-         std::cout << "Relative Error: " << (Abeqn*x - RHS).norm()/RHS.norm() << "\n";
+         //Extract the Cauchy and higher-order stress
+         unsigned int nstress = 9; //Assume 3D
+         unsigned int ncouple = 27;
+         unsigned int npoints = symmetric_microstress.size();
+
+         cauchy_stress = vecOfvec(npoints, std::vector< FloatType >(nstress, 0));
+         couple_stress = vecOfvec(npoints, std::vector< FloatType >(ncouple, 0));
+         for (unsigned int i=0; i<npoints; i++){
+             for (unsigned int j=0; j<nstress; j++){
+                 cauchy_stress[i][j] = x(i*nstress + j, 0);
+             }
+             for (unsigned int j=0; j<ncouple; j++){
+                 couple_stress[i][j] = x(nstress*npoints + i*ncouple + j, 0);
+             }
+         }
+
+//         std::cout << "x: " << x << "\n";
+//         std::cout << "Error:\n" << (Abeqn*x - RHS) << "\n";
+//
+//         std::cout << "Error: " << (Abeqn*x - RHS).norm() << "\n";
+//         std::cout << "Term1: " << (Abeqn*x).norm() << "\n";
+//         std::cout << "Term2: " << (RHS).norm() << "\n";
+//         std::cout << "Relative Error: " << (Abeqn*x - RHS).norm()/RHS.norm() << "\n";
 //         assert(1==0);
 
          return 0;
     }
 
-    int MicromorphicFilter::construct_hostress_constraint(){
-        /*!
-         * Compute the constraint matrix and rhs vector arising from the 
-         * constraint that on the higher order stress term that
-         * n_k^1 (m_{kij}^1 - m_{kij}^2) = n_k^1 \sigma_{ki} \left(x_j^2 - x_i^2\right)
-         * for two gauss domains 1 and 2
-         */
-        
-        const std::vector< std::vector< unsigned int > > *external_face_ids = material_overlap.get_external_face_ids();
-        overlap::construct_hostress_constraint(surface_normal, traction, center_of_mass,
-            *external_face_ids, hostress_constraint_matrix, hostress_constraint_rhs);
-        return 0;
-    }
-
-    int MicromorphicFilter::construct_linear_momentum_b_vector(){
-        /*!
-         * Construct the d vector for the constrained least squares calculation 
-         * of the cauchy stress
-         */
-
-        overlap::construct_linear_momentum_b_vector(linear_momentum_A.rows(),
-                                                    surface_external_force, body_external_force, kinetic_force,
-                                                    linear_momentum_b);
-        return 0;
-    }
-
-    int MicromorphicFilter::construct_first_moment_b_vector(){
-        /*!
-         * Construct the d vector for the constrained first moment of momentum calculation
-         * of the couple stress
-         */
-
-        overlap::construct_first_moment_b_vector(first_moment_A.rows(),
-                                                 surface_external_couple, symm_cauchy_couple,
-                                                 body_external_couple, kinetic_couple,
-                                                 first_moment_b);
-
-        return 0;
-    }
+//    int MicromorphicFilter::construct_hostress_constraint(){
+//        /*!
+//         * Compute the constraint matrix and rhs vector arising from the 
+//         * constraint that on the higher order stress term that
+//         * n_k^1 (m_{kij}^1 - m_{kij}^2) = n_k^1 \sigma_{ki} \left(x_j^2 - x_i^2\right)
+//         * for two gauss domains 1 and 2
+//         */
+//        
+//        const std::vector< std::vector< unsigned int > > *external_face_ids = material_overlap.get_external_face_ids();
+//        overlap::construct_hostress_constraint(surface_normal, traction, center_of_mass,
+//            *external_face_ids, hostress_constraint_matrix, hostress_constraint_rhs);
+//        return 0;
+//    }
+//
+//    int MicromorphicFilter::construct_linear_momentum_b_vector(){
+//        /*!
+//         * Construct the d vector for the constrained least squares calculation 
+//         * of the cauchy stress
+//         */
+//
+//        overlap::construct_linear_momentum_b_vector(linear_momentum_A.rows(),
+//                                                    surface_external_force, body_external_force, kinetic_force,
+//                                                    linear_momentum_b);
+//        return 0;
+//    }
+//
+//    int MicromorphicFilter::construct_first_moment_b_vector(){
+//        /*!
+//         * Construct the d vector for the constrained first moment of momentum calculation
+//         * of the couple stress
+//         */
+//
+//        overlap::construct_first_moment_b_vector(first_moment_A.rows(),
+//                                                 surface_external_couple, symm_cauchy_couple,
+//                                                 body_external_couple, kinetic_couple,
+//                                                 first_moment_b);
+//
+//        return 0;
+//    }
 
     int MicromorphicFilter::construct_weight_constraints(){
         /*!
@@ -3254,210 +3171,210 @@ namespace overlap{
         return 0;
     }
 
-    int MicromorphicFilter::compute_cauchy_stress(){
-        /*!
-         * Compute the Cauchy stress using a constrained least squares technique
-         */
-
-//        Eigen::MatrixXd x;
-//        solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, linear_momentum_C, linear_momentum_d, x);
-        if (use_weights){
-            Eigen::MatrixXd w;
-            solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, weight_constraints, weight_d, w, true);
-            linear_momentum_error = (linear_momentum_A*w - linear_momentum_b).norm();
-            linear_momentum_relative_error = linear_momentum_error/std::max(std::max((linear_momentum_A*w).norm(), linear_momentum_b.norm()), 1.);
-            std::vector< double > weights(w.data(), w.data() + w.size());
-            process_weight_vector_to_results(weights, vertex_cauchy, cauchy_stress);
-        }
-        else{
-            std::vector< Eigen::MatrixXd > solutions;
-            solve_row_deficient_divergence_matrix(linear_momentum_A, linear_momentum_b, linear_momentum_A.rows()/3, solutions);
-
-            //Set the Cauchy stress as the mean value
-            Eigen::MatrixXd x = Eigen::MatrixXd::Zero(solutions[0].rows(), 1);
-            for (unsigned int n=0; n<solutions.size(); n++){
-                x += solutions[n];
-            }
-            x /= solutions.size();
-
-            cauchy_stress_variation.resize(symmetric_microstress.size());
-            for (unsigned int gp=0; gp<cauchy_stress_variation.size(); gp++){
-                cauchy_stress_variation[gp].resize(solutions.size());
-                for (unsigned int s=0; s<solutions.size(); s++){
-                    cauchy_stress_variation[gp][s].resize(solutions[s].size()/cauchy_stress_variation.size());
-                    for (unsigned int i=0; i<cauchy_stress_variation[gp][s].size(); i++){
-                        cauchy_stress_variation[gp][s][i] = solutions[s](gp*cauchy_stress_variation[gp][s].size() + i);
-                    }
-                }
-            }
-//            unsigned int Arows, Acols;
-//            Arows = linear_momentum_A.rows();
-//            Acols = linear_momentum_A.cols();
-//            Eigen::MatrixXd M = Eigen::MatrixXd::Zero(Arows+Acols, Arows+Acols);
-//            M.block(0, 0, Arows, Acols) = linear_momentum_A;
-//            M.block(0, Acols, Arows, Arows) = Eigen::MatrixXd::Identity(Arows, Arows);
-//            M.block(Arows, 0, Acols, Acols) = Eigen::MatrixXd::Identity(Acols, Acols);
-//            M.block(Arows, Acols, Acols, Arows) = linear_momentum_A.transpose();
+//    int MicromorphicFilter::compute_cauchy_stress(){
+//        /*!
+//         * Compute the Cauchy stress using a constrained least squares technique
+//         */
 //
-//            Eigen::MatrixXd RHS = Eigen::MatrixXd::Zero(Arows+Acols, 1);
-//            RHS.block(0, 0, Arows, 1) = linear_momentum_b;
-//            Eigen::MatrixXd solution = M.colPivHouseholderQr().solve(RHS);
-//            Eigen::MatrixXd x = solution.block(0, 0, Acols, 1);
-//            std::cout << "M rank: " << M.fullPivLu().rank() << "\n";
-//            std::cout << "M size: " << M.rows() << ", " << M.cols() << "\n";
-//            std::cout << "solution error: " << (M*solution - RHS).norm() << "\n";
+////        Eigen::MatrixXd x;
+////        solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, linear_momentum_C, linear_momentum_d, x);
+//        if (use_weights){
+//            Eigen::MatrixXd w;
+//            solve_constrained_least_squares(linear_momentum_A, linear_momentum_b, weight_constraints, weight_d, w, true);
+//            linear_momentum_error = (linear_momentum_A*w - linear_momentum_b).norm();
+//            linear_momentum_relative_error = linear_momentum_error/std::max(std::max((linear_momentum_A*w).norm(), linear_momentum_b.norm()), 1.);
+//            std::vector< double > weights(w.data(), w.data() + w.size());
+//            process_weight_vector_to_results(weights, vertex_cauchy, cauchy_stress);
+//        }
+//        else{
+//            std::vector< Eigen::MatrixXd > solutions;
+//            solve_row_deficient_divergence_matrix(linear_momentum_A, linear_momentum_b, linear_momentum_A.rows()/3, solutions);
 //
+//            //Set the Cauchy stress as the mean value
+//            Eigen::MatrixXd x = Eigen::MatrixXd::Zero(solutions[0].rows(), 1);
+//            for (unsigned int n=0; n<solutions.size(); n++){
+//                x += solutions[n];
+//            }
+//            x /= solutions.size();
 //
-//            std::ofstream tmpfile;
-//            tmpfile.open("bdata.txt");
-//            tmpfile << linear_momentum_b;
-//            tmpfile.flush();
-//            tmpfile.close();
-//             
-//            tmpfile.open("Adata.txt");
-//            tmpfile << linear_momentum_A;
-//            tmpfile.flush();
-//            tmpfile.close();
-//            assert(1==0);
-//
-////            unsigned int ncols = linear_momentum_A.cols();
-////            Eigen::MatrixXd M = linear_momentum_A.transpose()*linear_momentum_A + Eigen::MatrixXd::Identity(ncols, ncols);
+//            cauchy_stress_variation.resize(symmetric_microstress.size());
+//            for (unsigned int gp=0; gp<cauchy_stress_variation.size(); gp++){
+//                cauchy_stress_variation[gp].resize(solutions.size());
+//                for (unsigned int s=0; s<solutions.size(); s++){
+//                    cauchy_stress_variation[gp][s].resize(solutions[s].size()/cauchy_stress_variation.size());
+//                    for (unsigned int i=0; i<cauchy_stress_variation[gp][s].size(); i++){
+//                        cauchy_stress_variation[gp][s][i] = solutions[s](gp*cauchy_stress_variation[gp][s].size() + i);
+//                    }
+//                }
+//            }
+////            unsigned int Arows, Acols;
+////            Arows = linear_momentum_A.rows();
+////            Acols = linear_momentum_A.cols();
+////            Eigen::MatrixXd M = Eigen::MatrixXd::Zero(Arows+Acols, Arows+Acols);
+////            M.block(0, 0, Arows, Acols) = linear_momentum_A;
+////            M.block(0, Acols, Arows, Arows) = Eigen::MatrixXd::Identity(Arows, Arows);
+////            M.block(Arows, 0, Acols, Acols) = Eigen::MatrixXd::Identity(Acols, Acols);
+////            M.block(Arows, Acols, Acols, Arows) = linear_momentum_A.transpose();
 ////
-////            //Put the symmetric microstress into an eigen matrix
-////            unsigned int nsymmstress = symmetric_microstress[0].size();
-////            Eigen::MatrixXd s(symmetric_microstress.size()*nsymmstress, 1);
-////            for (unsigned int gp=0; gp<symmetric_microstress.size(); gp++){
-////                for (unsigned int i=0; i<nsymmstress; i++){
-////                    s(gp*nsymmstress + i, 0) = symmetric_microstress[gp][i];
-////                }
-////            }
+////            Eigen::MatrixXd RHS = Eigen::MatrixXd::Zero(Arows+Acols, 1);
+////            RHS.block(0, 0, Arows, 1) = linear_momentum_b;
+////            Eigen::MatrixXd solution = M.colPivHouseholderQr().solve(RHS);
+////            Eigen::MatrixXd x = solution.block(0, 0, Acols, 1);
+////            std::cout << "M rank: " << M.fullPivLu().rank() << "\n";
+////            std::cout << "M size: " << M.rows() << ", " << M.cols() << "\n";
+////            std::cout << "solution error: " << (M*solution - RHS).norm() << "\n";
 ////
-////            //Form the right-hand side vector
-////            Eigen::MatrixXd RHS = linear_momentum_A.transpose()*linear_momentum_b;// + s;
 ////
-////            Eigen::MatrixXd x = M.colPivHouseholderQr().solve(RHS);
-            linear_momentum_error = (linear_momentum_A*x - linear_momentum_b).norm();
-            double T1, T2;
-            T1 = (linear_momentum_A*x).norm();
-            T2 = linear_momentum_b.norm();
-            if ((T1 > 1e-9) && (T2 > 1e-9)){
-                linear_momentum_relative_error = linear_momentum_error/std::max(T1, T2);
-            }
-            else{
-                linear_momentum_relative_error = linear_momentum_error;
-            }
-
-            cauchy_stress.resize(symmetric_microstress.size());
-            unsigned int nstress = x.size()/cauchy_stress.size();
-            for (unsigned int gp=0; gp<cauchy_stress.size(); gp++){
-                cauchy_stress[gp].resize(nstress);
-                for (unsigned int i=0; i<nstress; i++){
-                    cauchy_stress[gp][i] = x(gp*nstress + i);
-                }
-            }
-
-        }
-
-        return 0;
-    }
-
-    int MicromorphicFilter::compute_couple_stress(){
-        /*!
-         * Compute the couple stress using a constrained least squares technique
-         */
-
-        if (use_weights){
-            Eigen::MatrixXd w;
-            solve_constrained_least_squares(first_moment_A, first_moment_b, weight_constraints, weight_d, w, false);
-//            std::cout << "w:\n" << w << "\n";
-//            std::cout << "first_moment_A*w:\n" << first_moment_A*w << "\n";
-//            std::cout << "first_moment_A*w - first_moment_b:\n" << first_moment_A*w - first_moment_b << "\n";
-            first_moment_error = (first_moment_A*w - first_moment_b).norm();
-            first_moment_relative_error = first_moment_error/std::max(std::max((first_moment_A*w).norm(), first_moment_b.norm()), 1.);
-            std::vector< double > weights(w.data(), w.data() + w.size());
-            process_weight_vector_to_results(weights, vertex_hostress, couple_stress);
-        }
-        else{
-            std::vector< Eigen::MatrixXd > solutions;
-            solve_row_deficient_divergence_matrix(first_moment_A, first_moment_b, first_moment_A.rows()/9, solutions);
-
-            //Set the higher-order stress as the mean value
-            Eigen::MatrixXd x = Eigen::MatrixXd::Zero(solutions[0].rows(), 1);
-            for (unsigned int n=0; n<solutions.size(); n++){
-                x += solutions[n];
-            }
-            x /= solutions.size();
-
-            couple_stress_variation.resize(symmetric_microstress.size());
-            for (unsigned int gp=0; gp<couple_stress_variation.size(); gp++){
-                couple_stress_variation[gp].resize(solutions.size());
-                for (unsigned int s=0; s<solutions.size(); s++){
-                    couple_stress_variation[gp][s].resize(solutions[s].size()/couple_stress_variation.size());
-                    for (unsigned int i=0; i<couple_stress_variation[gp][s].size(); i++){
-                        couple_stress_variation[gp][s][i] = solutions[s](gp*couple_stress_variation[gp][s].size() + i);
-                    }
-                }
-            }
-
-//            unsigned int Arows, Acols;
-//            Arows = first_moment_A.rows();
-//            Acols = first_moment_A.cols();
-//            Eigen::MatrixXd M = Eigen::MatrixXd::Zero(Arows+Acols, Arows+Acols);
-//            M.block(0, 0, Arows, Acols) = first_moment_A;
-//            M.block(0, Acols, Arows, Arows) = Eigen::MatrixXd::Identity(Arows, Arows);
-//            M.block(Arows, 0, Acols, Acols) = Eigen::MatrixXd::Identity(Acols, Acols);
-//            M.block(Arows, Acols, Acols, Arows) = first_moment_A.transpose();
-//
-//            Eigen::MatrixXd RHS = Eigen::MatrixXd::Zero(Arows+Acols, 1);
-//            RHS.block(0, 0, Arows, 1) = first_moment_b;
-//            Eigen::MatrixXd solution = M.colPivHouseholderQr().solve(RHS);
-//            std::cout << "M rank: " << M.fullPivLu().rank() << "\n";
-//            std::cout << "M size: " << M.rows() << ", " << M.cols() << "\n";
-//            std::cout << "solution error: " << (M*solution - RHS).norm() << "\n";
-//            Eigen::MatrixXd x = solution.block(0, 0, Acols, 1);
-//            Eigen::MatrixXd mu = solution.block(Acols, 0, Arows, 1);
-//            std::cout << "multiplier error: " << (first_moment_A.transpose()*mu - x).norm() << "\n";
-//            std::cout << "x error: " << (first_moment_A*x - first_moment_b).norm() << "\n";
 ////            std::ofstream tmpfile;
-////            tmpfile.open("Mdata.txt");
-////            tmpfile << M;
+////            tmpfile.open("bdata.txt");
+////            tmpfile << linear_momentum_b;
+////            tmpfile.flush();
+////            tmpfile.close();
+////             
+////            tmpfile.open("Adata.txt");
+////            tmpfile << linear_momentum_A;
 ////            tmpfile.flush();
 ////            tmpfile.close();
 ////            assert(1==0);
-//            
+////
+//////            unsigned int ncols = linear_momentum_A.cols();
+//////            Eigen::MatrixXd M = linear_momentum_A.transpose()*linear_momentum_A + Eigen::MatrixXd::Identity(ncols, ncols);
+//////
+//////            //Put the symmetric microstress into an eigen matrix
+//////            unsigned int nsymmstress = symmetric_microstress[0].size();
+//////            Eigen::MatrixXd s(symmetric_microstress.size()*nsymmstress, 1);
+//////            for (unsigned int gp=0; gp<symmetric_microstress.size(); gp++){
+//////                for (unsigned int i=0; i<nsymmstress; i++){
+//////                    s(gp*nsymmstress + i, 0) = symmetric_microstress[gp][i];
+//////                }
+//////            }
+//////
+//////            //Form the right-hand side vector
+//////            Eigen::MatrixXd RHS = linear_momentum_A.transpose()*linear_momentum_b;// + s;
+//////
+//////            Eigen::MatrixXd x = M.colPivHouseholderQr().solve(RHS);
+//            linear_momentum_error = (linear_momentum_A*x - linear_momentum_b).norm();
+//            double T1, T2;
+//            T1 = (linear_momentum_A*x).norm();
+//            T2 = linear_momentum_b.norm();
+//            if ((T1 > 1e-9) && (T2 > 1e-9)){
+//                linear_momentum_relative_error = linear_momentum_error/std::max(T1, T2);
+//            }
+//            else{
+//                linear_momentum_relative_error = linear_momentum_error;
+//            }
 //
-////            Eigen::MatrixXd x;
-////            solve_constrained_least_squares(first_moment_A, first_moment_b, hostress_constraint_matrix, hostress_constraint_rhs, x, true);
-            first_moment_error = (first_moment_A*x - first_moment_b).norm();
-            first_moment_relative_error = first_moment_error/std::max((first_moment_A*x).norm(), first_moment_b.norm()+1e-9);
-            double T1 = (first_moment_A*x).norm();
-            double T2 = first_moment_b.norm();
-            if ((T1 > 1e-9) && (T2 > 1e-9)){
-                first_moment_relative_error = first_moment_error/std::max(T1, T2);
-            }
-            else{
-                first_moment_relative_error = first_moment_error;
-            }
-    
-            couple_stress.resize(cauchy_stress.size());
-            unsigned int nhostress = first_moment_A.cols()/cauchy_stress.size();
-            for (unsigned int gp=0; gp<couple_stress.size(); gp++){
-                couple_stress[gp].resize(nhostress);
-                for (unsigned int i=0; i<nhostress; i++){
-                    couple_stress[gp][i] = x(nhostress*gp + i, 0);
-                }
-            }
-        }
-//        assert(1==0);
+//            cauchy_stress.resize(symmetric_microstress.size());
+//            unsigned int nstress = x.size()/cauchy_stress.size();
+//            for (unsigned int gp=0; gp<cauchy_stress.size(); gp++){
+//                cauchy_stress[gp].resize(nstress);
+//                for (unsigned int i=0; i<nstress; i++){
+//                    cauchy_stress[gp][i] = x(gp*nstress + i);
+//                }
+//            }
 //
-//        Eigen::MatrixXd w;
-//        solve_constrained_least_squares(first_moment_A, first_moment_b, weight_constraints, linear_momentum_d, w);
-//        std::vector< double > weights(w.data(), w.data() + w.size());
+//        }
 //
-//        process_weight_vector_to_results(weights, vertex_hostress, couple_stress);
+//        return 0;
+//    }
 
-        return 0;
-    }
+//    int MicromorphicFilter::compute_couple_stress(){
+//        /*!
+//         * Compute the couple stress using a constrained least squares technique
+//         */
+//
+//        if (use_weights){
+//            Eigen::MatrixXd w;
+//            solve_constrained_least_squares(first_moment_A, first_moment_b, weight_constraints, weight_d, w, false);
+////            std::cout << "w:\n" << w << "\n";
+////            std::cout << "first_moment_A*w:\n" << first_moment_A*w << "\n";
+////            std::cout << "first_moment_A*w - first_moment_b:\n" << first_moment_A*w - first_moment_b << "\n";
+//            first_moment_error = (first_moment_A*w - first_moment_b).norm();
+//            first_moment_relative_error = first_moment_error/std::max(std::max((first_moment_A*w).norm(), first_moment_b.norm()), 1.);
+//            std::vector< double > weights(w.data(), w.data() + w.size());
+//            process_weight_vector_to_results(weights, vertex_hostress, couple_stress);
+//        }
+//        else{
+//            std::vector< Eigen::MatrixXd > solutions;
+//            solve_row_deficient_divergence_matrix(first_moment_A, first_moment_b, first_moment_A.rows()/9, solutions);
+//
+//            //Set the higher-order stress as the mean value
+//            Eigen::MatrixXd x = Eigen::MatrixXd::Zero(solutions[0].rows(), 1);
+//            for (unsigned int n=0; n<solutions.size(); n++){
+//                x += solutions[n];
+//            }
+//            x /= solutions.size();
+//
+//            couple_stress_variation.resize(symmetric_microstress.size());
+//            for (unsigned int gp=0; gp<couple_stress_variation.size(); gp++){
+//                couple_stress_variation[gp].resize(solutions.size());
+//                for (unsigned int s=0; s<solutions.size(); s++){
+//                    couple_stress_variation[gp][s].resize(solutions[s].size()/couple_stress_variation.size());
+//                    for (unsigned int i=0; i<couple_stress_variation[gp][s].size(); i++){
+//                        couple_stress_variation[gp][s][i] = solutions[s](gp*couple_stress_variation[gp][s].size() + i);
+//                    }
+//                }
+//            }
+//
+////            unsigned int Arows, Acols;
+////            Arows = first_moment_A.rows();
+////            Acols = first_moment_A.cols();
+////            Eigen::MatrixXd M = Eigen::MatrixXd::Zero(Arows+Acols, Arows+Acols);
+////            M.block(0, 0, Arows, Acols) = first_moment_A;
+////            M.block(0, Acols, Arows, Arows) = Eigen::MatrixXd::Identity(Arows, Arows);
+////            M.block(Arows, 0, Acols, Acols) = Eigen::MatrixXd::Identity(Acols, Acols);
+////            M.block(Arows, Acols, Acols, Arows) = first_moment_A.transpose();
+////
+////            Eigen::MatrixXd RHS = Eigen::MatrixXd::Zero(Arows+Acols, 1);
+////            RHS.block(0, 0, Arows, 1) = first_moment_b;
+////            Eigen::MatrixXd solution = M.colPivHouseholderQr().solve(RHS);
+////            std::cout << "M rank: " << M.fullPivLu().rank() << "\n";
+////            std::cout << "M size: " << M.rows() << ", " << M.cols() << "\n";
+////            std::cout << "solution error: " << (M*solution - RHS).norm() << "\n";
+////            Eigen::MatrixXd x = solution.block(0, 0, Acols, 1);
+////            Eigen::MatrixXd mu = solution.block(Acols, 0, Arows, 1);
+////            std::cout << "multiplier error: " << (first_moment_A.transpose()*mu - x).norm() << "\n";
+////            std::cout << "x error: " << (first_moment_A*x - first_moment_b).norm() << "\n";
+//////            std::ofstream tmpfile;
+//////            tmpfile.open("Mdata.txt");
+//////            tmpfile << M;
+//////            tmpfile.flush();
+//////            tmpfile.close();
+//////            assert(1==0);
+////            
+////
+//////            Eigen::MatrixXd x;
+//////            solve_constrained_least_squares(first_moment_A, first_moment_b, hostress_constraint_matrix, hostress_constraint_rhs, x, true);
+//            first_moment_error = (first_moment_A*x - first_moment_b).norm();
+//            first_moment_relative_error = first_moment_error/std::max((first_moment_A*x).norm(), first_moment_b.norm()+1e-9);
+//            double T1 = (first_moment_A*x).norm();
+//            double T2 = first_moment_b.norm();
+//            if ((T1 > 1e-9) && (T2 > 1e-9)){
+//                first_moment_relative_error = first_moment_error/std::max(T1, T2);
+//            }
+//            else{
+//                first_moment_relative_error = first_moment_error;
+//            }
+//    
+//            couple_stress.resize(cauchy_stress.size());
+//            unsigned int nhostress = first_moment_A.cols()/cauchy_stress.size();
+//            for (unsigned int gp=0; gp<couple_stress.size(); gp++){
+//                couple_stress[gp].resize(nhostress);
+//                for (unsigned int i=0; i<nhostress; i++){
+//                    couple_stress[gp][i] = x(nhostress*gp + i, 0);
+//                }
+//            }
+//        }
+////        assert(1==0);
+////
+////        Eigen::MatrixXd w;
+////        solve_constrained_least_squares(first_moment_A, first_moment_b, weight_constraints, linear_momentum_d, w);
+////        std::vector< double > weights(w.data(), w.data() + w.size());
+////
+////        process_weight_vector_to_results(weights, vertex_hostress, couple_stress);
+//
+//        return 0;
+//    }
 
     int MicromorphicFilter::compute_volume(){
         /*!
@@ -3478,12 +3395,12 @@ namespace overlap{
         return 0;
     }
 
-    int MicromorphicFilter::compute_surface_area_normal(){
+    int MicromorphicFilter::compute_surface_information(const std::map< unsigned int, double > &micro_density){
         /*!
-         * Compute the surface areas and average normals of each of the filter's gauss domains
+         * Compute the surface areas, centroids, and average normals of each of the filter's gauss domains
          */
 
-        overlap::compute_surface_area_normal(material_weights, surface_area, surface_normal);
+        overlap::compute_surface_information(material_weights, micro_density, surface_area, surface_normal, surface_centroid);
         return 0;
     }
 
@@ -3532,16 +3449,6 @@ namespace overlap{
 
 
         return 0;
-    }
-
-    int MicromorphicFilter::computeLengthscale(){
-        /*!
-         * Compute the lengthscale of the gauss domains based on a surface 
-         * integral of xi_i xi_i.
-         */
-
-        overlap::computeLengthscale(material_weights, center_of_mass, lengthscale);
-        return 1;
     }
 
     int MicromorphicFilter::compute_symmetric_microstress(const std::map< unsigned int, std::vector< double > > &micro_cauchy){
@@ -3633,7 +3540,7 @@ namespace overlap{
          *     assumed they are symmetric and stored in the form (s11, s22, s33, s23, s13, s12)
          */
 
-        perform_symmetric_tensor_surface_couple_traction_integration(micro_cauchy, material_weights, center_of_mass, couple_traction);
+        perform_symmetric_tensor_surface_couple_traction_integration(micro_cauchy, material_weights, surface_centroid, couple_traction);
 //        std::cout << "area weighted couple_traction:\n";
 //        for (unsigned int gp=0; gp<couple_traction.size(); gp++){
 //            std::cout << " gp: " << gp << "\n";
@@ -3654,9 +3561,13 @@ namespace overlap{
                 for (unsigned int i=0; i<face->second.size(); i++){
                     face->second[i] /= area->second;
                 }
+//                std::cout << " " << area->second << "\n";
 //                std::cout << " " << face->first << ": "; print_vector(face->second);
             }
+
         }
+
+//        assert(1==0);
 
         return 0;
     }
@@ -3713,25 +3624,25 @@ namespace overlap{
          return 0;
     }
 
-    int MicromorphicFilter::construct_linear_momentum_least_squares_matrix(){
-        /*!
-         * Construct the least_squares matrix for the balance of linear momentum.
-         */
+//    int MicromorphicFilter::construct_linear_momentum_least_squares_matrix(){
+//        /*!
+//         * Construct the least_squares matrix for the balance of linear momentum.
+//         */
+//
+//        overlap::construct_linear_momentum_least_squares_matrix(com_shapefunction_gradients, volume, vertex_cauchy,
+//                                                                linear_momentum_A, use_weights);
+//        return 0;
+//    }
 
-        overlap::construct_linear_momentum_least_squares_matrix(com_shapefunction_gradients, volume, vertex_cauchy,
-                                                                linear_momentum_A, use_weights);
-        return 0;
-    }
-
-    int MicromorphicFilter::construct_first_moment_least_squares_matrix(){
-        /*!
-         * Construct the least squares matrix for the balance of the first moment of momentum.
-         */
-
-        overlap::construct_first_moment_least_squares_matrix(com_shapefunction_gradients, volume, vertex_hostress,
-                                                             first_moment_A, use_weights);
-        return 0;
-    }
+//    int MicromorphicFilter::construct_first_moment_least_squares_matrix(){
+//        /*!
+//         * Construct the least squares matrix for the balance of the first moment of momentum.
+//         */
+//
+//        overlap::construct_first_moment_least_squares_matrix(com_shapefunction_gradients, volume, vertex_hostress,
+//                                                             first_moment_A, use_weights);
+//        return 0;
+//    }
 
     int MicromorphicFilter::compute_face_centroid_shapefunctions(){
         /*!
@@ -4268,6 +4179,7 @@ namespace overlap{
         volume.clear();
         surface_area.clear();
         surface_normal.clear();
+        surface_centroid.clear();
         density.clear();
         local_center_of_mass.clear();
         center_of_mass.clear();
@@ -4619,26 +4531,6 @@ namespace overlap{
         return 0;
     }
 
-    std::vector< double > subtract(const std::vector< double > &a, const std::vector< double > &b){
-        /*!
-         * Subtract two vectors c = a - b
-         * 
-         * :param std::vector< double > &a: The leading vector
-         * :param std::vector< double > &b: The tailing vector
-         */
-        
-        if (a.size() != b.size()){
-            std::cerr << "Error: vectors of different sizes cannot be subtracted.\n";
-            assert(1==0);
-        }
-
-        std::vector< double > c(a.size());
-        for (unsigned int i=0; i<a.size(); i++){
-            c[i] = a[i] - b[i];
-        }
-        return c;
-    }
-
     bool point_on_surface(const std::vector< double > &p, const std::vector< double > &n, const std::vector< double > &a){
         /*!
          * Determine whether the point p is on the surface defined by the normal n and the point on the surface a.
@@ -4648,9 +4540,9 @@ namespace overlap{
          * :param const std::vector< double > &a: A point on the surface
          */
         
-        std::vector< double > d = subtract(p, a);
-        double distance = dot(d, n);
-        return fuzzy_equals(distance, 0);
+        std::vector< double > d = p - a;
+        double distance = vectorTools::dot(d, n);
+        return vectorTools::fuzzyEquals(distance, 0.);
     }
 
 //    void construct_cauchy_least_squares(const std::vector< std::map< unsigned int, std::vector< double > > > &surface_normals,
@@ -4734,7 +4626,7 @@ namespace overlap{
         /*!
          * Construct the surface force acting on the nodes of the finite element
          * 
-         * :param const std::vector< std::map< unsigned int, double > > &face_shapefunctions: The shapefunctions at the 
+         * :param const std::vector< std::map< unsigned int, std::vector< double > > > &face_shapefunctions: The shapefunctions at the 
          *     gauss domain centroids.
          * :param const std::vector< std::map< unsigned int, std::vector< double > > > &face_tractions: The tractions on the 
          *     gauss domain faces.
@@ -4771,7 +4663,7 @@ namespace overlap{
         surface_external_force = std::vector< double >(dim*face_shapefunctions[0].begin()->second.size(), 0);
 
         //Loop over the gauss points
-        for (unsigned int gp=0; gp<face_shapefunctions.size(); gp++){
+        for (unsigned int gp=0; gp<ngpts; gp++){
             //Loop over the faces
             for (auto face=face_shapefunctions[gp].begin(); face!=face_shapefunctions[gp].end(); face++){
                 //check if the face is an external face
@@ -4797,7 +4689,7 @@ namespace overlap{
                     //Loop over the traction's indices
                     for (unsigned int i=0; i<traction->second.size(); i++){
                         //N_node(x)*traction(x)*area
-                        surface_external_force[dim*n + i] += face->second[n]*traction->second[i]*area->second;
+                        surface_external_force[dim*n + i] += face->second[n] * traction->second[i] * area->second;
                     }
                 }
             }
@@ -4851,7 +4743,7 @@ namespace overlap{
         surface_external_couple = std::vector< double >(ncouple*face_shapefunctions[0].begin()->second.size(), 0);
 
         //Loop over the gauss points
-        for (unsigned int gp=0; gp<face_shapefunctions.size(); gp++){
+        for (unsigned int gp=0; gp<ngpts; gp++){
             //Loop over the faces
 //            std::cout << "gp: " << gp << "\n";
             for (auto face=face_shapefunctions[gp].begin(); face!=face_shapefunctions[gp].end(); face++){
@@ -4883,11 +4775,13 @@ namespace overlap{
 
                     //Assign the couple's indices
                     for (unsigned int i=0; i<ncouple; i++){
-                        surface_external_couple[ncouple*n + i] += face->second[n]*couple->second[i]*area->second;
+                        surface_external_couple[ncouple*n + i] += face->second[n] * couple->second[i] * area->second;
                     }
                 }
             }
         }
+//        std::cout << "surface_external_couple:\n";
+//        vectorTools::print(surface_external_couple);
 //        assert(1==0);
         return;
     }
@@ -4897,7 +4791,8 @@ namespace overlap{
                                                    const std::vector< double > &volume,
                                                    std::vector< double > &symm_cauchy_couple){
         /*!
-         * Compute the couple resulting from the difference between the Cauchy and symmetric microstress
+         * Compute the couple resulting from the difference between the transposed Cauchy and symmetric microstress
+         * i.e. C_ij = N * ( \sigma_{ji} - s_{ji} )
          * 
          * :param const vecOfvec &com_shapefunctions: The shapefunction values at the centers of mass
          * :param const vecOfvec &symmetric_microstress: The values of the symmetric micro-stress at the gauss points
@@ -4959,178 +4854,178 @@ namespace overlap{
 
     }
 
-    void construct_linear_momentum_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
-                                                        const std::vector< FloatType > &volume,
-                                                        const std::vector< vecOfvec > &vertex_cauchy_stress,
-                                                        Eigen::MatrixXd &C, bool use_weights){
-        /*!
-         * Construct the linear momentum least squares matrix i.e. the divergence of the Cauchy stress
-         * 
-         * :param const std::vector< vecOfvec > &cg_shapefunction_gradients: The global gradients of the shapefunctions 
-         *     at the gauss points.
-         * :param const std::vector< FloatType > &volume: The volume of the gauss domains
-         * :param const std::vector< vecOfvec > &vertex_cauchy_stress: The cauchy stress at the vertices of the gauss domains
-         * :param Eigen::MatrixXd &C: The constraint matrix.
-         * :param bool use_weights: A flag to indicate whether the formulation should use the weights or just the cauchy stresses
-         *     directly.
-         */
-        
-        //Assume the problem is 3D
-        unsigned int dim=3;
-        unsigned int nstress=9;
+//    void construct_linear_momentum_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+//                                                        const std::vector< FloatType > &volume,
+//                                                        const std::vector< vecOfvec > &vertex_cauchy_stress,
+//                                                        Eigen::MatrixXd &C, bool use_weights){
+//        /*!
+//         * Construct the linear momentum least squares matrix i.e. the divergence of the Cauchy stress
+//         * 
+//         * :param const std::vector< vecOfvec > &cg_shapefunction_gradients: The global gradients of the shapefunctions 
+//         *     at the gauss points.
+//         * :param const std::vector< FloatType > &volume: The volume of the gauss domains
+//         * :param const std::vector< vecOfvec > &vertex_cauchy_stress: The cauchy stress at the vertices of the gauss domains
+//         * :param Eigen::MatrixXd &C: The constraint matrix.
+//         * :param bool use_weights: A flag to indicate whether the formulation should use the weights or just the cauchy stresses
+//         *     directly.
+//         */
+//        
+//        //Assume the problem is 3D
+//        unsigned int dim=3;
+//        unsigned int nstress=9;
+//
+//        //Make sure at least one gauss domain is defined
+//        unsigned int ngpts = cg_shapefunction_gradients.size();
+//        if (ngpts == 0){
+//            std::cerr << "Error: At least one Gauss point must be defined.\n";
+//            assert(1==0);
+//        }
+//
+//        if (ngpts != volume.size()){
+//            std::cerr << "Error: The number of shapefunction gradients and volumes is not equal.\n";
+//            std::cerr << "       cg_shapefunction_gradients.size(): " << ngpts << "\n";
+//            std::cerr << "       volume.size(): " << volume.size() << "\n";
+//            assert(1==0);
+//        }
+//
+//        //Initialize the C matrix
+//        C = Eigen::MatrixXd::Zero(dim*cg_shapefunction_gradients[0].size(), nstress*cg_shapefunction_gradients.size());
+//
+//        //Loop over the gauss domains
+//        for (unsigned int gp=0; gp<cg_shapefunction_gradients.size(); gp++){
+//            //Loop over the nodes
+//            for (unsigned int n=0; n<cg_shapefunction_gradients[gp].size(); n++){
+//                C(dim*n+0, nstress*gp + 0) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(dim*n+0, nstress*gp + 7) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(dim*n+0, nstress*gp + 8) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(dim*n+1, nstress*gp + 1) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(dim*n+1, nstress*gp + 5) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                C(dim*n+1, nstress*gp + 6) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(dim*n+2, nstress*gp + 2) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                C(dim*n+2, nstress*gp + 3) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                C(dim*n+2, nstress*gp + 4) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//            }
+//
+//        }
+//
+//        if (use_weights){
+//
+//            //Initialize the C2 matrix
+//            unsigned int a2cols = 0;
+//            for (unsigned int gp=0; gp<vertex_cauchy_stress.size(); gp++){
+//                a2cols += vertex_cauchy_stress[gp].size();
+//            }
+//            Eigen::MatrixXd C2 = Eigen::MatrixXd::Zero(C.cols(), a2cols);
+//    
+//    
+//            //Construct C2
+//            unsigned int row0, col0;
+//            row0 = col0 = 0;
+//            for (unsigned int gp=0; gp<vertex_cauchy_stress.size(); gp++){
+//    
+//                for (unsigned int v=0; v<vertex_cauchy_stress[gp].size(); v++){
+//    
+//                    for (unsigned int i=0; i<vertex_cauchy_stress[gp][v].size(); i++){
+//                        C2(row0+i, col0+v) = vertex_cauchy_stress[gp][v][i];
+//                    }
+//    
+//                }
+//    
+//                row0 += nstress;
+//                col0 += vertex_cauchy_stress[gp].size(); //Increment col0
+//    
+//            }
+//    
+//            //Incorporate the C2 matrix into the C matrix
+//            C *= C2;
+//        }
+//
+//        return;
+//    }
 
-        //Make sure at least one gauss domain is defined
-        unsigned int ngpts = cg_shapefunction_gradients.size();
-        if (ngpts == 0){
-            std::cerr << "Error: At least one Gauss point must be defined.\n";
-            assert(1==0);
-        }
-
-        if (ngpts != volume.size()){
-            std::cerr << "Error: The number of shapefunction gradients and volumes is not equal.\n";
-            std::cerr << "       cg_shapefunction_gradients.size(): " << ngpts << "\n";
-            std::cerr << "       volume.size(): " << volume.size() << "\n";
-            assert(1==0);
-        }
-
-        //Initialize the C matrix
-        C = Eigen::MatrixXd::Zero(dim*cg_shapefunction_gradients[0].size(), nstress*cg_shapefunction_gradients.size());
-
-        //Loop over the gauss domains
-        for (unsigned int gp=0; gp<cg_shapefunction_gradients.size(); gp++){
-            //Loop over the nodes
-            for (unsigned int n=0; n<cg_shapefunction_gradients[gp].size(); n++){
-                C(dim*n+0, nstress*gp + 0) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(dim*n+0, nstress*gp + 7) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(dim*n+0, nstress*gp + 8) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(dim*n+1, nstress*gp + 1) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(dim*n+1, nstress*gp + 5) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                C(dim*n+1, nstress*gp + 6) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(dim*n+2, nstress*gp + 2) += cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                C(dim*n+2, nstress*gp + 3) += cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                C(dim*n+2, nstress*gp + 4) += cg_shapefunction_gradients[gp][n][0]*volume[gp];
-            }
-
-        }
-
-        if (use_weights){
-
-            //Initialize the C2 matrix
-            unsigned int a2cols = 0;
-            for (unsigned int gp=0; gp<vertex_cauchy_stress.size(); gp++){
-                a2cols += vertex_cauchy_stress[gp].size();
-            }
-            Eigen::MatrixXd C2 = Eigen::MatrixXd::Zero(C.cols(), a2cols);
-    
-    
-            //Construct C2
-            unsigned int row0, col0;
-            row0 = col0 = 0;
-            for (unsigned int gp=0; gp<vertex_cauchy_stress.size(); gp++){
-    
-                for (unsigned int v=0; v<vertex_cauchy_stress[gp].size(); v++){
-    
-                    for (unsigned int i=0; i<vertex_cauchy_stress[gp][v].size(); i++){
-                        C2(row0+i, col0+v) = vertex_cauchy_stress[gp][v][i];
-                    }
-    
-                }
-    
-                row0 += nstress;
-                col0 += vertex_cauchy_stress[gp].size(); //Increment col0
-    
-            }
-    
-            //Incorporate the C2 matrix into the C matrix
-            C *= C2;
-        }
-
-        return;
-    }
-
-    void construct_first_moment_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
-                                                     const std::vector< FloatType > &volume,
-                                                     const std::vector< vecOfvec > &vertex_hostress,
-                                                     Eigen::MatrixXd &C, bool use_weights){
-        /*!
-         * Construct the first moment of momentum least squares matrix i.e. the divergence of the couple stress
-         * 
-         * :param const std::vector< vecOfvec > &cg_shapefunction_gradients: The global gradients of the shapefunctions 
-         *     at the gauss points.
-         * :param const std::vector< FloatType > &volume: The volume of the gauss domains
-         * :param const std::vector< vecOfvec > &vertex_hostress: The higher order stress at the gauss domain vertices
-         * :param Eigen::MatrixXd &C: The constraint matrix.
-         * :param bool use_weights: Boolean to indicate whether the weighted formulation should be used or not.
-         */
-        
-        //Assume the problem is 3D
-        unsigned int ncouple=9;
-        unsigned int nstress=27;
-
-        //Make sure at least one gauss domain is defined
-        unsigned int ngpts = cg_shapefunction_gradients.size();
-        if (ngpts == 0){
-            std::cerr << "Error: At least one Gauss point must be defined.\n";
-            assert(1==0);
-        }
-
-        if (ngpts != volume.size()){
-            std::cerr << "Error: The number of shapefunction gradients and volumes is not equal.\n";
-            std::cerr << "       cg_shapefunction_gradients.size(): " << ngpts << "\n";
-            std::cerr << "       volume.size(): " << volume.size() << "\n";
-            assert(1==0);
-        }
-
-        //Initialize the C matrix
-        C = Eigen::MatrixXd::Zero(ncouple*cg_shapefunction_gradients[0].size(), nstress*cg_shapefunction_gradients.size());
-
-
-        //Loop over the gauss domains
-        for (unsigned int gp=0; gp<ngpts; gp++){
-            //Loop over the nodes
-            for (unsigned int n=0; n<cg_shapefunction_gradients[gp].size(); n++){
-
-                for (unsigned int i=0; i<ncouple; i++){
-                    C(ncouple*n + i, nstress*gp + i +  0) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
-                    C(ncouple*n + i, nstress*gp + i +  9) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
-                    C(ncouple*n + i, nstress*gp + i + 18) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
-                }
-            }
-        }
-
-        if (use_weights){
-
-            //Initialize the C2 matrix
-            unsigned int a2cols = 0;
-            for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
-                a2cols += vertex_hostress[gp].size();
-            }
-            Eigen::MatrixXd C2 = Eigen::MatrixXd::Zero(C.cols(), a2cols);
-
-            //Construct C2
-            unsigned int row0, col0;
-            row0 = col0 = 0;
-            for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
-    
-                for (unsigned int v=0; v<vertex_hostress[gp].size(); v++){
-    
-                    for (unsigned int i=0; i<vertex_hostress[gp][v].size(); i++){
-                        C2(row0+i, col0+v) = vertex_hostress[gp][v][i];
-                    }
-    
-                }
-    
-                row0 += nstress;
-                col0 += vertex_hostress[gp].size(); //Increment col0
-    
-            }
-    
-            //Incorporate the C2 matrix into the C matrix
-            C *= C2;
-        }
-
-        return;
-    }
+//    void construct_first_moment_least_squares_matrix(const std::vector< vecOfvec > &cg_shapefunction_gradients,
+//                                                     const std::vector< FloatType > &volume,
+//                                                     const std::vector< vecOfvec > &vertex_hostress,
+//                                                     Eigen::MatrixXd &C, bool use_weights){
+//        /*!
+//         * Construct the first moment of momentum least squares matrix i.e. the divergence of the couple stress
+//         * 
+//         * :param const std::vector< vecOfvec > &cg_shapefunction_gradients: The global gradients of the shapefunctions 
+//         *     at the gauss points.
+//         * :param const std::vector< FloatType > &volume: The volume of the gauss domains
+//         * :param const std::vector< vecOfvec > &vertex_hostress: The higher order stress at the gauss domain vertices
+//         * :param Eigen::MatrixXd &C: The constraint matrix.
+//         * :param bool use_weights: Boolean to indicate whether the weighted formulation should be used or not.
+//         */
+//        
+//        //Assume the problem is 3D
+//        unsigned int ncouple=9;
+//        unsigned int nstress=27;
+//
+//        //Make sure at least one gauss domain is defined
+//        unsigned int ngpts = cg_shapefunction_gradients.size();
+//        if (ngpts == 0){
+//            std::cerr << "Error: At least one Gauss point must be defined.\n";
+//            assert(1==0);
+//        }
+//
+//        if (ngpts != volume.size()){
+//            std::cerr << "Error: The number of shapefunction gradients and volumes is not equal.\n";
+//            std::cerr << "       cg_shapefunction_gradients.size(): " << ngpts << "\n";
+//            std::cerr << "       volume.size(): " << volume.size() << "\n";
+//            assert(1==0);
+//        }
+//
+//        //Initialize the C matrix
+//        C = Eigen::MatrixXd::Zero(ncouple*cg_shapefunction_gradients[0].size(), nstress*cg_shapefunction_gradients.size());
+//
+//
+//        //Loop over the gauss domains
+//        for (unsigned int gp=0; gp<ngpts; gp++){
+//            //Loop over the nodes
+//            for (unsigned int n=0; n<cg_shapefunction_gradients[gp].size(); n++){
+//
+//                for (unsigned int i=0; i<ncouple; i++){
+//                    C(ncouple*n + i, nstress*gp + i +  0) = cg_shapefunction_gradients[gp][n][0]*volume[gp];
+//                    C(ncouple*n + i, nstress*gp + i +  9) = cg_shapefunction_gradients[gp][n][1]*volume[gp];
+//                    C(ncouple*n + i, nstress*gp + i + 18) = cg_shapefunction_gradients[gp][n][2]*volume[gp];
+//                }
+//            }
+//        }
+//
+//        if (use_weights){
+//
+//            //Initialize the C2 matrix
+//            unsigned int a2cols = 0;
+//            for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
+//                a2cols += vertex_hostress[gp].size();
+//            }
+//            Eigen::MatrixXd C2 = Eigen::MatrixXd::Zero(C.cols(), a2cols);
+//
+//            //Construct C2
+//            unsigned int row0, col0;
+//            row0 = col0 = 0;
+//            for (unsigned int gp=0; gp<vertex_hostress.size(); gp++){
+//    
+//                for (unsigned int v=0; v<vertex_hostress[gp].size(); v++){
+//    
+//                    for (unsigned int i=0; i<vertex_hostress[gp][v].size(); i++){
+//                        C2(row0+i, col0+v) = vertex_hostress[gp][v][i];
+//                    }
+//    
+//                }
+//    
+//                row0 += nstress;
+//                col0 += vertex_hostress[gp].size(); //Increment col0
+//    
+//            }
+//    
+//            //Incorporate the C2 matrix into the C matrix
+//            C *= C2;
+//        }
+//
+//        return;
+//    }
 
     void solve_constrained_least_squares(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
                                          const Eigen::MatrixXd &C, const Eigen::MatrixXd &d,
@@ -5196,109 +5091,109 @@ namespace overlap{
         return;
     }
 
-    void construct_linear_momentum_b_vector(const unsigned int nconstraints,
-                                            const std::vector< FloatType > &surface_external_force,
-                                            const std::vector< FloatType > &body_external_force,
-                                            const std::vector< FloatType > &kinetic_force,
-                                            Eigen::MatrixXd &d){
-        /*!
-         * Construct the b vector for contrained least squares given the equation
-         * \int_{\Omega} N_{,j} sigma_{ji} dv = \int_{\partial \Omega} N n_{j} \sigma_{ji} da - \int_{\Omega} \rho\left(b_i - a_i\right) dv\\
-         * :param const unsigned int nconstraints: The number of constraint equations.
-         * :param const std::vector< FloatType > &surface_external_force: The external tractions acting on the body.
-         * :param const std::vector< FloatType > &body_external_force: The body force external forces acting on the body.
-         * :param const std::vector< FloatType > &kinetic_force: The kinetic force acting on the body.
-         * :param Eigen::MatrixXd &d: The b vector to be constructed.
-         */
-
-        d = Eigen::MatrixXd::Zero(nconstraints, 1);
-
-        if (surface_external_force.size() != nconstraints){
-            std::cout << "Error: the external tractions on the body and the constraint matrix must be defined.\n";
-            assert(1==0);
-        }
-
-        //Add the surface external force to d
-        d += Eigen::Map< const EigVec >(surface_external_force.data(), nconstraints, 1);
-
-        //Add the body external force to d
-        if (body_external_force.size() == nconstraints){
-            d += Eigen::Map< const EigVec >(body_external_force.data(), nconstraints, 1);
-        }
-        else if (body_external_force.size() > 0){
-            std::cout << "Error: The external body force vector is not the same size as the surface traction vector.\n";
-            assert(1==0);
-        }
-
-        //Subtract the kinetic force from d
-        if (kinetic_force.size() == nconstraints){
-            d -= Eigen::Map< const EigVec>(kinetic_force.data(), nconstraints, 1);
-        }
-        else if (kinetic_force.size() > 0){
-            std::cout << "Error: The kinetic force vector is not the same size as the surface traction vector.\n";
-            assert(1==0);
-        }
-
-        return;
-    }
-
-    void construct_first_moment_b_vector(const unsigned int nconstraints,
-                                         const std::vector< FloatType > &surface_external_couple,
-                                         const std::vector< FloatType > &symm_cauchy_couple,
-                                         const std::vector< FloatType > &body_external_couple,
-                                         const std::vector< FloatType > &kinetic_couple,
-                                         Eigen::MatrixXd &d){
-        /*!
-         * Construct the d vector for contrained least squares given the equation
-         * \int_{\Omega} N_{,k} m_{kij} dv = \int_{\partial \Omega} N n_{k} m_{kij} da + \int_{Omega} N (\sigma_{ji} - s_{ji}\right) dv + \int_{\Omega} \rho\left(l_{ij} - \omega_{ij}\right) dv\\
-         * :param const unsigned int nconstraints: The number of constraint equations.
-         * :param const std::vector< FloatType > &surface_external_couple: The external couples acting on the body.
-         * :param const std::vector< FloatType > &symm_cauchy_couple: The couple resulting from the difference between the Cauchy
-         *     and symmetric microstress.
-         * :param const std::vector< FloatType > &body_external_couple: The body couple external forces acting on the body.
-         * :param const std::vector< FloatType > &kinetic_couple: The kinetic couple acting on the body.
-         * :param Eigen::MatrixXd &d: The b vector to be constructed.
-         */
-
-        d = Eigen::MatrixXd::Zero(nconstraints, 1);
-
-        if (surface_external_couple.size() != nconstraints){
-            std::cout << "Error: the external couples on the body and the constraint matrix must be defined.\n";
-            assert(1==0);
-        }
-        if (symm_cauchy_couple.size() != nconstraints){
-            std::cout << "Error: the cauchy - symmetric microstress couples on the body and the constraint matrix must be defined.\n";
-            assert(1==0);
-        }
-
-        //Add the surface external force to d
-        d += Eigen::Map< const EigVec >(surface_external_couple.data(), nconstraints, 1);
-
-        //Add the cauchy-symmetric microstress couple
-        d += Eigen::Map< const EigVec >(symm_cauchy_couple.data(), nconstraints, 1);
-
-        //Add the body external couple to d
-        if (body_external_couple.size() == nconstraints){
-            assert(1==2);
-            d += Eigen::Map< const EigVec >(body_external_couple.data(), nconstraints, 1);
-        }
-        else if (body_external_couple.size() > 0){
-            std::cout << "Error: The external body couple vector is not the same size as the surface external couple vector.\n";
-            assert(1==0);
-        }
-
-        //Subtract the kinetic couple from d
-        if (kinetic_couple.size() == nconstraints){
-            assert(2==3);
-            d -= Eigen::Map< const EigVec>(kinetic_couple.data(), nconstraints, 1);
-        }
-        else if (kinetic_couple.size() > 0){
-            std::cout << "Error: The kinetic couple vector is not the same size as the surface external couple vector.\n";
-            assert(1==0);
-        }
-
-        return;
-    }
+//    void construct_linear_momentum_b_vector(const unsigned int nconstraints,
+//                                            const std::vector< FloatType > &surface_external_force,
+//                                            const std::vector< FloatType > &body_external_force,
+//                                            const std::vector< FloatType > &kinetic_force,
+//                                            Eigen::MatrixXd &d){
+//        /*!
+//         * Construct the b vector for contrained least squares given the equation
+//         * \int_{\Omega} N_{,j} sigma_{ji} dv = \int_{\partial \Omega} N n_{j} \sigma_{ji} da - \int_{\Omega} \rho\left(b_i - a_i\right) dv
+//         * :param const unsigned int nconstraints: The number of constraint equations.
+//         * :param const std::vector< FloatType > &surface_external_force: The external tractions acting on the body.
+//         * :param const std::vector< FloatType > &body_external_force: The body force external forces acting on the body.
+//         * :param const std::vector< FloatType > &kinetic_force: The kinetic force acting on the body.
+//         * :param Eigen::MatrixXd &d: The b vector to be constructed.
+//         */
+//
+//        d = Eigen::MatrixXd::Zero(nconstraints, 1);
+//
+//        if (surface_external_force.size() != nconstraints){
+//            std::cout << "Error: the external tractions on the body and the constraint matrix must be defined.\n";
+//            assert(1==0);
+//        }
+//
+//        //Add the surface external force to d
+//        d += Eigen::Map< const EigVec >(surface_external_force.data(), nconstraints, 1);
+//
+//        //Add the body external force to d
+//        if (body_external_force.size() == nconstraints){
+//            d += Eigen::Map< const EigVec >(body_external_force.data(), nconstraints, 1);
+//        }
+//        else if (body_external_force.size() > 0){
+//            std::cout << "Error: The external body force vector is not the same size as the surface traction vector.\n";
+//            assert(1==0);
+//        }
+//
+//        //Subtract the kinetic force from d
+//        if (kinetic_force.size() == nconstraints){
+//            d -= Eigen::Map< const EigVec>(kinetic_force.data(), nconstraints, 1);
+//        }
+//        else if (kinetic_force.size() > 0){
+//            std::cout << "Error: The kinetic force vector is not the same size as the surface traction vector.\n";
+//            assert(1==0);
+//        }
+//
+//        return;
+//    }
+//
+//    void construct_first_moment_b_vector(const unsigned int nconstraints,
+//                                         const std::vector< FloatType > &surface_external_couple,
+//                                         const std::vector< FloatType > &symm_cauchy_couple,
+//                                         const std::vector< FloatType > &body_external_couple,
+//                                         const std::vector< FloatType > &kinetic_couple,
+//                                         Eigen::MatrixXd &d){
+//        /*!
+//         * Construct the d vector for contrained least squares given the equation
+//         * \int_{\Omega} N_{,k} m_{kij} dv = \int_{\partial \Omega} N n_{k} m_{kij} da + \int_{Omega} N (\sigma_{ji} - s_{ji}\right) dv + \int_{\Omega} \rho\left(l_{ij} - \omega_{ij}\right) dv
+//         * :param const unsigned int nconstraints: The number of constraint equations.
+//         * :param const std::vector< FloatType > &surface_external_couple: The external couples acting on the body.
+//         * :param const std::vector< FloatType > &symm_cauchy_couple: The couple resulting from the difference between the Cauchy
+//         *     and symmetric microstress.
+//         * :param const std::vector< FloatType > &body_external_couple: The body couple external forces acting on the body.
+//         * :param const std::vector< FloatType > &kinetic_couple: The kinetic couple acting on the body.
+//         * :param Eigen::MatrixXd &d: The b vector to be constructed.
+//         */
+//
+//        d = Eigen::MatrixXd::Zero(nconstraints, 1);
+//
+//        if (surface_external_couple.size() != nconstraints){
+//            std::cout << "Error: the external couples on the body and the constraint matrix must be defined.\n";
+//            assert(1==0);
+//        }
+//        if (symm_cauchy_couple.size() != nconstraints){
+//            std::cout << "Error: the cauchy - symmetric microstress couples on the body and the constraint matrix must be defined.\n";
+//            assert(1==0);
+//        }
+//
+//        //Add the surface external couple to d
+//        d += Eigen::Map< const EigVec >(surface_external_couple.data(), nconstraints, 1);
+//
+//        //Add the cauchy-symmetric microstress couple
+//        d += Eigen::Map< const EigVec >(symm_cauchy_couple.data(), nconstraints, 1);
+//
+//        //Add the body external couple to d
+//        if (body_external_couple.size() == nconstraints){
+//            assert(1==2);
+//            d += Eigen::Map< const EigVec >(body_external_couple.data(), nconstraints, 1);
+//        }
+//        else if (body_external_couple.size() > 0){
+//            std::cout << "Error: The external body couple vector is not the same size as the surface external couple vector.\n";
+//            assert(1==0);
+//        }
+//
+//        //Subtract the kinetic couple from d
+//        if (kinetic_couple.size() == nconstraints){
+//            assert(2==3);
+//            d -= Eigen::Map< const EigVec>(kinetic_couple.data(), nconstraints, 1);
+//        }
+//        else if (kinetic_couple.size() > 0){
+//            std::cout << "Error: The kinetic couple vector is not the same size as the surface external couple vector.\n";
+//            assert(1==0);
+//        }
+//
+//        return;
+//    }
 
     void id_unique_vectors(const std::map< unsigned int, std::vector< double > > &vectors,
                            std::map< unsigned int, std::vector< double > > &unique,
@@ -5649,145 +5544,145 @@ namespace overlap{
         return;
     }
 
-    void construct_hostress_constraint(const vector_surface_map &normal,
-                                       const std::vector< std::map< unsigned int, std::vector< FloatType > > > &traction,
-                                       const vecOfvec &center_of_mass,
-                                       const std::vector< std::vector< unsigned int > > &external_face_ids,
-                                       Eigen::MatrixXd &C,
-                                       Eigen::MatrixXd &d){
-        /*!
-         * Compute the constraint matrix and right hand side vector for the higher order couple stress between two 
-         * Gauss domains that
-         * n_j^1 \left(m_{jik}^1 - m_{jik}^2\right) = n_j^1 \sigma_{ji}\left(x_k^2 - x_k^1\right)
-         * 
-         * :param const vector_surface_map &normal: The surfaces of the gauss domain
-         * :param const std::vector< std::map< unsigned int, std::vector< FloatType > > > &traction: The traction on the surfaces
-         * :param const vecOfvec &center_of_mass; The centers of mass of the gauss domains.
-         * :param const std::vector< std::vector< unsigned int > > &The faces which are the outside of the filter domain
-         * :param Eigen::MatrixXd &C: The constraint matrix
-         * :param Eigen::MatrixXd &d: The right hand side constraint vector
-         */
-
-        //Set values
-        unsigned int nhostress = 27;
-        unsigned int nstress = 9;
-        unsigned int ngp = center_of_mass.size();
-
-        //Loop over the gauss points to find the neighboring cell ids
-        std::map< unsigned int, std::vector< unsigned int > > neighbors;
-        unsigned int min_id=0;
-        bool first_pass=true;
-        for (unsigned int gp=0; gp<ngp; gp++){
-            std::vector< unsigned int > gp_faces;
-            
-            for (auto f=normal[gp].begin(); f != normal[gp].end(); f++){
-                //Skip past external faces
-                if (std::count(external_face_ids[gp].begin(), external_face_ids[gp].end(), f->first)){
-                    continue;
-                }
-                
-                gp_faces.push_back(f->first);
-                if (!first_pass){
-                    min_id = std::min(f->first, min_id);
-                }
-                else{
-                    min_id = f->first;
-                    first_pass = false;
-                }
-            }
-
-            neighbors.emplace(gp, gp_faces);
-        }
-
-        //Get the unique set of gauss point face pairs
-        std::map< unsigned int, std::map< unsigned int, std::vector< double > > > gauss_pairs;
-        unsigned int n_constraints=0;
-
-        for (unsigned int gp=0; gp<ngp; gp++){
-            for (auto neighbor = neighbors[gp].begin(); neighbor!=neighbors[gp].end(); neighbor++){
-                auto n = normal[gp].find(*neighbor);
-                if (n == normal[gp].end()){
-                    std::cout << "Error: surface not found in normals\n";
-                    assert(1==0);
-                }
-
-                if (gauss_pairs.find(*neighbor-min_id) != gauss_pairs.end()){
-                    continue;
-                }
-                else if (gauss_pairs.find(gp) == gauss_pairs.end()){
-                    std::map< unsigned int, std::vector< double > > submap;
-                    submap.emplace(*neighbor-min_id, n->second);
-                    gauss_pairs.emplace(gp, submap);
-                    n_constraints++;
-                }
-                else{
-                    gauss_pairs[gp].emplace(*neighbor-min_id, n->second);
-                    n_constraints++;
-                }
-            }
-        }
-
-        //Initialize C and d
-        C = Eigen::MatrixXd::Zero(n_constraints*nstress, ngp*nhostress);
-        d = Eigen::MatrixXd::Zero(n_constraints*nstress, 1);
-
-        //Construct constraint matrix and rhs
-        //Iterate over the gauss pairs
-        unsigned int constraint_number = 0;
-        for (auto gp=gauss_pairs.begin(); gp!=gauss_pairs.end(); gp++){
-//            std::cout << "gp: " << gp->first << "\n";
-            //Iterate over the linked gauss points
-            for (auto n=gp->second.begin(); n!=gp->second.end(); n++){
-//                std::cout << "  n, normal: " << n->first << ", "; elib::print(n->second);
-                //Form the constraint matrix
-                for (unsigned int i=0; i<nstress; i++){
-                    C(nstress*constraint_number + i, nhostress*gp->first + i +  0) = n->second[0];
-                    C(nstress*constraint_number + i, nhostress*gp->first + i +  9) = n->second[1];
-                    C(nstress*constraint_number + i, nhostress*gp->first + i + 18) = n->second[2];
-
-                    C(nstress*constraint_number + i, nhostress*n->first + i +  0) = -n->second[0];
-                    C(nstress*constraint_number + i, nhostress*n->first + i +  9) = -n->second[1];
-                    C(nstress*constraint_number + i, nhostress*n->first + i + 18) = -n->second[2];
-                }
-
-                //Get the appropriate traction vector
-                auto t = traction[gp->first].find(n->first + min_id);
-                if (t == traction[gp->first].end()){
-                    std::cerr << "Error: neighbor not found in traction.\n";
-                    assert(1==0);
-                }
-//                std::cout << "    traction: "; elib::print(t->second);
-//                std::cout << "    com1: "; elib::print(center_of_mass[gp->first]);
-//                std::cout << "    com2: "; elib::print(center_of_mass[n->first]);
-
-                //Form the rhs vector
-                d(nstress*constraint_number + 0) = t->second[0]*(center_of_mass[n->first][0] - center_of_mass[gp->first][0]);
-                d(nstress*constraint_number + 1) = t->second[1]*(center_of_mass[n->first][1] - center_of_mass[gp->first][1]);
-                d(nstress*constraint_number + 2) = t->second[2]*(center_of_mass[n->first][2] - center_of_mass[gp->first][2]);
-                d(nstress*constraint_number + 3) = t->second[1]*(center_of_mass[n->first][2] - center_of_mass[gp->first][2]);
-                d(nstress*constraint_number + 4) = t->second[0]*(center_of_mass[n->first][2] - center_of_mass[gp->first][2]);
-                d(nstress*constraint_number + 5) = t->second[0]*(center_of_mass[n->first][1] - center_of_mass[gp->first][1]);
-                d(nstress*constraint_number + 6) = t->second[2]*(center_of_mass[n->first][1] - center_of_mass[gp->first][1]);
-                d(nstress*constraint_number + 7) = t->second[2]*(center_of_mass[n->first][0] - center_of_mass[gp->first][0]);
-                d(nstress*constraint_number + 8) = t->second[1]*(center_of_mass[n->first][0] - center_of_mass[gp->first][0]);
-
-                constraint_number++;
-            }
-        }
-
-//        std::ofstream tmp_file ("ho_constraint.txt");
-//        tmp_file << "C:\n" << C << "\n";
+//    void construct_hostress_constraint(const vector_surface_map &normal,
+//                                       const std::vector< std::map< unsigned int, std::vector< FloatType > > > &traction,
+//                                       const vecOfvec &center_of_mass,
+//                                       const std::vector< std::vector< unsigned int > > &external_face_ids,
+//                                       Eigen::MatrixXd &C,
+//                                       Eigen::MatrixXd &d){
+//        /*!
+//         * Compute the constraint matrix and right hand side vector for the higher order couple stress between two 
+//         * Gauss domains that
+//         * n_j^1 \left(m_{jik}^1 - m_{jik}^2\right) = n_j^1 \sigma_{ji}\left(x_k^2 - x_k^1\right)
+//         * 
+//         * :param const vector_surface_map &normal: The surfaces of the gauss domain
+//         * :param const std::vector< std::map< unsigned int, std::vector< FloatType > > > &traction: The traction on the surfaces
+//         * :param const vecOfvec &center_of_mass; The centers of mass of the gauss domains.
+//         * :param const std::vector< std::vector< unsigned int > > &The faces which are the outside of the filter domain
+//         * :param Eigen::MatrixXd &C: The constraint matrix
+//         * :param Eigen::MatrixXd &d: The right hand side constraint vector
+//         */
 //
-//        tmp_file << "d:\n" << d << "\n";
+//        //Set values
+//        unsigned int nhostress = 27;
+//        unsigned int nstress = 9;
+//        unsigned int ngp = center_of_mass.size();
 //
-//        tmp_file.flush();
+//        //Loop over the gauss points to find the neighboring cell ids
+//        std::map< unsigned int, std::vector< unsigned int > > neighbors;
+//        unsigned int min_id=0;
+//        bool first_pass=true;
+//        for (unsigned int gp=0; gp<ngp; gp++){
+//            std::vector< unsigned int > gp_faces;
+//            
+//            for (auto f=normal[gp].begin(); f != normal[gp].end(); f++){
+//                //Skip past external faces
+//                if (std::count(external_face_ids[gp].begin(), external_face_ids[gp].end(), f->first)){
+//                    continue;
+//                }
+//                
+//                gp_faces.push_back(f->first);
+//                if (!first_pass){
+//                    min_id = std::min(f->first, min_id);
+//                }
+//                else{
+//                    min_id = f->first;
+//                    first_pass = false;
+//                }
+//            }
 //
-//        tmp_file.close();
+//            neighbors.emplace(gp, gp_faces);
+//        }
+//
+//        //Get the unique set of gauss point face pairs
+//        std::map< unsigned int, std::map< unsigned int, std::vector< double > > > gauss_pairs;
+//        unsigned int n_constraints=0;
+//
+//        for (unsigned int gp=0; gp<ngp; gp++){
+//            for (auto neighbor = neighbors[gp].begin(); neighbor!=neighbors[gp].end(); neighbor++){
+//                auto n = normal[gp].find(*neighbor);
+//                if (n == normal[gp].end()){
+//                    std::cout << "Error: surface not found in normals\n";
+//                    assert(1==0);
+//                }
+//
+//                if (gauss_pairs.find(*neighbor-min_id) != gauss_pairs.end()){
+//                    continue;
+//                }
+//                else if (gauss_pairs.find(gp) == gauss_pairs.end()){
+//                    std::map< unsigned int, std::vector< double > > submap;
+//                    submap.emplace(*neighbor-min_id, n->second);
+//                    gauss_pairs.emplace(gp, submap);
+//                    n_constraints++;
+//                }
+//                else{
+//                    gauss_pairs[gp].emplace(*neighbor-min_id, n->second);
+//                    n_constraints++;
+//                }
+//            }
+//        }
+//
+//        //Initialize C and d
+//        C = Eigen::MatrixXd::Zero(n_constraints*nstress, ngp*nhostress);
+//        d = Eigen::MatrixXd::Zero(n_constraints*nstress, 1);
+//
+//        //Construct constraint matrix and rhs
+//        //Iterate over the gauss pairs
+//        unsigned int constraint_number = 0;
+//        for (auto gp=gauss_pairs.begin(); gp!=gauss_pairs.end(); gp++){
+////            std::cout << "gp: " << gp->first << "\n";
+//            //Iterate over the linked gauss points
+//            for (auto n=gp->second.begin(); n!=gp->second.end(); n++){
+////                std::cout << "  n, normal: " << n->first << ", "; elib::print(n->second);
+//                //Form the constraint matrix
+//                for (unsigned int i=0; i<nstress; i++){
+//                    C(nstress*constraint_number + i, nhostress*gp->first + i +  0) = n->second[0];
+//                    C(nstress*constraint_number + i, nhostress*gp->first + i +  9) = n->second[1];
+//                    C(nstress*constraint_number + i, nhostress*gp->first + i + 18) = n->second[2];
+//
+//                    C(nstress*constraint_number + i, nhostress*n->first + i +  0) = -n->second[0];
+//                    C(nstress*constraint_number + i, nhostress*n->first + i +  9) = -n->second[1];
+//                    C(nstress*constraint_number + i, nhostress*n->first + i + 18) = -n->second[2];
+//                }
+//
+//                //Get the appropriate traction vector
+//                auto t = traction[gp->first].find(n->first + min_id);
+//                if (t == traction[gp->first].end()){
+//                    std::cerr << "Error: neighbor not found in traction.\n";
+//                    assert(1==0);
+//                }
+////                std::cout << "    traction: "; elib::print(t->second);
+////                std::cout << "    com1: "; elib::print(center_of_mass[gp->first]);
+////                std::cout << "    com2: "; elib::print(center_of_mass[n->first]);
+//
+//                //Form the rhs vector
+//                d(nstress*constraint_number + 0) = t->second[0]*(center_of_mass[n->first][0] - center_of_mass[gp->first][0]);
+//                d(nstress*constraint_number + 1) = t->second[1]*(center_of_mass[n->first][1] - center_of_mass[gp->first][1]);
+//                d(nstress*constraint_number + 2) = t->second[2]*(center_of_mass[n->first][2] - center_of_mass[gp->first][2]);
+//                d(nstress*constraint_number + 3) = t->second[1]*(center_of_mass[n->first][2] - center_of_mass[gp->first][2]);
+//                d(nstress*constraint_number + 4) = t->second[0]*(center_of_mass[n->first][2] - center_of_mass[gp->first][2]);
+//                d(nstress*constraint_number + 5) = t->second[0]*(center_of_mass[n->first][1] - center_of_mass[gp->first][1]);
+//                d(nstress*constraint_number + 6) = t->second[2]*(center_of_mass[n->first][1] - center_of_mass[gp->first][1]);
+//                d(nstress*constraint_number + 7) = t->second[2]*(center_of_mass[n->first][0] - center_of_mass[gp->first][0]);
+//                d(nstress*constraint_number + 8) = t->second[1]*(center_of_mass[n->first][0] - center_of_mass[gp->first][0]);
+//
+//                constraint_number++;
+//            }
+//        }
+//
+////        std::ofstream tmp_file ("ho_constraint.txt");
+////        tmp_file << "C:\n" << C << "\n";
+////
+////        tmp_file << "d:\n" << d << "\n";
+////
+////        tmp_file.flush();
+////
+////        tmp_file.close();
+////        
+////        assert(1==0);
 //        
-//        assert(1==0);
-        
-        return;
-    }
+//        return;
+//    }
 
     void solve_row_deficient_divergence_matrix(const Eigen::MatrixXd &A, const Eigen::MatrixXd &b,
                                                const unsigned int &num_nodes, std::vector< Eigen::MatrixXd > &solutions){
@@ -5913,8 +5808,8 @@ namespace overlap{
         }
     }
 
-    void first_moment_hostress_matrix(const std::vector< vecOfvec > &com_shape_function_gradients,
-                                      const std::vector< double > &volume, Eigen::MatrixXd &A){
+    void firstMomentHostressMatrix(const std::vector< vecOfvec > &com_shape_function_gradients,
+                                   const std::vector< double > &volume, Eigen::MatrixXd &A){
         /*!
          * Construct the divergence matrix for the higher-order stress in the first moment of momentum balance equation.
          * Assumes 3D
@@ -5962,7 +5857,7 @@ namespace overlap{
 
         unsigned int ncouple = 9;
         unsigned int ncauchy = 9;
-        unsigned int nho = 27;
+        unsigned int nho = 27;//Using length-scale formulation
 
         unsigned int ngp = com_shape_functions.size();
         unsigned int nnodes = com_shape_functions[0].size();
@@ -5972,7 +5867,7 @@ namespace overlap{
         A = Eigen::MatrixXd::Zero(ncouple*nnodes, (nho + ncauchy)*ngp);
 
         first_moment_cauchy_matrix(com_shape_functions, volume, Acauchy);
-        first_moment_hostress_matrix(com_shape_function_gradients, volume, Ahostress);
+        firstMomentHostressMatrix(com_shape_function_gradients, volume, Ahostress);
 
         A.block(0, 0, ncouple*nnodes, ncauchy*ngp) = Acauchy;
         A.block(0, ncauchy*ngp, ncouple*nnodes, nho*ngp) = Ahostress;
@@ -5982,7 +5877,7 @@ namespace overlap{
 //        tmpfile << Acauchy;
 //        tmpfile.flush();
 //        tmpfile.close();
-//
+
 //        tmpfile.open("aFirstMomentHOS.dat");
 //        tmpfile << Ahostress;
 //        tmpfile.flush();
@@ -6007,7 +5902,7 @@ namespace overlap{
         unsigned int ncauchy = 9;
 
         unsigned int ngp = com_shape_function_gradients.size();
-        unsigned int nnodes = com_shape_function_gradients.size();
+        unsigned int nnodes = com_shape_function_gradients[0].size();
 
         std::vector< double > dNdx;
 
@@ -6117,7 +6012,7 @@ namespace overlap{
 //        tmpfile << A;
 //        tmpfile.flush();
 //        tmpfile.close();
-//
+
 //        assert(1==0);
         
         return;
@@ -6140,17 +6035,22 @@ namespace overlap{
 
         //Add body force contributions
         if (linear_momentum_rhs.size() == body_external_force.size()){
-            for (unsigned int i=0; i<linear_momentum_rhs.size(); i++){
-                linear_momentum_rhs[i] += body_external_force[i];
-            }
+            linear_momentum_rhs += body_external_force;
+        }
+        else if (body_external_force.size() != 0){
+            std::cerr << "Error: The body external force doesn't have the same size as the surface external force\n";
+            assert(1==0);
         }
 
         //Subtract kinetic (inertial) contributions
         if (linear_momentum_rhs.size() == kinetic_force.size()){
-            for (unsigned int i=0; i<linear_momentum_rhs.size(); i++){
-                linear_momentum_rhs[i] -= kinetic_force[i];
-            }
+            linear_momentum_rhs -= kinetic_force;
         }
+        else if (kinetic_force.size() != 0){
+            std::cerr << "Error: The kinetic force doesn't have the same size as the surface external force\n";
+            assert(1==0);
+        }
+
         return;
     }
 
@@ -6173,22 +6073,30 @@ namespace overlap{
         
         //Add body couple contributions
         if (first_moment_rhs.size() == body_external_couple.size()){
-            for (unsigned int i=0; i<first_moment_rhs.size(); i++){
-                first_moment_rhs[i] += body_external_couple[i];
-            }
+            first_moment_rhs += body_external_couple;
+        }
+        else if (body_external_couple.size() != 0){
+            std::cerr << "Error: body external couple doesn't have the same size as the surface external couple\n";
+            assert(1==0);
         }
 
         //Subtract kinetic (inertial) couple contributions
         if (first_moment_rhs.size() == kinetic_couple.size()){
-            for (unsigned int i=0; i<first_moment_rhs.size(); i++){
-                first_moment_rhs[i] -= kinetic_couple[i];
-            }
+            first_moment_rhs -= kinetic_couple;
+        }
+        else if (kinetic_couple.size() != 0){
+            std::cerr << "Error: kinetic couple doesn't have the same size as the surface external couple\n";
+            assert(1==0);
         }
 
         //Add symmetric micro-stress contributions
-        for (unsigned int i=0; i<first_moment_rhs.size(); i++){
-            first_moment_rhs[i] += symmetric_contribution[i];
-        }
+        first_moment_rhs += symmetric_contribution;
+//        std::cout << "symmetric_contribution:\n";
+//        vectorTools::print(symmetric_contribution);
+//
+//        std::cout << "first_moment_rhs:\n";
+//        vectorTools::print(first_moment_rhs);
+//        assert(1==0);
 
         return;
     }
@@ -6247,112 +6155,4 @@ namespace overlap{
         }
         return;
     }
-
-    void computedNdxXitilde(const std::vector< MicroPoint > &gaussDomains, const elib::vecOfvec &localCenterOfMass, 
-        const elib::vec &lengthscale, std::unique_ptr<elib::Element> &element,
-        std::vector< std::vector< elib::vecOfvec > > &dNdxXitilde, unsigned int order){
-        /*!
-         * Compute dNdx_k xitilde_j which arises from the dNdx_k mu_ki xitilde_j term in the balance of the first moment of momentum
-         * 
-         * :param const std::vector< MicroPoint > &gaussDomains: The gauss domains over which to compute dNdx_i xitilde_j
-         * :param const elib::vecOfvec &localCenterOfMass: The centers of mass of the gauss domains in local coordinates
-         * :param const elib::vec lengthscale: The lengthscale value
-         * :param const elib::Element &element: The element object
-         * :param std::vector< elib::vecOfvec > &dNdxXitilde: The returning values of dNdx_i xitilde_j
-         * :param unsigned int order: The order of integration.
-         */
-
-        dNdxXitilde.resize(gaussDomains.size());
-
-        //Definitions of the Gauss domain's geometry
-        std::vector< gDecomp::faceType > planes;
-        std::vector< gDecomp::matrixType > gaussDomainTets;
-
-        //Get the quadrature scheme for the tet-element
-        gDecomp::matrixType localTetGPoints;
-        gDecomp::matrixType localElementPoints;
-        gDecomp::vectorType weights;
-        gDecomp::floatType tetVolume;
-        gDecomp::floatType domainVolume;
-        gDecomp::getTetQuadrature(order, localTetGPoints, weights);
-
-        //Element quantities
-        gDecomp::matrixType dNdx;
-        gDecomp::vectorType xitilde;
-        gDecomp::vectorType centerOfMass;
-        gDecomp::vectorType globalTetGpt;
-
-        unsigned int gd=0;
-        for (auto gaussDomain=gaussDomains.begin(); gaussDomain!=gaussDomains.end(); gaussDomain++, gd++){
-
-            //Put the Gauss domains into a format that the geometry decomposition routines can understand
-            microPointToPlanes(*gaussDomain, planes);
-
-            //Decompose the Gauss domain into tets
-            gDecomp::getVolumeSubdomainAsTets(gd, localCenterOfMass, planes, gaussDomainTets);
-
-//            std::cout << "writing tets to a file\n";
-//            gDecomp::writeTetsToFile("test.tets", gaussDomainTets);
-
-            //Compute the global coordinates of the center of mass
-            element->interpolate(element->nodes, localCenterOfMass[gd], centerOfMass);
-
-            //Iterate over the tets
-            domainVolume = 0;
-            for (auto tet=gaussDomainTets.begin(); tet!=gaussDomainTets.end(); tet++){
-
-                //Get the volume of the tet
-                tetVolume = gDecomp::getTetVolume(*tet);
-                domainVolume += tetVolume;
-
-                //Get the locations of the tet domain gauss points in local hex coordinates
-                gDecomp::mapLocalTetPointsToGlobal(*tet, localTetGPoints, localElementPoints);
-
-                unsigned int t = 0;
-                for (auto localElementPoint=localElementPoints.begin(); localElementPoint!=localElementPoints.end();
-                     localElementPoint++, t++){
-
-                    //Get the global shapefunction gradients at the current location
-                    element->get_global_shapefunction_gradients(*localElementPoint, dNdx);
-
-                    //Resize dNdxXitilde if required
-                    if (dNdxXitilde[gd].size() != dNdx.size()){
-                        dNdxXitilde[gd].resize(dNdx.size());
-                        for (unsigned int n=0; n<dNdx.size(); n++){
-                            dNdxXitilde[gd][n] = {{0, 0, 0},{0, 0, 0},{0, 0, 0}}; //Assume 3d
-                        }
-                    }
-
-                    //Compute the global position of the tet integration point
-                    element->interpolate(element->nodes, *localElementPoint, globalTetGpt);
-
-                    //Compute xitilde at the current location
-                    xitilde = globalTetGpt - centerOfMass;
-                    xitilde /= vectorTools::l2norm(xitilde);
-                    xitilde *= lengthscale[gd];
-
-                    //Compute the dyadic product of dNdx and xitilde
-                    unsigned int n=0;
-                    for (auto dNdx_n=dNdx.begin(); dNdx_n!=dNdx.end(); dNdx_n++, n++){
-//                        std::cout << "dNdx_n: "; vectorTools::print(*dNdx_n);
-//                        std::cout << "xitilde: "; vectorTools::print(xitilde);
-//                        std::cout << "dNdx_n dyad xitilde:\n"; vectorTools::print(vectorTools::dyadic(*dNdx_n, xitilde));
-//                        std::cout << "weights[t]: " << weights[t] << "\n";
-//                        std::cout << "tetVolume: " << tetVolume << "\n";
-//                        std::cout << "weights[t]*vectorTools::dyadic(*dNdx_n, xitilde)*tetVolume:\n"; vectorTools::print(weights[t]*vectorTools::dyadic(*dNdx_n, xitilde)*tetVolume);
-                        dNdxXitilde[gd][n] += weights[t]*vectorTools::dyadic(*dNdx_n, xitilde)*tetVolume;
-                    }
-                }
-            }
-
-//            std::cout << " domainVolume: " << domainVolume << "\n";
-            //Normalize dNdxXitilde by the domain volume
-            for (unsigned int n=0; n<dNdx.size(); n++){
-                dNdxXitilde[gd][n] /= domainVolume;
-            }
-//            std::cout << " dNdxXitilde[gd]:\n"; vectorTools::print(dNdxXitilde[gd]);
-//            assert(1==0);
-        }
-    }
-                                        
 }

@@ -1,3 +1,5 @@
 .ipynb_checkpoints/*
 *.pdf
 Untitled*.ipynb
+CP*.ipynb
+Equality_Constrained_Least_Squares.ipynb

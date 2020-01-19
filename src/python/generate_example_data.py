@@ -47,8 +47,9 @@ def rotation_matrix(random=True, angles=None):
     return Rz.dot(Ry.dot(Rx))
 
 def stress(x, t):
-#    principal = np.diag([2.0*x[0], 0.0, 0.0])*t
-    principal = np.diag([2, -1, 3])
+#    principal = np.diag([2.0*x[0], -1.0*x[1], 3.0*x[2]])*t
+#    principal = np.diag([2, -1, 3])
+    principal = np.diag([2, 0, 0])
 #    principal = np.array([[1, 6, 5],\
 #                          [9, 2, 4],\
 #                          [8, 7, 3]])
@@ -84,6 +85,7 @@ def transformation(x, t):
         raise ValueError(errstr)
     b = t*np.array([3.2, -.5, 2.0])
     D = np.matmul(Q,C)
+#    print(D)
 #    print(D - np.eye(3))
     xp = (D.dot(x.reshape((-1, 1))) + b.reshape((-1, 1)))
     return xp.flatten()
