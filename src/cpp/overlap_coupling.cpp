@@ -3056,9 +3056,14 @@ namespace overlap{
 
          full_balance_equation_matrix(com_shapefunction_values, com_shapefunction_gradients, volume, Abeqn);
 
+         Eigen::Map< Eigen::MatrixXd > RHS(balance_equation_rhs.data(), balance_equation_rhs.size(), 1);
+
+         Eigen::BDCSVD< Eigen::MatrixXd > svd( Abeqn, Eigen::ComputeThinU | Eigen::ComputeThinV );
+         Eigen::MatrixXd S = svd.singularValues();
+         std::cout << "singular values:\n" << S << "\n";
+         assert(1==0);
 
          Eigen::MatrixXd M = (Abeqn.transpose()*Abeqn) + 1e-9*Eigen::MatrixXd::Identity(Abeqn.cols(), Abeqn.cols());
-         Eigen::Map< Eigen::MatrixXd > RHS(balance_equation_rhs.data(), balance_equation_rhs.size(), 1);
 
 //         std::ofstream tmpFile("aBalanceEquationMatrix.dat");
 //         tmpFile << Abeqn;
@@ -6153,6 +6158,32 @@ namespace overlap{
         for (unsigned int n=0; n<gaussDomain.face_centroids.size(); n++){
             planes.push_back(std::pair< gDecomp::vectorType, gDecomp::vectorType > (gaussDomain.normal(n), gaussDomain.face_centroids[n]));
         }
+        return;
+    }
+
+    void MADOutlierDetection(const std::vector< FloatType > &x, std::vector< unsigned int > &outliers, const FloatType threshold){
+        /*!
+         * Detect outliers using median absolute deviation
+         * MAD = median ( | X_i - median(X) | )
+         * 
+         * :param const std::vector< FloatType > &x: The x vector to search for outliers
+         * :param std::vector< unsigned int > &outliers: The vector of outliers
+         * :param const FloatType threshold: The threshold with which to identify an outlier. Defaults to 10.
+         */
+
+        FloatType median = vectorTools::median(x);
+        std::vector< FloatType > absDeviations = vectorTools::abs(x - median);
+        FloatType MAD = vectorTools::median(absDeviations);
+        absDeviations /= MAD;
+
+        outliers.reserve(x.size() / 10);
+
+        for (unsigned int i=0; i<absDeviations.size(); i++){
+            if (absDeviations[i] > threshold){
+                outliers.push_back(i);
+            }
+        }
+
         return;
     }
 }

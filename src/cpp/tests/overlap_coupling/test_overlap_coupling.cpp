@@ -3053,6 +3053,35 @@ int test_construct_balance_equation_rhs(std::ofstream &results){
     return 1;
 }
 
+int test_MADOutlierDetection(std::ofstream &results){
+    /*!
+     * Test the computation of outliers using the maximum absolution deviation 
+     * detection metric.
+     * 
+     * :param std::ofstream &results: The output file.
+     */
+
+    std::vector< double > x = {0.70154526, 0.00265005, 0.29766985, 0.0570927 , 0.12136678};
+    std::vector< unsigned int > outliers;
+
+    overlap::MADOutlierDetection(x, outliers, 5);
+
+    if (outliers.size() > 0){
+        results << "test_MADOutlierDetection (test 1) & False\n";
+        return 1;
+    }
+
+    overlap::MADOutlierDetection(x, outliers, 4);
+
+    if (!vectorTools::fuzzyEquals(outliers, {0})){
+        results << "test_MADOutlierDetection (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_MADOutlierDetection & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -3120,6 +3149,7 @@ int main(){
     test_point_on_surface(results);
     test_solve_constrained_least_squares(results);
     test_id_unique_vectors(results);
+    test_MADOutlierDetection(results);
 
     //Close the results file
     results.close();
