@@ -810,7 +810,8 @@ namespace overlap{
 
     void microPointToPlanes(const MicroPoint &gaussDomain, std::vector< gDecomp::faceType > &planes);
 
-    void MADOutlierDetection(const std::vector< FloatType > &x, std::vector< unsigned int > &outliers, const FloatType threshold = 10);
+    void MADOutlierDetection(const std::vector< FloatType > &x, std::vector< unsigned int > &outliers, const FloatType threshold = 10, 
+                             const FloatType eps = 1e-9);
 
 //    QRsolver form_solver(SpMat &A);
 }

@@ -1592,6 +1592,15 @@ namespace overlap{
                     itr_sm = surface_mass[gp].find(itiM->second.planes[j]);
                     itr_sc = surface_centroid[gp].find(itiM->second.planes[j]);
 
+                    if (std::isnan(itiM->second.area(j))){
+                        std::cout << "micro point: " << itiM->first << "\n";
+                        std::cout << "       j:    " << j << "\n";
+                        std::cout << "    area:    " << itiM->second.area(j) << "\n";
+                        std::cout << "  normal:    "; vectorTools::print(itiM->second.das[j]);
+                        std::cout << " density:    " << density->second << "\n";
+                        assert(1==0);
+                    }
+
                     //Insert the plane if new
                     if (itr_sa == surface_area[gp].end()){
                         surface_area[gp].emplace(itiM->second.planes[j], itiM->second.area(j));
@@ -3058,26 +3067,72 @@ namespace overlap{
 
          Eigen::Map< Eigen::MatrixXd > RHS(balance_equation_rhs.data(), balance_equation_rhs.size(), 1);
 
-         Eigen::BDCSVD< Eigen::MatrixXd > svd( Abeqn, Eigen::ComputeThinU | Eigen::ComputeThinV );
-         Eigen::MatrixXd S = svd.singularValues();
-         std::cout << "singular values:\n" << S << "\n";
-         assert(1==0);
-
-         Eigen::MatrixXd M = (Abeqn.transpose()*Abeqn) + 1e-9*Eigen::MatrixXd::Identity(Abeqn.cols(), Abeqn.cols());
-
+//         Eigen::BDCSVD< Eigen::MatrixXd > svd( Abeqn, Eigen::ComputeThinU | Eigen::ComputeThinV );
+//         std::vector< FloatType > logSVS(Abeqn.rows(), 0);
+//
+//         Eigen::Map< Eigen::MatrixXd > oM(logSVS.data(), Abeqn.rows(), 1);
+//         oM = svd.singularValues();
+//
+//         for (unsigned int i=0; i<logSVS.size(); i++){logSVS[i] = std::log10(logSVS[i] + 1e-16);}
+////         std::cout << "logSVS: "; vectorTools::print(logSVS);
+////         std::vector< FloatType > outlierMetrics(logSVS.size() - 1, 0);
+////         for (unsigned int i=0; i<outlierMetrics.size(); i++){outlierMetrics[i] = logSVS[i+1] - logSVS[i];}
+////
+////         std::cout << "outlierMetrics: "; vectorTools::print(outlierMetrics);
+//
+//         std::vector< unsigned int > outliers;
+//         MADOutlierDetection(logSVS, outliers, 10);
+//         std::cout << "outliers: "; vectorTools::print(outliers);
+//
+//         Eigen::MatrixXd S = svd.sign
+//         assert(1==0);
+//
+//         Eigen::MatrixXd M = (Abeqn.transpose()*Abeqn) + 1e-9*Eigen::MatrixXd::Identity(Abeqn.cols(), Abeqn.cols());
+//
+////         std::ofstream tmpFile("aBalanceEquationMatrix.dat");
+////         tmpFile << Abeqn;
+////         tmpFile.flush();
+////         tmpFile.close();
+////         tmpFile = std::ofstream("balanceEquationRHS.dat");
+////         tmpFile << RHS;
+////         tmpFile.flush();
+////         tmpFile.close();
+////
+////         std::cout << "M shape: " << M.rows() << ", " << M.cols() << "\n";
+////         std::cout << "RHS shape: " << RHS.rows() << ", " << RHS.cols() << "\n";
+//
+//         Eigen::MatrixXd x = M.colPivHouseholderQr().solve(Abeqn.transpose()*RHS);
+//         std::cout << "performing svd\n";
+//         std::cerr << " Abeqn shape: " << Abeqn.rows() << ", " << Abeqn.cols() << "\n";
 //         std::ofstream tmpFile("aBalanceEquationMatrix.dat");
 //         tmpFile << Abeqn;
 //         tmpFile.flush();
 //         tmpFile.close();
-//         tmpFile = std::ofstream("balanceEquationRHS.dat");
-//         tmpFile << RHS;
-//         tmpFile.flush();
-//         tmpFile.close();
-//
-//         std::cout << "M shape: " << M.rows() << ", " << M.cols() << "\n";
-//         std::cout << "RHS shape: " << RHS.rows() << ", " << RHS.cols() << "\n";
 
-         Eigen::MatrixXd x = M.colPivHouseholderQr().solve(Abeqn.transpose()*RHS);
+
+         Eigen::JacobiSVD< Eigen::MatrixXd > svd( Abeqn, Eigen::ComputeThinU | Eigen::ComputeThinV );
+//         std::cerr << " setting threshold\n";
+
+         std::vector< FloatType > logSVec(Abeqn.rows(), 0);
+         Eigen::Map< Eigen::MatrixXd > logS(logSVec.data(), logSVec.size(), 1);
+         logS = svd.singularValues();
+         for (unsigned int i=0; i<logSVec.size(); i++){ logSVec[i] = std::log10( logSVec[i] + 1e-9); }
+
+         std::vector< unsigned int > outliers;
+         MADOutlierDetection(logSVec, outliers, 10);
+
+         if (outliers.size() > 0){
+             svd.setThreshold( std::max( pow( 10, logSVec[outliers[0]]), 1e-9 ) ) ;
+         }
+         else{
+             svd.setThreshold( 1e-9 );
+         }
+
+//         assert(1==0);
+
+//         std::cout << "S\n" << svd.singularValues() << "\n";
+         Eigen::MatrixXd x = svd.solve(RHS);
+//         std::cout << "solved svd\n\n";
 
          //Extract the Cauchy and higher-order stress
          unsigned int nstress = 9; //Assume 3D
@@ -3403,6 +3458,8 @@ namespace overlap{
     int MicromorphicFilter::compute_surface_information(const std::map< unsigned int, double > &micro_density){
         /*!
          * Compute the surface areas, centroids, and average normals of each of the filter's gauss domains
+         * 
+         * :param const std::map< unsigned int, double > &micro_density: The map from micro points to their density.
          */
 
         overlap::compute_surface_information(material_weights, micro_density, surface_area, surface_normal, surface_centroid);
@@ -6161,7 +6218,8 @@ namespace overlap{
         return;
     }
 
-    void MADOutlierDetection(const std::vector< FloatType > &x, std::vector< unsigned int > &outliers, const FloatType threshold){
+    void MADOutlierDetection(const std::vector< FloatType > &x, std::vector< unsigned int > &outliers, const FloatType threshold, 
+                             const FloatType eps){
         /*!
          * Detect outliers using median absolute deviation
          * MAD = median ( | X_i - median(X) | )
@@ -6169,13 +6227,15 @@ namespace overlap{
          * :param const std::vector< FloatType > &x: The x vector to search for outliers
          * :param std::vector< unsigned int > &outliers: The vector of outliers
          * :param const FloatType threshold: The threshold with which to identify an outlier. Defaults to 10.
+         * :param const FloatType eps: The minimum allowable value for MAD
          */
 
         FloatType median = vectorTools::median(x);
         std::vector< FloatType > absDeviations = vectorTools::abs(x - median);
-        FloatType MAD = vectorTools::median(absDeviations);
+        FloatType MAD = vectorTools::median(absDeviations) + eps;
         absDeviations /= MAD;
 
+        outliers.resize(0);
         outliers.reserve(x.size() / 10);
 
         for (unsigned int i=0; i<absDeviations.size(); i++){
