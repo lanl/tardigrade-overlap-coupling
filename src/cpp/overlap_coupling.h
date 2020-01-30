@@ -240,23 +240,23 @@ namespace overlap{
                           planes.reserve(iplanes.size());
                           for (unsigned int i=0; i<iplanes.size(); i++){planes.push_back(iplanes[i]);}
 
-//                          areas.reserve(iareas.size());
-//                          for (unsigned int i=0; i<iareas.size(); i++){areas.push_back(iareas[i]);}
-//
-//                          normals.resize(inormals.size());
-//                          for (unsigned int i=0; i<inormals.size(); i++){
-//                              normals[i].reserve(inormals[i].size());
-//                              for (unsigned int j=0; j<inormals[i].size(); j++){
-//                                  normals[i].push_back(inormals[i][j]);
-//                              }
-//                          }
-                          das.resize(inormals.size());
+                          areas.reserve(iareas.size());
+                          for (unsigned int i=0; i<iareas.size(); i++){areas.push_back(iareas[i]);}
+
+                          normals.resize(inormals.size());
                           for (unsigned int i=0; i<inormals.size(); i++){
-                              das[i].reserve(inormals[i].size());
+                              normals[i].reserve(inormals[i].size());
                               for (unsigned int j=0; j<inormals[i].size(); j++){
-                                  das[i].push_back(iareas[i]*inormals[i][j]);
+                                  normals[i].push_back(inormals[i][j]);
                               }
                           }
+//                          das.resize(inormals.size());
+//                          for (unsigned int i=0; i<inormals.size(); i++){
+//                              das[i].reserve(inormals[i].size());
+//                              for (unsigned int j=0; j<inormals[i].size(); j++){
+//                                  das[i].push_back(iareas[i]*inormals[i][j]);
+//                              }
+//                          }
 
                           face_centroids.resize(iface_centroids.size());
                           for (unsigned int i=0; i<iface_centroids.size(); i++){
@@ -268,36 +268,6 @@ namespace overlap{
 
                       }
 
-//            MicroPoint(const MicroPoint &p){
-//                /*!
-//                Copy constructor
-//                :param MicroPoint p: The point to copy from
-//                */
-//
-//                volume = p.volume;
-//                coordinates = p.coordinates;
-//
-//                planes.reserve(p.planes.size());
-//                for (unsigned int i=0; i<p.planes.size(); i++){
-//                    planes.push_back( p.planes[i]);
-//                }
-//
-//                areas.reserve(p.areas.size());
-//                for (unsigned int i=0; i<p.areas.size(); i++){
-//                    areas.push_back(p.areas[i]);
-//                }
-//
-//                normals.reserve(p.normals.size());
-//                for (unsigned int i=0; i<p.normals.size(); i++){
-//                    normals.push_back(p.normals[i]);
-//                }
-//
-//                face_centroids.reserve(p.face_centroids.size());
-//                for (unsigned int i=0; i<face_centroids.size(); i++){
-//                    face_centroids.push_back(p.face_centroids[i]);
-//                }
-//            }
-
             //! > Methods
             void print() const;
             std::vector< double > normal(unsigned int i) const;
@@ -308,9 +278,9 @@ namespace overlap{
             std::vector< double > coordinates;
             std::vector< double > particle_coordinates;
             std::vector< int > planes;
-//            std::vector< double > areas;
-//            vecOfvec normals;
-            vecOfvec das;
+            std::vector< double > areas;
+            vecOfvec normals;
+//            vecOfvec das;
             vecOfvec face_centroids;
             FloatType weight = 1.;
     };
@@ -442,6 +412,9 @@ namespace overlap{
 
         protected:
             bool use_weights = false; //!Boolean indicating if the weighted approach should be used.
+            bool save_Ab = true; //!Boolean indicating if the A matrix and b vector for the 
+                                 //!Cauchy and higher-order stress calculation should be 
+                                 //!saved
 
             unsigned int filter_id;
 	    std::unique_ptr<elib::Element> element;
@@ -577,6 +550,9 @@ namespace overlap{
             double first_moment_error;            
             double linear_momentum_relative_error;
             double first_moment_relative_error;
+
+            Eigen::MatrixXd stressAmatrix;
+            Eigen::MatrixXd stressbvector;
 
     };
     

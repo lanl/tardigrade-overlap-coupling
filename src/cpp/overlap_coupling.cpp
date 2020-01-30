@@ -727,23 +727,23 @@ namespace overlap{
         }
         std::cout << "\n";
 
-//        std::cout << "  areas: ";
-//        for (unsigned int i=0; i<areas.size(); i++){
-//            printf("  %1.6f", areas[i]);
-//        }
-//        std::cout << "\n";
-//
-//        std::cout << "  normals:\n";
-//        for (unsigned int i=0; i<normals.size(); i++){
-//            std::cout << "          ";
-//            print_vector(normals[i]);
-//        }
-
-        std::cout << "  das:\n";
-        for (unsigned int i=0; i<das.size(); i++){
-            std::cout << "          ";
-            print_vector(das[i]);
+        std::cout << "  areas: ";
+        for (unsigned int i=0; i<areas.size(); i++){
+            printf("  %1.6f", areas[i]);
         }
+        std::cout << "\n";
+
+        std::cout << "  normals:\n";
+        for (unsigned int i=0; i<normals.size(); i++){
+            std::cout << "          ";
+            print_vector(normals[i]);
+        }
+
+//        std::cout << "  das:\n";
+//        for (unsigned int i=0; i<das.size(); i++){
+//            std::cout << "          ";
+//            print_vector(das[i]);
+//        }
 
         std::cout << "  face centroids:\n";
         for (unsigned int i=0; i<face_centroids.size(); i++){
@@ -759,10 +759,11 @@ namespace overlap{
         :param unsigned int i: The index of the face to compute the normal for
         */
 
-        std::vector< double > n = das[i];
-        double area = sqrt(vectorTools::dot(n, n));
-        for (unsigned int j=0; j<n.size(); j++){n[j]/=area;}
-        return n;
+//        std::vector< double > n = das[i];
+//        double area = sqrt(vectorTools::dot(n, n));
+//        for (unsigned int j=0; j<n.size(); j++){n[j]/=area;}
+//        return n;
+        return normals[i];
     }
 
     double MicroPoint::area(unsigned int i) const{
@@ -772,8 +773,9 @@ namespace overlap{
         :param unsigned int i: The index of the face to compute the area for
         */
 
-        std::vector< double > n = das[i];
-        return sqrt(vectorTools::dot(n, n));
+//        std::vector< double > n = das[i];
+//        return sqrt(vectorTools::dot(n, n));
+        return areas[i];
     }
 
 
@@ -1357,13 +1359,8 @@ namespace overlap{
         planeMap::const_iterator it;
         double distance;
 
-//        std::cout << "map planes to voro:\n";
-
         for (it=planes.begin(); it!=planes.end(); it++){
             distance = vectorTools::dot(it->first, it->second);
-//            std::cout << "  normal: " << it->first[0] << " " << it->first[1] << " " << it->first[2] << "\n";
-//            std::cout << "  face centroid: " << it->second[0] << " " << it->second[1] << " " << it->second[2] << "\n";
-//            std::cout << "  distance: " << distance << "\n";
             vplanes.push_back(voro::wall_plane(it->first[0], it->first[1], it->first[2], distance, -(j+1)));
             j++;
         }
@@ -1377,26 +1374,16 @@ namespace overlap{
         :param std::vector< voro::wall_plane > vplanes: A std::vector of voro::wall_plane objects which can be added to a voro::container
         */
 
-        unsigned int n = domain.das.size();
-//        unsigned int j=1, n = domain.das.size();
+        unsigned int n = domain.normals.size();
         double distance;
         std::vector< double > normal(3);
         vplanes.reserve(n);
 
-//        std::cout << "\nmap_domain_to_voro:\n";
-
         for (unsigned int i=0; i<n; i++){
             normal = domain.normal(i);
             distance = vectorTools::dot(normal, domain.face_centroids[i]);
-//            std::cout << "  true plane id: " << domain.planes[i] << "\n";
-//            std::cout << "  voro plane id: " << -(domain.planes[i]+1) << "\n";
-//            std::cout << "  normal: " << normal[0] << " " << normal[1] << " " << normal[2] << "\n";
-//            std::cout << "  face centroid: " << domain.face_centroids[i][0] << " " << domain.face_centroids[i][1] << " " << domain.face_centroids[i][2] << "\n";
-//            std::cout << "  distance: " << distance << "\n";
-            vplanes.push_back(voro::wall_plane(normal[0], normal[1], normal[2], distance, -(domain.planes[i]+1)));//j));
-//            j++;
+            vplanes.push_back(voro::wall_plane(normal[0], normal[1], normal[2], distance, -(domain.planes[i]+1)));
         }
-//        assert(1==0);
     }
 
     void apply_nansons_relation(const std::vector< double > &N, const double &JdA, const vecOfvec &Finv, std::vector< double > &nda){
@@ -1526,7 +1513,6 @@ namespace overlap{
         //Loop over the gauss points
         for (unsigned int gp=0; gp<weights.size(); gp++){
 
-//            result[gp].resize(values.begin()->second.size());
             result[gp] = std::vector<double>(values.begin()->second.size(), 0);
 
             for (itiM=weights[gp].begin(); itiM!=weights[gp].end(); itiM++){
@@ -1596,7 +1582,7 @@ namespace overlap{
                         std::cout << "micro point: " << itiM->first << "\n";
                         std::cout << "       j:    " << j << "\n";
                         std::cout << "    area:    " << itiM->second.area(j) << "\n";
-                        std::cout << "  normal:    "; vectorTools::print(itiM->second.das[j]);
+                        std::cout << "  normal:    "; vectorTools::print(itiM->second.normal(j));
                         std::cout << " density:    " << density->second << "\n";
                         assert(1==0);
                     }
@@ -1604,21 +1590,20 @@ namespace overlap{
                     //Insert the plane if new
                     if (itr_sa == surface_area[gp].end()){
                         surface_area[gp].emplace(itiM->second.planes[j], itiM->second.area(j));
-                        surface_normal[gp].emplace(itiM->second.planes[j], itiM->second.das[j]);
+                        surface_normal[gp].emplace(itiM->second.planes[j], itiM->second.normal(j) * itiM->second.area(j));
                         surface_mass[gp].emplace(itiM->second.planes[j], itiM->second.area(j)*density->second);
                         surface_centroid[gp].emplace(itiM->second.planes[j], itiM->second.area(j)*density->second*itiM->second.face_centroids[j]);
                     }
                     //Add to the plane if it exists already
                     else{
                         itr_sa->second += itiM->second.area(j);
-                        for (unsigned int i=0; i<itr_sn->second.size(); i++){itr_sn->second[i] += itiM->second.das[j][i];}
+                        itr_sn->second += itiM->second.area(j) * itiM->second.normal(j);
                         itr_sm->second += itiM->second.area(j)*density->second;
                         itr_sc->second += itiM->second.area(j)*density->second*itiM->second.face_centroids[j];
                     }
                 }
             }
 
-//            std::cout << "gp: " << gp << "\n";
             //Compute the surface normal
             for (auto ittmp = surface_normal[gp].begin(); ittmp!=surface_normal[gp].end(); ittmp++){
                 auto area = surface_area[gp].find(ittmp->first);
@@ -1627,7 +1612,6 @@ namespace overlap{
                     assert(1==0);
                 }
                 else{
-//                    std::cout << " face: " << ittmp->first << "area: " << area->second << " , da: "; elib::print(ittmp->second);
                     for (unsigned int i=0; i<ittmp->second.size(); i++){ittmp->second[i] /= area->second;}
                 }
             }
@@ -1640,7 +1624,6 @@ namespace overlap{
                     assert(1==0);
                 }
                 else{
-                    //std::cout << " face: " << ittmp->first << " mass: " << mass->second << ", centroid: "; elib::print(ittmp->second /=mass->second);
                     ittmp->second /= mass->second;
                 }
             }
@@ -1786,17 +1769,17 @@ namespace overlap{
 
                    //Compute the traction - Assumes 3D
                    std::vector< double > traction = std::vector< FloatType >(3, 0);
-                   traction[0] = itiM->second.das[j][0]*itv->second[0]
-                                +itiM->second.das[j][1]*itv->second[5]
-                                +itiM->second.das[j][2]*itv->second[4];
+                   traction[0] = (itiM->second.normals[j][0]*itv->second[0]
+                                 +itiM->second.normals[j][1]*itv->second[5]
+                                 +itiM->second.normals[j][2]*itv->second[4]) * itiM->second.area(j);
 
-                   traction[1] = itiM->second.das[j][0]*itv->second[5]
-                                +itiM->second.das[j][1]*itv->second[1]
-                                +itiM->second.das[j][2]*itv->second[3];
+                   traction[1] = (itiM->second.normals[j][0]*itv->second[5]
+                                 +itiM->second.normals[j][1]*itv->second[1]
+                                 +itiM->second.normals[j][2]*itv->second[3]) * itiM->second.area(j);
 
-                   traction[2] = itiM->second.das[j][0]*itv->second[4]
-                                +itiM->second.das[j][1]*itv->second[3]
-                                +itiM->second.das[j][2]*itv->second[2];
+                   traction[2] = (itiM->second.normals[j][0]*itv->second[4]
+                                 +itiM->second.normals[j][1]*itv->second[3]
+                                 +itiM->second.normals[j][2]*itv->second[2]) * itiM->second.area(j);
 
                    //Insert the plane if new
                    if (itr == result[gp].end()){
@@ -1864,45 +1847,44 @@ namespace overlap{
 
                     //Compute the xi vector
                     xi = itiM->second.face_centroids[j] - center_of_mass->second;
-//                    for (unsigned int i=0; i<xi.size(); i++){xi[i] = itiM->second.face_centroids[j][i] - center_of_mass[i];}
 
                     //Compute the couple traction - Assumes 3D
                     std::vector< double > couple_traction(9, 0);
-                    couple_traction[0] = itiM->second.das[j][0]*itv->second[0]*xi[0]
-                                       + itiM->second.das[j][1]*itv->second[5]*xi[0]
-                                       + itiM->second.das[j][2]*itv->second[4]*xi[0];
+                    couple_traction[0] = (itiM->second.normals[j][0]*itv->second[0]*xi[0]
+                                       +  itiM->second.normals[j][1]*itv->second[5]*xi[0]
+                                       +  itiM->second.normals[j][2]*itv->second[4]*xi[0]) * itiM->second.area(j);
 
-                    couple_traction[1] = itiM->second.das[j][0]*itv->second[5]*xi[1]
-                                       + itiM->second.das[j][1]*itv->second[1]*xi[1]
-                                       + itiM->second.das[j][2]*itv->second[3]*xi[1];
+                    couple_traction[1] = (itiM->second.normals[j][0]*itv->second[5]*xi[1]
+                                       +  itiM->second.normals[j][1]*itv->second[1]*xi[1]
+                                       +  itiM->second.normals[j][2]*itv->second[3]*xi[1]) * itiM->second.area(j);
 
-                    couple_traction[2] = itiM->second.das[j][0]*itv->second[4]*xi[2]
-                                       + itiM->second.das[j][1]*itv->second[3]*xi[2]
-                                       + itiM->second.das[j][2]*itv->second[2]*xi[2];
+                    couple_traction[2] = (itiM->second.normals[j][0]*itv->second[4]*xi[2]
+                                       +  itiM->second.normals[j][1]*itv->second[3]*xi[2]
+                                       +  itiM->second.normals[j][2]*itv->second[2]*xi[2]) * itiM->second.area(j);
 
-                    couple_traction[3] = itiM->second.das[j][0]*itv->second[5]*xi[2]
-                                       + itiM->second.das[j][1]*itv->second[1]*xi[2]
-                                       + itiM->second.das[j][2]*itv->second[3]*xi[2];
+                    couple_traction[3] = (itiM->second.normals[j][0]*itv->second[5]*xi[2]
+                                       +  itiM->second.normals[j][1]*itv->second[1]*xi[2]
+                                       +  itiM->second.normals[j][2]*itv->second[3]*xi[2]) * itiM->second.area(j);
 
-                    couple_traction[4] = itiM->second.das[j][0]*itv->second[0]*xi[2]
-                                       + itiM->second.das[j][1]*itv->second[5]*xi[2]
-                                       + itiM->second.das[j][2]*itv->second[4]*xi[2];
+                    couple_traction[4] = (itiM->second.normals[j][0]*itv->second[0]*xi[2]
+                                       +  itiM->second.normals[j][1]*itv->second[5]*xi[2]
+                                       +  itiM->second.normals[j][2]*itv->second[4]*xi[2]) * itiM->second.area(j);
 
-                    couple_traction[5] = itiM->second.das[j][0]*itv->second[0]*xi[1]
-                                       + itiM->second.das[j][1]*itv->second[5]*xi[1]
-                                       + itiM->second.das[j][2]*itv->second[4]*xi[1];
+                    couple_traction[5] = (itiM->second.normals[j][0]*itv->second[0]*xi[1]
+                                       +  itiM->second.normals[j][1]*itv->second[5]*xi[1]
+                                       +  itiM->second.normals[j][2]*itv->second[4]*xi[1]) * itiM->second.area(j);
 
-                    couple_traction[6] = itiM->second.das[j][0]*itv->second[4]*xi[1]
-                                       + itiM->second.das[j][1]*itv->second[3]*xi[1]
-                                       + itiM->second.das[j][2]*itv->second[2]*xi[1];
+                    couple_traction[6] = (itiM->second.normals[j][0]*itv->second[4]*xi[1]
+                                       +  itiM->second.normals[j][1]*itv->second[3]*xi[1]
+                                       +  itiM->second.normals[j][2]*itv->second[2]*xi[1]) * itiM->second.area(j);
 
-                    couple_traction[7] = itiM->second.das[j][0]*itv->second[4]*xi[0]
-                                       + itiM->second.das[j][1]*itv->second[3]*xi[0]
-                                       + itiM->second.das[j][2]*itv->second[2]*xi[0];
+                    couple_traction[7] = (itiM->second.normals[j][0]*itv->second[4]*xi[0]
+                                       +  itiM->second.normals[j][1]*itv->second[3]*xi[0]
+                                       +  itiM->second.normals[j][2]*itv->second[2]*xi[0]) * itiM->second.area(j);
 
-                    couple_traction[8] = itiM->second.das[j][0]*itv->second[5]*xi[0]
-                                       + itiM->second.das[j][1]*itv->second[1]*xi[0]
-                                       + itiM->second.das[j][2]*itv->second[3]*xi[0];
+                    couple_traction[8] = (itiM->second.normals[j][0]*itv->second[5]*xi[0]
+                                       +  itiM->second.normals[j][1]*itv->second[1]*xi[0]
+                                       +  itiM->second.normals[j][2]*itv->second[3]*xi[0]) * itiM->second.area(j);
 
                    //Insert the plane if new
                    if (itr == result[gp].end()){
@@ -2067,12 +2049,6 @@ namespace overlap{
         //Reserve the memory required for the tripletList
         tripletList.reserve(tripletList.size() + psis.size()*num_macro_dof*dns_weights.size());
 
-//        std::cout << "cg: ";
-//        for (unsigned int i=0; i<3; i++){
-//            std::cout << cg[i] << " ";
-//        }
-//        std::cout << "\n";
-
         //Loop over the macro nodes
         for (unsigned int n=0; n<psis.size(); n++){
             //Set the initial index of the column
@@ -2087,7 +2063,6 @@ namespace overlap{
             }
 
             //Loop over the micro-nodes and add the contributions to the shape-function matrix
-//            std::cout << "dns_weights.size(): " << dns_weights.size() << "\n";
             for (iMit=dns_weights.begin(); iMit!=dns_weights.end(); iMit++){
 
                 //Set the initial index of the row
@@ -2110,38 +2085,13 @@ namespace overlap{
                 auto mnelit = micro_node_elcount->find(iMit->first);
                 if (mnelit != micro_node_elcount->end()){
                     weight /= mnelit->second;
-//                    std::cout << "dns node, weight, elcount: " << iMit->first << ", " << iMit->second.weight << ", " << mnelit->second << "\n";
-                    
                 }
 
                 //Compute the xi vector
                 for (unsigned int j=0; j<3; j++){
-//                    xi[j] = iMit->second.coordinates[j] - cg[j];
                       xi[j] = iMit->second.particle_coordinates[j] - cg[j];
                 }
 
-/*                bool diff_centroid_particle = !fuzzy_equals(iMit->second.coordinates, iMit->second.particle_coordinates);
-                if (diff_centroid_particle){//(it->second == 450){
-                    std::cout << "id: " << it->second << "\n";
-                    std::cout << "row0: " << row0 << "\n";
-                    std::cout << "col0: " << col0 << "\n";
-                    std::cout << "share_ghost_free_boundary_nodes: " << share_ghost_free_boundary_nodes << "\n";
-                    std::cout << "macro_elem_is_ghost: " << macro_elem_is_ghost << "\n";
-                    std::cout << "num_micro_free: " << num_micro_free << "\n";
-                    std::cout << "iMit->second.coordinates: "; elib::print(iMit->second.coordinates);
-                    std::cout << "iMit->second.particle_coordinates: "; elib::print(iMit->second.particle_coordinates);
-                    
-                    std::cout << "cg: "; elib::print(cg);
-                    std::cout << "xi: "; elib::print(xi);
-                    std::cout << "psi_n: " << psi_n << "\n";
-                    std::cout << "dns_weight: " << iMit->second.weight << "\n";
-                    std::cout << "weight: " << weight << "\n";
-                    if (mnelit != micro_node_elcount->end()){
-                        std::cout << "number of neighboring elements: " << mnelit->second << "\n";
-                    }
-                    
-                }
-*/
                 //Add the values to the matrix
                 tripletList.push_back(T(row0 + 0, col0 +  0, weight*psi_n));
                 tripletList.push_back(T(row0 + 1, col0 +  1, weight*psi_n));
@@ -2482,8 +2432,6 @@ namespace overlap{
         xvec.resize(num_macro_dof*num_macro_free);
         Eigen::Map<Eigen::MatrixXd> x(xvec.data(), 1, xvec.size());
 
-//        assert(-1==2);
-
         x = b*shapefunction.block(num_micro_dof*num_micro_free, 0,
                                   num_micro_dof*num_micro_ghost, num_macro_dof*num_macro_free);
     }
@@ -2698,9 +2646,6 @@ namespace overlap{
             std::vector< double > Qvec;
             solve_BDhQtranspose(Dhvec, Qvec);
             std::cout << "Qvec size: " << Qvec.size() << "\n";
-//            for (unsigned int i=0; i < Qvec.size(); i++){
-//                std::cout << Qvec[i] << "\n";
-//            }
 
             if (Qvec.size() != num_micro_dof*num_micro_free){
                 std::cout << "Test 6 failed: BDhQtranspose solver returned a vector of improper size.";
@@ -2928,6 +2873,7 @@ namespace overlap{
         elib::vecOfvec jacobian;
         elib::vecOfvec invjacobian;
         double je;
+        std::vector< FloatType > nda;
         for (unsigned int gp=0; gp<material_weights.size(); gp++){
 /*            std::cout << "points in gauss point " << gp << ": " << material_weights[gp].size() << "\n";
             if (material_weights[gp].size()<10){
@@ -2953,8 +2899,30 @@ namespace overlap{
                 it->second.volume *= je;
 
                 //Transform the normals
-                for (unsigned int j=0; j<it->second.das.size(); j++){
-                    overlap::apply_nansons_relation(it->second.normal(j), je*it->second.area(j), invjacobian, it->second.das[j]);
+                for (unsigned int j=0; j<it->second.normals.size(); j++){
+                    
+                    overlap::apply_nansons_relation(it->second.normal(j), je*it->second.area(j), invjacobian, nda);
+
+                    it->second.areas[j]   = std::sqrt( vectorTools::dot(nda, nda));
+                    it->second.normals[j] = nda / it->second.areas[j];
+
+                    //Check if the normal has any nans (i.e. area is very small)
+                    //If this happens, the normal will be set to the zero vector
+                    for (auto nji = it->second.normals[j].begin(); nji != it->second.normals[j].end(); nji++){
+                        if (std::isnan(*nji)){
+                            it->second.normals[j] = std::vector< FloatType >(it->second.normals[j].size(), 0);
+                            break;
+                        }
+                    }
+
+                    for (unsigned int d = 0; d<it->second.normals[j].size(); d++){
+                        if (std::isnan(it->second.normals[j][d])){
+                            std::cout << "area: " << it->second.areas[j] << "\n";
+                            std::cout << "normal: "; vectorTools::print(it->second.normals[j]);
+                            assert(1==0);
+                        }
+                    }
+
                 }
 
                 //Transform the coordinates to true-space
@@ -2988,6 +2956,7 @@ namespace overlap{
         elib::vecOfvec jacobian;
         elib::vecOfvec invjacobian;
         double je;
+        std::vector< FloatType > nda;
         for (unsigned int gp=0; gp<dof_weights.size(); gp++){
             for (auto it=dof_weights[gp].begin(); it!=dof_weights[gp].end(); it++){
                 element->get_jacobian(it->second.coordinates, element->local_node_coordinates, jacobian);
@@ -2998,8 +2967,20 @@ namespace overlap{
                 it->second.volume *= je;
 
                 //Transform the normals
-                for (unsigned int j=0; j<it->second.das.size(); j++){
-                    overlap::apply_nansons_relation(it->second.normal(j), je*it->second.area(j), invjacobian, it->second.das[j]);
+                for (unsigned int j=0; j<it->second.normals.size(); j++){
+                    overlap::apply_nansons_relation(it->second.normal(j), je*it->second.area(j), invjacobian, nda);
+
+                    it->second.areas[j]   = std::sqrt( vectorTools::dot(nda, nda));
+                    it->second.normals[j] = nda / it->second.areas[j];
+
+                    //Check if the normal has any nans (i.e. area is very small)
+                    //If this happens, the normal will be set to the zero vector
+                    for (auto nji = it->second.normals[j].begin(); nji != it->second.normals[j].end(); nji++){
+                        if (std::isnan(*nji)){
+                            it->second.normals[j] = std::vector< FloatType >(it->second.normals[j].size(), 0);
+                            break;
+                        }
+                    }
                 }
 
                 //Transform the coordinates to true-space
@@ -3067,51 +3048,12 @@ namespace overlap{
 
          Eigen::Map< Eigen::MatrixXd > RHS(balance_equation_rhs.data(), balance_equation_rhs.size(), 1);
 
-//         Eigen::BDCSVD< Eigen::MatrixXd > svd( Abeqn, Eigen::ComputeThinU | Eigen::ComputeThinV );
-//         std::vector< FloatType > logSVS(Abeqn.rows(), 0);
-//
-//         Eigen::Map< Eigen::MatrixXd > oM(logSVS.data(), Abeqn.rows(), 1);
-//         oM = svd.singularValues();
-//
-//         for (unsigned int i=0; i<logSVS.size(); i++){logSVS[i] = std::log10(logSVS[i] + 1e-16);}
-////         std::cout << "logSVS: "; vectorTools::print(logSVS);
-////         std::vector< FloatType > outlierMetrics(logSVS.size() - 1, 0);
-////         for (unsigned int i=0; i<outlierMetrics.size(); i++){outlierMetrics[i] = logSVS[i+1] - logSVS[i];}
-////
-////         std::cout << "outlierMetrics: "; vectorTools::print(outlierMetrics);
-//
-//         std::vector< unsigned int > outliers;
-//         MADOutlierDetection(logSVS, outliers, 10);
-//         std::cout << "outliers: "; vectorTools::print(outliers);
-//
-//         Eigen::MatrixXd S = svd.sign
-//         assert(1==0);
-//
-//         Eigen::MatrixXd M = (Abeqn.transpose()*Abeqn) + 1e-9*Eigen::MatrixXd::Identity(Abeqn.cols(), Abeqn.cols());
-//
-////         std::ofstream tmpFile("aBalanceEquationMatrix.dat");
-////         tmpFile << Abeqn;
-////         tmpFile.flush();
-////         tmpFile.close();
-////         tmpFile = std::ofstream("balanceEquationRHS.dat");
-////         tmpFile << RHS;
-////         tmpFile.flush();
-////         tmpFile.close();
-////
-////         std::cout << "M shape: " << M.rows() << ", " << M.cols() << "\n";
-////         std::cout << "RHS shape: " << RHS.rows() << ", " << RHS.cols() << "\n";
-//
-//         Eigen::MatrixXd x = M.colPivHouseholderQr().solve(Abeqn.transpose()*RHS);
-//         std::cout << "performing svd\n";
-//         std::cerr << " Abeqn shape: " << Abeqn.rows() << ", " << Abeqn.cols() << "\n";
-//         std::ofstream tmpFile("aBalanceEquationMatrix.dat");
-//         tmpFile << Abeqn;
-//         tmpFile.flush();
-//         tmpFile.close();
-
+         if (save_Ab){
+             stressAmatrix = Abeqn;
+             stressbvector = RHS;
+         }
 
          Eigen::JacobiSVD< Eigen::MatrixXd > svd( Abeqn, Eigen::ComputeThinU | Eigen::ComputeThinV );
-//         std::cerr << " setting threshold\n";
 
          std::vector< FloatType > logSVec(Abeqn.rows(), 0);
          Eigen::Map< Eigen::MatrixXd > logS(logSVec.data(), logSVec.size(), 1);
@@ -3128,11 +3070,7 @@ namespace overlap{
              svd.setThreshold( 1e-9 );
          }
 
-//         assert(1==0);
-
-//         std::cout << "S\n" << svd.singularValues() << "\n";
          Eigen::MatrixXd x = svd.solve(RHS);
-//         std::cout << "solved svd\n\n";
 
          //Extract the Cauchy and higher-order stress
          unsigned int nstress = 9; //Assume 3D
@@ -4081,6 +4019,17 @@ namespace overlap{
             }
             file << "\n";
         }
+        //Write out the stress linear algebra equation if required
+        if (save_Ab){
+            file << " *STRESS_A_MATRIX\n";
+            file << stressAmatrix;
+            file << "\n";
+
+            file << " *STRESS_B_VECTOR\n";
+            file << stressbvector;
+            file << "\n";
+        }
+
         file << " *LINEAR MOMENTUM ERROR (ABS/REL), " << linear_momentum_error << ", " << linear_momentum_relative_error << "\n";
         file << " *FIRST MOMENT MOMENTUM ERROR (ABS/REL), " << first_moment_error << ", " << first_moment_relative_error << "\n";
         //Write out the Gauss point values
@@ -4265,6 +4214,7 @@ namespace overlap{
         symm_cauchy_couple.clear();
         body_external_couple.clear();
         kinetic_couple.clear();
+
         return 0;
     }
 

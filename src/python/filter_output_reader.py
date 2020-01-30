@@ -1,6 +1,6 @@
 import numpy as np
 
-def read_values(datafile):
+def read_values(datafile, delimiter = ','):
     """
     Read in values from a string until the keyword character is found.
 
@@ -12,7 +12,7 @@ def read_values(datafile):
     while (len(line)==0):
         line = datafile.readline()
             
-    sline = [v.strip() for v in line.split(',') if len(v.strip())>0]
+    sline = [v.strip() for v in line.split(delimiter) if len(v.strip())>0]
     kwdata = np.array([float(s) for s in sline])
         
     last_pos = datafile.tell()
@@ -24,7 +24,7 @@ def read_values(datafile):
             last_pos = datafile.tell()
             line = datafile.readline().strip()
             continue
-        sline = [v.strip() for v in line.split(',') if len(v.strip())>0]
+        sline = [v.strip() for v in line.split(delimiter) if len(v.strip())>0]
         kwdata = np.vstack([kwdata, [float(s) for s in sline]])
         #x = datafile.tell()
         last_pos = datafile.tell()
@@ -295,7 +295,11 @@ def read_output_data(output_fn):
             
         elif "*FIRST MOMENT MOMENTUM ERROR" in sline[0]:
             mfdata.first_moment_error = float(sline[1]), float(sline[2])
-            
+
+        elif "*STRESS_A_MATRIX" in sline[0]:
+            mfdata.stress_A_matrix = np.array(read_values(of, " "))
+        elif "*STRESS_B_VECTOR" in sline[0]:
+            mfdata.stress_b_vector = np.array(read_values(of, " "))
             
         elif "*" in sline[0]:
             print("Warning: unknown keyword detected")
@@ -407,7 +411,7 @@ def plot_hex(eid, nodes, conn, ax, u=None):
         #print(x)
         ax.plot(*zip(*x), color='k', marker='o')
 
-def plot_hex_filter(eid, t, filter_data, ax):
+def plot_hex_filter(eid, t, filter_data, ax, plotKwargs = {'color':'k', 'marker':'o', 'linestyle':'-'}):
     """
     Plot a hexahedral element as defined by the filter's nodes
 
@@ -421,18 +425,18 @@ def plot_hex_filter(eid, t, filter_data, ax):
 
     #Plot bottom square
     x = np.vstack([f.nodes[:4], f.nodes[0]])
-    ax.plot(*zip(*x), color='k', marker='o')
+    ax.plot(*zip(*x), **plotKwargs)
 
     #Plot the top square
     x = np.vstack([f.nodes[4:], f.nodes[4]])
-    ax.plot(*zip(*x), color='k', marker='o')
+    ax.plot(*zip(*x), **plotKwargs)
 
     #Plot the sides
     for i in range(4):
         x = [f.nodes[i], f.nodes[i+4]]
-        ax.plot(*zip(*x), color='k', marker='o')
+        ax.plot(*zip(*x), **plotKwargs)
 
-def plot_filter_cgs(eid, t, filter_data, ax):
+def plot_filter_cgs(eid, t, filter_data, ax, plotKwargs = {'marker':'x', 'color':'r'}):
     """
     Plot the centers of gravity of the gauss domains for the given filter.
 
@@ -442,7 +446,7 @@ def plot_filter_cgs(eid, t, filter_data, ax):
     :param matplotlib.axes._subplots.Axes3DSubplot ax: The axis to plot to
     """
 
-    ax.scatter(*zip(*filter_data[t][eid].gauss_point_info.global_mass_center), color='r', marker='x')
+    ax.scatter(*zip(*filter_data[t][eid].gauss_point_info.global_mass_center), **plotKwargs)
 
 def to_voigt(A):
     indices = [(0, 0), (1, 1), (2, 2), (1, 2), (0, 2), (0, 1), (2, 1), (2, 0), (1, 0)]
