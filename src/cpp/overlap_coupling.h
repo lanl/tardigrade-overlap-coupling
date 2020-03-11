@@ -385,7 +385,7 @@ namespace overlap{
                                                       const std::map< unsigned int, unsigned int > &micro_node_elcount,
                                                       const unsigned int num_macro_dof, const unsigned int num_micro_dof,
                                                       const unsigned int num_micro_free,
-                                                      std::vector< T > &tripletList);
+                                                      std::vector< T > &tripletList, bool shared_dof_material = true);
             const unsigned int id();
             const unsigned int dim();
             const std::vector< unsigned int >* get_element_global_node_ids();

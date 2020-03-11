@@ -338,9 +338,6 @@ namespace overlap{
             zbnds[0] = fmin(zbnds[0], it->second[2]);
             zbnds[1] = fmax(zbnds[1], it->second[2]);
         }
-//        std::cout << "xbnds: " << xbnds[0] << " " << xbnds[1] << "\n";
-//        std::cout << "ybnds: " << ybnds[0] << " " << ybnds[1] << "\n";
-//        std::cout << "zbnds: " << zbnds[0] << " " << zbnds[1] << "\n";
 
         return;
     }
@@ -564,7 +561,6 @@ namespace overlap{
             
             //Evaluate the point information
             evaluate_container_information(positions, bounding_faces, container, points[gd], boundary_node_volumes);
-//            assert(1==0);
 
             if (points[gd].size() == 0 ){
                 std::cout << "WARNING: NO MICRO-POINTS FOUND IN GAUSS DOMAIN " << gd << "\n";
@@ -1290,7 +1286,6 @@ namespace overlap{
             centroid[0] += x;
             centroid[1] += y;
             centroid[2] += z;
-//            std::cout << "cl.pid(): " << cl.pid() << "\n";
             points.insert(std::pair< unsigned int, MicroPoint>(cl.pid(), MicroPoint(c.volume(), centroid, {x, y, z}, planes, areas, normals, face_centroids)));
 //            points[cl.pid()].print();
 //            vtot += c.volume();
@@ -3687,7 +3682,7 @@ namespace overlap{
                                                                   const std::map< unsigned int, unsigned int > &micro_node_elcount,
                                                                   const unsigned int num_macro_dof, const unsigned int num_micro_dof,
                                                                   const unsigned int num_micro_free,
-                                                                  std::vector< T > &tripletList){
+                                                                  std::vector< T > &tripletList, bool shared_dof_material){
         /*!
          * Add the contribution of this filter to the shape-function matrix
          * :param const std::map< unsigned int, unsigned int > &macro_node_to_col: The map from the macro nodes to the column of the 
@@ -3730,6 +3725,7 @@ namespace overlap{
 
         //Iterate over the filter's gauss points
         if (shared_dof_material){
+
             for (unsigned int gp=0; gp<material_weights.size(); gp++){
                 //Re-cast the cg_phis at the gauss point to the shape expected by construct triplet list
                 phis.resize(cg_phis[gp].size());

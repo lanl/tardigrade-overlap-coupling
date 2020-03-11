@@ -289,7 +289,8 @@ namespace filter{
     }
 
     int build_filters(const assembly::node_map &nodes, const assembly::element_map elements,
-                      const assembly::qrule_map &qrules, const unsigned int num_macro_dof, filter_map &filters){
+                      const assembly::qrule_map &qrules, const unsigned int num_macro_dof, filter_map &filters,
+                      const bool shared_dof_material){
         /*!
         * Build the filters for processing data.
         *
@@ -298,6 +299,8 @@ namespace filter{
         * :param const assembly::qrule_map &qrules: The quadrature rules for the elements.
         * :param const unsigned int num_macro_dof: The number of macro-scale degrees of freedom.
         * :param filter_map &filters: Return map of the element ids to their corresponding sub-filters.
+        * :param const bool shared_dof_material: Flag indicating if the dof is co-located with the stress
+        *     even when it isn't it is sometimes advantageous to pretend like it is for pure filtering operations.
         */
 
         //Clear the filters
@@ -337,7 +340,7 @@ namespace filter{
                 //Initialize the filter
                 filters.emplace(_element->first, overlap::MicromorphicFilter(_element->first, _element_types->first,
                                                                              _element->second, element_nodes, qrule->second,
-                                                                             num_macro_dof));
+                                                                             num_macro_dof, shared_dof_material));
 
             }
         }
@@ -373,7 +376,7 @@ namespace filter{
         //Construct the filters if they haven't been formed yet
         if (filters.size() == 0){
             std::cout << " Filter list unpopulated. Initial construction of filters occuring\n";
-            int bf_result = build_filters(nodes, elements, qrules, num_macro_dof, filters);
+            int bf_result = build_filters(nodes, elements, qrules, num_macro_dof, filters, shared_dof_material);
             if (bf_result>0){
                 return 1;
             }
@@ -524,6 +527,7 @@ namespace filter{
                 }
             }
         }
+
         return 0;   
     }
 
@@ -865,7 +869,7 @@ namespace filter{
 
                 filter->second.add_shapefunction_matrix_contribution(macro_node_to_col, micro_node_to_row, *macro_node_ids,
                                                                      micro_node_elcount, num_macro_dof, num_micro_dof, 
-                                                                     data.size(), tripletList);
+                                                                     data.size(), tripletList, shared_dof_material);
             }
 
             //Construct the shapefunction matrix
@@ -1014,6 +1018,7 @@ int main(int argc, char **argv){
     int format=1; //Hard-coded to format 1
     int mode=0; //Hard-coded to total Lagrangian
     bool shared_dof_material = 1; //Hard-coded to co-located information
+                                  //TODO: There are errors when non-colocated information is used.
 
     if (argc != 4){
         std::cout << "argc: " << argc << "\n";

@@ -49,7 +49,8 @@ namespace filter{
 
     //!Processing commands
     int build_filters(const assembly::node_map &nodes, const assembly::element_map elements, 
-                      const assembly::qrule_map &qrules, const unsigned int num_macro_dof, filter_map &filters);
+                      const assembly::qrule_map &qrules, const unsigned int num_macro_dof, filter_map &filters,
+                      const bool shared_dof_material);
     int populate_filters(const elib::vecOfvec &data, const input_format &mp_format, const input_format &dof_format, 
                          const assembly::node_map &nodes,
                          const assembly::element_map &elements, const assembly::qrule_map &qrules,
