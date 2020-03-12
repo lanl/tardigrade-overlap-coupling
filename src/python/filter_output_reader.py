@@ -298,6 +298,7 @@ def read_output_data(output_fn):
 
         elif "*STRESS_A_MATRIX" in sline[0]:
             mfdata.stress_A_matrix = np.array(read_values(of, " "))
+
         elif "*STRESS_B_VECTOR" in sline[0]:
             mfdata.stress_b_vector = np.array(read_values(of, " "))
             
@@ -371,11 +372,12 @@ def read_dns_data(dns_fn):
             
             if "t = " in line:
                 tc = float(line[3:])
-                dns_data.update({tc:np.empty((0, 3))})
+                dns_data.update({ tc:{'N':np.empty((0, 3)), 'MP':np.empty((0, 3))} })
             else:
                 data = [s.replace(',', '') for s in line.split()]
+                typ = data[0]
                 pos = np.array([float(data[i]) for i in range(2, 5)])
-                dns_data[tc] = np.vstack([dns_data[tc], pos])
+                dns_data[tc][typ] = np.vstack([dns_data[tc][typ], pos])
         
         if (line.strip() == "BEGIN DATA"):
             begin_data = True
