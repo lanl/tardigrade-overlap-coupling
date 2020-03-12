@@ -4123,6 +4123,7 @@ namespace overlap{
             //Write out the deformation measures if defined
             if (displacement_gradient.size() > gp ){
                 file << "  *DISPLACEMENT GRADIENT\n";
+                file << "   ";
                 for ( unsigned int i = 0; i < displacement_gradient[gp].size(); i++ ){
                     if ( i==0 ){
                         file << displacement_gradient[gp][i];
@@ -4131,20 +4132,11 @@ namespace overlap{
                         file << ", " << displacement_gradient[gp][i];
                     }
                 }
-            }
-            if (microdisplacement.size() > gp ){
-                file << "  *MICRODISPLACEMENT\n";
-                for ( unsigned int i = 0; i < microdisplacement[gp].size(); i++ ){
-                    if ( i==0 ){
-                        file << microdisplacement[gp][i];
-                    }
-                    else{
-                        file << ", " << microdisplacement[gp][i];
-                    }
-                }
+                file << "\n";
             }
             if (gradchi.size() > gp ){
                 file << "  *GRADIENT MICRODISPLACEMENT\n";
+                file << "   ";
                 for ( unsigned int i = 0; i < gradchi[gp].size(); i++ ){
                     if ( i==0 ){
                         file << gradchi[gp][i];
@@ -4153,6 +4145,7 @@ namespace overlap{
                         file << ", " << gradchi[gp][i];
                     }
                 }
+                file << "\n";
             }
             if (right_cauchy_green.size() > gp){
                 file << "  *RIGHT CAUCHY GREEN\n";
