@@ -4134,8 +4134,23 @@ namespace overlap{
                 }
                 file << "\n";
             }
+
+            if (chi.size() > gp ){
+                file << "  *MICRODEFORMATION\n";
+                file << "   ";
+                for ( unsigned int i = 0; i < chi[gp].size(); i++ ){
+                    if ( i==0 ){
+                        file << chi[gp][i];
+                    }
+                    else{
+                        file << ", " << chi[gp][i];
+                    }
+                }
+                file << "\n";
+            }
+
             if (gradchi.size() > gp ){
-                file << "  *GRADIENT MICRODISPLACEMENT\n";
+                file << "  *GRADIENT MICRODEFORMATION\n";
                 file << "   ";
                 for ( unsigned int i = 0; i < gradchi[gp].size(); i++ ){
                     if ( i==0 ){
