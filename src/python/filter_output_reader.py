@@ -89,6 +89,9 @@ class GaussPointInformation(object):
         self.ho_stress_variation = [] #The variation in the higher order stress
         
         #Deformation measures
+        self.displacement_gradient = [] #The gradient of the displacment w.r.t. the reference configuration.
+        self.microdeformation = [] #The micro-deformation (chi) at the centroid.
+        self.gradient_microdeformation= [] #The gradient of the micro-deformation w.r.t. the reference configuration
         self.right_cauchy_green = [] #The right cauchy green deformation tensor
         self.psi = [] #The micro deformation measure psi
         self.gamma = [] #The micro deformation gradient measure gamma
@@ -277,6 +280,18 @@ def read_output_data(output_fn):
         elif "*HIGHER ORDER STRESS VARIATION" in sline[0]:
             hosv = read_values(of)
             gpinfo.ho_stress_variation.append(np.copy(hosv))
+
+        elif "*DISPLACEMENT GRADIENT" in sline[0]:
+            dg = read_values(of)
+            gpinfo.displacement_gradient.append( np.copy( dg ) )
+
+        elif "*MICRODEFORMATION" in sline[0]:
+            md = read_values(of)
+            gpinfo.microdeformation.append( np.copy( md ) )
+
+        elif "*GRADIENT MICRODEFORMATION" in sline[0]:
+            gmd = read_values(of)
+            gpinfo.gradient_microdeformation.append( np.copy( gmd ) )
             
         elif "*RIGHT CAUCHY GREEN" in sline[0]:
             rcg = read_values(of)
