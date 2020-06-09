@@ -1,0 +1,10 @@
+.ipynb_checkpoints/*
+*.pdf
+Untitled*.ipynb
+CP*.ipynb
+Equality_Constrained_Least_Squares.ipynb
+*.out
+connectivity_inclusion*
+connectivity_cube*
+connectivity_edge_cube*
+*.ipynb

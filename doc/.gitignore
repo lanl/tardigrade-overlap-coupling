@@ -1,0 +1,6 @@
+*.aux
+*.log
+*.synctex.gz
+documentation.bbl
+documentation.blg
+documentation.pdf
