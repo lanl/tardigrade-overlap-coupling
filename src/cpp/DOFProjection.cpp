@@ -309,8 +309,10 @@ namespace DOFProjection{
 
             //Error handling
             if ( domainMicroNodeIndices[ i ] >= microMasses.size() ){
+
                 return new errorNode( "addDomainMicroContributionToMacroMass",
                                       "The micro-node index is too large for the provided mass and shape function vectors" );
+
             }
 
             //Get the index of the micro node
@@ -320,7 +322,7 @@ namespace DOFProjection{
             for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
                 //Add the micro-node contribution to the macro node
-                projectedMicroMasses[ domainMacroNodeIndices[ j ] ] += mass * domainMicroShapeFunctions[ i * nMacroNodes ];
+                projectedMicroMasses[ domainMacroNodeIndices[ j ] ] += mass * domainMicroShapeFunctions[ i * nMacroNodes + j ];
 
             }
 
