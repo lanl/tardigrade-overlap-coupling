@@ -44,13 +44,20 @@ namespace DOFProjection{
                                                 const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                 const floatVector &referenceXis,
                                                 const floatVector &domainMacroInterpolationFunctionValues,
-                                                const unsigned int &nMacroDOF, const floatVector &MacroDOFVector,
+                                                const unsigned int &nMacroDOF, const floatVector &macroDOFVector,
                                                 const floatVector &domainMicroWeights, floatVector &microDisplacements );
 
     errorOut addMacroDomainDisplacementToMicro( const unsigned int dim, const uIntVector &domainMicroNodeIndices,
                                                 const floatVector &u, const floatVector &phi,
                                                 const floatVector &referenceXis,
                                                 const floatVector &domainMicroWeights, floatVector &microDisplacements );
+
+    errorOut addDomainMicroContributionToMacroMass( const unsigned int &nDomainMacroNodes,
+                                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
+                                                    const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
+                                                    floatVector &projectedMicroMasses );
+
+//    errorOut addMicroDomainDisplacementToMacroDisplacement( const unsigned int dim, const uIntVector &
 
     /*===================================================
     |                Projection Matrices                |

@@ -21,7 +21,7 @@ namespace DOFProjection{
                                                 const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                 const floatVector &referenceXis,
                                                 const floatVector &domainMacroInterpolationFunctionValues,
-                                                const unsigned int &nMacroDOF, const floatVector &MacroDOFVector,
+                                                const unsigned int &nMacroDOF, const floatVector &macroDOFVector,
                                                 const floatVector &domainMicroWeights, floatVector &microDisplacements ){
 
         /*!
@@ -37,7 +37,7 @@ namespace DOFProjection{
          *     at the local center of mass.
          * :param const unsigned int &nMacroDOF: The number of degrees of freedom associated with each macro-scale node.
          *     ( only 12 is tested )
-         * :param const floatVector &MacroDOFVector: The degree of freedom vector for the macro-scale. The ordering for each node
+         * :param const floatVector &macroDOFVector: The degree of freedom vector for the macro-scale. The ordering for each node
          *     is assumed to be [ u1, u2, u3, phi11, phi12, phi13, phi21, phi22, phi23, phi31, phi32, phi33, ... ]
          * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
          *     This is important for two cases:
@@ -59,8 +59,8 @@ namespace DOFProjection{
         //Compute the interpolated value of u and phi
         for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
             interpolatedMacroDOF += domainMacroInterpolationFunctionValues[ i ]
-                                  * floatVector( MacroDOFVector.begin() + nMacroDOF * domainMacroNodeIndices[ i ],
-                                                 MacroDOFVector.begin() + nMacroDOF * domainMacroNodeIndices[ i ] + nMacroDOF );
+                                  * floatVector( macroDOFVector.begin() + nMacroDOF * domainMacroNodeIndices[ i ],
+                                                 macroDOFVector.begin() + nMacroDOF * domainMacroNodeIndices[ i ] + nMacroDOF );
         }
 
         //The interpolated macro-displacement
@@ -266,6 +266,65 @@ namespace DOFProjection{
         //Assemble the sparse matrix
         domainN = SparseMatrix( nMicroDOF * nMicroNodes, nMacroDOF * nMacroNodes );
         domainN.setFromTriplets( coefficients.begin(), coefficients.end() );
+
+        return NULL;
+    }
+
+    errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
+                                                    const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
+                                                    floatVector &projectedMicroMasses ){
+        /*!
+         * Add the contribution of the micro-nodes' mass to the macro nodes.
+         *
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes
+         * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes in the domain
+         * :param const floatVector &microMasses: The masses of the micro-nodes
+         * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
+         *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
+         *     micro-node number and the second is the macro-node number.
+         * :param floatVector &projectedMicroMasses: The projected micro-masses on all of the macro-scale nodes.
+         */
+
+        //Error handling
+        if ( domainMacroNodeIndices.size() * domainMicroNodeIndices.size() != domainMicroShapeFunctions.size() ){
+            return new errorNode( "addDomainMicroContributionToMacroMass",
+                                  "The size of the domain node indices vectors are not consistent with the number of shape functions" );
+        }
+
+        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
+            if ( domainMacroNodeIndices[ i ] >= projectedMicroMasses.size() ){
+                return new errorNode( "addDomainMicroContributionToMacroMass",
+                                      "The size of the projected micro mass vector is smaller than a macro node requires" );
+            }
+        }
+
+        //Set the number of macro-nodes in this domain
+        unsigned int nMacroNodes = domainMacroNodeIndices.size();
+
+        //Initialize the micro node mass
+        floatType mass;
+
+        //Iterate over the micro-node indices
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+            //Error handling
+            if ( domainMicroNodeIndices[ i ] >= microMasses.size() ){
+                return new errorNode( "addDomainMicroContributionToMacroMass",
+                                      "The micro-node index is too large for the provided mass and shape function vectors" );
+            }
+
+            //Get the index of the micro node
+            mass = microMasses[ domainMicroNodeIndices[ i ] ];
+
+            //Iterate over the macro-node indices
+            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+
+                //Add the micro-node contribution to the macro node
+                projectedMicroMasses[ domainMacroNodeIndices[ j ] ] += mass * domainMicroShapeFunctions[ i * nMacroNodes ];
+
+            }
+
+        }
 
         return NULL;
     }
