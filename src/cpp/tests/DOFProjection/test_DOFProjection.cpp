@@ -1177,36 +1177,39 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
         }
     }
 
+    const floatVector domainMicroWeights = { 0.60960585, 0.73346991, 0.44596092, 0.78399932, 0.44089053,
+                                             0.36645328, 0.31175093, 0.08446853, 0.71501009, 0.13722175 };
+
     floatVector answer = { 0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 2.29211588, 0.        , 0.        , 0.        ,
+                           0.        , 1.39118064, 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 1.79259236, 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 1.93258299, 0.        , 0.        , 1.75889465,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           2.00699958, 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 1.29093277, 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 1.23207527, 0.        ,
+                           0.        , 0.86259686, 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
-                           0.        , 0.        , 0.        , 3.9828007 , 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 1.08844972, 0.        , 0.        , 0.74120984,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           1.04659787, 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.59606072, 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.61147372, 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 0.        , 0.        ,
+                           0.        , 0.        , 0.        , 2.58125635, 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
                            0.        , 0.        , 0.        , 0.        , 0.        ,
@@ -1220,8 +1223,8 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
 
     floatVector result( 200, 0 );
 
-    errorOut error = DOFProjection::addDomainMicroContributionToMacroMass( domainMicroNodeIndices, domainMacroNodeIndices,
-                                                                           microMasses, domainMicroShapeFunctions, result );
+    errorOut error = DOFProjection::addDomainMicroContributionToMacroMass( domainMicroNodeIndices, domainMacroNodeIndices, microMasses, 
+                                                                           domainMicroShapeFunctions, domainMicroWeights, result );
 
     if ( error ){
         error->print();
