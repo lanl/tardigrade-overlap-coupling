@@ -231,8 +231,8 @@ namespace DOFProjection{
             row0 = nMicroDOF * domainMicroNodeIndices[ i ];
 
             //Set the micro-position vector
-            Xi = floatVector( referenceXis.begin() + nMicroDOF * domainMicroNodeIndices[ i ],
-                              referenceXis.begin() + nMicroDOF * domainMicroNodeIndices[ i ] + dim );
+            Xi = floatVector( referenceXis.begin() + nMicroDOF * i,
+                              referenceXis.begin() + nMicroDOF * i + nMicroDOF );
 
             //Set the value of the weight
             w = domainMicroWeights[ i ];
