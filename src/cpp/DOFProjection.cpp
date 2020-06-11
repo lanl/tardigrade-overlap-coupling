@@ -11,6 +11,12 @@
 
 namespace DOFProjection{
 
+    /*==================================================================
+    |                       Projection Functions                       |
+    ====================================================================
+    | Functions which project the values from the macro to micro-scale |
+    ==================================================================*/
+
     errorOut addMacroDomainDisplacementToMicro( const unsigned int dim,
                                                 const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                 const floatVector &referenceXis,
@@ -23,7 +29,7 @@ namespace DOFProjection{
          *
          * :param const unsigned int dim: The dimension of the problem ( only 3 is tested )
          * :param const uIntVector &domainMicroDOFIndices: The indices of the micro-scale nodes present in the domain
-         * :param const uIntVector &domainMacroDOFIndices: THe indices of the macro-scale nodes present in the domain
+         * :param const uIntVector &domainMacroDOFIndices: The indices of the macro-scale nodes present in the domain
          *     these are ( in a macro-scale FEA context ) the nodes of the micromorphic finite element.
          * :param const floatVector &referenceXis: The Xi vectors of the micro-scale nodes which go from the local
          *     center of mass to the position of the micro-scale node in the reference configuration.
@@ -93,7 +99,7 @@ namespace DOFProjection{
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
-         *       if the minimum L2 projection is being used.
+         *       if the minimum L2 norm projection is being used.
          * :param floatVector &microDisplacements: The displacements of the micro-scale nodes as determined by the macro-scale
          *     projection.
          */
@@ -139,6 +145,127 @@ namespace DOFProjection{
             microDisplacements[ dim * m + 2 ] += domainMicroWeights[ i ] * q[ 2 ]; 
 
         }
+
+        return NULL;
+    }
+
+    /*===================================================
+    |                Projection Matrices                |
+    =====================================================
+    | Functions which construct the projection matrices |
+    ===================================================*/
+
+    errorOut formMacroDomainToMicroInterpolationMatrix( const unsigned int &dim,
+                                                        const unsigned int &nMicroNodes, const unsigned int &nMacroNodes,
+                                                        const uIntVector &domainMicroNodeIndices,
+                                                        const uIntVector &domainMacroNodeIndices,
+                                                        const floatVector &referenceXis,
+                                                        const floatVector &domainMacroInterpolationFunctionValues,
+                                                        const floatVector &domainMicroWeights, SparseMatrix &domainN ){
+        /*!
+         * Construct the interpolation matrix for a macro domain overlapping with a 
+         * micro-domain
+         *
+         * Note: It is assumed, that both the macro and micro-scale's have the same dimension. The number of spatial 
+         *       variables at the micro-scale is therefore three and the number of macro-scale spatial parameters is
+         *       dim + dim * dim.
+         *
+         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const unsigned int &nMicroNodes: The number of micro-nodes in the N matrix
+         * :param const unsigned int &nMacroNodes: The number of macro-nodes in the N matrix
+         * :param const uIntVector &domainMicroNodeIndices: The global micro-node indices in the given domain
+         * :param const uIntVector &domainMacroDOFIndices: The indices of the macro-scale nodes present in the domain
+         *     these are ( in a macro-scale FEA context ) the nodes of the micromorphic finite element.
+         * :param const floatVector &referenceXis: The vectors from the local center of mass to the micro-nodes in the domain.
+         * :param const floatVector &domainMacroInterpolationFunctionValues: The values of the interpolation functions
+         *     at the local center of mass.
+         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param SparseMatrix &domainN: The macro domain's interpolation function.
+         */
+
+        //Error handling
+        if ( dim != 3 ){
+            return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                  "Only 3D domains are currently supported" );
+        }
+
+        if ( dim * domainMicroNodeIndices.size() != referenceXis.size() ){
+            return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                  "The number of micro node indices is not equal to the number of Xi vectors" );
+        }
+
+        if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
+            return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                  "The number of micro node indices is not equal to the number of weights" );
+        }
+
+        if ( domainMacroNodeIndices.size() != domainMacroInterpolationFunctionValues.size() ){
+            return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                  "The number of macro indices is not equal to the number of macro interpolation function values" );
+        }
+
+        //Set the number of spatial degrees of freedom for the two scales
+        const unsigned int nMicroDOF = dim;
+        const unsigned int nMacroDOF = dim + dim * dim;
+
+        //Set up the vector of terms for the sparse matrix
+        std::vector< T > coefficients;
+        coefficients.reserve( nMicroDOF * domainMicroNodeIndices.size() * nMacroDOF * domainMacroNodeIndices.size() );
+
+        //Initialize the row and column indices for the sparse matrix
+        unsigned int row0, col0;
+
+        //Initialize the Xi vector
+        floatVector Xi;
+
+        //Initialize the value of the weight and shapefunction value
+        floatType w, sf;
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+            //Set the row index
+            row0 = nMicroDOF * domainMicroNodeIndices[ i ];
+
+            //Set the micro-position vector
+            Xi = floatVector( referenceXis.begin() + nMicroDOF * domainMicroNodeIndices[ i ],
+                              referenceXis.begin() + nMicroDOF * domainMicroNodeIndices[ i ] + dim );
+
+            //Set the value of the weight
+            w = domainMicroWeights[ i ];
+
+            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+
+                //Set the column index
+                col0 = nMacroDOF * domainMacroNodeIndices[ j ];
+
+                //Set the shape function value
+                sf = domainMacroInterpolationFunctionValues[ j ];
+
+                //Set the coefficients of the shape function matrix
+                coefficients.push_back( T( row0 + 0, col0 +  0, w * sf ) );
+                coefficients.push_back( T( row0 + 1, col0 +  1, w * sf ) );
+                coefficients.push_back( T( row0 + 2, col0 +  2, w * sf ) );
+                coefficients.push_back( T( row0 + 0, col0 +  3, w * sf * Xi[ 0 ] ) );
+                coefficients.push_back( T( row0 + 0, col0 +  4, w * sf * Xi[ 1 ] ) );
+                coefficients.push_back( T( row0 + 0, col0 +  5, w * sf * Xi[ 2 ] ) );
+                coefficients.push_back( T( row0 + 1, col0 +  6, w * sf * Xi[ 0 ] ) );
+                coefficients.push_back( T( row0 + 1, col0 +  7, w * sf * Xi[ 1 ] ) );
+                coefficients.push_back( T( row0 + 1, col0 +  8, w * sf * Xi[ 2 ] ) );
+                coefficients.push_back( T( row0 + 2, col0 +  9, w * sf * Xi[ 0 ] ) );
+                coefficients.push_back( T( row0 + 2, col0 + 10, w * sf * Xi[ 1 ] ) );
+                coefficients.push_back( T( row0 + 2, col0 + 11, w * sf * Xi[ 2 ] ) );
+
+            }
+
+        }
+
+        //Assemble the sparse matrix
+        domainN = SparseMatrix( nMicroDOF * nMicroNodes, nMacroDOF * nMacroNodes );
+        domainN.setFromTriplets( coefficients.begin(), coefficients.end() );
 
         return NULL;
     }

@@ -13,6 +13,7 @@
 #define USE_EIGEN
 #include<vector_tools.h>
 #include<error_tools.h>
+#include<Eigen/Sparse>
 
 namespace DOFProjection{
 
@@ -28,6 +29,10 @@ namespace DOFProjection{
     typedef std::vector< floatType > floatVector; //! Define a vector of floats
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
     typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
+
+    //Eigen Typedefs
+    typedef Eigen::SparseMatrix< floatType > SparseMatrix;
+    typedef Eigen::Triplet< floatType > T;
 
     /*==================================================================
     |                       Projection Functions                       |
@@ -53,7 +58,13 @@ namespace DOFProjection{
     | Functions which construct the projection matrices |
     ===================================================*/
 
-    int formMacroToMicroInterpolationMatrix();
+    errorOut formMacroDomainToMicroInterpolationMatrix( const unsigned int &dim,
+                                                        const unsigned int &nMicroNodes, const unsigned int &nMacroNodes,
+                                                        const uIntVector &domainMicroNodeIndices,
+                                                        const uIntVector &domainMacroNodeIndices,
+                                                        const floatVector &referenceXis,
+                                                        const floatVector &domainMacroInterpolationFunctionValues,
+                                                        const floatVector &domainMicroWeights, SparseMatrix &domainN );
 }
 
 #endif
