@@ -273,7 +273,7 @@ namespace DOFProjection{
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &domainMicroWeights,
-                                                    floatVector &projectedMicroMasses ){
+                                                    floatVector &projectedMacroMasses ){
         /*!
          * Add the contribution of the micro-nodes' mass to the macro nodes.
          *
@@ -288,7 +288,7 @@ namespace DOFProjection{
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
-         * :param floatVector &projectedMicroMasses: The projected micro-masses on all of the macro-scale nodes.
+         * :param floatVector &projectedMacroMasses: The projected micro-masses on all of the macro-scale nodes.
          */
 
         //Error handling
@@ -302,7 +302,7 @@ namespace DOFProjection{
         }
 
         for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
-            if ( domainMacroNodeIndices[ i ] >= projectedMicroMasses.size() ){
+            if ( domainMacroNodeIndices[ i ] >= projectedMacroMasses.size() ){
                 return new errorNode( "addDomainMicroContributionToMacroMass",
                                       "The size of the projected micro mass vector is smaller than a macro node requires" );
             }
@@ -338,7 +338,7 @@ namespace DOFProjection{
             for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
                 //Add the micro-node contribution to the macro node
-                projectedMicroMasses[ domainMacroNodeIndices[ j ] ] += mass * domainMicroShapeFunctions[ i * nMacroNodes + j ] * weight;
+                projectedMacroMasses[ domainMacroNodeIndices[ j ] ] += mass * domainMicroShapeFunctions[ i * nMacroNodes + j ] * weight;
 
             }
 
