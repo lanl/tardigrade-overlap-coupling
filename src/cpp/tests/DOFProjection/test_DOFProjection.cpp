@@ -819,12 +819,12 @@ int test_addMacroDomainDisplacementToMicro( std::ofstream &results ){
     const floatVector phi = { 1.26925286, 1.09871778, 0.96326024, 1.37885829, 1.53015255,
                               0.73571796, 1.17644686, 1.38324335, 1.21144411 };
 
-    const floatVector referenceXis = { 0.82600773, -0.31883969, -0.25998893,  0.52473346,  0.77251331,
-                                       0.42595406, -0.31517878,  0.28746411, -0.90842368, -0.53523068,
-                                       0.97351291, -0.14788395, -0.51798639,  0.57587961,  0.11605914,
-                                       0.64560903,  0.96418092, -0.54916144, -0.29743071,  0.08238133,
-                                       0.143105  ,  0.35484259,  0.56852093,  0.82044812,  0.03661148,
-                                      -0.50749026,  0.41926847, -0.49879734, -0.00623357,  0.09272105 };
+    const floatVector domainReferenceXis = { 0.82600773, -0.31883969, -0.25998893,  0.52473346,  0.77251331,
+                                             0.42595406, -0.31517878,  0.28746411, -0.90842368, -0.53523068,
+                                             0.97351291, -0.14788395, -0.51798639,  0.57587961,  0.11605914,
+                                             0.64560903,  0.96418092, -0.54916144, -0.29743071,  0.08238133,
+                                             0.143105  ,  0.35484259,  0.56852093,  0.82044812,  0.03661148,
+                                            -0.50749026,  0.41926847, -0.49879734, -0.00623357,  0.09272105 };
 
     const floatVector domainMicroWeights = { 0.60960585, 0.73346991, 0.44596092, 0.78399932, 0.44089053,
                                              0.36645328, 0.31175093, 0.08446853, 0.71501009, 0.13722175 };
@@ -892,7 +892,7 @@ int test_addMacroDomainDisplacementToMicro( std::ofstream &results ){
 
     floatVector result( dim * nMicroNodes );
 
-    errorOut error = DOFProjection::addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, u, phi, referenceXis,
+    errorOut error = DOFProjection::addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, u, phi, domainReferenceXis,
                                                                        domainMicroWeights, result );
 
     if ( error ){
@@ -932,12 +932,12 @@ int test_addMacroDomainDisplacementToMicro2( std::ofstream &results ){
     const floatVector domainMacroInterpolationFunctionValues = { 0.16752483, 0.38439551, 0.15407863, 0.06714958, 0.04915388,
                                                                  0.11278645, 0.0452086 , 0.01970253 };
 
-    const floatVector referenceXis = { 0.82600773, -0.31883969, -0.25998893,  0.52473346,  0.77251331,
-                                       0.42595406, -0.31517878,  0.28746411, -0.90842368, -0.53523068,
-                                       0.97351291, -0.14788395, -0.51798639,  0.57587961,  0.11605914,
-                                       0.64560903,  0.96418092, -0.54916144, -0.29743071,  0.08238133,
-                                       0.143105  ,  0.35484259,  0.56852093,  0.82044812,  0.03661148,
-                                      -0.50749026,  0.41926847, -0.49879734, -0.00623357,  0.09272105 };
+    const floatVector domainReferenceXis = { 0.82600773, -0.31883969, -0.25998893,  0.52473346,  0.77251331,
+                                             0.42595406, -0.31517878,  0.28746411, -0.90842368, -0.53523068,
+                                             0.97351291, -0.14788395, -0.51798639,  0.57587961,  0.11605914,
+                                             0.64560903,  0.96418092, -0.54916144, -0.29743071,  0.08238133,
+                                             0.143105  ,  0.35484259,  0.56852093,  0.82044812,  0.03661148,
+                                            -0.50749026,  0.41926847, -0.49879734, -0.00623357,  0.09272105 };
 
     const floatVector domainMicroWeights = { 0.60960585, 0.73346991, 0.44596092, 0.78399932, 0.44089053,
                                              0.36645328, 0.31175093, 0.08446853, 0.71501009, 0.13722175 };
@@ -1009,7 +1009,7 @@ int test_addMacroDomainDisplacementToMicro2( std::ofstream &results ){
     floatVector result( dim * nMicroNodes );
 
     errorOut error = DOFProjection::addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, domainMacroNodeIndices,
-                                                                       referenceXis, domainMacroInterpolationFunctionValues,
+                                                                       domainReferenceXis, domainMacroInterpolationFunctionValues,
                                                                        nMacroDOF, macroDOFVector, domainMicroWeights, result );
 
     if ( error ){
@@ -1049,12 +1049,12 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
     const floatVector domainMacroInterpolationFunctionValues = { 0.16752483, 0.38439551, 0.15407863, 0.06714958, 0.04915388,
                                                                  0.11278645, 0.0452086 , 0.01970253 };
 
-    const floatVector referenceXis = { 0.82600773, -0.31883969, -0.25998893,  0.52473346,  0.77251331,
-                                       0.42595406, -0.31517878,  0.28746411, -0.90842368, -0.53523068,
-                                       0.97351291, -0.14788395, -0.51798639,  0.57587961,  0.11605914,
-                                       0.64560903,  0.96418092, -0.54916144, -0.29743071,  0.08238133,
-                                       0.143105  ,  0.35484259,  0.56852093,  0.82044812,  0.03661148,
-                                      -0.50749026,  0.41926847, -0.49879734, -0.00623357,  0.09272105 };
+    const floatVector domainReferenceXis = { 0.82600773, -0.31883969, -0.25998893,  0.52473346,  0.77251331,
+                                             0.42595406, -0.31517878,  0.28746411, -0.90842368, -0.53523068,
+                                             0.97351291, -0.14788395, -0.51798639,  0.57587961,  0.11605914,
+                                             0.64560903,  0.96418092, -0.54916144, -0.29743071,  0.08238133,
+                                             0.143105  ,  0.35484259,  0.56852093,  0.82044812,  0.03661148,
+                                            -0.50749026,  0.41926847, -0.49879734, -0.00623357,  0.09272105 };
 
     const floatVector domainMicroWeights = { 0.60960585, 0.73346991, 0.44596092, 0.78399932, 0.44089053,
                                              0.36645328, 0.31175093, 0.08446853, 0.71501009, 0.13722175 };
@@ -1127,7 +1127,8 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
 
     errorOut error = DOFProjection::formMacroDomainToMicroInterpolationMatrix( dim, nMicroNodes, nMacroNodes,
                                                                                domainMicroNodeIndices, domainMacroNodeIndices,
-                                                                               referenceXis, domainMacroInterpolationFunctionValues,
+                                                                               domainReferenceXis,
+                                                                               domainMacroInterpolationFunctionValues,
                                                                                domainMicroWeights, domainN );
 
     if ( error ){

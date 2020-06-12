@@ -19,7 +19,7 @@ namespace DOFProjection{
 
     errorOut addMacroDomainDisplacementToMicro( const unsigned int dim,
                                                 const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
-                                                const floatVector &referenceXis,
+                                                const floatVector &domainReferenceXis,
                                                 const floatVector &domainMacroInterpolationFunctionValues,
                                                 const unsigned int &nMacroDOF, const floatVector &macroDOFVector,
                                                 const floatVector &domainMicroWeights, floatVector &microDisplacements ){
@@ -31,7 +31,7 @@ namespace DOFProjection{
          * :param const uIntVector &domainMicroDOFIndices: The indices of the micro-scale nodes present in the domain
          * :param const uIntVector &domainMacroDOFIndices: The indices of the macro-scale nodes present in the domain
          *     these are ( in a macro-scale FEA context ) the nodes of the micromorphic finite element.
-         * :param const floatVector &referenceXis: The Xi vectors of the micro-scale nodes which go from the local
+         * :param const floatVector &domainReferenceXis: The Xi vectors of the micro-scale nodes which go from the local
          *     center of mass to the position of the micro-scale node in the reference configuration.
          * :param const floatVector &domainMacroInterpolationFunctionValues: The values of the interpolation functions
          *     at the local center of mass.
@@ -70,7 +70,7 @@ namespace DOFProjection{
         floatVector phi( interpolatedMacroDOF.begin() + dim, interpolatedMacroDOF.begin() + dim + dim * dim );
 
         //Compute the micro displacements
-        errorOut error = addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, u, phi, referenceXis,
+        errorOut error = addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, u, phi, domainReferenceXis,
                                                             domainMicroWeights, microDisplacements );
 
         if ( error ){
@@ -85,7 +85,7 @@ namespace DOFProjection{
 
     errorOut addMacroDomainDisplacementToMicro( const unsigned int dim, const uIntVector &domainMicroNodeIndices,
                                                 const floatVector &u, const floatVector &phi,
-                                                const floatVector &referenceXis,
+                                                const floatVector &domainReferenceXis,
                                                 const floatVector &domainMicroWeights, floatVector &microDisplacements ){
         /*!
          * Add the contribution of a macro domain's deformation to the micro-scale
@@ -94,7 +94,7 @@ namespace DOFProjection{
          * :param const uIntVector &domainMicroNodeIndices: The global micro-node indices in the given domain
          * :param const floatVector &u: The macro-displacement at the local center of mass
          * :param const floatVector &phi: The micro-displacement ( in the micro-morphic sense ) at the local center of mass
-         * :param const floatVector &referenceXis: The vectors from the local center of mass to the micro-nodes in the domain.
+         * :param const floatVector &domainReferenceXis: The vectors from the local center of mass to the micro-nodes in the domain.
          * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
@@ -109,7 +109,7 @@ namespace DOFProjection{
                                   "The number of micro domain weights is not equal to the number of micro nodes in the domain" );
         }
 
-        if ( referenceXis.size() != dim * domainMicroNodeIndices.size() ){
+        if ( domainReferenceXis.size() != dim * domainMicroNodeIndices.size() ){
             return new errorNode( "projectMacroDomainDisplacementToMicro",
                                   "The number of Xi vectors is not equal to the number of micro nodes in the domain" );
         }
@@ -134,7 +134,7 @@ namespace DOFProjection{
             }
 
             //Get the value of the micro-position
-            Xi = floatVector( referenceXis.begin() + dim * i, referenceXis.begin() + dim * i + dim );
+            Xi = floatVector( domainReferenceXis.begin() + dim * i, domainReferenceXis.begin() + dim * i + dim );
 
             //Compute the value of the micro-node's displacement
             q = u + vectorTools::matrixMultiply( phi, Xi, dim, dim, dim, 1 );
@@ -159,7 +159,7 @@ namespace DOFProjection{
                                                         const unsigned int &nMicroNodes, const unsigned int &nMacroNodes,
                                                         const uIntVector &domainMicroNodeIndices,
                                                         const uIntVector &domainMacroNodeIndices,
-                                                        const floatVector &referenceXis,
+                                                        const floatVector &domainReferenceXis,
                                                         const floatVector &domainMacroInterpolationFunctionValues,
                                                         const floatVector &domainMicroWeights, SparseMatrix &domainN ){
         /*!
@@ -176,7 +176,7 @@ namespace DOFProjection{
          * :param const uIntVector &domainMicroNodeIndices: The global micro-node indices in the given domain
          * :param const uIntVector &domainMacroDOFIndices: The indices of the macro-scale nodes present in the domain
          *     these are ( in a macro-scale FEA context ) the nodes of the micromorphic finite element.
-         * :param const floatVector &referenceXis: The vectors from the local center of mass to the micro-nodes in the domain.
+         * :param const floatVector &domainReferenceXis: The vectors from the local center of mass to the micro-nodes in the domain.
          * :param const floatVector &domainMacroInterpolationFunctionValues: The values of the interpolation functions
          *     at the local center of mass.
          * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
@@ -193,7 +193,7 @@ namespace DOFProjection{
                                   "Only 3D domains are currently supported" );
         }
 
-        if ( dim * domainMicroNodeIndices.size() != referenceXis.size() ){
+        if ( dim * domainMicroNodeIndices.size() != domainReferenceXis.size() ){
             return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
                                   "The number of micro node indices is not equal to the number of Xi vectors" );
         }
@@ -231,8 +231,8 @@ namespace DOFProjection{
             row0 = nMicroDOF * domainMicroNodeIndices[ i ];
 
             //Set the micro-position vector
-            Xi = floatVector( referenceXis.begin() + nMicroDOF * i,
-                              referenceXis.begin() + nMicroDOF * i + nMicroDOF );
+            Xi = floatVector( domainReferenceXis.begin() + nMicroDOF * i,
+                              domainReferenceXis.begin() + nMicroDOF * i + nMicroDOF );
 
             //Set the value of the weight
             w = domainMicroWeights[ i ];
