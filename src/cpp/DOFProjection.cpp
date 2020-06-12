@@ -346,15 +346,15 @@ namespace DOFProjection{
 
         return NULL;
     }
-
-    errorOut addDomainMicroContributionToMacroMicroMomentOfInertia( const unsigned int &dim,
-                                                                    const uIntVector &domainMicroNodeIndices,
-                                                                    const uIntVector &domainMacroNodeIndices,
-                                                                    const floatVector &domainReferenceXis,
-                                                                    const floatVector &microMasses,
-                                                                    const floatVector &domainMicroShapeFunctions,
-                                                                    const floatVector &domainMicroWeights,
-                                                                    floatVector &projectedMicroMomentOfInertia ){
+ 
+    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
+                                                                        const uIntVector &domainMicroNodeIndices,
+                                                                        const uIntVector &domainMacroNodeIndices,
+                                                                        const floatVector &domainReferenceXis,
+                                                                        const floatVector &microMasses,
+                                                                        const floatVector &domainMicroShapeFunctions,
+                                                                        const floatVector &domainMicroWeights,
+                                                                        floatVector &projectedMassMicroMomentOfInertia ){
         /*!
          * Add the contribution of the micro-nodes in the domain to the macro moment of inertia.
          *
@@ -371,8 +371,8 @@ namespace DOFProjection{
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
-         * :param floatVector &projectedMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
-         *     as projected from the micro-nodes.
+         * :param floatVector &projectedMassMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
+         *     as projected from the micro-nodes weighted by the mass.
          */
 
         //Error handling
@@ -392,9 +392,9 @@ namespace DOFProjection{
         }
 
         for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
-            if ( projectedMicroMomentOfInertia.size() < dim * dim * ( domainMacroNodeIndices[ i ] + 1 ) ){
+            if ( projectedMassMicroMomentOfInertia.size() < dim * dim * ( domainMacroNodeIndices[ i ] + 1 ) ){
                 return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
-                                      "The size of the projected micro moment of inertia is smaller than required for the provided nodes" );
+                                      "The size of the projected micro moment of inertia weighted by the mass is smaller than required for the provided nodes" );
             }
         }
 
@@ -430,7 +430,8 @@ namespace DOFProjection{
                 for ( unsigned int k = 0; k < dim * dim; k++ ){
 
                     //Add the contribution to the micro-moment of inertia
-                    projectedMicroMomentOfInertia[ dim * dim * domainMacroNodeIndices[ j ] + k ] += weight * mass * domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ] * XiXi[ k ];
+                    projectedMassMicroMomentOfInertia[ dim * dim * domainMacroNodeIndices[ j ] + k ]
+                        += weight * mass * domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ] * XiXi[ k ];
 
                 }
 

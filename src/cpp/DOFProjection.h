@@ -57,14 +57,14 @@ namespace DOFProjection{
                                                     const floatVector &domainMicroWeights,
                                                     floatVector &projectedMicroMasses );
 
-    errorOut addDomainMicroContributionToMacroMicroMomentOfInertia( const unsigned int &dim,
-                                                                    const uIntVector &domainMicroNodeIndices,
-                                                                    const uIntVector &domainMacroNodeIndices,
-                                                                    const floatVector &domainReferenceXis,
-                                                                    const floatVector &microMasses,
-                                                                    const floatVector &domainMicroShapeFunctions,
-                                                                    const floatVector &domainMicroWeights,
-                                                                    floatVector &projectedMicroMomentOfInertia );
+    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
+                                                                        const uIntVector &domainMicroNodeIndices,
+                                                                        const uIntVector &domainMacroNodeIndices,
+                                                                        const floatVector &domainReferenceXis,
+                                                                        const floatVector &microMasses,
+                                                                        const floatVector &domainMicroShapeFunctions,
+                                                                        const floatVector &domainMicroWeights,
+                                                                        floatVector &projectedMassMicroMomentOfInertia );
 //    errorOut addMicroDomainDisplacementToMacroDisplacement( const unsigned int dim, const uIntVector &
 
     /*===================================================
