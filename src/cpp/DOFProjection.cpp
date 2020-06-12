@@ -409,9 +409,13 @@ namespace DOFProjection{
 
             //Compute the dyadic product of Xi with itself
             for ( unsigned int j = 0; j < dim; j++ ){
+
                 for ( unsigned int k = 0; k < dim; k++ ){
-                    XiXi[ dim * i + j ] = domainReferenceXis[ i + j ] * domainReferenceXis[ i + k ];
+
+                    XiXi[ dim * j + k ] = domainReferenceXis[ dim * i + j ] * domainReferenceXis[ dim * i + k ];
+
                 }
+
             }
 
             //Extract the nodal mass
@@ -426,7 +430,7 @@ namespace DOFProjection{
                 for ( unsigned int k = 0; k < dim * dim; k++ ){
 
                     //Add the contribution to the micro-moment of inertia
-                    projectedMicroMomentOfInertia[ dim * dim * domainMacroNodeIndices[ j ] + k ] += weight * mass * XiXi[ k ];
+                    projectedMicroMomentOfInertia[ dim * dim * domainMacroNodeIndices[ j ] + k ] += weight * mass * domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ] * XiXi[ k ];
 
                 }
 

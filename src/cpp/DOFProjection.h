@@ -57,12 +57,14 @@ namespace DOFProjection{
                                                     const floatVector &domainMicroWeights,
                                                     floatVector &projectedMicroMasses );
 
-    errorOut addDomainMicroContributionToMacroMicroMomentOfInertia( const uIntVector &domainMicroNodeIndices,
+    errorOut addDomainMicroContributionToMacroMicroMomentOfInertia( const unsigned int &dim,
+                                                                    const uIntVector &domainMicroNodeIndices,
                                                                     const uIntVector &domainMacroNodeIndices,
                                                                     const floatVector &domainReferenceXis,
+                                                                    const floatVector &microMasses,
                                                                     const floatVector &domainMicroShapeFunctions,
+                                                                    const floatVector &domainMicroWeights,
                                                                     floatVector &projectedMicroMomentOfInertia );
-
 //    errorOut addMicroDomainDisplacementToMacroDisplacement( const unsigned int dim, const uIntVector &
 
     /*===================================================
