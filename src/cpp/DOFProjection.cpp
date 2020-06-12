@@ -283,6 +283,11 @@ namespace DOFProjection{
          * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
          *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
          *     micro-node number and the second is the macro-node number.
+         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMicroMasses: The projected micro-masses on all of the macro-scale nodes.
          */
 
@@ -340,5 +345,96 @@ namespace DOFProjection{
         }
 
         return NULL;
+    }
+
+    errorOut addDomainMicroContributionToMacroMicroMomentOfInertia( const unsigned int &dim,
+                                                                    const uIntVector &domainMicroNodeIndices,
+                                                                    const uIntVector &domainMacroNodeIndices,
+                                                                    const floatVector &domainReferenceXis,
+                                                                    const floatVector &microMasses,
+                                                                    const floatVector &domainMicroShapeFunctions,
+                                                                    const floatVector &domainMicroWeights,
+                                                                    floatVector &projectedMicroMomentOfInertia ){
+        /*!
+         * Add the contribution of the micro-nodes in the domain to the macro moment of inertia.
+         *
+         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
+         * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
+         * :param const floatVector &microMasses: The masses of the micro-nodes.
+         * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
+         *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
+         *     micro-node number and the second is the macro-node number.
+         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &projectedMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
+         *     as projected from the micro-nodes.
+         */
+
+        //Error handling
+        if ( dim * domainMicroNodeIndices.size() != domainReferenceXis.size() ){
+            return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
+                                  "The number of micro node indices and the micro position vectors do not have consistent sizes" );
+        }
+
+        if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
+            return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
+                                  "The number of micro node indices and the micro weights are not the same" );
+        }
+
+        if ( domainMicroNodeIndices.size() * domainMacroNodeIndices.size() != domainMicroShapeFunctions.size() ){
+            return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
+                                  "The number of micro and micro node indices are not consistent with the number of shape functions" );
+        }
+
+        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
+            if ( projectedMicroMomentOfInertia.size() < dim * dim * ( domainMacroNodeIndices[ i ] + 1 ) ){
+                return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
+                                      "The size of the projected micro moment of inertia is smaller than required for the provided nodes" );
+            }
+        }
+
+        //Initialize the micro-mass and weight
+        floatType mass, weight;
+
+        //Initialize the dyadic product of the micro-position vector
+        floatVector XiXi( dim * dim );
+
+        //Loop through the micro nodes
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+            //Compute the dyadic product of Xi with itself
+            for ( unsigned int j = 0; j < dim; j++ ){
+                for ( unsigned int k = 0; k < dim; k++ ){
+                    XiXi[ dim * i + j ] = domainReferenceXis[ i + j ] * domainReferenceXis[ i + k ];
+                }
+            }
+
+            //Extract the nodal mass
+            mass = microMasses[ domainMicroNodeIndices[ i ] ];
+
+            //Extract the nodal weight
+            weight = domainMicroWeights[ i ];
+
+            //Loop through the macro nodes
+            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+                
+                for ( unsigned int k = 0; k < dim * dim; k++ ){
+
+                    //Add the contribution to the micro-moment of inertia
+                    projectedMicroMomentOfInertia[ dim * dim * domainMacroNodeIndices[ j ] + k ] += weight * mass * XiXi[ k ];
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+
     }
 }
