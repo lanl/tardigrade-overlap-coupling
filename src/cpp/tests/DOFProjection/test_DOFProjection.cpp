@@ -1242,7 +1242,7 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
     return 0;
 }
 
-int test_addDomainMicroContributionToMacroMicroMomentOfInertia( std::ofstream &results ){
+int test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( std::ofstream &results ){
     /*!
      * Test the addition of the micro-nodes in a domain's contribution to the macro-node micro inertia
      *
@@ -1496,20 +1496,203 @@ int test_addDomainMicroContributionToMacroMicroMomentOfInertia( std::ofstream &r
 
     if ( error ){
         error->print();
-        results << "test_addDomainMicroContributionToMacroMicroMomentOfInertia & False\n";
+        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( answer, result ) ){
+        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & True\n";
+    return 0;
+}
+
+int test_addDomainMassConstant( std::ofstream &results ){
+    /*!
+     * Test the addition of the micro-nodes in a domain's contribution to the mass constant
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    const unsigned int dim = 3;
+
+    const uIntVector domainMicroNodeIndices = { 53, 28, 63, 97, 93, 90,  8,  5,  0, 62 };
+
+    const uIntVector domainMacroNodeIndices = { 98,  31,  90,  71,  74, 113,  11, 148 };
+
+    floatVector microMasses;
+    _testGetMicroMasses( microMasses );
+
+    floatVector microShapeFunctions;
+    _testGetMicroShapeFunctions( microShapeFunctions );
+
+    floatVector domainMicroShapeFunctions( domainMacroNodeIndices.size() * domainMicroNodeIndices.size(), 0 );
+    for ( unsigned int n = 0; n < domainMicroNodeIndices.size(); n++ ){
+        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
+            domainMicroShapeFunctions[ domainMacroNodeIndices.size() * n + i ]
+                = microShapeFunctions[ domainMacroNodeIndices.size() * domainMicroNodeIndices[ n ] + i ];
+        }
+    }
+
+    const floatVector domainReferenceXis = { 0.82600773, -0.31883969, -0.25998893,  0.52473346,  0.77251331,
+                                             0.42595406, -0.31517878,  0.28746411, -0.90842368, -0.53523068,
+                                             0.97351291, -0.14788395, -0.51798639,  0.57587961,  0.11605914,
+                                             0.64560903,  0.96418092, -0.54916144, -0.29743071,  0.08238133,
+                                             0.143105  ,  0.35484259,  0.56852093,  0.82044812,  0.03661148,
+                                            -0.50749026,  0.41926847, -0.49879734, -0.00623357,  0.09272105 };
+
+    const floatVector domainMicroWeights = { 0.60960585, 0.73346991, 0.44596092, 0.78399932, 0.44089053,
+                                             0.36645328, 0.31175093, 0.08446853, 0.71501009, 0.13722175 };
+
+    floatVector answer =
+        {
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.10985589,  0.79305544,
+           -0.03591219,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        , -0.10513976,  0.30865126,
+           -0.0224903 ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.3176471 ,  0.56230337,
+            0.28902764,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.21401771,  0.3816066 ,  0.19019807,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+           -0.0081518 ,  0.39333455, -0.08397994,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.00370875,
+            0.26052988,  0.05370976,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.02146077,
+            0.23961699, -0.04319799,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  1.16244063,
+            1.68676786,  0.96673967,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            0.        ,  0.        ,  0.        ,  0.        ,  0.
+        };
+
+    floatVector result( dim * 200, 0 );
+
+    errorOut error = DOFProjection::addDomainMassConstant( dim, domainMicroNodeIndices, domainMacroNodeIndices,
+                                                           domainReferenceXis, microMasses, domainMicroShapeFunctions,
+                                                           domainMicroWeights, result );
+
+    if ( error ){
+        error->print();
+        results << "test_addDomainMassConstant & False\n";
         return 1;
     }
 
     if ( !vectorTools::fuzzyEquals( answer, result ) ){
         vectorTools::print( answer );
         vectorTools::print( result );
-        results << "test_addDomainMicroContributionToMacroMicroMomentOfInertia (test 1) & False\n";
+        results << "test_addDomainMassConstant (test 1) & False\n";
         return 1;
     }
 
-    results << "test_addDomainMicroContributionToMacroMicroMomentOfInertia & True\n";
+    results << "test_addDomainMassConstant & True\n";
     return 0;
 }
+
 
 int main(){
     /*!
@@ -1527,7 +1710,8 @@ int main(){
     test_addMacroDomainDisplacementToMicro2( results );
     test_formMacroDomainToMicroInterpolationMatrix( results );
     test_addDomainMicroContributionToMacroMass( results );
-    test_addDomainMicroContributionToMacroMicroMomentOfInertia( results );
+    test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( results );
+    test_addDomainMassConstant( results );
 
     //Close the results file
     results.close();
