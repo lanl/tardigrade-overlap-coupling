@@ -84,8 +84,8 @@ namespace DOFProjection{
                                                    const floatVector &domainMicroShapeFunctions, const floatVector &domainMicroWeights,
                                                    floatVector &projectedMassMicroMomentOfInertia,
                                                    floatVector &projectedMassConstant,
-                                                   const bool computeMassMomentOfInertia,
-                                                   const bool computeMassConstant );
+                                                   const bool computeMassMomentOfInertia = true,
+                                                   const bool computeMassConstant = true );
 
 //    errorOut addMicroDomainDisplacementToMacroDisplacement( const unsigned int dim, const uIntVector &
 
