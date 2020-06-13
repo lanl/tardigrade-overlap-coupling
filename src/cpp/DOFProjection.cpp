@@ -375,72 +375,13 @@ namespace DOFProjection{
          *     as projected from the micro-nodes weighted by the mass.
          */
 
-        //Error handling
-        if ( dim * domainMicroNodeIndices.size() != domainReferenceXis.size() ){
-            return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
-                                  "The number of micro node indices and the micro position vectors do not have consistent sizes" );
-        }
-
-        if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
-            return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
-                                  "The number of micro node indices and the micro weights are not the same" );
-        }
-
-        if ( domainMicroNodeIndices.size() * domainMacroNodeIndices.size() != domainMicroShapeFunctions.size() ){
-            return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
-                                  "The number of micro and micro node indices are not consistent with the number of shape functions" );
-        }
-
-        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
-            if ( projectedMassMicroMomentOfInertia.size() < dim * dim * ( domainMacroNodeIndices[ i ] + 1 ) ){
-                return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
-                                      "The size of the projected micro moment of inertia weighted by the mass is smaller than required for the provided nodes" );
-            }
-        }
-
-        //Initialize the micro-mass and weight
-        floatType mass, weight;
-
-        //Initialize the dyadic product of the micro-position vector
-        floatVector XiXi( dim * dim );
-
-        //Loop through the micro nodes
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
-
-            //Compute the dyadic product of Xi with itself
-            for ( unsigned int j = 0; j < dim; j++ ){
-
-                for ( unsigned int k = 0; k < dim; k++ ){
-
-                    XiXi[ dim * j + k ] = domainReferenceXis[ dim * i + j ] * domainReferenceXis[ dim * i + k ];
-
-                }
-
-            }
-
-            //Extract the nodal mass
-            mass = microMasses[ domainMicroNodeIndices[ i ] ];
-
-            //Extract the nodal weight
-            weight = domainMicroWeights[ i ];
-
-            //Loop through the macro nodes
-            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
-                
-                for ( unsigned int k = 0; k < dim * dim; k++ ){
-
-                    //Add the contribution to the micro-moment of inertia
-                    projectedMassMicroMomentOfInertia[ dim * dim * domainMacroNodeIndices[ j ] + k ]
-                        += weight * mass * domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ] * XiXi[ k ];
-
-                }
-
-            }
-
-        }
-
-        return NULL;
-
+        floatVector projectedMassConstant;
+        return addDomainMicroToMacroProjectionTerms( dim,
+                                                     domainMicroNodeIndices, domainMacroNodeIndices,
+                                                     domainReferenceXis, microMasses, domainMicroShapeFunctions, 
+                                                     domainMicroWeights,
+                                                     projectedMassMicroMomentOfInertia, projectedMassConstant,
+                                                     true, false );
     }
 
     errorOut addDomainMassConstant( const unsigned int &dim,
@@ -467,25 +408,72 @@ namespace DOFProjection{
          * :param floatVector &projectedMassConstant: The projected mass constant at the macro-scale node.
          */
 
+        floatVector projectedMassMicroMomentOfInertia;
+        return addDomainMicroToMacroProjectionTerms( dim,
+                                                     domainMicroNodeIndices, domainMacroNodeIndices,
+                                                     domainReferenceXis, microMasses, domainMicroShapeFunctions,
+                                                     domainMicroWeights,
+                                                     projectedMassMicroMomentOfInertia, projectedMassConstant,
+                                                     false, true );
+    }
+
+    errorOut addDomainMicroToMacroProjectionTerms( const unsigned int &dim,
+                                                   const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
+                                                   const floatVector &domainReferenceXis, const floatVector &microMasses,
+                                                   const floatVector &domainMicroShapeFunctions, const floatVector &domainMicroWeights,
+                                                   floatVector &projectedMassMicroMomentOfInertia,
+                                                   floatVector &projectedMassConstant,
+                                                   const bool computeMassMomentOfInertia,
+                                                   const bool computeMassConstant ){
+        /*!
+         * Solve for the terms required to project from the micro-scale to the macro-scale.
+         *
+         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
+         * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
+         * :param const floatVector &microMasses: The masses of the micro-nodes.
+         * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
+         *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
+         *     micro-node number and the second is the macro-node number.
+         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &projectedMassMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
+         *     as projected from the micro-nodes weighted by the mass.
+         * :param const bool computeMassMomentOfInertia: Boolean for whether the contribution to the mass-weighted moment 
+         *     of inertia should be computed.
+         * :param const bool computeMassConstant: Boolean for whether the contribution to the mass constant.
+         */
+
         //Error handling
         if ( dim * domainMicroNodeIndices.size() != domainReferenceXis.size() ){
-            return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
+            return new errorNode( "addDomainMicroToMacroProjectionTerms",
                                   "The number of micro node indices and the micro position vectors do not have consistent sizes" );
         }
 
         if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
-            return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
+            return new errorNode( "addDomainMicroToMacroProjectionTerms",
                                   "The number of micro node indices and the micro weights are not the same" );
         }
 
         if ( domainMicroNodeIndices.size() * domainMacroNodeIndices.size() != domainMicroShapeFunctions.size() ){
-            return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
+            return new errorNode( "addDomainMicroToMacroProjectionTerms",
                                   "The number of micro and micro node indices are not consistent with the number of shape functions" );
         }
 
         for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
-            if ( projectedMassConstant.size() < dim * ( domainMacroNodeIndices[ i ] + 1 ) ){
-                return new errorNode( "addDomainMicroContributionToMacroMicroMomentOfInertia",
+            if ( ( projectedMassMicroMomentOfInertia.size() < dim * dim * ( domainMacroNodeIndices[ i ] + 1 ) ) &&
+                 ( computeMassMomentOfInertia ) ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                      "The size of the projected micro moment of inertia weighted by the mass is smaller than required for the provided nodes" );
+            }
+
+            if ( projectedMassConstant.size() < dim * ( domainMacroNodeIndices[ i ] + 1 ) &&
+               ( computeMassConstant ) ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
                                       "The size of the projected mass constant is smaller than required for the provided nodes" );
             }
         }
@@ -493,8 +481,11 @@ namespace DOFProjection{
         //Initialize the micro-mass and weight
         floatType mass, weight;
 
-        //Initialize Xi
-        floatVector Xi;
+        //Initialize the micro-position vector
+        floatVector Xi( dim );
+
+        //Initialize the dyadic product of the micro-position vector
+        floatVector XiXi( dim * dim );
 
         //Loop through the micro nodes
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
@@ -505,17 +496,46 @@ namespace DOFProjection{
             //Extract the nodal weight
             weight = domainMicroWeights[ i ];
 
-            //Extract the micro-position vector
-            Xi = floatVector( domainReferenceXis.begin() + dim * i, domainReferenceXis.begin() + dim * ( i + 1 ) );
+            //Extract the current micro-position vectors
+            if ( computeMassConstant ){
+                Xi = floatVector( domainReferenceXis.begin() + dim * i, domainReferenceXis.begin() + dim * ( i + 1 ) );
+            }
+
+            //Compute the dyadic product of Xi with itself
+            if ( computeMassMomentOfInertia ){
+                for ( unsigned int j = 0; j < dim; j++ ){
+    
+                    for ( unsigned int k = 0; k < dim; k++ ){
+    
+                        XiXi[ dim * j + k ] = domainReferenceXis[ dim * i + j ] * domainReferenceXis[ dim * i + k ];
+    
+                    }
+    
+                }
+            }
 
             //Loop through the macro nodes
             for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+               
+                if ( computeMassMomentOfInertia ){ 
+                    for ( unsigned int k = 0; k < dim * dim; k++ ){
+    
+                        //Add the contribution to the micro-moment of inertia
+                        projectedMassMicroMomentOfInertia[ dim * dim * domainMacroNodeIndices[ j ] + k ]
+                            += weight * mass * domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ] * XiXi[ k ];
+    
+                    }
 
-                for ( unsigned int k = 0; k < dim; k++ ){
+                }
 
-                    //Add the contribution to the micro-moment of inertia
-                    projectedMassConstant[ dim * domainMacroNodeIndices[ j ] + k ]
-                        += weight * mass * domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ] * Xi[ k ];
+                if ( computeMassConstant ){ 
+                    for ( unsigned int k = 0; k < dim; k++ ){
+    
+                        //Add the contribution to the micro-moment of inertia
+                        projectedMassConstant[ dim * domainMacroNodeIndices[ j ] + k ]
+                            += weight * mass * domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ] * Xi[ k ];
+    
+                    }
 
                 }
 
@@ -526,4 +546,5 @@ namespace DOFProjection{
         return NULL;
 
     }
+
 }
