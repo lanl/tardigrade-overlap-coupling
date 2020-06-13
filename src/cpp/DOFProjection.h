@@ -55,7 +55,7 @@ namespace DOFProjection{
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &domainMicroWeights,
-                                                    floatVector &projectedMacroMasses );
+                                                    floatVector &projectedMicroMasses );
 
     errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
                                                                         const uIntVector &domainMicroNodeIndices,
@@ -77,6 +77,13 @@ namespace DOFProjection{
                                         const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                         const floatVector &domainMicroWeights, const floatVector &microDisplacements,
                                         floatVector &projectedMassDisplacement );
+
+    errorOut addDomainMassMicroDisplacementPosition( const unsigned int &dim,
+                                                     const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
+                                                     const floatVector &domainReferenceXis, const floatVector &microMasses,
+                                                     const floatVector &domainMicroShapeFunctions, const floatVector &domainMicroWeights,
+                                                     const floatVector &microDisplacements,
+                                                     floatVector projectedMassDisplacementPosition );
 
     errorOut addDomainMicroToMacroProjectionTerms( const unsigned int &dim,
                                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
