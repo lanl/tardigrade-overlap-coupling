@@ -699,7 +699,7 @@ namespace DOFProjection{
                     for ( unsigned int k = 0; k < dim; k++ ){
 
                         for ( unsigned int l = 0; l < dim; l++ ){
-                            projectedMassDisplacementPosition[ dim * domainMacroNodeIndices[ j ] + dim * k + l ]
+                            projectedMassDisplacementPosition[ dim * dim * domainMacroNodeIndices[ j ] + dim * k + l ]
                                 += weight * mass * sf * q[ k ] * Xi[ l ];
                         }
 
