@@ -376,12 +376,16 @@ namespace DOFProjection{
          */
 
         floatVector projectedMassConstant;
-        return addDomainMicroToMacroProjectionTerms( dim,
-                                                     domainMicroNodeIndices, domainMacroNodeIndices,
-                                                     domainReferenceXis, microMasses, domainMicroShapeFunctions, 
-                                                     domainMicroWeights,
-                                                     projectedMassMicroMomentOfInertia, projectedMassConstant,
-                                                     true, false );
+        floatVector projectedMassDisplacement;
+        floatVector microDisplacements;
+        return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
+                                                     domainReferenceXis, microMasses, domainMicroShapeFunctions,
+                                                     domainMicroWeights, microDisplacements,
+                                                     projectedMassMicroMomentOfInertia,
+                                                     projectedMassConstant,
+                                                     projectedMassDisplacement,
+                                                     true, false, false );
+
     }
 
     errorOut addDomainMassConstant( const unsigned int &dim,
@@ -409,22 +413,29 @@ namespace DOFProjection{
          */
 
         floatVector projectedMassMicroMomentOfInertia;
-        return addDomainMicroToMacroProjectionTerms( dim,
-                                                     domainMicroNodeIndices, domainMacroNodeIndices,
+        floatVector projectedMassDisplacement;
+        floatVector microDisplacements;
+        return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
                                                      domainReferenceXis, microMasses, domainMicroShapeFunctions,
-                                                     domainMicroWeights,
-                                                     projectedMassMicroMomentOfInertia, projectedMassConstant,
-                                                     false, true );
+                                                     domainMicroWeights, microDisplacements,
+                                                     projectedMassMicroMomentOfInertia,
+                                                     projectedMassConstant,
+                                                     projectedMassDisplacement,
+                                                     false, true, false );
+
     }
 
     errorOut addDomainMicroToMacroProjectionTerms( const unsigned int &dim,
                                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                    const floatVector &domainReferenceXis, const floatVector &microMasses,
                                                    const floatVector &domainMicroShapeFunctions, const floatVector &domainMicroWeights,
+                                                   const floatVector &microDisplacements,
                                                    floatVector &projectedMassMicroMomentOfInertia,
                                                    floatVector &projectedMassConstant,
+                                                   floatVector &projectedMassDisplacement,
                                                    const bool computeMassMomentOfInertia,
-                                                   const bool computeMassConstant ){
+                                                   const bool computeMassConstant,
+                                                   const bool computeMassMicroDisplacement ){
         /*!
          * Solve for the terms required to project from the micro-scale to the macro-scale.
          *
@@ -441,11 +452,14 @@ namespace DOFProjection{
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
+         * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
          * :param floatVector &projectedMassMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
          *     as projected from the micro-nodes weighted by the mass.
          * :param const bool computeMassMomentOfInertia: Boolean for whether the contribution to the mass-weighted moment 
          *     of inertia should be computed.
          * :param const bool computeMassConstant: Boolean for whether the contribution to the mass constant.
+         * :param const bool computeMassMicroDisplacement: Boolean for whether the contribution of the mass-weighted
+         *     displacement should be calculated.
          */
 
         //Error handling
@@ -471,15 +485,33 @@ namespace DOFProjection{
                                       "The size of the projected micro moment of inertia weighted by the mass is smaller than required for the provided nodes" );
             }
 
-            if ( projectedMassConstant.size() < dim * ( domainMacroNodeIndices[ i ] + 1 ) &&
-               ( computeMassConstant ) ){
+            if ( ( projectedMassConstant.size() < dim * ( domainMacroNodeIndices[ i ] + 1 ) ) &&
+                 ( computeMassConstant ) ){
                 return new errorNode( "addDomainMicroToMacroProjectionTerms",
                                       "The size of the projected mass constant is smaller than required for the provided nodes" );
+            }
+
+            if ( ( projectedMassDisplacement.size() < dim * ( domainMacroNodeIndices[ i ] + 1 ) ) &&
+                 ( computeMassMicroDisplacement ) ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                      "The sie of the projected mass-weighted micro displacement is smaller than required for the provided nodes" );
+            }
+        }
+
+        if ( computeMassMicroDisplacement ){
+            for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+                if ( microDisplacements.size() < dim * ( domainMicroNodeIndices[ i ] + 1 ) ){
+                    return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                          "The size of the micro degree of freedom vector is too small for the provided nodes" );
+                }
             }
         }
 
         //Initialize the micro-mass and weight
         floatType mass, weight;
+
+        //Initialize the micro-displacement vector
+        floatVector q( dim );
 
         //Initialize the micro-position vector
         floatVector Xi( dim );
@@ -498,11 +530,14 @@ namespace DOFProjection{
 
             //Extract the current micro-position vectors
             if ( computeMassConstant ){
+
                 Xi = floatVector( domainReferenceXis.begin() + dim * i, domainReferenceXis.begin() + dim * ( i + 1 ) );
+
             }
 
             //Compute the dyadic product of Xi with itself
             if ( computeMassMomentOfInertia ){
+
                 for ( unsigned int j = 0; j < dim; j++ ){
     
                     for ( unsigned int k = 0; k < dim; k++ ){
@@ -514,10 +549,18 @@ namespace DOFProjection{
                 }
             }
 
+            if ( computeMassMicroDisplacement ){
+
+                q = floatVector( microDisplacements.begin() + dim * domainMicroNodeIndices[ i ],
+                                 microDisplacements.begin() + dim * domainMicroNodeIndices[ i ] + dim );
+
+            }
+
             //Loop through the macro nodes
             for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
                
                 if ( computeMassMomentOfInertia ){ 
+
                     for ( unsigned int k = 0; k < dim * dim; k++ ){
     
                         //Add the contribution to the micro-moment of inertia
@@ -529,12 +572,25 @@ namespace DOFProjection{
                 }
 
                 if ( computeMassConstant ){ 
+
                     for ( unsigned int k = 0; k < dim; k++ ){
     
                         //Add the contribution to the micro-moment of inertia
                         projectedMassConstant[ dim * domainMacroNodeIndices[ j ] + k ]
                             += weight * mass * domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ] * Xi[ k ];
     
+                    }
+
+                }
+
+                if ( computeMassMicroDisplacement ) {
+
+                    for ( unsigned int k = 0; k < dim; k++ ){
+
+                        //Add the contribution to the mass weighted micro-displacement
+                        projectedMassDisplacement[ dim * domainMacroNodeIndices[ j ] + k ]
+                            += weight * mass * domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ] * q[ k ];
+
                     }
 
                 }

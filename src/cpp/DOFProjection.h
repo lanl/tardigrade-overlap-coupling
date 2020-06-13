@@ -82,10 +82,13 @@ namespace DOFProjection{
                                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                    const floatVector &domainReferenceXis, const floatVector &microMasses,
                                                    const floatVector &domainMicroShapeFunctions, const floatVector &domainMicroWeights,
+                                                   const floatVector &microDisplacements,
                                                    floatVector &projectedMassMicroMomentOfInertia,
                                                    floatVector &projectedMassConstant,
+                                                   floatVector &projectedMassDisplacement,
                                                    const bool computeMassMomentOfInertia = true,
-                                                   const bool computeMassConstant = true );
+                                                   const bool computeMassConstant = true,
+                                                   const bool computeMassMicroDisplacement = true );
 
     /*===================================================
     |                Projection Matrices                |
