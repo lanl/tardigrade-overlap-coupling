@@ -87,8 +87,6 @@ namespace DOFProjection{
                                                    const bool computeMassMomentOfInertia = true,
                                                    const bool computeMassConstant = true );
 
-//    errorOut addMicroDomainDisplacementToMacroDisplacement( const unsigned int dim, const uIntVector &
-
     /*===================================================
     |                Projection Matrices                |
     =====================================================
