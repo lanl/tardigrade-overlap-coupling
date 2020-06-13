@@ -2465,13 +2465,15 @@ int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
 
     floatVector resultMassDisplacements( dim * 200, 0 );
 
+    floatVector resultMassDisplacementPosition( dim * dim * 200, 0 );
+
     errorOut error = DOFProjection::addDomainMicroToMacroProjectionTerms( dim,
                                                                           domainMicroNodeIndices, domainMacroNodeIndices,
                                                                           domainReferenceXis, microMasses,
                                                                           domainMicroShapeFunctions, domainMicroWeights,
                                                                           microDisplacements,
                                                                           resultMassMomentOfInertia, resultMassConstant,
-                                                                          resultMassDisplacements );
+                                                                          resultMassDisplacements, resultMassDisplacementPosition );
 
     if ( error ){
         error->print();

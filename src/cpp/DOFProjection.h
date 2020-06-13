@@ -93,9 +93,11 @@ namespace DOFProjection{
                                                    floatVector &projectedMassMicroMomentOfInertia,
                                                    floatVector &projectedMassConstant,
                                                    floatVector &projectedMassDisplacement,
+                                                   floatVector &projectedMassDisplacementPosition,
                                                    const bool computeMassMomentOfInertia = true,
                                                    const bool computeMassConstant = true,
-                                                   const bool computeMassMicroDisplacement = true );
+                                                   const bool computeMassMicroDisplacement = true,
+                                                   const bool computeMassDisplacementPosition = true );
 
     /*===================================================
     |                Projection Matrices                |
