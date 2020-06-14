@@ -758,7 +758,7 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &domainMass: The mass of the domain
-         * :param floatVector &domainCG: The center of mass of the domain
+         * :param floatVector &domainCM: The center of mass of the domain
          */
 
         if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
@@ -799,6 +799,51 @@ namespace DOFProjection{
 
         //Normalize the center of mass by the domain's mass
         domainCM /= domainMass;
+
+        return NULL;
+
+    }
+
+    errorOut computeDomainXis( const unsigned int &dim,
+                               const uIntVector &domainMicroNodeIndices, const floatVector &microPositions,
+                               const floatVector &domainCM, floatVector &domainXis ){
+        /*
+         * Compute the relative position vector between the center of mass of a micro domain and the 
+         * micro position.
+         *
+         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const floatVector &microPositions: The positions of the micro-nodes.
+         * :param floatVector &domainCM: The center of mass of the domain
+         * :param floatVector &domainXis: The relative positions of the micro nodes.
+         */
+
+        //Error Handling
+        if ( domainCM.size() != dim ){
+            return new errorNode( "computeDomainXis",
+                                  "The center of mass is not consistent with the dimension" );
+        }
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+            if ( microPositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "The size of the micro-positions vector is not consistent with the micro indices" );
+            }
+        }
+
+        //Resize the Xi vector
+        domainXis.resize( dim * domainMicroNodeIndices.size() );
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+            for ( unsigned int j = 0; j < dim; j++ ){
+           
+                //Compute the relative position vector 
+                domainXis[ dim * i + j ] = microPositions[ dim * domainMicroNodeIndices[ i ] + j ] - domainCM[ j ];
+
+            }
+
+        }
 
         return NULL;
 

@@ -3403,13 +3403,13 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     _getTestMicroMasses( microMasses );
 
     floatType   domainMassAnswer = 8.918825729539673;
-    floatVector domainCGAnswer = { -0.31415104, -0.12236504,  0.35297997 };
+    floatVector domainCMAnswer = { -0.31415104, -0.12236504,  0.35297997 };
 
     floatType   domainMassResult;
-    floatVector domainCGResult;
+    floatVector domainCMResult;
 
     errorOut error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, 
-                                                               domainMicroWeights, domainCGResult );
+                                                               domainMicroWeights, domainCMResult );
 
     if ( error ){
         error->print();
@@ -3417,16 +3417,16 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
         return 1;
     }
 
-    if ( !vectorTools::fuzzyEquals( domainCGAnswer, domainCGResult ) ){
+    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
         results << "test_computeDomainCenterOfMass (test 1) & False\n";
         return 1;
     }
 
-    domainCGResult = floatVector( 0, 0 );
+    domainCMResult = floatVector( 0, 0 );
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, domainMicroWeights,
-                                                      domainMassResult, domainCGResult );
+                                                      domainMassResult, domainCMResult );
 
-    if ( !vectorTools::fuzzyEquals( domainCGAnswer, domainCGResult ) ){
+    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
         results << "test_computeDomainCenterOfMass (test 2) & False\n";
         return 1;
     }
@@ -3437,6 +3437,54 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     }
 
     results << "test_computeDomainCenterOfMass & True\n";
+    return 0;
+}
+
+int test_computeDomainXis( std::ofstream &results ){
+    /*!
+     * Compute the relative position of the micro points
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    const unsigned int dim = 3;
+
+    const uIntVector domainMicroNodeIndices = { 53, 28, 63, 97, 93, 90,  8,  5,  0, 62 };
+
+    const floatVector domainMicroWeights = { 0.60960585, 0.73346991, 0.44596092, 0.78399932, 0.44089053,
+                                             0.36645328, 0.31175093, 0.08446853, 0.71501009, 0.13722175 };
+
+    floatVector microPositions;
+    _getTestMicroPositions( microPositions );
+
+    floatVector microMasses;
+    _getTestMicroMasses( microMasses );
+
+    floatVector domainCM = { -0.31415104, -0.12236504,  0.35297997 };
+
+    floatVector domainXiAnswer = {  0.22736644,  0.10072434,  0.29239908, -0.19475328,  0.34886294,
+                                   -0.23384148, -0.47023966,  0.24741626, -0.19667858, -0.21423004,
+                                   -0.85337825,  0.31032197,  0.27870773, -0.56131183,  0.50831867,
+                                    1.07821792, -0.35339025, -0.47612394,  0.35013611,  0.99721999,
+                                   -1.02966828,  0.97697383, -0.37834494,  0.11389406,  0.82520443,
+                                   -0.45311879, -0.32833682,  0.6617871 , -0.43811679, -0.79900436 };
+
+    floatVector domainXiResult;
+
+    errorOut error = DOFProjection::computeDomainXis( dim, domainMicroNodeIndices, microPositions, domainCM, domainXiResult );
+
+    if ( error ){
+        error->print();
+        results << "test_computeDomainXis & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainXiAnswer, domainXiResult ) ){
+        results << "test_computeDomainXis (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_computeDomainXis & True\n";
     return 0;
 }
 
@@ -3462,6 +3510,7 @@ int main(){
     test_addDomainMassMicroDisplacementPosition( results ); 
     test_addDomainMicroToMacroProjectionTerms( results );
     test_computeDomainCenterOfMass( results );
+    test_computeDomainXis( results );
 
     //Close the results file
     results.close();
