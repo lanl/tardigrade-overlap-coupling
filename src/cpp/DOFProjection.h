@@ -99,6 +99,16 @@ namespace DOFProjection{
                                                    const bool computeMassMicroDisplacement = true,
                                                    const bool computeMassDisplacementPosition = true );
 
+    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+                                        const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
+                                        const floatVector &microPositions, const floatVector &domainMicroWeights,
+                                        floatType &domainMass, floatVector &domainCM );
+
+    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+                                        const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
+                                        const floatVector &microPositions, const floatVector &domainMicroWeights,
+                                        floatVector &domainCM );
+
     /*===================================================
     |                Projection Matrices                |
     =====================================================

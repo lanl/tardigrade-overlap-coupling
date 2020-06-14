@@ -16,6 +16,89 @@ typedef DOFProjection::uIntVector uIntVector; //!Define a vector of unsigned int
 
 typedef DOFProjection::SparseMatrix SparseMatrix; //!Define a sparse matrix
 
+int _getTestMicroPositions( floatVector &microPositions ){
+
+    microPositions =
+        {
+             5.11053393e-01, -5.75483829e-01,  2.46431550e-02,  4.67154960e-01,
+             2.50350641e-02, -7.98503130e-01,  5.86491530e-01,  8.20885452e-01,
+             7.26820121e-01, -1.71433307e-01, -2.90392368e-01, -8.02256231e-01,
+            -4.53456931e-01,  5.01950064e-01, -2.96606958e-01,  6.62822790e-01,
+            -5.00709987e-01,  4.66874028e-01,  2.59925373e-01, -2.04726353e-01,
+            -5.84751556e-01,  1.25648579e-01, -9.78090498e-01, -8.12723097e-02,
+             3.59850757e-02,  8.74854947e-01, -6.76688307e-01, -6.16924122e-01,
+            -9.15389560e-01,  7.85493041e-01,  7.45734736e-01, -8.59288423e-01,
+             6.69315577e-01,  2.79476008e-01,  2.98645456e-01, -4.24118317e-01,
+            -7.52063941e-01, -4.85739939e-01,  2.41751066e-01,  7.71013879e-01,
+             5.87230072e-02, -6.97838825e-01,  6.71446067e-01,  3.93561329e-01,
+            -4.44938242e-02, -6.77008565e-04,  2.70374503e-01, -3.44324232e-01,
+            -7.99590878e-01,  9.34565123e-02, -3.95771185e-01, -3.33469532e-01,
+            -3.77173343e-01,  5.14472333e-01,  6.27890989e-01, -3.81641693e-01,
+            -5.54243342e-01, -8.39188018e-01,  4.13818559e-01,  7.92231642e-01,
+             5.92575013e-01,  7.84768413e-01, -6.20296320e-01, -5.82767097e-01,
+             7.15744899e-01,  5.57417907e-01, -6.19504371e-01, -4.01528972e-01,
+            -9.29248298e-01,  4.27161283e-01, -5.70989226e-01, -8.54174298e-01,
+             3.65554602e-01,  8.98689150e-01, -1.70065245e-01,  5.57047697e-01,
+             1.12893955e-01,  6.56339455e-01, -1.87842848e-02, -6.02404574e-02,
+            -7.72353243e-01,  6.72897932e-01,  9.62092025e-01,  5.80844582e-01,
+            -5.08904320e-01,  2.26497896e-01,  1.19138495e-01, -3.17815716e-02,
+             9.03609758e-01,  7.36283179e-01,  1.56295682e-01,  2.32815593e-01,
+             7.59515062e-01,  9.72979516e-01, -1.45306640e-01,  5.55692940e-01,
+            -5.78852554e-01,  6.21472738e-01,  9.48375298e-01,  9.15407509e-01,
+            -6.25885436e-02, -3.13376989e-01,  3.29173725e-01, -4.39051033e-01,
+            -5.10787692e-01,  9.76041150e-02, -4.22934382e-01,  7.06234530e-01,
+            -1.59023586e-01, -6.84076115e-01, -2.43282254e-01,  7.07697566e-01,
+            -6.82683341e-01,  3.79917371e-01,  6.09449660e-01, -9.77253704e-01,
+            -4.91378002e-01, -8.24202607e-01,  9.37760520e-01, -9.92529341e-03,
+             7.86029533e-01, -8.77527185e-01,  1.38121059e-01,  2.79392128e-01,
+            -7.11726678e-01,  1.39659579e-01, -6.15893653e-01, -5.25490212e-01,
+            -1.47575508e-01,  6.17829061e-01,  5.32856331e-01,  5.01480941e-01,
+             9.75431631e-01,  8.73451932e-01,  6.74567474e-01,  5.10059081e-01,
+            -1.12534872e-01, -2.01132318e-01, -4.15450792e-01, -4.84842795e-01,
+             8.47874928e-01,  8.52512374e-01, -5.24329715e-01, -9.93167663e-01,
+             2.88636816e-01,  4.08631173e-01, -8.31189290e-01, -9.85493372e-01,
+            -7.56533423e-02,  2.88024460e-01, -6.61726296e-01, -7.27597005e-02,
+             9.60601233e-02, -7.97407038e-01, -6.28995770e-01, -5.43102157e-01,
+             5.55533992e-01,  4.87320726e-01, -1.81134122e-01, -8.67845930e-02,
+            -2.16406994e-02,  6.45379054e-01,  9.26866973e-01,  7.00007059e-01,
+             6.88744376e-01, -1.82571379e-01, -3.42417380e-01, -2.04188900e-01,
+             2.37333842e-02,  1.13165654e-01,  5.41304011e-01, -5.88403675e-01,
+             4.13387753e-01, -8.51297147e-01, -2.05965549e-02, -3.00423925e-01,
+            -9.85680772e-01,  4.35954665e-01, -8.30360604e-01,  7.42044148e-01,
+            -6.62856250e-01, -9.70298168e-02,  5.51781048e-01, -9.45237858e-01,
+            -2.77099902e-01, -1.85221981e-01,  3.47636067e-01, -5.60481832e-01,
+            -4.46024388e-01, -7.84390693e-01,  1.25051213e-01,  1.56301395e-01,
+             7.06505320e-01,  3.59148334e-03, -2.61045097e-02,  9.00742659e-02,
+            -4.77140313e-02, -7.31360003e-01,  5.76343926e-01, -3.14525189e-01,
+             4.57981390e-01, -8.61280963e-01, -2.73117678e-01, -5.61014508e-01,
+             8.10284816e-01,  5.86838645e-01, -5.88152995e-01,  3.90025373e-01,
+            -1.66874639e-01,  4.36571273e-01, -6.13420552e-01, -1.10447960e-01,
+             4.02042777e-02, -8.17378553e-01,  5.99720879e-01, -8.71408135e-01,
+            -4.44289520e-02,  9.55774593e-01, -1.79346475e-01, -6.66322794e-01,
+             5.59558263e-01,  1.41735485e-01,  8.62908681e-02,  6.29503319e-02,
+            -2.14395151e-01,  1.32187779e-01, -2.75625515e-01,  4.61261301e-02,
+             7.08591972e-01, -6.95205271e-01, -9.88749305e-01, -9.64366762e-01,
+             7.47264731e-01,  6.70847362e-01, -4.58976491e-02,  5.46888093e-01,
+             5.52063346e-01,  7.19022107e-01, -3.27638892e-01,  3.28033506e-01,
+             7.06241830e-01, -7.34159337e-01,  6.09081093e-01,  1.39322861e-01,
+             1.33012199e-02, -7.88713848e-01, -4.38299191e-01,  1.68091192e-01,
+            -5.77614521e-01,  3.35862658e-01,  3.00144737e-01, -9.98886439e-01,
+            -5.77360151e-01,  1.98665259e-01, -3.53933441e-01, -9.44432473e-01,
+             6.63770441e-01, -8.94531668e-01, -7.25096095e-01, -3.04941782e-01,
+             2.20535195e-01,  6.91970053e-01, -3.54259088e-01, -9.54188238e-01,
+             2.36831061e-01,  5.31398977e-01,  5.40749001e-01,  1.30427471e-01,
+            -7.83788699e-01,  4.41212419e-01,  7.64066884e-01, -4.75755291e-01,
+            -1.23143969e-01,  8.33741140e-01, -5.05027605e-01,  8.83017864e-01,
+            -3.17666883e-01, -5.50358511e-01,  4.28528700e-01, -3.54433048e-02,
+            -6.83676873e-01,  8.61298639e-01,  3.81912032e-01,  3.37005405e-01,
+             1.66072443e-01, -2.39802738e-01,  5.67104820e-02, -9.87020039e-02,
+             5.56212384e-01, -1.78977474e-01, -2.20608218e-01, -5.28381082e-01,
+            -9.75743289e-01,  6.63301945e-01,  2.85091842e-01,  1.60996854e-01,
+            -2.55794053e-01, -8.38770564e-01,  4.41772400e-01,  9.02107489e-01
+        };
+    return 0;
+}
+
 int _getTestMacroDOFVector( floatVector &macroDOFVector ){
 
     macroDOFVector = { 0.745038782, 0.679940343, 1.625140168, 1.056411052, 1.107654214, 
@@ -569,7 +652,7 @@ int _testGetMicroVolumes( floatVector &microVolumes ){
     return 0;
 }
 
-int _testGetMicroMasses( floatVector &microMasses ){
+int _getTestMicroMasses( floatVector &microMasses ){
     /*!
      * Compute the micro masses from the micro densities and volumes
      *
@@ -1250,7 +1333,7 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
     const uIntVector domainMacroNodeIndices = { 98,  31,  90,  71,  74, 113,  11, 148 };
 
     floatVector microMasses;
-    _testGetMicroMasses( microMasses );
+    _getTestMicroMasses( microMasses );
 
     floatVector microShapeFunctions;
     _testGetMicroShapeFunctions( microShapeFunctions );
@@ -1341,7 +1424,7 @@ int test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( std::ofstrea
     const uIntVector domainMacroNodeIndices = { 98,  31,  90,  71,  74, 113,  11, 148 };
 
     floatVector microMasses;
-    _testGetMicroMasses( microMasses );
+    _getTestMicroMasses( microMasses );
 
     floatVector microShapeFunctions;
     _testGetMicroShapeFunctions( microShapeFunctions );
@@ -1608,7 +1691,7 @@ int test_addDomainMassConstant( std::ofstream &results ){
     const uIntVector domainMacroNodeIndices = { 98,  31,  90,  71,  74, 113,  11, 148 };
 
     floatVector microMasses;
-    _testGetMicroMasses( microMasses );
+    _getTestMicroMasses( microMasses );
 
     floatVector microShapeFunctions;
     _testGetMicroShapeFunctions( microShapeFunctions );
@@ -1792,7 +1875,7 @@ int test_addDomainMassDisplacement( std::ofstream &results ){
     const uIntVector domainMacroNodeIndices = { 98,  31,  90,  71,  74, 113,  11, 148 };
 
     floatVector microMasses;
-    _testGetMicroMasses( microMasses );
+    _getTestMicroMasses( microMasses );
 
     floatVector microShapeFunctions;
     _testGetMicroShapeFunctions( microShapeFunctions );
@@ -1982,7 +2065,7 @@ int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
     const uIntVector domainMacroNodeIndices = { 98,  31,  90,  71,  74, 113,  11, 148 };
 
     floatVector microMasses;
-    _testGetMicroMasses( microMasses );
+    _getTestMicroMasses( microMasses );
 
     floatVector microShapeFunctions;
     _testGetMicroShapeFunctions( microShapeFunctions );
@@ -2411,7 +2494,7 @@ int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
     const uIntVector domainMacroNodeIndices = { 98,  31,  90,  71,  74, 113,  11, 148 };
 
     floatVector microMasses;
-    _testGetMicroMasses( microMasses );
+    _getTestMicroMasses( microMasses );
 
     floatVector microShapeFunctions;
     _testGetMicroShapeFunctions( microShapeFunctions );
@@ -3299,6 +3382,64 @@ int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
     return 0;
 }
 
+int test_computeDomainCenterOfMass( std::ofstream &results ){
+    /*!
+     * Compute the center of mass of a domain
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    const unsigned int dim = 3;
+
+    const uIntVector domainMicroNodeIndices = { 53, 28, 63, 97, 93, 90,  8,  5,  0, 62 };
+
+    const floatVector domainMicroWeights = { 0.60960585, 0.73346991, 0.44596092, 0.78399932, 0.44089053,
+                                             0.36645328, 0.31175093, 0.08446853, 0.71501009, 0.13722175 };
+
+    floatVector microPositions;
+    _getTestMicroPositions( microPositions );
+
+    floatVector microMasses;
+    _getTestMicroMasses( microMasses );
+
+    floatType   domainMassAnswer = 8.918825729539673;
+    floatVector domainCGAnswer = { -0.31415104, -0.12236504,  0.35297997 };
+
+    floatType   domainMassResult;
+    floatVector domainCGResult;
+
+    errorOut error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, 
+                                                               domainMicroWeights, domainCGResult );
+
+    if ( error ){
+        error->print();
+        results << "test_computeDomainCenterOfMass & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainCGAnswer, domainCGResult ) ){
+        results << "test_computeDomainCenterOfMass (test 1) & False\n";
+        return 1;
+    }
+
+    domainCGResult = floatVector( 0, 0 );
+    error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, domainMicroWeights,
+                                                      domainMassResult, domainCGResult );
+
+    if ( !vectorTools::fuzzyEquals( domainCGAnswer, domainCGResult ) ){
+        results << "test_computeDomainCenterOfMass (test 2) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
+        results << "test_computeDomainCenterOfMass (test 3) & False\n";
+        return 1;
+    }
+
+    results << "test_computeDomainCenterOfMass & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -3320,6 +3461,7 @@ int main(){
     test_addDomainMassDisplacement( results );
     test_addDomainMassMicroDisplacementPosition( results ); 
     test_addDomainMicroToMacroProjectionTerms( results );
+    test_computeDomainCenterOfMass( results );
 
     //Close the results file
     results.close();
