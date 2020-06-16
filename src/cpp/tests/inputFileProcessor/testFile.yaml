@@ -1,0 +1,7 @@
+root1:
+    -list1
+    -list2
+    -list3
+root2:
+    name1: Mario
+    name2: Luigi

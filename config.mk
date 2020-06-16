@@ -11,10 +11,10 @@
 ICC_EXIST:=$(shell which icc)
 ifdef ICC_EXIST
     CXX=icc
-    CFLAGS=-std=c++11 -Wall -ansi -pedantic -O3 -I. -fmax-errors=5
+    CFLAGS=-std=c++11 -Wall -ansi -pedantic -O3 -I. -fmax-errors=5 -lyaml-cpp
 else
     CXX=g++
-    CFLAGS=-std=gnu++11 -Wall -ansi -pedantic -O3 -I. -fmax-errors=5
+    CFLAGS=-std=gnu++11 -Wall -ansi -pedantic -O3 -I. -fmax-errors=5 -lyaml-cpp
 endif
 
 # Location of the Eigen library
@@ -37,6 +37,10 @@ VECTORSOURCE = $(ROOTDIR)/vector_tools/src/cpp/vector_tools.cpp
 VECTORHEADER = $(ROOTDIR)/vector_tools/src/cpp/vector_tools.h
 INC+=-I$(ROOTDIR)/vector_tools/src/cpp
 LIB+=-L$(ROOTDIR)/vector_tools/src/cpp
+
+# Add the location of the YAML headers and library
+INC+= -I$(ROOTDIR)/yaml-cpp/include
+LIB+= -L$(ROOTDIR)/yaml-cpp/build/
 
 # Add the location of the voro++ libraries
 INC+=-I$(ROOTDIR)/voro++/voro++
