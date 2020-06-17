@@ -68,6 +68,9 @@ namespace dataFileInterface{
             //The factory for child classes
             std::unique_ptr<dataFileBase> Create( const std::string &type );
 
+            //File read interface functions
+            virtual errorOut readMesh( const unsigned int increment, floatVector &nodalPositions ); //Required overload
+
             errorOut _error;
             std::string _filename;
             std::string _mode;
@@ -89,6 +92,9 @@ namespace dataFileInterface{
         public:
             XDMFDataFile( );
             XDMFDataFile( const YAML::Node &configuration );
+
+            //Overloads
+            errorOut readMesh( const unsigned int increment, floatVector &nodalPositions );
 
         private:
             //Interface Attributes

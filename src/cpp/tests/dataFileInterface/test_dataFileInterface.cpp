@@ -4,6 +4,8 @@
 #include<vector>
 #include<fstream>
 #include<math.h>
+#define USE_EIGEN
+#include<vector_tools.h>
 
 #include<dataFileInterface.h>
 
@@ -18,6 +20,8 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
     /*!
      * Test the interface with the XDMF file format
      * constructor
+     *
+     * :param std::ofstream &results: The output file
      */
 
     std::unique_ptr<dataFileInterface::dataFileBase> df;
@@ -59,6 +63,53 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_readMesh( std::ofstream &results ){
+    /*!
+     * Test the interface with the XDFM file format
+     * in a read capacity.
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    floatVector nodePositionsAnswer = { 1, 0, 1,
+                                        1, 0, 0,
+                                        0, 0, 0,
+                                        0, 0, 1,
+                                        1, 1, 1,
+                                        1, 1, 0,
+                                        0, 1, 0,
+                                        0, 1, 1,
+                                        0, 1, 2,
+                                        1, 1, 2,
+                                        0, 0, 2,
+                                        1, 0, 2,
+                                        0, 0, 3,
+                                        0, 1, 3,
+                                        1, 1, 3,
+                                        1, 0, 3 };
+
+    floatVector nodePositionsResult;
+
+    errorOut error = xdf.readMesh( 1, nodePositionsResult );
+
+    if ( error ){
+        error->print( );
+        results << "test_XDMFDataFile_readMesh & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( nodePositionsAnswer, nodePositionsResult ) ){
+        results << "test_XDMFDataFile_readMesh (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_XDMFDataFile_readMesh & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -72,6 +123,7 @@ int main(){
     results.open("results.tex");
 
     test_XDMFDataFile_constructor( results );
+    test_XDMFDataFile_readMesh( results );
 
     //Close the results file
     results.close();
