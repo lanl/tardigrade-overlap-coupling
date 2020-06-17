@@ -1,0 +1,7 @@
+filetest1:
+        filename: macroscale_xdmf.xdmf
+        mode: reaD
+
+filetest2:
+        filename_: path_to_file
+        mode: some_other_mode

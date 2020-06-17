@@ -1,0 +1,4 @@
+Notes:
+
+Requires python libraries ( xml2, hdf5 )
+Change LD_LIBRARY_PATH to include python installs of these libraries
