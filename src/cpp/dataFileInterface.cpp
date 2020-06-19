@@ -59,7 +59,37 @@ namespace dataFileInterface{
         return;
     }
 
-    std::unique_ptr<dataFileBase> dataFileBase::Create( const std::string &type ){
+    dataFileBase::dataFileBase( const YAML::Node &config, errorOut error ) : dataFileBase( config ){
+        /*!
+         * The base dataFile constructor
+         *
+         * filename and mode must both be defined in the file. filename indicates
+         * the data-base filename and mode indicates if it should be "read" or "write"
+         * or some other user-defined mode.
+         *
+         * :param const YAML::Node &config: The YAML configuration file associated with the datafile
+         * :param errorOut error: The current value of the error
+         */
+
+        //Copy the error
+        _error = error;
+
+        return;
+    }
+
+    std::unique_ptr<dataFileBase> dataFileBase::create( ){
+        /*!
+         * Create a new dataFile object using the configuration file
+         */
+
+        if ( _config[ "filetype" ] ){
+            return dataFileBase::create( _config[ "filetype" ].as< std::string >( ) );
+        }
+        
+        _error = new errorNode( "create", "The filetype is not defined" );
+        return make_unique< dataFileBase >( _config, _error );
+    }
+    std::unique_ptr<dataFileBase> dataFileBase::create( const std::string &type ){
         /*!
          * Create a new dataFile object
          *
@@ -69,17 +99,21 @@ namespace dataFileInterface{
         auto T = registryMap.find( type );
 
         if ( T == registryMap.end() ){
-            return NULL; //The requested class is not defined
+            _error = new errorNode( "create", "The filetype ( " + type + " ) is not recognized" );
+            return make_unique< dataFileBase >( _config, _error ); //The requested class is not defined
         }
         else{ //Register new dataFile objects below
             if ( T->second == XDMF ){
                 return make_unique<XDMFDataFile>( _config );
             }
             else{
-                return NULL;
+                _error = new errorNode( "create", "The filetype ( " + type + " ) is not recognized" );
+                return make_unique< dataFileBase >( _config, _error ); //The requested class is not defined
             }
         }
-        return NULL;
+
+        _error = new errorNode( "create", "You should never get here..." );
+        return make_unique< dataFileBase >( _config, _error ); //The requested class is not defined
     }
 
     errorOut dataFileBase::readMesh( const unsigned int increment, floatVector &nodalPositions ){

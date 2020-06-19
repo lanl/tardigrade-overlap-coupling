@@ -45,7 +45,7 @@ namespace dataFileInterface{
     }
 
     //All new readers must be defined both in the registry enum and in the map to allow
-    //them to be accessed by strings. They must also be registered in dataFileBase::Create
+    //them to be accessed by strings. They must also be registered in dataFileBase::create
 
     enum registry { XDMF };
     static std::map< std::string, registry > registryMap = { { "XDMF",  registry::XDMF } };
@@ -64,9 +64,11 @@ namespace dataFileInterface{
             //Constructors
             dataFileBase( );
             dataFileBase( const YAML::Node &config );
+            dataFileBase( const YAML::Node &config, errorOut error );
 
             //The factory for child classes
-            std::unique_ptr<dataFileBase> Create( const std::string &type );
+            std::unique_ptr<dataFileBase> create( );
+            std::unique_ptr<dataFileBase> create( const std::string &type );
 
             //File read interface functions
             virtual errorOut readMesh( const unsigned int increment, floatVector &nodalPositions ); //Required overload
@@ -90,6 +92,7 @@ namespace dataFileInterface{
          */
 
         public:
+            //Constructors
             XDMFDataFile( );
             XDMFDataFile( const YAML::Node &configuration );
 
