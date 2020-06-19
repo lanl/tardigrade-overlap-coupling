@@ -13,6 +13,8 @@
 #include<error_tools.h>
 #include<yaml-cpp/yaml.h>
 
+#include<dataFileInterface.h>
+
 namespace inputFileProcessor{
 
     typedef errorTools::Node errorNode; //!Redefinition for the error node
@@ -22,28 +24,60 @@ namespace inputFileProcessor{
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
     typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
 
-    class inputFileProcessorBase {
+    class dataFileReaderBase;
+
+    class inputFileProcessor {
         /*!
-         * The base class for the input file processor reader
+         * The class from the file processor which 
+         * enables access to output files for use in 
+         * coupling a micromorphic macro-scale to a 
+         * subscale. The configuration file is in the
+         * following format. Parentheses indicate the
+         * defaults.
+         *
+         * macroscale_definition:
+         *     filename: path_to_macroscale_file
+         *     mode: ( "read" )
+         *     filetype: ("XDMF")
+         *
+         * microscale_definition:
+         *     filename: path_to_microscale_file
+         *     mode: ( "read" )
+         *     filetype: ( "XDMF" )
+         *
+         * Use of the function entails the following:
+         * reader = inputFileProcessor( YAML_filename, macroDataReader, microDataReader );
          */
 
 
         public:
 
             //Constructors
-            inputFileProcessorBase( );
-            inputFileProcessorBase( const std::string &yamlConfigurationFilename );
+            inputFileProcessor( );
+            inputFileProcessor( const std::string &yamlConfigurationFilename );
+
+            //Destructor
+            ~inputFileProcessor( );
 
             //Functions
             errorOut setConfigurationFilename( const std::string &configurationFilename );
             errorOut openConfigurationFile( );
             errorOut openConfigurationFile( const std::string &configurationFilename );
-            
+
+            errorOut initializeFileReaders( );
+
         private:
+            //Private functions
+
+            //Private Attributes
             std::string _configFilename = "";
-            YAML::Node config;
+            YAML::Node _config;
+
+            std::shared_ptr< dataFileReaderBase > _macroscale;
+            std::shared_ptr< dataFileReaderBase > _microscale;
 
     };
+
 }
 
 #endif

@@ -9,17 +9,17 @@
 
 namespace inputFileProcessor{
 
-    inputFileProcessorBase::inputFileProcessorBase( ){
+    inputFileProcessor::inputFileProcessor( ){
         /*!
-         * The base input file processor constructor
+         * The input file processor constructor
          */
 
         return;
     }
 
-    inputFileProcessorBase::inputFileProcessorBase( const std::string &configurationFilename ){
+    inputFileProcessor::inputFileProcessor( const std::string &configurationFilename ){
         /*!
-         * The base input file processor constructor
+         * The input file processor constructor
          *
          * :param const std::string &configurationFilename: The filename for the YAML configuration file.
          */
@@ -30,7 +30,20 @@ namespace inputFileProcessor{
         return;
     }
 
-    errorOut inputFileProcessorBase::setConfigurationFilename( const std::string &configurationFilename ){
+    inputFileProcessor::~inputFileProcessor( ){
+        /*!
+         * The destructor
+         */
+
+        //Write the configuration filename out
+        if ( !(_configFilename.compare( "" ) == 0 ) ){
+            std::ofstream yamlOut( _configFilename + ".as_evaluated" );
+            yamlOut << _config;
+
+        }
+    }
+
+    errorOut inputFileProcessor::setConfigurationFilename( const std::string &configurationFilename ){
         /*!
          * Set the configuration filename
          *
@@ -41,35 +54,35 @@ namespace inputFileProcessor{
         return NULL;
     }
 
-    errorOut inputFileProcessorBase::openConfigurationFile( ){
+    errorOut inputFileProcessor::openConfigurationFile( ){
         /*!
          * Open the configuration file
          */
 
         if ( _configFilename.compare( "" ) == 0 ){
-            return new errorNode( "inputFileProcessorBase",
+            return new errorNode( "inputFileProcessor",
                                   "The configuration filename has not been set" );
         }
 
         //Open the YAML configuration file
         try {
 
-            config = YAML::LoadFile( _configFilename );
+            _config = YAML::LoadFile( _configFilename );
 
         }
         catch ( YAML::BadFile ){
-            return new errorNode( "inputFileProcessorBase",
+            return new errorNode( "inputFileProcessor",
                                  "Bad file passed to YAML file" );
         }
         catch ( ... ){
-            return new errorNode( "inputFileProcessorBase",
+            return new errorNode( "inputFileProcessor",
                                   "Invalid YAML file" );
         }
 
         return NULL;
     }
 
-    errorOut inputFileProcessorBase::openConfigurationFile( const std::string &configurationFilename ){
+    errorOut inputFileProcessor::openConfigurationFile( const std::string &configurationFilename ){
         /*!
          * Open the configuration file
          *
@@ -78,6 +91,63 @@ namespace inputFileProcessor{
 
         setConfigurationFilename( configurationFilename );
         return openConfigurationFile( );
+    }
+
+    errorOut inputFileProcessor::initializeFileReaders( ){
+        /*!
+         * Initialize the file readers
+         */
+
+        if ( _config[ "macroscale_definition" ] ){
+
+            //Set the Default values
+            if ( !_config[ "macroscale_definition" ]["mode"] ){
+
+                _config[ "macroscale_definition" ][ "mode" ] = "read";
+
+            }
+            if ( !_config[ "macroscale_definition" ]["filetype"] ){
+
+                _config[ "macroscale_definition" ][ "filetype" ] = "XDMF";
+
+            }
+
+            _macroscale = dataFileInterface::dataFileBase.Create( _config[ "macroscale_definition" ] );
+//
+//            _macroscale = std::make_shared<macroReader>( _config[ "macroscale_definition" ] );
+//
+        }
+        else{
+
+            return new errorNode( "inputFileProcessor",
+                                  "There is no macroscale_definition in the YAML configuration file" );
+
+        }
+        if ( _config[ "microscale_definition" ] ){
+
+            //Set the Default values
+            if ( !_config[ "microscale_definition" ]["mode"] ){
+
+                _config[ "microscale_definition" ][ "mode" ] = "read";
+
+            }
+            if ( !_config[ "microscale_definition" ]["filetype"] ){
+
+                _config[ "microscale_definition" ][ "filetype" ] = "XDMF";
+
+            }
+//
+//            _microscale = std::make_shared<microReader>( _config[ "microscale_definition" ] );
+//
+        }
+        else{
+
+            return new errorNode( "inputFileProcessor",
+                                  "There is no microscale_definition in the YAML configuration file" );
+
+        }
+
+        return NULL;
     }
 
 }

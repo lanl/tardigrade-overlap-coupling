@@ -25,7 +25,7 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
      */
 
     std::unique_ptr<dataFileInterface::dataFileBase> df;
-    df = dataFileInterface::dataFileBase().Create( "XDMF" );
+    df = dataFileInterface::dataFileBase().create( "XDMF" );
 
     if ( !df->_error ){
         df->_error->print();
@@ -34,7 +34,7 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
     }
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    df = dataFileInterface::dataFileBase( yf["filetest1"] ).Create( "XDMF" );
+    df = dataFileInterface::dataFileBase( yf["filetest1"] ).create( "XDMF" );
 
     if ( df->_error ){
         df->_error->print();
@@ -52,7 +52,35 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
         return 1;
     }
 
-    df = dataFileInterface::dataFileBase( yf[ "filetest2" ] ).Create( "XDMF" );
+    if ( df->_mode.compare( "read" ) != 0 ){
+        results << "test_XDMFDataFile_constructor (test 4) & False\n";
+        return 1;
+    }
+
+    df = dataFileInterface::dataFileBase( yf["filetest1"] ).create( );
+
+    if ( !df ){
+        results << "test_XDMFDataFile_constructor (NULL) & False\n";
+        return 1;
+    }
+
+    if ( df->_error ){
+        df->_error->print();
+        results << "test_XDMFDataFile_constructor & False\n";
+        return 1;
+    }
+
+    if ( df->_filename.compare( "macroscale_xdmf.xdmf" ) != 0 ){
+        results << "test_XDMFDataFile_constructor (test 5) & False\n";
+        return 1;
+    }
+
+    if ( df->_mode.compare( "read" ) != 0 ){
+        results << "test_XDMFDataFile_constructor (test 6) & False\n";
+        return 1;
+    }
+
+    df = dataFileInterface::dataFileBase( yf[ "filetest2" ] ).create( "XDMF" );
 
     if ( !df->_error ){
         results << "test_XDMFDataFile_constructor & False\n";

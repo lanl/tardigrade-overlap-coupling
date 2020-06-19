@@ -22,7 +22,7 @@ int test_openConfigurationFile( std::ofstream &results ){
      */
 
     std::string filename = "testFile.yaml";
-    inputFileProcessor::inputFileProcessorBase reader( filename );
+    inputFileProcessor::inputFileProcessor reader( filename );
 
     errorOut error = reader.openConfigurationFile( );
 
@@ -32,7 +32,7 @@ int test_openConfigurationFile( std::ofstream &results ){
         return 1;
     }
 
-    reader = inputFileProcessor::inputFileProcessorBase( );
+    reader = inputFileProcessor::inputFileProcessor( );
     error = reader.openConfigurationFile( );
     if ( !error ){
         results << "test_openConfigurationFile (test 2) & False\n";
@@ -58,7 +58,7 @@ int test_setConfigurationFile( std::ofstream &results ){
      */
 
     std::string filename = "testFile.yaml";
-    inputFileProcessor::inputFileProcessorBase reader;
+    inputFileProcessor::inputFileProcessor reader;
 
     errorOut error = reader.openConfigurationFile( );
 
@@ -80,6 +80,35 @@ int test_setConfigurationFile( std::ofstream &results ){
     return 0;
 }
 
+int test_initializeFileReaders( std::ofstream &results ){
+    /*!
+     * Test the initialization of the file readers
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    std::string filename = "testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    errorOut error = reader.openConfigurationFile( );
+    if ( error ){
+        error->print();
+        results << "test_initializeFileReaders & False\n";
+        return 1;
+    }
+
+    error = reader.initializeFileReaders( );
+
+    if( error ){
+        error->print();
+        results << "test_initializeFileReaders & False\n";
+        return 1;
+    }
+
+    results << "test_initializeFileReaders & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -94,6 +123,7 @@ int main(){
 
     test_openConfigurationFile( results );
     test_setConfigurationFile( results );
+    test_initializeFileReaders( results );
 
     //Close the results file
     results.close();
