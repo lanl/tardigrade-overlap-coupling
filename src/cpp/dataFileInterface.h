@@ -71,6 +71,7 @@ namespace dataFileInterface{
             std::shared_ptr<dataFileBase> create( const std::string &type );
 
             //File read interface functions
+            virtual errorOut getNumIncrements( unsigned int &numIncrements ); //Required overload
             virtual errorOut readMesh( const unsigned int increment, floatVector &nodalPositions ); //Required overload
 
             errorOut _error;
@@ -97,6 +98,7 @@ namespace dataFileInterface{
             XDMFDataFile( const YAML::Node &configuration );
 
             //Overloads
+            errorOut getNumIncrements( unsigned int &numIncrements );
             errorOut readMesh( const unsigned int increment, floatVector &nodalPositions );
 
         private:
@@ -107,6 +109,11 @@ namespace dataFileInterface{
 
             //Functions
             void _initializeReadMode( );
+
+            errorOut getXDMFGridCollection( const unsigned int gridCollectionNum,
+                                            shared_ptr< XdmfGridCollection > &_gridHolder );
+            errorOut getUnstructuredGrid( const unsigned int increment,
+                                            shared_ptr< XdmfUnstructuredGrid > &unstructuredGrid );
     };
 }
 

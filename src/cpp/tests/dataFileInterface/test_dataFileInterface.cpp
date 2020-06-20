@@ -93,8 +93,7 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
 
 int test_XDMFDataFile_readMesh( std::ofstream &results ){
     /*!
-     * Test the interface with the XDFM file format
-     * in a read capacity.
+     * Test the interface with the mesh for the XDMF file format.
      *
      * :param std::ofstream &results: The output file
      */
@@ -138,6 +137,37 @@ int test_XDMFDataFile_readMesh( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_getNumIncrements( std::ofstream &results ){
+    /*!
+     * Test the interface with the XDMF file to get the number of
+     * temporal increments.
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    unsigned int numIncrementsAnswer = 11;
+    unsigned int numIncrementsResult;
+
+    errorOut error = xdf.getNumIncrements( numIncrementsResult );
+    
+    if ( error ){
+        error->print( );
+        results << "test_XDMFDataFile_getNumIncrements (test 1) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( numIncrementsResult, numIncrementsAnswer ) ){
+        results << "test_XDMFDataFile_getNumIncrements (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_XDMFDataFile_getNumIncrements & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -151,6 +181,7 @@ int main(){
     results.open("results.tex");
 
     test_XDMFDataFile_constructor( results );
+    test_XDMFDataFile_getNumIncrements( results );
     test_XDMFDataFile_readMesh( results );
 
     //Close the results file

@@ -116,6 +116,18 @@ namespace dataFileInterface{
         return std::make_shared< dataFileBase >( _config, _error ); //The requested class is not defined
     }
 
+    //Virtual functions to be overloaded
+    
+    errorOut dataFileBase::getNumIncrements( unsigned int &numIncrements ){
+        /*!
+         * Get the number of increments from the datafile.
+         *
+         * :param unsigned int &numIncrements: The number of increments
+         */
+
+        return new errorNode( "getNumIncrements", "The getNumIncrements function is not defined" ); 
+    }
+
     errorOut dataFileBase::readMesh( const unsigned int increment, floatVector &nodalPositions ){
         /*!
          * Read a mesh from the datafile.
@@ -182,34 +194,86 @@ namespace dataFileInterface{
         }
     }
 
-    errorOut XDMFDataFile::readMesh( const unsigned int increment, floatVector &nodalPositions ){
+    errorOut XDMFDataFile::getNumIncrements( unsigned int &numIncrements ){
         /*!
-         * Read the mesh from the XDMF datafile
+         * Get the number of increments from the XDMF datafile
          *
-         * Only unstructured grids are current considered
+         * Currently only considers unstructured grids
          *
-         * :param const unsigned int increment: The increment at which to get the mesh
-         * :param floatVector &nodalPositions: The positions of the nodes in the mesh organized
-         *     in row-major format [ node, coordinates ]
+         * :param unsigned int &numIncrements: The number of increments
+         */
+
+        unsigned int nGridCollections = _domain->getNumberGridCollections( );
+        //Print warning message if the number of root-level grid collections is greater than 1
+        if ( nGridCollections > 1 ){
+                std::cerr << "WARNING: The number of root-level grid collections is greater than 1. Only the first one will be used.\n";
+        }
+
+        shared_ptr< XdmfGridCollection > _gridHolder;
+        errorOut error = getXDMFGridCollection( 0, _gridHolder );
+
+        if ( error ){ 
+            errorOut result = new errorNode( "getNumIncrements",
+                                             "Error in getting the XDMF grid collection" );
+            result->addNext( error );
+            return result;
+        }
+
+        numIncrements = _gridHolder->getNumberUnstructuredGrids( );
+        return NULL;
+    }
+
+    errorOut XDMFDataFile::getXDMFGridCollection( const unsigned int gridCollectionNum, shared_ptr< XdmfGridCollection > &gridHolder ){
+        /*!
+         * Get a grid collection from the XDMF datafile
+         *
+         * :param const unsigned int gridCollectionNum: The number of the grid collection to retrieve.
+         * :param shared_ptr< XdmfGridCollection > &gridHolder: The returned grid collection.
          */
 
         unsigned int nGridCollections = _domain->getNumberGridCollections( );
 
         //Return an error if no grid collections are defined
-        if ( nGridCollections == 0 ){
+        if ( nGridCollections <= gridCollectionNum ){
             return new errorNode( "readMesh", "No grid collections are defined in the XDMF file" );
         }
 
-        //Print warning message if the number of grid collections is greater than 1
-        if ( nGridCollections > 1 ){
-                std::cerr << "WARNING: The number of grid collections is greater than 1. Only the first one will be used.\n";
+        //Extract the grid holder
+        gridHolder = _domain->getGridCollection( gridCollectionNum );
+
+        return NULL;
+    }
+
+    errorOut XDMFDataFile::getUnstructuredGrid( const unsigned int increment, shared_ptr< XdmfUnstructuredGrid > &unstructuredGrid ){
+        /*!
+         * Read an unstructured grid from the datafile
+         *
+         * :param const unsigned int increment: The increment of the unstructured grid to extract
+         * :param shared_ptr< XdmfUnstructuredGrid > &unstructuredGrid: The pointer to the unstructured grid
+         */
+
+        //Check the number of grid collections defined on the root level. It should be 1.
+        unsigned int numIncrements;
+        errorOut error = XDMFDataFile::getNumIncrements( numIncrements );
+
+        if ( error ){
+            errorOut result = new errorNode( "readMesh", "Error in getting the number of increments" );
+            result->addNext( error );
+            return result;
         }
 
-        //Extract the grid holder
-        shared_ptr< XdmfGridCollection > _gridHolder = _domain->getGridCollection( 0 );
+        //Get the grid holder
+        shared_ptr< XdmfGridCollection > gridHolder;
+        error = getXDMFGridCollection( 0, gridHolder );
+
+        if ( error ){
+            errorOut result = new errorNode( "readMesh", "Error in getting the grid collection" );
+            result->addNext( error );
+            return result;
+        }
 
         //Get the data for the unstructured grids
-        unsigned int nUnstructuredGrids = _gridHolder->getNumberUnstructuredGrids( );
+        unsigned int nUnstructuredGrids = gridHolder->getNumberUnstructuredGrids( );
         if ( nUnstructuredGrids == 0 ){
             return new errorNode( "readMesh", "There are no unstructured grids defined in the output file" );
         }
@@ -219,19 +283,36 @@ namespace dataFileInterface{
         }
 
         //Get the unstructured grid
-        shared_ptr< XdmfUnstructuredGrid > _grid = _gridHolder->getUnstructuredGrid( increment );
+        unstructuredGrid = gridHolder->getUnstructuredGrid( increment );
+
+        return NULL;
+    }
+
+    errorOut XDMFDataFile::readMesh( const unsigned int increment, floatVector &nodalPositions ){
+        /*!
+         * Read the mesh from the XDMF datafile
+         *
+         * Only unstructured grids are currently considered
+         *
+         * :param const unsigned int increment: The increment at which to get the mesh
+         * :param floatVector &nodalPositions: The positions of the nodes in the mesh organized
+         *     in row-major format [ node, coordinates ]
+         */
+
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        getUnstructuredGrid( increment, grid );
 
         //Get the geometry of the grid
-        shared_ptr< XdmfGeometry > _geom = _grid->getGeometry( );
-        _geom->read( ); //Required
+        shared_ptr< XdmfGeometry > geom = grid->getGeometry( );
+        geom->read( ); //Required to read from the HDF5 file
 
-        if ( _geom->getType() != XdmfGeometryType::XYZ()){
+        if ( geom->getType() != XdmfGeometryType::XYZ()){
             return new errorNode( "readMesh", "The geometry type must be XYZ" );
         }
 
         //Set the nodal positions
-        nodalPositions.resize( _geom->getSize( ) );
-        _geom->getValues( 0, nodalPositions.data(), _geom->getSize( ), 1, 1 );
+        nodalPositions.resize( geom->getSize( ) );
+        geom->getValues( 0, nodalPositions.data(), geom->getSize( ), 1, 1 );
 
         return NULL;
     }
