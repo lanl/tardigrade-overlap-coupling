@@ -134,9 +134,9 @@ namespace inputFileProcessor{
                 _config[ "microscale_definition" ][ "filetype" ] = "XDMF";
 
             }
-//
-//            _microscale = std::make_shared<microReader>( _config[ "microscale_definition" ] );
-//
+
+            _microscale = dataFileInterface::dataFileBase( _config[ "microscale_definition" ] ).create( _config[ "microscale_definition" ][ "filetype" ].as< std::string >( ) );
+
         }
         else{
 
