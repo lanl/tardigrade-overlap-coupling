@@ -65,7 +65,7 @@ namespace inputFileProcessor{
             errorOut openConfigurationFile( );
             errorOut openConfigurationFile( const std::string &configurationFilename );
 
-            errorOut initializeFileReaders( );
+            errorOut initializeFileInterfaces( );
 
             //Attributes
             std::shared_ptr< dataFileInterface::dataFileBase > _macroscale;

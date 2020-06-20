@@ -93,7 +93,7 @@ namespace inputFileProcessor{
         return openConfigurationFile( );
     }
 
-    errorOut inputFileProcessor::initializeFileReaders( ){
+    errorOut inputFileProcessor::initializeFileInterfaces( ){
         /*!
          * Initialize the file readers
          */
@@ -121,7 +121,7 @@ namespace inputFileProcessor{
         }
         else{
 
-            return new errorNode( "inputFileProcessor",
+            return new errorNode( "initializeFileInterfaces",
                                   "There is no macroscale_definition in the YAML configuration file" );
 
         }
@@ -148,7 +148,7 @@ namespace inputFileProcessor{
         }
         else{
 
-            return new errorNode( "inputFileProcessor",
+            return new errorNode( "initializeFileInterfaces",
                                   "There is no microscale_definition in the YAML configuration file" );
 
         }

@@ -80,7 +80,7 @@ int test_setConfigurationFile( std::ofstream &results ){
     return 0;
 }
 
-int test_initializeFileReaders( std::ofstream &results ){
+int test_initializeFileInterfaces( std::ofstream &results ){
     /*!
      * Test the initialization of the file readers
      *
@@ -93,15 +93,15 @@ int test_initializeFileReaders( std::ofstream &results ){
     errorOut error = reader.openConfigurationFile( );
     if ( error ){
         error->print();
-        results << "test_initializeFileReaders & False\n";
+        results << "test_initializeFileInterfaces & False\n";
         return 1;
     }
 
-    error = reader.initializeFileReaders( );
+    error = reader.initializeFileInterfaces( );
 
     if( error ){
         error->print();
-        results << "test_initializeFileReaders & False\n";
+        results << "test_initializeFileInterfaces & False\n";
         return 1;
     }
 
@@ -120,12 +120,12 @@ int test_initializeFileReaders( std::ofstream &results ){
 
     if ( error ){
         error->print();
-        results << "test_initializeFileReaders & False\n";
+        results << "test_initializeFileInterfaces & False\n";
         return 1;
     }
 
     if ( !vectorTools::fuzzyEquals( answerMacroNodes, resultMacroNodes ) ){
-        results << "test_initializeFileReaders (test 1) & False\n";
+        results << "test_initializeFileInterfaces (test 1) & False\n";
         return 1;
     }
 
@@ -133,7 +133,7 @@ int test_initializeFileReaders( std::ofstream &results ){
 
     if ( error ){
         error->print();
-        results << "test_initializeFileReaders & False\n";
+        results << "test_initializeFileInterfaces & False\n";
         return 1;
     }
 
@@ -152,7 +152,7 @@ int test_initializeFileReaders( std::ofstream &results ){
         }
     }
 
-    results << "test_initializeFileReaders & True\n";
+    results << "test_initializeFileInterfaces & True\n";
     return 0;
 }
 
@@ -170,7 +170,7 @@ int main(){
 
     test_openConfigurationFile( results );
     test_setConfigurationFile( results );
-    test_initializeFileReaders( results );
+    test_initializeFileInterfaces( results );
 
     //Close the results file
     results.close();
