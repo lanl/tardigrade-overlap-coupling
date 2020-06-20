@@ -38,11 +38,11 @@ namespace dataFileInterface{
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
     typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
 
-    //Define the make_unique function
-    template<typename T, typename... Args>
-    std::unique_ptr<T> make_unique(Args&&... args) {
-        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-    }
+//    //Define the make_shared function
+//    template<typename T, typename... Args>
+//    std::shared_ptr<T> make_shared(Args&&... args) {
+//        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+//    }
 
     //All new readers must be defined both in the registry enum and in the map to allow
     //them to be accessed by strings. They must also be registered in dataFileBase::create
@@ -67,8 +67,8 @@ namespace dataFileInterface{
             dataFileBase( const YAML::Node &config, errorOut error );
 
             //The factory for child classes
-            std::unique_ptr<dataFileBase> create( );
-            std::unique_ptr<dataFileBase> create( const std::string &type );
+            std::shared_ptr<dataFileBase> create( );
+            std::shared_ptr<dataFileBase> create( const std::string &type );
 
             //File read interface functions
             virtual errorOut readMesh( const unsigned int increment, floatVector &nodalPositions ); //Required overload

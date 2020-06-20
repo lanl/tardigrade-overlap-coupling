@@ -112,10 +112,8 @@ namespace inputFileProcessor{
 
             }
 
-            _macroscale = dataFileInterface::dataFileBase.Create( _config[ "macroscale_definition" ] );
-//
-//            _macroscale = std::make_shared<macroReader>( _config[ "macroscale_definition" ] );
-//
+            _macroscale = dataFileInterface::dataFileBase( _config[ "macroscale_definition" ] ).create( _config[ "macroscale_definition" ][ "filetype" ].as< std::string >( ) );
+
         }
         else{
 

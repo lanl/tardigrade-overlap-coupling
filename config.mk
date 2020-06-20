@@ -42,6 +42,10 @@ VECTORHEADER = $(ROOTDIR)/vector_tools/src/cpp/vector_tools.h
 INC+=-I$(ROOTDIR)/vector_tools/src/cpp
 LIB+=-L$(ROOTDIR)/vector_tools/src/cpp
 
+# Add the filenames of the data-file interface to the include and library
+DATAFILEINTERFACESOURCE = $(ROOTDIR)/overlap_coupling/src/cpp/dataFileInterface.cpp
+DATAFILEINTERFACEHEADER = $(ROOTDIR)/overlap_coupling/src/cpp/dataFileInterface.h
+
 # Add the location of the YAML headers and library
 INC+= -I$(ROOTDIR)/yaml-cpp/include
 LIB+= -L$(ROOTDIR)/yaml-cpp/build/

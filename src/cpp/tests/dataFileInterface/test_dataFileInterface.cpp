@@ -24,7 +24,7 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    std::unique_ptr<dataFileInterface::dataFileBase> df;
+    std::shared_ptr<dataFileInterface::dataFileBase> df;
     df = dataFileInterface::dataFileBase().create( "XDMF" );
 
     if ( !df->_error ){

@@ -77,7 +77,7 @@ namespace dataFileInterface{
         return;
     }
 
-    std::unique_ptr<dataFileBase> dataFileBase::create( ){
+    std::shared_ptr<dataFileBase> dataFileBase::create( ){
         /*!
          * Create a new dataFile object using the configuration file
          */
@@ -87,9 +87,9 @@ namespace dataFileInterface{
         }
         
         _error = new errorNode( "create", "The filetype is not defined" );
-        return make_unique< dataFileBase >( _config, _error );
+        return std::make_shared< dataFileBase >( _config, _error );
     }
-    std::unique_ptr<dataFileBase> dataFileBase::create( const std::string &type ){
+    std::shared_ptr<dataFileBase> dataFileBase::create( const std::string &type ){
         /*!
          * Create a new dataFile object
          *
@@ -100,20 +100,20 @@ namespace dataFileInterface{
 
         if ( T == registryMap.end() ){
             _error = new errorNode( "create", "The filetype ( " + type + " ) is not recognized" );
-            return make_unique< dataFileBase >( _config, _error ); //The requested class is not defined
+            return std::make_shared< dataFileBase >( _config, _error ); //The requested class is not defined
         }
         else{ //Register new dataFile objects below
             if ( T->second == XDMF ){
-                return make_unique<XDMFDataFile>( _config );
+                return std::make_shared<XDMFDataFile>( _config );
             }
             else{
                 _error = new errorNode( "create", "The filetype ( " + type + " ) is not recognized" );
-                return make_unique< dataFileBase >( _config, _error ); //The requested class is not defined
+                return std::make_shared< dataFileBase >( _config, _error ); //The requested class is not defined
             }
         }
 
         _error = new errorNode( "create", "You should never get here..." );
-        return make_unique< dataFileBase >( _config, _error ); //The requested class is not defined
+        return std::make_shared< dataFileBase >( _config, _error ); //The requested class is not defined
     }
 
     errorOut dataFileBase::readMesh( const unsigned int increment, floatVector &nodalPositions ){

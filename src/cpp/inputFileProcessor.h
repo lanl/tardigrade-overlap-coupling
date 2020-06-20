@@ -56,6 +56,7 @@ namespace inputFileProcessor{
             inputFileProcessor( );
             inputFileProcessor( const std::string &yamlConfigurationFilename );
 
+
             //Destructor
             ~inputFileProcessor( );
 
@@ -73,8 +74,8 @@ namespace inputFileProcessor{
             std::string _configFilename = "";
             YAML::Node _config;
 
-            std::shared_ptr< dataFileReaderBase > _macroscale;
-            std::shared_ptr< dataFileReaderBase > _microscale;
+            std::shared_ptr< dataFileInterface::dataFileBase > _macroscale;
+            std::shared_ptr< dataFileInterface::dataFileBase > _microscale;
 
     };
 
