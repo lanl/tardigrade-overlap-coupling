@@ -129,7 +129,7 @@ int test_initializeFileInterfaces( std::ofstream &results ){
         return 1;
     }
 
-    error = reader._microscale->readMesh( 10, resultMicroNodes );
+    error = reader._microscale->readMesh( 1, resultMicroNodes );
 
     if ( error ){
         error->print();
@@ -137,19 +137,9 @@ int test_initializeFileInterfaces( std::ofstream &results ){
         return 1;
     }
 
-    unsigned int rs = 0;
-    for ( unsigned int i = 0; i < resultMicroNodes.size(); i++ ){
-        std::cout << resultMicroNodes[ i ] << ", ";
-
-        rs++;
-
-        if ( rs > 3 * 5 ){
-            
-            std::cout << "\n";
-
-            rs = 0;
-
-        }
+    if ( resultMicroNodes.size() != 80703 ){
+        results << "test_initializeFileInterfaces (test 2) & False\n";
+        return 1;
     }
 
     results << "test_initializeFileInterfaces & True\n";
