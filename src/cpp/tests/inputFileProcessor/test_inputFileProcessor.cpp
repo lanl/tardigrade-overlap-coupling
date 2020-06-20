@@ -105,6 +105,53 @@ int test_initializeFileReaders( std::ofstream &results ){
         return 1;
     }
 
+    floatVector answerMacroNodes =
+        {
+            1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 
+            1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 2, 1, 1, 2, 0, 0, 
+            2, 1, 0, 2, 0, 0, 3, 0, 1, 3, 1, 1, 3, 1, 0, 3
+        };
+
+    floatVector answerMicroNodes;
+
+    floatVector resultMacroNodes, resultMicroNodes;
+
+    error = reader._macroscale->readMesh( 10, resultMacroNodes );
+
+    if ( error ){
+        error->print();
+        results << "test_initializeFileReaders & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( answerMacroNodes, resultMacroNodes ) ){
+        results << "test_initializeFileReaders (test 1) & False\n";
+        return 1;
+    }
+
+    error = reader._microscale->readMesh( 10, resultMicroNodes );
+
+    if ( error ){
+        error->print();
+        results << "test_initializeFileReaders & False\n";
+        return 1;
+    }
+
+    unsigned int rs = 0;
+    for ( unsigned int i = 0; i < resultMicroNodes.size(); i++ ){
+        std::cout << resultMicroNodes[ i ] << ", ";
+
+        rs++;
+
+        if ( rs > 3 * 5 ){
+            
+            std::cout << "\n";
+
+            rs = 0;
+
+        }
+    }
+
     results << "test_initializeFileReaders & True\n";
     return 0;
 }

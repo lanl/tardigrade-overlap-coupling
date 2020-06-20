@@ -67,15 +67,16 @@ namespace inputFileProcessor{
 
             errorOut initializeFileReaders( );
 
+            //Attributes
+            std::shared_ptr< dataFileInterface::dataFileBase > _macroscale;
+            std::shared_ptr< dataFileInterface::dataFileBase > _microscale;
+
         private:
             //Private functions
 
             //Private Attributes
             std::string _configFilename = "";
             YAML::Node _config;
-
-            std::shared_ptr< dataFileInterface::dataFileBase > _macroscale;
-            std::shared_ptr< dataFileInterface::dataFileBase > _microscale;
 
     };
 
