@@ -237,6 +237,49 @@ int test_XDMFDataFile_getNumNodes( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_getSetNames( std::ofstream &results ){
+    /*!
+     * Test the function to extract the names of the sets
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    std::vector< std::string > answer = { "free_nodes", "ghost_nodes",
+                                          "left", "right", "bottom", "top", "back", "front",
+                                          "non_overlapped_elements", "free_elements", "ghost_elements" };
+    std::vector< std::string > result;
+
+    errorOut error = xdf.getSetNames( 6, result );
+
+    if ( error ){
+        error->print( );
+        results << "test_XDMFDataFile_getSetNames & False\n";
+        return 1;
+    }
+
+    if ( answer.size() != result.size() ){
+        results << "test_XDMFDataFile_getSetNames (test 1) & False\n";
+        return 1;
+    }
+
+    for ( unsigned int i = 0; i < result.size( ); i++ ){
+
+        if ( answer[ i ].compare( result[ i ] ) != 0 ){
+
+            results << "test_XDMFDataFile_getSetNames (test 2) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    results << "test_XDMFDataFile_getSetNames & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -254,6 +297,7 @@ int main(){
     test_XDMFDataFile_readMesh( results );
     test_XDMFDataFile_getDomainNodes( results );
     test_XDMFDataFile_getNumNodes( results );
+    test_XDMFDataFile_getSetNames( results );
 
     //Close the results file
     results.close();

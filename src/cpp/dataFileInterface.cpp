@@ -163,6 +163,17 @@ namespace dataFileInterface{
         return new errorNode( "getDomainNodes", "The getDomainNodes function is not defined" );
     }
 
+    errorOut dataFileBase::getSetNames( const unsigned int increment, std::vector< std::string > &setNames ){
+        /*!
+         * Get the set names from the provided domain at the current increment
+         *
+         * :param const unsigned int increment: The increment at which to get the sets
+         * :param std::vector< std::string > &setNames: The names of the sets
+         */
+
+        return new errorNode( "getSetNames", "The getSetNames function is not defined" );
+    }
+
     /*=========================================================================
     |                               XDMFDataFile                              |
     =========================================================================*/
@@ -429,6 +440,35 @@ namespace dataFileInterface{
         else{
 
             return new errorNode( "getDomainNodes", "The set type is not recognized. It must be Node" );
+
+        }
+
+        return NULL;
+    }
+
+    errorOut XDMFDataFile::getSetNames( const unsigned int increment, std::vector< std::string > &setNames ){
+        /*!
+         * Get the set names from the provided domain at the current increment
+         *
+         * :param const unsigned int increment: The increment at which to get the sets
+         * :param std::vector< std::string > &setNames: The names of the sets
+         */
+
+        //Get the grid
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        errorOut error = getUnstructuredGrid( increment, grid );
+        if ( error ){
+            errorOut result = new errorNode( "getSetNames", "Error in extraction of the grid" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Get the sets from the grid
+        setNames = std::vector< std::string >( grid->getNumberSets( ) );
+
+        for ( unsigned int i = 0; i < setNames.size(); i++ ){
+
+            setNames[ i ] = grid->getSet( i )->getName( );
 
         }
 
