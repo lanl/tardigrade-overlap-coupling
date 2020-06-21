@@ -73,6 +73,8 @@ namespace dataFileInterface{
             //File read interface functions
             virtual errorOut getNumIncrements( unsigned int &numIncrements ); //Required overload
             virtual errorOut readMesh( const unsigned int increment, floatVector &nodalPositions ); //Required overload
+            virtual errorOut getDomainNodes( const unsigned int increment, const std::string domainName,
+                                             uIntVector &domainNodes ); //Required overload
 
             errorOut _error;
             std::string _filename;
@@ -100,6 +102,8 @@ namespace dataFileInterface{
             //Overloads
             errorOut getNumIncrements( unsigned int &numIncrements );
             errorOut readMesh( const unsigned int increment, floatVector &nodalPositions );
+            errorOut getDomainNodes( const unsigned int increment, const std::string domainName,
+                                     uIntVector &domainNodes );
 
         private:
             //Interface Attributes
@@ -112,8 +116,9 @@ namespace dataFileInterface{
 
             errorOut getXDMFGridCollection( const unsigned int gridCollectionNum,
                                             shared_ptr< XdmfGridCollection > &_gridHolder );
+
             errorOut getUnstructuredGrid( const unsigned int increment,
-                                            shared_ptr< XdmfUnstructuredGrid > &unstructuredGrid );
+                                          shared_ptr< XdmfUnstructuredGrid > &unstructuredGrid );
     };
 }
 

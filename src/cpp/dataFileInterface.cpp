@@ -140,6 +140,17 @@ namespace dataFileInterface{
         return new errorNode( "readMesh", "The readMesh function is not defined" );
     }
 
+    errorOut dataFileBase::getDomainNodes( const unsigned int increment, const std::string domainName, uIntVector &domainNodes ){
+        /*!
+         * Get the nodes in the provided domain.
+         *
+         * :param const unsigned int increment: The increment at which to get the domain values
+         * :param const std::string domainName: The name of the domain to be extracted.
+         * :param uIntVector &domainNodes: The nodes located in the domain.
+         */
+
+        return new errorNode( "getDomainNodes", "The getDomainNodes function is not defined" );
+    }
 
     /*=========================================================================
     |                               XDMFDataFile                              |
@@ -299,8 +310,14 @@ namespace dataFileInterface{
          *     in row-major format [ node, coordinates ]
          */
 
+        //Get the grid
         shared_ptr< XdmfUnstructuredGrid > grid;
-        getUnstructuredGrid( increment, grid );
+        errorOut error = getUnstructuredGrid( increment, grid );
+        if ( error ){
+            errorOut result = new errorNode( "readMesh", "Error in extraction of the grid" );
+            result->addNext( error );
+            return result;
+        }
 
         //Get the geometry of the grid
         shared_ptr< XdmfGeometry > geom = grid->getGeometry( );
@@ -310,9 +327,71 @@ namespace dataFileInterface{
             return new errorNode( "readMesh", "The geometry type must be XYZ" );
         }
 
-        //Set the nodal positions
+        //Get the nodal positions
         nodalPositions.resize( geom->getSize( ) );
         geom->getValues( 0, nodalPositions.data(), geom->getSize( ), 1, 1 );
+
+//        //Get the set names
+//        std::cout << "the number of sets: " << grid->getNumberSets( ) << "\n";
+//        for ( unsigned int s = 0; s < grid->getNumberSets( ); s++ ){
+//            auto set = grid->getSet( s );
+//            set->read( );
+//            std::cout << "  name: " << set->getName( ) << "\n";
+//            std::cout << "    type: ";
+//            if ( set->getType() == XdmfSetType::Node( ) ){
+//                std::cout << "Node\n";
+//            }
+//            if ( set->getType() == XdmfSetType::Cell( ) ){
+//                std::cout << "Element\n";
+//            }
+//            std::cout << "    number of values: " << set->getSize( ) << "\n";
+//
+//        }
+
+        return NULL;
+    }
+
+    errorOut XDMFDataFile::getDomainNodes( const unsigned int increment, const std::string domainName, uIntVector &domainNodes ){
+        /*!
+         * Get the nodes in the given domain
+         *
+         * :param const unsigned int increment: The time increment at which to get the domain's nodes
+         * :param const std::string domainName: The name of the domain
+         * :param uIntVector &domainNodes: The nodes located in the domain
+         */
+
+        //Get the grid
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        errorOut error = getUnstructuredGrid( increment, grid );
+        if ( error ){
+            errorOut result = new errorNode( "getDomainNodes", "Error in extraction of the grid" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Get the set
+        shared_ptr< XdmfSet > set = grid->getSet( domainName );
+        if ( !set ){
+            return new errorNode( "getDomainNodes", "No domain of name " + domainName + " found" );
+        }
+
+        //Required for HDF5 files
+        set->read( );
+
+        //If the set-type is Node, we can just get the values directly
+        domainNodes.clear();
+        if ( set->getType( ) == XdmfSetType::Node( ) ){
+
+            domainNodes.resize( set->getSize( ) );
+            set->getValues( 0, domainNodes.data(), set->getSize( ), 1, 1 );
+            return NULL;
+
+        }
+        else{
+
+            return new errorNode( "getDomainNodes", "The set type is not recognized. It must be Node" );
+
+        }
 
         return NULL;
     }

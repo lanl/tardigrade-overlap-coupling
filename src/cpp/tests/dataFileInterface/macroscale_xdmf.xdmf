@@ -23,58 +23,81 @@
           <Information Name="ID" Value="The element IDs"/>
           <DataItem DataType="UInt" Dimensions="3" Format="HDF" Precision="4">macroscale_xdmf.h5:Data3</DataItem>
         </Attribute>
-        <Attribute Center="Cell" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="SUBDOMAINID" Type="GlobalId">
-          <Information Name="BLOCK ID" Value="The subdomain ( block ) IDs"/>
-          <DataItem DataType="UInt" Dimensions="3" Format="HDF" Precision="4">macroscale_xdmf.h5:Data4</DataItem>
-        </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data5</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data10</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data6</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data11</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data7</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data12</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data8</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data13</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data9</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data14</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data10</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data15</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data11</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data16</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data12</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data17</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data13</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data18</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data14</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data19</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data15</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data20</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data16</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data21</DataItem>
         </Attribute>
+        <Set Name="left" Type="Node">
+          <DataItem DataType="UInt" Dimensions="8" Format="HDF" Precision="4">macroscale_xdmf.h5:Data4</DataItem>
+        </Set>
+        <Set Name="right" Type="Node">
+          <DataItem DataType="UInt" Dimensions="8" Format="HDF" Precision="4">macroscale_xdmf.h5:Data5</DataItem>
+        </Set>
+        <Set Name="bottom" Type="Node">
+          <DataItem DataType="UInt" Dimensions="8" Format="HDF" Precision="4">macroscale_xdmf.h5:Data6</DataItem>
+        </Set>
+        <Set Name="top" Type="Node">
+          <DataItem DataType="UInt" Dimensions="8" Format="HDF" Precision="4">macroscale_xdmf.h5:Data7</DataItem>
+        </Set>
+        <Set Name="back" Type="Node">
+          <DataItem DataType="UInt" Dimensions="4" Format="HDF" Precision="4">macroscale_xdmf.h5:Data8</DataItem>
+        </Set>
+        <Set Name="front" Type="Node">
+          <DataItem DataType="UInt" Dimensions="4" Format="HDF" Precision="4">macroscale_xdmf.h5:Data9</DataItem>
+        </Set>
+        <Set Name="non_overlapped" Type="Cell">
+          <DataItem DataType="UInt" Dimensions="1" Format="XML" Precision="4">0</DataItem>
+        </Set>
+        <Set Name="free" Type="Cell">
+          <DataItem DataType="UInt" Dimensions="1" Format="XML" Precision="4">1</DataItem>
+        </Set>
+        <Set Name="ghost" Type="Cell">
+          <DataItem DataType="UInt" Dimensions="1" Format="XML" Precision="4">2</DataItem>
+        </Set>
       </Grid>
       <Grid Name="Grid">
         <Time Value="0.1">
@@ -84,54 +107,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data17</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data22</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data18</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data23</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data19</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data24</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data20</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data25</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data21</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data26</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data22</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data27</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data23</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data28</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data24</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data29</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data25</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data30</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data26</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data31</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data27</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data32</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data28</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data33</DataItem>
         </Attribute>
       </Grid>
       <Grid Name="Grid">
@@ -142,54 +164,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data29</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data34</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data30</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data35</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data31</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data36</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data32</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data37</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data33</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data38</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data34</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data39</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data35</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data40</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data36</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data41</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data37</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data42</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data38</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data43</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data39</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data44</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data40</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data45</DataItem>
         </Attribute>
       </Grid>
       <Grid Name="Grid">
@@ -200,54 +221,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data41</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data46</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data42</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data47</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data43</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data48</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data44</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data49</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data45</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data50</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data46</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data51</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data47</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data52</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data48</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data53</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data49</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data54</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data50</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data55</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data51</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data56</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data52</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data57</DataItem>
         </Attribute>
       </Grid>
       <Grid Name="Grid">
@@ -258,54 +278,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data53</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data58</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data54</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data59</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data55</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data60</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data56</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data61</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data57</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data62</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data58</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data63</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data59</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data64</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data60</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data65</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data61</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data66</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data62</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data67</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data63</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data68</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data64</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data69</DataItem>
         </Attribute>
       </Grid>
       <Grid Name="Grid">
@@ -316,54 +335,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data65</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data70</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data66</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data71</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data67</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data72</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data68</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data73</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data69</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data74</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data70</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data75</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data71</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data76</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data72</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data77</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data73</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data78</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data74</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data79</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data75</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data80</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data76</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data81</DataItem>
         </Attribute>
       </Grid>
       <Grid Name="Grid">
@@ -374,54 +392,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data77</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data82</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data78</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data83</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data79</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data84</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data80</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data85</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data81</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data86</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data82</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data87</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data83</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data88</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data84</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data89</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data85</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data90</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data86</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data91</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data87</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data92</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data88</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data93</DataItem>
         </Attribute>
       </Grid>
       <Grid Name="Grid">
@@ -432,54 +449,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data89</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data94</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data90</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data95</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data91</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data96</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data92</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data97</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data93</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data98</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data94</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data99</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data95</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data100</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data96</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data101</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data97</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data102</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data98</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data103</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data99</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data104</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data100</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data105</DataItem>
         </Attribute>
       </Grid>
       <Grid Name="Grid">
@@ -490,54 +506,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data101</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data106</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data102</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data107</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data103</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data108</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data104</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data109</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data105</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data110</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data106</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data111</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data107</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data112</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data108</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data113</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data109</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data114</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data110</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data115</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data111</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data116</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data112</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data117</DataItem>
         </Attribute>
       </Grid>
       <Grid Name="Grid">
@@ -548,54 +563,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data113</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data118</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data114</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data119</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data115</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data120</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data116</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data121</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data117</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data122</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data118</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data123</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data119</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data124</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data120</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data125</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data121</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data126</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data122</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data127</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data123</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data128</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data124</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data129</DataItem>
         </Attribute>
       </Grid>
       <Grid Name="Grid">
@@ -606,54 +620,53 @@
         <xi:include xpointer="element(/1/1/2/2/3)"/>
         <xi:include xpointer="element(/1/1/2/2/4)"/>
         <xi:include xpointer="element(/1/1/2/2/5)"/>
-        <xi:include xpointer="element(/1/1/2/2/6)"/>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_x" Type="Scalar">
           <Information Name="disp_x" Value="Nodal quantity disp_x"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data125</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data130</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_y" Type="Scalar">
           <Information Name="disp_y" Value="Nodal quantity disp_y"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data126</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data131</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="disp_z" Type="Scalar">
           <Information Name="disp_z" Value="Nodal quantity disp_z"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data127</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data132</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xx" Type="Scalar">
           <Information Name="phi_xx" Value="Nodal quantity phi_xx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data128</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data133</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xy" Type="Scalar">
           <Information Name="phi_xy" Value="Nodal quantity phi_xy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data129</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data134</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_xz" Type="Scalar">
           <Information Name="phi_xz" Value="Nodal quantity phi_xz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data130</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data135</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yx" Type="Scalar">
           <Information Name="phi_yx" Value="Nodal quantity phi_yx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data131</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data136</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yy" Type="Scalar">
           <Information Name="phi_yy" Value="Nodal quantity phi_yy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data132</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data137</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_yz" Type="Scalar">
           <Information Name="phi_yz" Value="Nodal quantity phi_yz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data133</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data138</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zx" Type="Scalar">
           <Information Name="phi_zx" Value="Nodal quantity phi_zx"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data134</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data139</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zy" Type="Scalar">
           <Information Name="phi_zy" Value="Nodal quantity phi_zy"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data135</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data140</DataItem>
         </Attribute>
         <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="phi_zz" Type="Scalar">
           <Information Name="phi_zz" Value="Nodal quantity phi_zz"/>
-          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data136</DataItem>
+          <DataItem DataType="Float" Dimensions="16" Format="HDF" Precision="8">macroscale_xdmf.h5:Data141</DataItem>
         </Attribute>
       </Grid>
     </Grid>

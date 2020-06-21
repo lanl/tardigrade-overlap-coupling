@@ -168,6 +168,45 @@ int test_XDMFDataFile_getNumIncrements( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_getDomainNodes( std::ofstream &results ){
+    /*!
+     * Get the nodes from a domain.
+     *
+     * :param std::ofstream &results The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    uIntVector domainNodesAnswer = { 2, 3, 6, 7, 8, 10, 12, 13 };
+
+    uIntVector domainNodesResult;
+    std::string domainName = "left";
+    errorOut error = xdf.getDomainNodes( 0, domainName, domainNodesResult );
+
+    if ( error ){
+        error->print( );
+        results << "test_XDMFDataFile_getDomainNodes & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainNodesResult, domainNodesAnswer ) ){
+        results << "test_XDMFDataFile_getDomainNodes (test 1) & False\n";
+        return 1;
+    }
+
+    domainName = "free";
+    error = xdf.getDomainNodes( 0, domainName, domainNodesResult );
+
+    if ( !error ){
+        results << "test_XDMFDataFile_getDomainNodes (test 2) & False\n";
+        return 1;
+    }
+
+    results << "test_XDMFDataFile_getDomainNodes & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -183,6 +222,7 @@ int main(){
     test_XDMFDataFile_constructor( results );
     test_XDMFDataFile_getNumIncrements( results );
     test_XDMFDataFile_readMesh( results );
+    test_XDMFDataFile_getDomainNodes( results );
 
     //Close the results file
     results.close();
