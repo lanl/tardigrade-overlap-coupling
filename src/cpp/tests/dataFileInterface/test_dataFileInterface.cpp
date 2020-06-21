@@ -207,6 +207,36 @@ int test_XDMFDataFile_getDomainNodes( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_getNumNodes( std::ofstream &results ){
+    /*!
+     * Test the function to extract the number of nodes in the domain
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    unsigned int answer = 16;
+    unsigned int result;
+
+    errorOut error = xdf.getNumNodes( 0, result );
+
+    if ( error ){
+        error->print( );
+        results << "test_XDMFDataFile_getNumNodes & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( answer, result ) ){
+        results << "test_XDMFDataFile_getNumNodes (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_XDMFDataFile_getNumNodes & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -223,6 +253,7 @@ int main(){
     test_XDMFDataFile_getNumIncrements( results );
     test_XDMFDataFile_readMesh( results );
     test_XDMFDataFile_getDomainNodes( results );
+    test_XDMFDataFile_getNumNodes( results );
 
     //Close the results file
     results.close();

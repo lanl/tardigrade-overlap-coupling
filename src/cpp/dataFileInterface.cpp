@@ -128,6 +128,17 @@ namespace dataFileInterface{
         return new errorNode( "getNumIncrements", "The getNumIncrements function is not defined" ); 
     }
 
+    errorOut dataFileBase::getNumNodes( const unsigned int increment, unsigned int &numNodes ){
+        /*!
+         * Get the number of nodes from the datafile.
+         *
+         * :param const unsigned int increment: The increment at which to get the nodes
+         * :param unsigned int &numIncrements: The number of increments
+         */
+
+        return new errorNode( "getNumIncrements", "The getNumNodes function is not defined" ); 
+    }
+
     errorOut dataFileBase::readMesh( const unsigned int increment, floatVector &nodalPositions ){
         /*!
          * Read a mesh from the datafile.
@@ -349,6 +360,33 @@ namespace dataFileInterface{
 //        }
 
         return NULL;
+    }
+
+    errorOut XDMFDataFile::getNumNodes( const unsigned int increment, unsigned int &numNodes ){
+        /*!
+         * Get the number of nodes in the datafile
+         *
+         * :param const unsigned int increment: The increment at which to get the nodes
+         * :param unsigned int &numNodes: The number of nodes
+         */
+
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        errorOut error = getUnstructuredGrid( increment, grid );
+
+        if ( error ){
+            errorOut result = new errorNode( "getNumNodes", "Error in extraction of grid" );
+            result->addNext( error );
+            return result;
+        }
+
+        if ( grid->getGeometry()->getType() != XdmfGeometryType::XYZ( ) ){
+            return new errorNode( "getNumNodes", "The geometry type must be XYZ" );
+        }
+
+        numNodes = grid->getGeometry()->getSize() / 3;
+
+        return NULL;
+        
     }
 
     errorOut XDMFDataFile::getDomainNodes( const unsigned int increment, const std::string domainName, uIntVector &domainNodes ){

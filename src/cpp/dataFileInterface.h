@@ -72,6 +72,7 @@ namespace dataFileInterface{
 
             //File read interface functions
             virtual errorOut getNumIncrements( unsigned int &numIncrements ); //Required overload
+            virtual errorOut getNumNodes( const unsigned int increment, unsigned int &numNodes ); //Required overload
             virtual errorOut readMesh( const unsigned int increment, floatVector &nodalPositions ); //Required overload
             virtual errorOut getDomainNodes( const unsigned int increment, const std::string domainName,
                                              uIntVector &domainNodes ); //Required overload
@@ -101,6 +102,7 @@ namespace dataFileInterface{
 
             //Overloads
             errorOut getNumIncrements( unsigned int &numIncrements );
+            errorOut getNumNodes( const unsigned int increment, unsigned int &numNodes );
             errorOut readMesh( const unsigned int increment, floatVector &nodalPositions );
             errorOut getDomainNodes( const unsigned int increment, const std::string domainName,
                                      uIntVector &domainNodes );
