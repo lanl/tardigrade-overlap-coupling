@@ -387,6 +387,7 @@ namespace dataFileInterface{
             return NULL;
 
         }
+        //TODO: Add more ability to extract the nodes from non-cell entities
         else{
 
             return new errorNode( "getDomainNodes", "The set type is not recognized. It must be Node" );
