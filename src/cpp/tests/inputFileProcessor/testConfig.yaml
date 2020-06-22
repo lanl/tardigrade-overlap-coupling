@@ -1,0 +1,89 @@
+# Mesh and datafile definitions of the macro and micro-scales
+
+macroscale_definition:
+        filename: ../DOFProjection/simulations/macroscale_xdmf.xdmf
+        mode: read
+
+microscale_definition:
+        filename: ../DOFProjection/simulations/microscale_xdmf.xdmf
+        mode: read
+        volume_surface_node_pairs: #Defines the nodesets that represent the volumes and surface of the averaging domains
+#Ghost pairs
+                -
+                  volume:  ghost_nodeset_volume_1
+                  surface: ghost_nodeset_surface_1
+                -
+                  volume:  ghost_nodeset_volume_2
+                  surface: ghost_nodeset_surface_2
+                -
+                  volume:  ghost_nodeset_volume_3
+                  surface: ghost_nodeset_surface_3
+                -
+                  volume:  ghost_nodeset_volume_4
+                  surface: ghost_nodeset_surface_4
+                -
+                  volume:  ghost_nodeset_volume_5
+                  surface: ghost_nodeset_surface_5
+                -
+                  volume:  ghost_nodeset_volume_6
+                  surface: ghost_nodeset_surface_6
+                -
+                  volume:  ghost_nodeset_volume_7
+                  surface: ghost_nodeset_surface_7
+                -
+                  volume:  ghost_nodeset_volume_8
+                  surface: ghost_nodeset_surface_8
+#Free pairs
+                -
+                  volume:  free_nodeset_volume_1
+                  surface: free_nodeset_surface_1
+                -
+                  volume:  free_nodeset_volume_2
+                  surface: free_nodeset_surface_2
+                -
+                  volume:  free_nodeset_volume_3
+                  surface: free_nodeset_surface_3
+                -
+                  volume:  free_nodeset_volume_4
+                  surface: free_nodeset_surface_4
+                -
+                  volume:  free_nodeset_volume_5
+                  surface: free_nodeset_surface_5
+                -
+                  volume:  free_nodeset_volume_6
+                  surface: free_nodeset_surface_6
+                -
+                  volume:  free_nodeset_volume_7
+                  surface: free_nodeset_surface_7
+                -
+                  volume:  free_nodeset_volume_8
+                  surface: free_nodeset_surface_8
+
+# Definition of the coupling domains
+free_macroscale_domains:
+        -
+          name: name1 #The macro-scale domains can be named arbitrarily
+          macro_nodeset: free_nodes
+          micro_nodesets:
+                  - ghost_nodeset_volume_1
+                  - ghost_nodeset_volume_2
+                  - ghost_nodeset_volume_3
+                  - ghost_nodeset_volume_4
+                  - ghost_nodeset_volume_5
+                  - ghost_nodeset_volume_6
+                  - ghost_nodeset_volume_7
+                  - ghost_nodeset_volume_8
+
+ghost_macroscale_domains:
+        -
+          name: name1 #The macro-scale domains can be named arbitrarily
+          macro_nodeset: ghost_nodes
+          micro_nodesets:
+                  - free_nodeset_volume_1
+                  - free_nodeset_volume_2
+                  - free_nodeset_volume_3
+                  - free_nodeset_volume_4
+                  - free_nodeset_volume_5
+                  - free_nodeset_volume_6
+                  - free_nodeset_volume_7
+                  - free_nodeset_volume_8
