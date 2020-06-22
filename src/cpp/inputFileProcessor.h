@@ -65,8 +65,6 @@ namespace inputFileProcessor{
             errorOut getError( ){ return _error; }
 
             //Core initialization routines
-            errorOut initializeFileInterfaces( );
-            errorOut initializeCouplingDomains( ){};
             errorOut initializeIncrement( const unsigned int increment );
 
             //Attributes
@@ -76,6 +74,9 @@ namespace inputFileProcessor{
         private:
             //Private functions
             void initialize( );
+
+            errorOut initializeFileInterfaces( );
+            errorOut initializeCouplingDomains( ){};
             
             errorOut openConfigurationFile( );
             errorOut openConfigurationFile( const std::string &configurationFilename );
