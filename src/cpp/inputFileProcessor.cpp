@@ -372,7 +372,7 @@ namespace inputFileProcessor{
 
         if ( _config[ "free_macroscale_domains" ] ){
 
-            errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ] );
+            errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ], _ghost_micro_surface_sets );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the free macroscale domains" );
@@ -384,8 +384,7 @@ namespace inputFileProcessor{
 
         if ( _config[ "ghost_macroscale_domains" ] ){
 
-            //In the configuration of the micro-scale domains
-            errorOut error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ] );
+            errorOut error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ], _free_micro_surface_sets );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the ghost macroscale domains" );
@@ -395,15 +394,28 @@ namespace inputFileProcessor{
 
         }
 
+        //Make sure that no nodeset that appears in the ghost micro-scale also appears in the free micro-scale
+        for ( auto nodeset = _ghost_micro_surface_sets.begin( ); nodeset != _ghost_micro_surface_sets.end( ); nodeset++ ){
+
+            if ( std::find( _free_micro_surface_sets.begin( ), _free_micro_surface_sets.end( ), *nodeset ) != _free_micro_surface_sets.end( ) ){
+                return new errorNode( "initializeCouplingDomains",
+                                      *nodeset + " appears in the ghost and free micro-surface nodeset definitions" );
+            }
+
+        }
+
         return NULL;
 
     }
 
-    errorOut inputFileProcessor::checkCommonDomainConfiguration( const YAML::Node &domainConfig ){
+    errorOut inputFileProcessor::checkCommonDomainConfiguration( const YAML::Node &domainConfig,
+                                                                 std::vector< std::string > &surfaceNodesets ){
         /*!
-         * Check the common values in the configuration of a domain
+         * Extract common values in the configuration of a domain
          *
          * :param YAML::Node &domainConfig: The configuration of a particular domain.
+         * :param std::vector< std::string > &surfaceNodesets: The nodeset names for the surfaces of the
+         *     micro domains
          */
 
         if ( ( !domainConfig.IsSequence() ) && ( !domainConfig.IsNull( ) ) ){
@@ -417,6 +429,8 @@ namespace inputFileProcessor{
 
         unsigned int indx = 1;
         unsigned int indx2 = 1;
+        unsigned int nSurfaceNodesets = 0;
+        surfaceNodesets.clear();
         for ( auto domain = domainConfig.begin( ); domain != domainConfig.end(); domain++ ){
 
             if ( !( *domain )[ "macro_nodeset" ] ){
@@ -453,11 +467,31 @@ namespace inputFileProcessor{
 
                 }
 
+                nSurfaceNodesets++;
                 indx2++;
 
             }
 
             indx++;
+
+        }
+
+        //Extract the surface nodesets
+        surfaceNodesets.reserve( nSurfaceNodesets );
+        for ( auto domain = domainConfig.begin( ); domain != domainConfig.end( ); domain++ ){
+            
+            for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
+
+                if ( std::find( surfaceNodesets.begin( ), surfaceNodesets.end( ), nodeset->as< std::string >( ) ) != surfaceNodesets.end( ) ){
+
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          nodeset->as< std::string >( ) + " appears more than once in the coupling definition" );
+
+                }
+
+                surfaceNodesets.push_back( nodeset->as< std::string >( ) );
+
+            }
 
         }
 

@@ -82,7 +82,8 @@ namespace inputFileProcessor{
             errorOut openConfigurationFile( const std::string &configurationFilename );
             errorOut setMicroNodeWeights( const unsigned int increment );
             errorOut setSurfaceSets( const unsigned int increment );
-            errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig );
+            errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
+                                                     std::vector< std::string > &surfaceNodesets );
 
             //Private Attributes
             errorOut _error;
