@@ -21,25 +21,23 @@ int test_openConfigurationFile( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testFile.yaml";
+    std::string filename = "testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    errorOut error = reader.openConfigurationFile( );
-
-    if ( error ){
-        error->print();
+    if ( reader.getError( ) ){
+        reader.getError( )->print();
         results << "test_openConfigurationFile (test 1) & False\n";
         return 1;
     }
 
     reader = inputFileProcessor::inputFileProcessor( );
-    error = reader.openConfigurationFile( );
+    errorOut error = reader.setConfigurationFilename( "" );
     if ( !error ){
         results << "test_openConfigurationFile (test 2) & False\n";
         return 1;
     }
 
-    error = reader.openConfigurationFile( filename );
+    error = reader.setConfigurationFilename( filename );
     if ( error ){
         error->print();
         results << "test_openConfigurationFile (test 3) & False\n";
@@ -57,18 +55,17 @@ int test_setConfigurationFile( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testFile.yaml";
+    std::string filename = "testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader;
 
-    errorOut error = reader.openConfigurationFile( );
+    errorOut error = reader.setConfigurationFilename( "" );
 
     if ( !error ){
         results << "test_setConfigurationFile & False\n";
         return 1;
     }
 
-    reader.setConfigurationFilename( filename );
-    error = reader.openConfigurationFile( );
+    error = reader.setConfigurationFilename( filename );
 
     if ( error ){
         error->print();
@@ -90,17 +87,8 @@ int test_initializeFileInterfaces( std::ofstream &results ){
     std::string filename = "testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    errorOut error = reader.openConfigurationFile( );
-    if ( error ){
-        error->print();
-        results << "test_initializeFileInterfaces & False\n";
-        return 1;
-    }
-
-    error = reader.initializeFileInterfaces( );
-
-    if( error ){
-        error->print();
+    if ( reader.getError( ) ){
+        reader.getError( )->print();
         results << "test_initializeFileInterfaces & False\n";
         return 1;
     }
@@ -116,7 +104,7 @@ int test_initializeFileInterfaces( std::ofstream &results ){
 
     floatVector resultMacroNodes, resultMicroNodes;
 
-    error = reader._macroscale->readMesh( 10, resultMacroNodes );
+    errorOut error = reader._macroscale->readMesh( 10, resultMacroNodes );
 
     if ( error ){
         error->print();
@@ -146,6 +134,33 @@ int test_initializeFileInterfaces( std::ofstream &results ){
     return 0;
 }
 
+int test_initializeIncrement( std::ofstream &results ){
+    /*!
+     * Test the initialization of the processor for the current increment
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_initializeIncrement & False\n";
+        return 1;
+    }
+
+    errorOut error = reader.initializeIncrement( 0 );
+    if ( error ){
+        error->print( );
+        results << "test_initializeIncrement & False\n";
+        return 1;
+    }
+
+    results << "test_initializeIncrement & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -161,6 +176,7 @@ int main(){
     test_openConfigurationFile( results );
     test_setConfigurationFile( results );
     test_initializeFileInterfaces( results );
+//    test_initializeIncrement( results );
 
     //Close the results file
     results.close();

@@ -62,10 +62,12 @@ namespace inputFileProcessor{
 
             //Functions
             errorOut setConfigurationFilename( const std::string &configurationFilename );
-            errorOut openConfigurationFile( );
-            errorOut openConfigurationFile( const std::string &configurationFilename );
+            errorOut getError( ){ return _error; }
 
+            //Core initialization routines
             errorOut initializeFileInterfaces( );
+            errorOut initializeCouplingDomains( ){};
+            errorOut initializeIncrement( const unsigned int increment );
 
             //Attributes
             std::shared_ptr< dataFileInterface::dataFileBase > _macroscale;
@@ -73,10 +75,21 @@ namespace inputFileProcessor{
 
         private:
             //Private functions
+            void initialize( );
+            
+            errorOut openConfigurationFile( );
+            errorOut openConfigurationFile( const std::string &configurationFilename );
+            errorOut setMicroNodeWeights( const unsigned int increment );
+            errorOut setSurfaceSets( const unsigned int increment );
 
             //Private Attributes
+            errorOut _error;
             std::string _configFilename = "";
             YAML::Node _config;
+
+            floatVector _microDomainWeights;
+            std::vector< std::string > _free_micro_surface_sets;
+            std::vector< std::string > _ghost_micro_surface_sets;
 
     };
 
