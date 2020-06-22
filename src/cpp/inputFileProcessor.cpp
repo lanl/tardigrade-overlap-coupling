@@ -164,7 +164,7 @@ namespace inputFileProcessor{
         else{
 
             return new errorNode( "initializeFileInterfaces",
-                                  "There is no macroscale_definition in the YAML configuration file" );
+                                  "There is no 'macroscale_definition' in the YAML configuration file" );
 
         }
         if ( _config[ "microscale_definition" ] ){
@@ -181,6 +181,7 @@ namespace inputFileProcessor{
 
             }
 
+            //Open the micro-scale data file
             _microscale = dataFileInterface::dataFileBase( _config[ "microscale_definition" ] ).create( _config[ "microscale_definition" ][ "filetype" ].as< std::string >( ) );
 
             if ( _microscale->_error ){
@@ -191,7 +192,45 @@ namespace inputFileProcessor{
         else{
 
             return new errorNode( "initializeFileInterfaces",
-                                  "There is no microscale_definition in the YAML configuration file" );
+                                  "There is no 'microscale_definition' in the YAML configuration file" );
+
+        }
+
+        //Check that all required sets in the configuration file are defined correctly in the datasets
+        
+        //Check that micro-scale volume-surface node pairs are defined correctly
+        if ( _config[ "microscale_definition" ][ "volume_surface_node_pairs" ] ){
+
+            YAML::Node VSPairs = _config[ "microscale_definition" ][ "volume_surface_node_pairs" ];
+
+            if ( !VSPairs.IsSequence( ) ){
+                return new errorNode( "initializeFileInterfaces",
+                                      "'volume_surface_node_pairs' is required to be a sequence" );
+            }
+
+            unsigned int indx = 1;
+            for ( auto it = VSPairs.begin( ); it != VSPairs.end(); it++ ){
+
+                if ( !( *it )[ "volume" ] ){
+                    return new errorNode( "initializeFileInterfaces",
+                                          "'volume' must be defined for each entry of 'volume_surface_node_pairs'" );
+                }
+                else if( !( *it )[ "volume" ].IsScalar( ) ){
+                    return new errorNode( "initializeFileInterface",
+                                          "'volume' should only define a single nodeset ( pair " + std::to_string( indx ) + " )" );
+                }
+                if ( !( *it )[ "surface" ] ){
+                    return new errorNode( "initializeFileInterfaces",
+                                          "'surface' must be defined for each entry of 'volume_surface_node_pairs'" );
+                }
+                else if( !( *it )[ "surface" ].IsScalar( ) ){
+                    return new errorNode( "initializeFileInterface",
+                                          "'surface' should only define a single nodeset ( pair " + std::to_string( indx ) + " )" );
+                }
+
+                indx++;
+
+            }
 
         }
 
@@ -299,6 +338,8 @@ namespace inputFileProcessor{
             result->addNext( error );
             return result;
         }
+
+        return NULL;
     }
 
     errorOut inputFileProcessor::initializeIncrement( const unsigned int increment ){
@@ -319,6 +360,105 @@ namespace inputFileProcessor{
             errorOut result = new errorNode( "initializeIncrement", "Error in computation of the micro-node weights" );
             result->addNext( error );
             return result;
+        }
+
+        return NULL;
+    }
+
+    errorOut inputFileProcessor::initializeCouplingDomains( ){
+        /*!
+         * Initialize the coupling domains
+         */
+
+        if ( _config[ "free_macroscale_domains" ] ){
+
+            errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ] );
+            if ( error ){
+                errorOut result = new errorNode( "initializeCouplingDomains",
+                                                 "Error in input-file check of the free macroscale domains" );
+                result->addNext( error );
+                return result;
+            }
+
+        }
+
+        if ( _config[ "ghost_macroscale_domains" ] ){
+
+            //In the configuration of the micro-scale domains
+            errorOut error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ] );
+            if ( error ){
+                errorOut result = new errorNode( "initializeCouplingDomains",
+                                                 "Error in input-file check of the ghost macroscale domains" );
+                result->addNext( error );
+                return result;
+            }
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::checkCommonDomainConfiguration( const YAML::Node &domainConfig ){
+        /*!
+         * Check the common values in the configuration of a domain
+         *
+         * :param YAML::Node &domainConfig: The configuration of a particular domain.
+         */
+
+        if ( ( !domainConfig.IsSequence() ) && ( !domainConfig.IsNull( ) ) ){
+
+            std::cout << domainConfig[ "macro_free_1" ][ "macro_nodeset" ].as<std::string>( ) <<"\n";
+
+            return new errorNode( "checkCommonDomainConfiguration",
+                                  "The definition of the domains must either be empty or a sequence" );
+
+        }
+
+        unsigned int indx = 1;
+        unsigned int indx2 = 1;
+        for ( auto domain = domainConfig.begin( ); domain != domainConfig.end(); domain++ ){
+
+            if ( !( *domain )[ "macro_nodeset" ] ){
+
+                return new errorNode( "checkCommonDomainConfiguration",
+                                      "The macro-nodeset is not defined in entry " + std::to_string( indx ) );
+
+            }
+            if ( ( *domain )[ "macro_nodeset" ].IsNull( ) ){
+                return new errorNode( "checkCommonDomainConfiguration",
+                                      "'macro_nodeset' cannot be empty in entry " + std::to_string( indx ) );
+            }
+
+            if ( !( *domain )[ "micro_nodesets" ] ){
+
+                return new errorNode( "checkCommonDomainConfiguration",
+                                      "The micro-nodeset is not defined in entry " + std::to_string( indx ) );
+
+            }
+            if ( !( *domain )[ "micro_nodesets" ].IsSequence( ) ){
+
+                return new errorNode( "checkCommonDomainConfiguration",
+                                      "The micro-nodesets are not defined as a sequence in entry " + std::to_string( indx ) ); 
+
+            }
+
+            indx2 = 1;
+            for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
+
+                if ( !nodeset->IsScalar( ) ){
+
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "Micro-nodeset entry " + std::to_string( indx2 ) + " of domain entry " + std::to_string( indx ) + " is not a Scalar" );
+
+                }
+
+                indx2++;
+
+            }
+
+            indx++;
+
         }
 
         return NULL;

@@ -76,12 +76,13 @@ namespace inputFileProcessor{
             void initialize( );
 
             errorOut initializeFileInterfaces( );
-            errorOut initializeCouplingDomains( ){};
+            errorOut initializeCouplingDomains( );
             
             errorOut openConfigurationFile( );
             errorOut openConfigurationFile( const std::string &configurationFilename );
             errorOut setMicroNodeWeights( const unsigned int increment );
             errorOut setSurfaceSets( const unsigned int increment );
+            errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig );
 
             //Private Attributes
             errorOut _error;
