@@ -176,7 +176,7 @@ int main(){
     test_openConfigurationFile( results );
     test_setConfigurationFile( results );
     test_initializeFileInterfaces( results );
-//    test_initializeIncrement( results );
+    test_initializeIncrement( results );
 
     //Close the results file
     results.close();
