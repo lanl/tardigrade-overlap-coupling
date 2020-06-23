@@ -352,7 +352,7 @@ namespace inputFileProcessor{
          */
 
         //Extract the set names from the microscale simulation
-        std::vector< std::string > setNames;
+        stringVector setNames;
         errorOut error = _microscale->getSetNames( increment, setNames );
 
         if ( error ){
@@ -460,7 +460,7 @@ namespace inputFileProcessor{
                 }
 
                 indx = 0;
-                _non_overlapped_micro_surface_sets = std::vector< std::string >( nNonOverlappedMicroscaleDomains );
+                _non_overlapped_micro_surface_sets = stringVector( nNonOverlappedMicroscaleDomains );
 
                 for ( auto domain = _config[ "non_overlapped_microscale_domains" ].begin( );
                       domain != _config[ "non_overlapped_microscale_domains" ].end( );
@@ -490,12 +490,12 @@ namespace inputFileProcessor{
     }
 
     errorOut inputFileProcessor::checkCommonDomainConfiguration( const YAML::Node &domainConfig,
-                                                                 std::vector< std::string > &surfaceNodesets ){
+                                                                 stringVector &surfaceNodesets ){
         /*!
          * Extract common values in the configuration of a domain
          *
          * :param YAML::Node &domainConfig: The configuration of a particular domain.
-         * :param std::vector< std::string > &surfaceNodesets: The nodeset names for the surfaces of the
+         * :param stringVector &surfaceNodesets: The nodeset names for the surfaces of the
          *     micro domains
          */
 
@@ -664,6 +664,30 @@ namespace inputFileProcessor{
          */
 
         return &_microDomainWeights;
+    }
+
+    const stringVector* inputFileProcessor::getFreeMicroDomainNames( ){
+        /*!
+         * Get the free domain names
+         */
+
+        return &_free_micro_surface_sets;
+    }
+
+    const stringVector* inputFileProcessor::getGhostMicroDomainNames( ){
+        /*!
+         * Get the ghost domain names
+         */
+
+        return &_ghost_micro_surface_sets;
+    }
+
+    const stringVector* inputFileProcessor::getNonOverlappedMicroDomainNames( ){
+        /*!
+         * Get the ghost domain names
+         */
+
+        return &_non_overlapped_micro_surface_sets;
     }
 
 }

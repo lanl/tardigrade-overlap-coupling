@@ -13,6 +13,7 @@ typedef inputFileProcessor::floatType floatType; //!Define the float values type
 typedef inputFileProcessor::floatVector floatVector; //! Define a vector of floats
 typedef inputFileProcessor::floatMatrix floatMatrix; //!Define a matrix of floats
 typedef inputFileProcessor::uIntVector uIntVector; //!Define a vector of unsigned ints
+typedef inputFileProcessor::stringVector stringVector; //!Define a vector of strings
 
 int test_openConfigurationFile( std::ofstream &results ){
     /*!
@@ -190,6 +191,141 @@ int test_initializeIncrement( std::ofstream &results ){
     return 0;
 }
 
+int test_getFreeMicroDomainNames( std::ostream &results ){
+    /*!
+     * Test getting a pointer to the free micro domain names
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getFreeMicroDomainNames & False\n";
+        return 1;
+    }
+
+    stringVector answer = { "free_nodeset_volume_1",
+                            "free_nodeset_volume_2",
+                            "free_nodeset_volume_3",
+                            "free_nodeset_volume_4",
+                            "free_nodeset_volume_5",
+                            "free_nodeset_volume_6",
+                            "free_nodeset_volume_7",
+                            "free_nodeset_volume_8" };
+
+    const stringVector *result = reader.getFreeMicroDomainNames( );
+
+    unsigned int indx = 0;
+    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+
+        if ( it->compare( answer[ indx ] ) != 0 ){
+
+            results << "test_getFreeMicroDomainNames (test 1) & False\n";
+            return 1;
+
+        }
+
+        indx++;
+
+    }
+
+    results << "test_getFreeMicroDomainNames & True\n";
+    return 0;
+}
+
+int test_getGhostMicroDomainNames( std::ostream &results ){
+    /*!
+     * Test getting a pointer to the ghost micro domain names
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getGhostMicroDomainNames & False\n";
+        return 1;
+    }
+
+    stringVector answer = { "ghost_nodeset_volume_1",
+                            "ghost_nodeset_volume_2",
+                            "ghost_nodeset_volume_3",
+                            "ghost_nodeset_volume_4",
+                            "ghost_nodeset_volume_5",
+                            "ghost_nodeset_volume_6",
+                            "ghost_nodeset_volume_7",
+                            "ghost_nodeset_volume_8" };
+
+    const stringVector *result = reader.getGhostMicroDomainNames( );
+
+    unsigned int indx = 0;
+    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+
+        if ( it->compare( answer[ indx ] ) != 0 ){
+
+            results << "test_getGhostMicroDomainNames (test 1) & False\n";
+            return 1;
+
+        }
+
+        indx++;
+
+    }
+
+    results << "test_getGhostMicroDomainNames & True\n";
+    return 0;
+}
+
+int test_getNonOverlappedMicroDomainNames( std::ostream &results ){
+    /*!
+     * Test getting a pointer to the ghost micro domain names
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getNonOverlappedMicroDomainNames & False\n";
+        return 1;
+    }
+
+    stringVector answer = { "non_overlapped_nodeset_volume_1",
+                            "non_overlapped_nodeset_volume_2",
+                            "non_overlapped_nodeset_volume_3",
+                            "non_overlapped_nodeset_volume_4",
+                            "non_overlapped_nodeset_volume_5",
+                            "non_overlapped_nodeset_volume_6",
+                            "non_overlapped_nodeset_volume_7",
+                            "non_overlapped_nodeset_volume_8" };
+
+    const stringVector *result = reader.getNonOverlappedMicroDomainNames( );
+
+    unsigned int indx = 0;
+    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+
+        if ( it->compare( answer[ indx ] ) != 0 ){
+
+            results << "test_getNonOverlappedMicroDomainNames (test 1) & False\n";
+            return 1;
+
+        }
+
+        indx++;
+
+    }
+
+    results << "test_getNonOverlappedMicroDomainNames & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -206,6 +342,9 @@ int main(){
     test_setConfigurationFile( results );
     test_initializeFileInterfaces( results );
     test_initializeIncrement( results );
+    test_getFreeMicroDomainNames( results );
+    test_getGhostMicroDomainNames( results );
+    test_getNonOverlappedMicroDomainNames( results );
 
     //Close the results file
     results.close();

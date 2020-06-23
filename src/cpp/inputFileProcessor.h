@@ -23,6 +23,7 @@ namespace inputFileProcessor{
     typedef std::vector< floatType > floatVector; //! Define a vector of floats
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
     typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
+    typedef std::vector< std::string > stringVector; //!Define a vector of strings
 
     class dataFileReaderBase;
 
@@ -68,6 +69,10 @@ namespace inputFileProcessor{
             const floatVector* getMicroVolumes( );
             const floatVector* getMicroWeights( );
 
+            const stringVector* getFreeMicroDomainNames( );
+            const stringVector* getGhostMicroDomainNames( );
+            const stringVector* getNonOverlappedMicroDomainNames( );
+
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int increment );
 
@@ -87,7 +92,7 @@ namespace inputFileProcessor{
             errorOut setMicroNodeWeights( const unsigned int increment );
             errorOut setSurfaceSets( const unsigned int increment );
             errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
-                                                     std::vector< std::string > &surfaceNodesets );
+                                                     stringVector &surfaceNodesets );
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
@@ -100,9 +105,9 @@ namespace inputFileProcessor{
             floatVector _microDomainWeights;
             floatVector _microDensity;
             floatVector _microVolume;
-            std::vector< std::string > _non_overlapped_micro_surface_sets;
-            std::vector< std::string > _free_micro_surface_sets;
-            std::vector< std::string > _ghost_micro_surface_sets;
+            stringVector _non_overlapped_micro_surface_sets;
+            stringVector _free_micro_surface_sets;
+            stringVector _ghost_micro_surface_sets;
 
     };
 
