@@ -1,2 +1,4 @@
 *.as_evaluated
 *.e
+*.h5
+*.xdmf
