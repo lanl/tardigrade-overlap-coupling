@@ -66,6 +66,7 @@ namespace inputFileProcessor{
 
             const floatVector* getMicroDensities( );
             const floatVector* getMicroVolumes( );
+            const floatVector* getMicroWeights( );
 
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int increment );

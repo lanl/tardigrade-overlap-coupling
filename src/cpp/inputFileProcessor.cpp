@@ -658,4 +658,12 @@ namespace inputFileProcessor{
         return &_microVolume;
     }
 
+    const floatVector* inputFileProcessor::getMicroWeights( ){
+        /*!
+         * Get the micro weights
+         */
+
+        return &_microDomainWeights;
+    }
+
 }

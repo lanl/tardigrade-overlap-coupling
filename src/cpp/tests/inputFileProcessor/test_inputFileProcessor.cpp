@@ -182,7 +182,7 @@ int test_initializeIncrement( std::ofstream &results ){
     }
 
     if ( !vectorTools::fuzzyEquals( volumeTotalAnswer, volumeResultTotal ) ){
-        results << "test_initializeIncrement (test 2 ) & False\n";
+        results << "test_initializeIncrement (test 2) & False\n";
         return 1;
     }
 
