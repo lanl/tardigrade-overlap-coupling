@@ -7,6 +7,22 @@ macroscale_definition:
 microscale_definition:
         filename: ../DOFProjection/simulations/microscale_xdmf.xdmf
         mode: read
+        volume_variable_name: volume #The name of the volume attribute at the nodes
+        density_variable_name: density #The name of the density attribute at the nodes
+        displacement_variable_names: #The names of the displacement attributes at the nodes
+                u1: disp_x
+                u2: disp_y
+                u3: disp_z
+        stress_variable_names: #The names of the stress attributes at the nodes
+                s11: s11
+                s12: s12
+                s13: s13
+                s21: s21
+                s22: s22
+                s23: s23
+                s21: s31
+                s22: s32
+                s23: s33
         volume_surface_node_pairs: #Defines the nodesets that represent the volumes and surface of the averaging domains
 #Ghost pairs
                 -
