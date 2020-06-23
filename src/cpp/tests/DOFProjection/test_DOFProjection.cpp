@@ -585,7 +585,7 @@ int _getTestMacroDOFVector( floatVector &macroDOFVector ){
     return 0;
 } 
 
-int _testGetMicroDensities( floatVector &microDensities ){
+int _getTestMicroDensities( floatVector &microDensities ){
     /*!
      * Return the micro densities
      *
@@ -621,7 +621,7 @@ int _testGetMicroDensities( floatVector &microDensities ){
     return 0;
 }
 
-int _testGetMicroVolumes( floatVector &microVolumes ){
+int _getTestMicroVolumes( floatVector &microVolumes ){
     /*!
      * Return the micro volumes
      *
@@ -661,8 +661,8 @@ int _getTestMicroMasses( floatVector &microMasses ){
 
     floatVector microVolumes, microDensities;
 
-    _testGetMicroDensities( microDensities );
-    _testGetMicroVolumes( microVolumes );
+    _getTestMicroDensities( microDensities );
+    _getTestMicroVolumes( microVolumes );
 
     microMasses = floatVector( microDensities.size(), 0 );
 
@@ -3399,6 +3399,12 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     floatVector microPositions;
     _getTestMicroPositions( microPositions );
 
+    floatVector microVolumes;
+    _getTestMicroVolumes( microVolumes );
+
+    floatVector microDensities;
+    _getTestMicroDensities( microDensities );
+
     floatVector microMasses;
     _getTestMicroMasses( microMasses );
 
@@ -3423,16 +3429,46 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     }
 
     domainCMResult = floatVector( 0, 0 );
-    error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, domainMicroWeights,
-                                                      domainMassResult, domainCMResult );
+    error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities, microPositions, 
+                                                      domainMicroWeights, domainCMResult );
+
+    if ( error ){
+        error->print();
+        results << "test_computeDomainCenterOfMass & False\n";
+        return 1;
+    }
 
     if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
         results << "test_computeDomainCenterOfMass (test 2) & False\n";
         return 1;
     }
 
-    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
+    domainCMResult = floatVector( 0, 0 );
+    error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, domainMicroWeights,
+                                                      domainMassResult, domainCMResult );
+
+    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
         results << "test_computeDomainCenterOfMass (test 3) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
+        results << "test_computeDomainCenterOfMass (test 4) & False\n";
+        return 1;
+    }
+
+    domainMassResult = 0;
+    domainCMResult = floatVector( 0, 0 );
+    error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities, microPositions,
+                                                      domainMicroWeights, domainMassResult, domainCMResult );
+
+    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
+        results << "test_computeDomainCenterOfMass (test 5) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
+        results << "test_computeDomainCenterOfMass (test 6) & False\n";
         return 1;
     }
 

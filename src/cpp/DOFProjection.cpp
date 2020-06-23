@@ -741,6 +741,32 @@ namespace DOFProjection{
     }
 
     errorOut computeDomainCenterOfMass( const unsigned int &dim,
+                                        const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
+                                        const floatVector &microDensities, const floatVector &microPositions,
+                                        const floatVector &domainMicroWeights, floatVector &domainCM ){
+        /*!
+         * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
+         * within the domain.
+         *
+         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const floatVector &microVolumes: The volumes of the micro nodes.
+         * :param const floatVector &microDensities: The densities of the micro nodes.
+         * :param const floatVector &microPositions: The positions of the micro-nodes.
+         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &domainCG: The center of mass of the domain
+         */
+
+        floatType domainMass;
+        return computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities, microPositions,
+                                          domainMicroWeights, domainMass, domainCM );
+    }
+
+    errorOut computeDomainCenterOfMass( const unsigned int &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
                                         const floatVector &microPositions, const floatVector &domainMicroWeights,
                                         floatType &domainMass, floatVector &domainCM ){
@@ -792,6 +818,78 @@ namespace DOFProjection{
 
             //Add to the domain's mass weighted position
             domainCM += microMasses[ domainMicroNodeIndices[ i ] ] * domainMicroWeights[ i ]
+                      * floatVector( microPositions.begin() + dim * domainMicroNodeIndices[ i ],
+                                     microPositions.begin() + dim * ( domainMicroNodeIndices[ i ] + 1 ) );
+
+        }
+
+        //Normalize the center of mass by the domain's mass
+        domainCM /= domainMass;
+
+        return NULL;
+
+    }
+
+    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+                                        const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
+                                        const floatVector &microDensities, const floatVector &microPositions,
+                                        const floatVector &domainMicroWeights, floatType &domainMass, floatVector &domainCM ){
+        /*!
+         * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
+         * within the domain.
+         *
+         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const floatVector &microVolumes: The volumes of the micro nodes.
+         * :param const floatVector &microDensities: The densities of the micro nodes.
+         * :param const floatVector &microPositions: The positions of the micro-nodes.
+         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &domainMass: The mass of the domain
+         * :param floatVector &domainCM: The center of mass of the domain
+         */
+
+        if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
+            return new errorNode( "computeDomainCenterOfMass",
+                                  "The number of node indices and the weights must have the same length" );
+        }
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+            if ( microPositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "The size of the micro-positions vector is not consistent with the micro indices" );
+            }
+
+            if ( microVolumes.size() < domainMicroNodeIndices[ i ] ){
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "The size of the micro-volumes vector is not consistent with the micro indices" );
+            }
+
+            if ( microDensities.size() < domainMicroNodeIndices[ i ] ){
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "The size of the micro-densities vector is not consistent with the micro indices" );
+            }
+        }
+
+        //Initialize the domain mass
+        domainMass = 0;
+
+        //Initialize the center of mass vector
+        domainCM = floatVector( dim, 0 );
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+
+            //Add to the domain's mass
+            domainMass += microVolumes[ domainMicroNodeIndices[ i ] ] * microDensities[ domainMicroNodeIndices[ i ] ]
+                        * domainMicroWeights[ i ];
+
+            //Add to the domain's mass weighted position
+            domainCM += microVolumes[ domainMicroNodeIndices[ i ] ] * microDensities[ domainMicroNodeIndices[ i ] ]
+                      * domainMicroWeights[ i ]
                       * floatVector( microPositions.begin() + dim * domainMicroNodeIndices[ i ],
                                      microPositions.begin() + dim * ( domainMicroNodeIndices[ i ] + 1 ) );
 

@@ -105,9 +105,19 @@ namespace DOFProjection{
                                         floatType &domainMass, floatVector &domainCM );
 
     errorOut computeDomainCenterOfMass( const unsigned int &dim,
+                                        const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
+                                        const floatVector &microDensities, const floatVector &microPositions,
+                                        const floatVector &domainMicroWeights, floatType &domainMass, floatVector &domainCM );
+
+    errorOut computeDomainCenterOfMass( const unsigned int &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
                                         const floatVector &microPositions, const floatVector &domainMicroWeights,
                                         floatVector &domainCM );
+
+    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+                                        const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
+                                        const floatVector &microDensities, const floatVector &microPositions,
+                                        const floatVector &domainMicroWeights, floatVector &domainCM );
 
     errorOut computeDomainXis( const unsigned int &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microPositions,
