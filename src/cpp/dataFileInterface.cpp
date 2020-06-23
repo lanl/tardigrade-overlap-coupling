@@ -174,6 +174,22 @@ namespace dataFileInterface{
         return new errorNode( "getSetNames", "The getSetNames function is not defined" );
     }
 
+    errorOut dataFileBase::getMeshData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
+                                        floatVector &data ){
+        /*!
+         * Get the values of the mesh data named dataName. This should work for
+         * nodal values as well as cell values.
+         *
+         * :param const unsigned int increment: The increment at which to get the data
+         * :param const std::string &dataName: The name of the data
+         * :param const std::string &dataType: The type of the data. This will either be "Node" or "Cell"
+         * :param floatVector &data: The output data vector
+         *
+         */
+
+        return new errorNode( "getMeshData", "The getMeshData function is not defined" );
+    }
+
     /*=========================================================================
     |                               XDMFDataFile                              |
     =========================================================================*/
@@ -473,5 +489,23 @@ namespace dataFileInterface{
         }
 
         return NULL;
+    }
+
+    errorOut XDMFDataFile::getMeshData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
+                                        floatVector &data ){
+        /*!
+         * Get the values of the mesh data named dataName. This should work for
+         * nodal values as well as cell values.
+         *
+         * :param const unsigned int increment: The increment at which to get the data
+         * :param const std::string &dataName: The name of the data
+         * :param const std::string &dataType: The type of the data. This will either be "Node" or "Cell"
+         * :param floatVector &data: The output data vector
+         *
+         */
+
+        //Get the grid
+        shared_ptr< XdmfUnstructuredGrid > grid;
+
     }
 }
