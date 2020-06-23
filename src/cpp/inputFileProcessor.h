@@ -91,7 +91,6 @@ namespace inputFileProcessor{
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
-            errorOut computeMicroNodeMasses( const unsigned int &increment );
 
             //Private Attributes
             errorOut _error;
