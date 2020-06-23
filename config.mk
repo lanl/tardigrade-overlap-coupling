@@ -42,6 +42,14 @@ VECTORHEADER = $(ROOTDIR)/vector_tools/src/cpp/vector_tools.h
 INC+=-I$(ROOTDIR)/vector_tools/src/cpp
 LIB+=-L$(ROOTDIR)/vector_tools/src/cpp
 
+# Add the location of the input file processor definitions to the include and library
+INPUTFILEPROCESSORSOURCE = $(ROOTDIR)/overlap_coupling/src/cpp/inputFileProcessor.cpp
+INPUTFILEPROCESSORHEADER = $(ROOTDIR)/overlap_coupling/src/cpp/inputFileProcessor.h
+
+# Add the location of the DOF projection definitions to the include and library
+DOFPROJECTIONSOURCE = $(ROOTDIR)/overlap_coupling/src/cpp/DOFProjection.cpp
+DOFPROJECTIONHEADER = $(ROOTDIR)/overlap_coupling/src/cpp/DOFProjection.h
+
 # Add the filenames of the data-file interface to the include and library
 DATAFILEINTERFACESOURCE = $(ROOTDIR)/overlap_coupling/src/cpp/dataFileInterface.cpp
 DATAFILEINTERFACEHEADER = $(ROOTDIR)/overlap_coupling/src/cpp/dataFileInterface.h

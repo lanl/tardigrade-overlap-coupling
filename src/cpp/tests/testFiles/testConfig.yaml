@@ -1,11 +1,11 @@
 # Mesh and datafile definitions of the macro and micro-scales
 
 macroscale_definition:
-        filename: ../DOFProjection/simulations/macroscale_xdmf.xdmf
+        filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/macroscale_xdmf.xdmf
         mode: read
 
 microscale_definition:
-        filename: ../DOFProjection/simulations/microscale_xdmf.xdmf
+        filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/microscale_xdmf.xdmf
         mode: read
         volume_variable_name: volume #The name of the volume attribute at the nodes
         density_variable_name: density #The name of the density attribute at the nodes

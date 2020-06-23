@@ -21,7 +21,7 @@ int test_openConfigurationFile( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "../testFiles/testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
     if ( reader.getError( ) ){
@@ -55,7 +55,7 @@ int test_setConfigurationFile( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "../testFiles/testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader;
 
     errorOut error = reader.setConfigurationFilename( "" );
@@ -84,7 +84,7 @@ int test_initializeFileInterfaces( std::ofstream &results ){
      * :param std::ofstream &results: The output file.
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "../testFiles/testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
     if ( reader.getError( ) ){
@@ -141,7 +141,7 @@ int test_initializeIncrement( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "../testFiles/testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
     if ( reader.getError( ) ){
