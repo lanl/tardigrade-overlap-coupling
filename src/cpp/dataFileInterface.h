@@ -56,7 +56,8 @@ namespace dataFileInterface{
          *
          * Takes in a YAML file which is required to have the following attributes:
          *
-         * filename: ( THe 
+         * filename: ( The path to the datafile )
+         * mode: ( The mode that the file is read ) 
          */
 
         public:
