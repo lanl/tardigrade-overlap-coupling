@@ -150,10 +150,39 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
-    errorOut error = reader.initializeIncrement( 0 );
+    errorOut error = reader.initializeIncrement( 1 );
     if ( error ){
         error->print( );
         results << "test_initializeIncrement & False\n";
+        return 1;
+    }
+
+    floatType resultAnswer = 2000.;
+
+    const floatVector *densityResult = reader.getMicroDensities( );
+
+    for ( auto it = densityResult->begin( ); it != densityResult->end( ); it++ ){
+
+        if ( !vectorTools::fuzzyEquals( *it, resultAnswer ) ){
+            results << "test_initializeIncrement (test 1) & False\n";
+            return 1;
+        }
+
+    }
+
+    floatType volumeTotalAnswer = 3;
+
+    const floatVector *volumeResult = reader.getMicroVolumes( );
+    floatType volumeResultTotal = 0;
+    
+    for ( auto it = volumeResult->begin( ); it != volumeResult->end( ); it++ ){
+
+        volumeResultTotal += *it;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( volumeTotalAnswer, volumeResultTotal ) ){
+        results << "test_initializeIncrement (test 2 ) & False\n";
         return 1;
     }
 

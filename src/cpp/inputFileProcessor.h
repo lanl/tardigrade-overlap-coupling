@@ -64,6 +64,9 @@ namespace inputFileProcessor{
             errorOut setConfigurationFilename( const std::string &configurationFilename );
             errorOut getError( ){ return _error; }
 
+            const floatVector* getMicroDensities( );
+            const floatVector* getMicroVolumes( );
+
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int increment );
 
@@ -85,12 +88,20 @@ namespace inputFileProcessor{
             errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
                                                      std::vector< std::string > &surfaceNodesets );
 
+            errorOut extractMicroNodeDensities( const unsigned int &increment );
+            errorOut extractMicroNodeVolumes( const unsigned int &increment );
+            errorOut computeMicroNodeMasses( const unsigned int &increment );
+
             //Private Attributes
             errorOut _error;
             std::string _configFilename = "";
             YAML::Node _config;
 
             floatVector _microDomainWeights;
+            floatVector _microDensity;
+            floatVector _microVolume;
+            floatVector _microNodeMass;
+            std::vector< std::string > _non_overlapped_micro_surface_sets;
             std::vector< std::string > _free_micro_surface_sets;
             std::vector< std::string > _ghost_micro_surface_sets;
 

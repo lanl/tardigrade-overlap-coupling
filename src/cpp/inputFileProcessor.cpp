@@ -302,6 +302,29 @@ namespace inputFileProcessor{
 
         }
 
+        //Loop through the non-overlapped sets
+        for ( auto setName = _non_overlapped_micro_surface_sets.begin();
+              setName != _non_overlapped_micro_surface_sets.end(); setName++ ){
+
+            //Get the surface set
+            error = _microscale->getDomainNodes( increment, *setName, setNodes );
+
+            if ( error ){
+                errorOut result = new errorNode( "setMicroNodeWeights",
+                                                 "Error in the extraction of the non-overlapped micro surface set " + *setName );
+                result->addNext( error );
+                return result;
+            }
+
+            //Loop over the nodes
+            for ( auto n = setNodes.begin(); n != setNodes.end(); n++ ){
+                
+                _microDomainWeights[ *n ] += 1;
+
+            }
+
+        }
+
         //Compute the weights
         for ( unsigned int i = 0; i < numNodes; i++ ){
 
@@ -362,6 +385,24 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the densities of the micro-nodes
+        error = extractMicroNodeDensities( increment );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro-node densities" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Extract the volumes of the micro-nodes
+        error = extractMicroNodeVolumes( increment );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro-node volumes" );
+            result->addNext( error );
+            return result;
+        }
+
         return NULL;
     }
 
@@ -394,7 +435,47 @@ namespace inputFileProcessor{
 
         }
 
-        //Make sure that no nodeset that appears in the ghost micro-scale also appears in the free micro-scale
+        if ( _config[ "non_overlapped_microscale_domains" ] ){
+
+            if ( _config[ "non_overlapped_microscale_domains" ].IsSequence( ) ){
+
+                unsigned int nNonOverlappedMicroscaleDomains = 0;
+                unsigned int indx = 1;
+                _non_overlapped_micro_surface_sets.clear();
+
+                for ( auto domain = _config[ "non_overlapped_microscale_domains" ].begin( );
+                      domain != _config[ "non_overlapped_microscale_domains" ].end( );
+                      domain++ ){
+
+                    if ( !domain->IsScalar( ) ){
+
+                        return new errorNode( "initializeCouplingDomains",
+                                              "Entry " + std::to_string( indx ) + " of non_overlapped_microscale_domains is not a scalar" );
+
+                    }
+
+                    nNonOverlappedMicroscaleDomains++;
+                    indx++;
+
+                }
+
+                indx = 0;
+                _non_overlapped_micro_surface_sets = std::vector< std::string >( nNonOverlappedMicroscaleDomains );
+
+                for ( auto domain = _config[ "non_overlapped_microscale_domains" ].begin( );
+                      domain != _config[ "non_overlapped_microscale_domains" ].end( );
+                      domain++ ){
+
+                    _non_overlapped_micro_surface_sets[ indx ] = domain->as< std::string >( );
+                    indx++;
+
+                }
+
+            }
+
+        }
+
+        //Make sure that no nodeset that appears in the ghost micro-scale also appears in the free or non-overlapped micro-scales
         for ( auto nodeset = _ghost_micro_surface_sets.begin( ); nodeset != _ghost_micro_surface_sets.end( ); nodeset++ ){
 
             if ( std::find( _free_micro_surface_sets.begin( ), _free_micro_surface_sets.end( ), *nodeset ) != _free_micro_surface_sets.end( ) ){
@@ -497,6 +578,105 @@ namespace inputFileProcessor{
 
         return NULL;
 
+    }
+
+    errorOut inputFileProcessor::extractMicroNodeDensities( const unsigned int &increment ){
+        /*!
+         * Extract the node densities for the micro domain at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        //Check if the density name has been defined
+        if ( !_config[ "microscale_definition" ][ "density_variable_name" ] ){
+        
+            return new errorNode( "extractMicroNodeDensities", "The density variable name is not defined" );
+
+        }
+
+        //Re-size the micro node density vector
+        errorOut error = _microscale->getMeshData( increment, 
+                                                   _config[ "microscale_definition" ][ "density_variable_name" ].as< std::string >( ),
+                                                   "Node", _microDensity );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroNodeDensities", "Error in extraction of the micro densitys" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMicroNodeVolumes( const unsigned int &increment ){
+        /*!
+         * Extract the node volumes for the micro domain at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        //Check if the volume name has been defined
+        if ( !_config[ "microscale_definition" ][ "volume_variable_name" ] ){
+        
+            return new errorNode( "extractMicroNodeVolumes", "The volume variable name is not defined" );
+
+        }
+
+        //Re-size the micro node density vector
+        errorOut error = _microscale->getMeshData( increment, 
+                                                   _config[ "microscale_definition" ][ "volume_variable_name" ].as< std::string >( ),
+                                                   "Node", _microVolume );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroNodeVolumes", "Error in extraction of the micro volumes" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
+    const floatVector* inputFileProcessor::getMicroDensities( ){
+        /*!
+         * Get a pointer to the density
+         */
+
+        return &_microDensity;
+    }
+
+    const floatVector* inputFileProcessor::getMicroVolumes( ){
+        /*!
+         * Get a pointer to the volumes
+         */
+
+        return &_microVolume;
+    }
+
+    errorOut inputFileProcessor::computeMicroNodeMasses( const unsigned int &increment ){
+        /*!
+         * Compute the nodal masses at the indicated increment
+         *
+         * :param const unsigned int &increment: The increment at which to compute the nodal masses
+         */
+
+        //Re-size the _microMasses
+
+        //Loop over the free domains
+        for ( auto setName = _non_overlapped_micro_surface_sets.begin( );
+              setName != _non_overlapped_micro_surface_sets.end( );
+              setName++ ){
+
+            //G
+
+        }
+
+        return NULL;
     }
 
 }
