@@ -42,7 +42,7 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
         return 1;
     }
 
-    if ( df->_filename.compare( "macroscale_xdmf.xdmf" ) != 0 ){
+    if ( df->_filename.compare( "../testFiles/macroscale_xdmf.xdmf" ) != 0 ){
         results << "test_XDMFDataFile_constructor (test 3) & False\n";
         return 1;
     }
@@ -70,7 +70,7 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
         return 1;
     }
 
-    if ( df->_filename.compare( "macroscale_xdmf.xdmf" ) != 0 ){
+    if ( df->_filename.compare( "../testFiles/macroscale_xdmf.xdmf" ) != 0 ){
         results << "test_XDMFDataFile_constructor (test 5) & False\n";
         return 1;
     }

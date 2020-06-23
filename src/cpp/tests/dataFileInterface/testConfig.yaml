@@ -1,5 +1,5 @@
 filetest1:
-        filename: macroscale_xdmf.xdmf
+        filename: ../testFiles/macroscale_xdmf.xdmf
         mode: reaD
         filetype: XDMF
 
