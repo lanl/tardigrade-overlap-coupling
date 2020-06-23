@@ -62,7 +62,7 @@ namespace inputFileProcessor{
 
             //Functions
             errorOut setConfigurationFilename( const std::string &configurationFilename );
-            errorOut getError( ){ return _error; }
+            const errorOut getError( ){ return _error; }
 
             const floatVector* getMicroDensities( );
             const floatVector* getMicroVolumes( );
