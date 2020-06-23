@@ -658,25 +658,4 @@ namespace inputFileProcessor{
         return &_microVolume;
     }
 
-    errorOut inputFileProcessor::computeMicroNodeMasses( const unsigned int &increment ){
-        /*!
-         * Compute the nodal masses at the indicated increment
-         *
-         * :param const unsigned int &increment: The increment at which to compute the nodal masses
-         */
-
-        //Re-size the _microMasses
-
-        //Loop over the free domains
-        for ( auto setName = _non_overlapped_micro_surface_sets.begin( );
-              setName != _non_overlapped_micro_surface_sets.end( );
-              setName++ ){
-
-            //G
-
-        }
-
-        return NULL;
-    }
-
 }

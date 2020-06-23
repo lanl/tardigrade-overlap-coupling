@@ -100,7 +100,6 @@ namespace inputFileProcessor{
             floatVector _microDomainWeights;
             floatVector _microDensity;
             floatVector _microVolume;
-            floatVector _microNodeMass;
             std::vector< std::string > _non_overlapped_micro_surface_sets;
             std::vector< std::string > _free_micro_surface_sets;
             std::vector< std::string > _ghost_micro_surface_sets;

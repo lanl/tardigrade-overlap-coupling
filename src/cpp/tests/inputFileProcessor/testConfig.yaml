@@ -103,3 +103,13 @@ ghost_macroscale_domains:
                   - free_nodeset_volume_6
                   - free_nodeset_volume_7
                   - free_nodeset_volume_8
+
+non_overlapped_microscale_domains: #Defining these is required for the non-overlapped micro-scale nodes which are adjacent to the overlapped domain
+        - non_overlapped_nodeset_volume_1
+        - non_overlapped_nodeset_volume_2
+        - non_overlapped_nodeset_volume_3
+        - non_overlapped_nodeset_volume_4
+        - non_overlapped_nodeset_volume_5
+        - non_overlapped_nodeset_volume_6
+        - non_overlapped_nodeset_volume_7
+        - non_overlapped_nodeset_volume_8
