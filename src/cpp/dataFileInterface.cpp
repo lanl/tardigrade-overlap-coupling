@@ -174,7 +174,7 @@ namespace dataFileInterface{
         return new errorNode( "getSetNames", "The getSetNames function is not defined" );
     }
 
-    errorOut dataFileBase::getMeshData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
+    errorOut dataFileBase::getMeshData( const unsigned int increment, const std::string &dataName, const std::string &dataCenter,
                                         floatVector &data ){
         /*!
          * Get the values of the mesh data named dataName. This should work for
@@ -182,7 +182,7 @@ namespace dataFileInterface{
          *
          * :param const unsigned int increment: The increment at which to get the data
          * :param const std::string &dataName: The name of the data
-         * :param const std::string &dataType: The type of the data. This will either be "Node" or "Cell"
+         * :param const std::string &dataCenter: The type of the data. This will either be "Node" or "Cell"
          * :param floatVector &data: The output data vector
          *
          */
@@ -491,7 +491,7 @@ namespace dataFileInterface{
         return NULL;
     }
 
-    errorOut XDMFDataFile::getMeshData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
+    errorOut XDMFDataFile::getMeshData( const unsigned int increment, const std::string &dataName, const std::string &dataCenter,
                                         floatVector &data ){
         /*!
          * Get the values of the mesh data named dataName. This should work for
@@ -499,13 +499,62 @@ namespace dataFileInterface{
          *
          * :param const unsigned int increment: The increment at which to get the data
          * :param const std::string &dataName: The name of the data
-         * :param const std::string &dataType: The type of the data. This will either be "Node" or "Cell"
+         * :param const std::string &dataCenter: The type of the data. This will either be "Node" or "Cell"
          * :param floatVector &data: The output data vector
          *
          */
 
         //Get the grid
         shared_ptr< XdmfUnstructuredGrid > grid;
+        errorOut error = getUnstructuredGrid( increment, grid );
+        if ( error ){
+            errorOut result = new errorNode( "getMeshData", "Error in the extraction of the grid" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Set the name and center
+        std::string name;
+        shared_ptr< const XdmfAttributeCenter > center;
+
+
+        //Set the center
+        std::string centerName = dataCenter;
+        boost::algorithm::to_lower( centerName );
+
+        if ( centerName.compare( "node" ) == 0 ){
+            center = XdmfAttributeCenter::Node( );
+        }
+        else if ( centerName.compare( "cell" ) == 0 ){
+            center = XdmfAttributeCenter::Cell( );
+        }
+        else{
+            return new errorNode( "getMeshData", "The dataCenter must either be 'Node' or 'Cell'" ); 
+        }
+
+
+        //Find the attribute name and type that matches up with the requested values
+        shared_ptr< XdmfAttribute > attribute;
+        for ( unsigned int a = 0; a < grid->getNumberAttributes( ); a++ ){
+
+            //Get the current attribute
+            attribute = grid->getAttribute( a );
+
+            //Check if the data is right
+            if ( ( dataName.compare( attribute->getName( ) ) == 0 ) &&
+                 ( attribute->getCenter( ) == center ) ){
+
+                data = floatVector( attribute->getSize( ) );
+                attribute->read( );
+                grid->getAttribute( a )->getValues( 0, data.data( ), grid->getAttribute( a )->getSize( ), 1, 1 );
+
+                return NULL;
+
+            }
+
+        }
+
+        return new errorNode( "getMeshData", "Attribute with dataName " + dataName + " and center " + dataCenter + " was not found" );
 
     }
 }
