@@ -554,7 +554,7 @@ namespace dataFileInterface{
 
         }
 
-        return new errorNode( "getMeshData", "Attribute with dataName " + dataName + " and center " + dataCenter + " was not found" );
+        return new errorNode( "getMeshData", "Attribute with dataName '" + dataName + "' and center '" + dataCenter + "' was not found" );
 
     }
 }
