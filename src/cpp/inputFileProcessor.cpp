@@ -420,6 +420,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the micro displacements
+        error = extractMicroDisplacements( increment );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro positions" );
+            result->addNext( error );
+            return result;
+        }
+
         //Set the current increment
         _current_increment = increment;
         _increment_initialized = true;
@@ -732,7 +741,7 @@ namespace inputFileProcessor{
         //Re-size the micro node density vector
         errorOut error = _microscale->getMeshData( increment, 
                                                    _config[ "microscale_definition" ][ "density_variable_name" ].as< std::string >( ),
-                                                   "Node", _microDensity );
+                                                   "Node", _microDensities );
 
         if ( error ){
 
@@ -763,7 +772,7 @@ namespace inputFileProcessor{
         //Re-size the micro node density vector
         errorOut error = _microscale->getMeshData( increment, 
                                                    _config[ "microscale_definition" ][ "volume_variable_name" ].as< std::string >( ),
-                                                   "Node", _microVolume );
+                                                   "Node", _microVolumes );
 
         if ( error ){
 
@@ -777,12 +786,98 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMicroDisplacements( const unsigned int &increment ){
+        /*!
+         * Extract the positions of the nodes in the micro domain.
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        //Variable definitions
+        unsigned int indx;
+
+        floatVector disp;
+
+        YAML::Node dispNode;
+
+        //Expected displacement keys
+        stringVector displacementKeys = { "u1", "u2", "u3" }; //The dimension is assumed to be 3
+
+        //Initialize the micro displacements vector
+        _microDisplacements.clear( );
+        unsigned int numNodes;
+
+        errorOut error = _microscale->getNumNodes( increment, numNodes );
+
+        if ( error ){
+            
+            errorOut result = new errorNode( "extractMicroDisplacements", "Error in the determination of the number of micro-nodes" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        _microDisplacements.resize( displacementKeys.size( ) * numNodes );
+
+        //Check if the displacement names have been defined
+        if ( !_config[ "microscale_definition" ][ "displacement_variable_names" ] ){
+
+            return new errorNode( "extractMicroDisplacements", "The names of the displacements of the micro-positions are not defined" );
+
+        }
+        else{
+
+            for ( auto it = displacementKeys.begin( ); it != displacementKeys.end( ); it++ ){
+
+                indx = it - displacementKeys.begin( ); //Set the index
+
+                dispNode = _config[ "microscale_definition" ][ "displacement_variable_names" ][ *it ];
+
+                if ( !dispNode ){
+
+                    return new errorNode( "extractMicroPositions", "'" + *it + " is not defined in 'displacement_variable_names'");
+
+                }
+                else if ( !dispNode.IsScalar( ) ){
+
+                    return new errorNode( "extractMicroPositions", "'" + *it + "' is not a scalar" );
+
+                }
+                else{
+
+                    //Get the displacement
+                    errorOut error = _microscale->getMeshData( increment, dispNode.as< std::string >( ), "Node", disp );
+
+                    if ( error ){
+                        
+                        errorOut result = new errorNode( "extractMicroDisplacements", "Error in extraction of '" + *it + "'" );
+                        result->addNext( error );
+                        return result;
+
+                    }
+
+                    //Set the displacements
+                    for ( unsigned int i = 0; i < disp.size( ); i++ ){
+
+                        _microDisplacements[ displacementKeys.size( ) * i + indx ] = disp[ i ];
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+    }
+
     const floatVector* inputFileProcessor::getMicroDensities( ){
         /*!
          * Get a pointer to the density
          */
 
-        return &_microDensity;
+        return &_microDensities;
     }
 
     const floatVector* inputFileProcessor::getMicroVolumes( ){
@@ -790,7 +885,7 @@ namespace inputFileProcessor{
          * Get a pointer to the volumes
          */
 
-        return &_microVolume;
+        return &_microVolumes;
     }
 
     const floatVector* inputFileProcessor::getMicroWeights( ){
@@ -862,6 +957,14 @@ namespace inputFileProcessor{
 
         return NULL;
 
+    }
+
+    const floatVector* inputFileProcessor::getMicroDisplacement( ){
+        /*!
+         * Get the micro-displacements
+         */
+
+        return &_microDisplacements;
     }
 
 }

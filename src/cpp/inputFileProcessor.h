@@ -68,6 +68,7 @@ namespace inputFileProcessor{
             const floatVector* getMicroDensities( );
             const floatVector* getMicroVolumes( );
             const floatVector* getMicroWeights( );
+            const floatVector* getMicroDisplacement( );
 
             const stringVector* getFreeMicroDomainNames( );
             const stringVector* getGhostMicroDomainNames( );
@@ -106,6 +107,7 @@ namespace inputFileProcessor{
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
+            errorOut extractMicroDisplacements( const unsigned int &increment );
 
             //Private Attributes
             bool _increment_initialized = false;
@@ -115,8 +117,9 @@ namespace inputFileProcessor{
             YAML::Node _config;
 
             floatVector _microDomainWeights;
-            floatVector _microDensity;
-            floatVector _microVolume;
+            floatVector _microDensities;
+            floatVector _microVolumes;
+            floatVector _microDisplacements;
 
             stringVector _non_overlapped_micro_surface_sets;
             stringVector _free_micro_surface_sets;
