@@ -324,6 +324,41 @@ int test_getNonOverlappedMicroDomainNames( std::ostream &results ){
 
     results << "test_getNonOverlappedMicroDomainNames & True\n";
     return 0;
+
+}
+
+int test_getCouplingInitialization( std::ofstream &results ){
+    /*!
+     * Test getting the coupling initialization from the configuration file
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getCouplingInitialization & False\n";
+        return 1;
+    }
+
+    YAML::Node couplingInitialization = reader.getCouplingInitialization( );
+
+    if ( !couplingInitialization ){
+        results << "test_getCouplingInitialization (test 1) & False\n";
+        return 1;
+    }
+
+    std::string typeAnswer = "use_initial_state";
+    if ( couplingInitialization[ "type" ].as<std::string>( ).compare( typeAnswer ) ){
+        results << "test_getCouplingInitialization (test 2) & False\n";
+        return 1;
+    }
+
+    results << "test_getCouplingInitialization & True\n";
+    return 0;
+
 }
 
 int main(){
@@ -345,6 +380,7 @@ int main(){
     test_getFreeMicroDomainNames( results );
     test_getGhostMicroDomainNames( results );
     test_getNonOverlappedMicroDomainNames( results );
+    test_getCouplingInitialization( results );
 
     //Close the results file
     results.close();

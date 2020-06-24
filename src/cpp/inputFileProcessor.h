@@ -73,6 +73,8 @@ namespace inputFileProcessor{
             const stringVector* getGhostMicroDomainNames( );
             const stringVector* getNonOverlappedMicroDomainNames( );
 
+            const YAML::Node getCouplingInitialization( );
+
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int increment );
 

@@ -690,4 +690,11 @@ namespace inputFileProcessor{
         return &_non_overlapped_micro_surface_sets;
     }
 
+    const YAML::Node inputFileProcessor::getCouplingInitialization( ){
+        /*!
+         * Get the coupling initialization from the configuration file.
+         */
+
+        return _config[ "coupling_initialization" ];
+    }
 }
