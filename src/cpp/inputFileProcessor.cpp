@@ -511,12 +511,12 @@ namespace inputFileProcessor{
     }
 
     errorOut inputFileProcessor::checkCommonDomainConfiguration( const YAML::Node &domainConfig,
-                                                                 stringVector &surfaceNodesets ){
+                                                                 stringVector &microVolumeNodesets ){
         /*!
          * Extract common values in the configuration of a domain
          *
          * :param YAML::Node &domainConfig: The configuration of a particular domain.
-         * :param stringVector &surfaceNodesets: The nodeset names for the surfaces of the
+         * :param stringVector &microVolumeNodesets: The nodeset names for the surfaces of the
          *     micro domains
          */
 
@@ -531,8 +531,8 @@ namespace inputFileProcessor{
 
         unsigned int indx = 1;
         unsigned int indx2 = 1;
-        unsigned int nSurfaceNodesets = 0;
-        surfaceNodesets.clear();
+        unsigned int nVolumeNodesets = 0;
+        microVolumeNodesets.clear();
         for ( auto domain = domainConfig.begin( ); domain != domainConfig.end(); domain++ ){
 
             if ( !( *domain )[ "macro_nodeset" ] ){
@@ -569,7 +569,7 @@ namespace inputFileProcessor{
 
                 }
 
-                nSurfaceNodesets++;
+                nVolumeNodesets++;
                 indx2++;
 
             }
@@ -579,19 +579,19 @@ namespace inputFileProcessor{
         }
 
         //Extract the surface nodesets
-        surfaceNodesets.reserve( nSurfaceNodesets );
+        microVolumeNodesets.reserve( nVolumeNodesets );
         for ( auto domain = domainConfig.begin( ); domain != domainConfig.end( ); domain++ ){
             
             for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
 
-                if ( std::find( surfaceNodesets.begin( ), surfaceNodesets.end( ), nodeset->as< std::string >( ) ) != surfaceNodesets.end( ) ){
+                if ( std::find( microVolumeNodesets.begin( ), microVolumeNodesets.end( ), nodeset->as< std::string >( ) ) != microVolumeNodesets.end( ) ){
 
                     return new errorNode( "checkCommonDomainConfiguration",
                                           nodeset->as< std::string >( ) + " appears more than once in the coupling definition" );
 
                 }
 
-                surfaceNodesets.push_back( nodeset->as< std::string >( ) );
+                microVolumeNodesets.push_back( nodeset->as< std::string >( ) );
 
             }
 

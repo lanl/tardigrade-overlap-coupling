@@ -94,7 +94,7 @@ namespace inputFileProcessor{
             errorOut setMicroNodeWeights( const unsigned int increment );
             errorOut setSurfaceSets( const unsigned int increment );
             errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
-                                                     stringVector &surfaceNodesets );
+                                                     stringVector &microVolumeNodesets );
             errorOut checkCouplingInitialization( );
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
