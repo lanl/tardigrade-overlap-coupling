@@ -434,10 +434,18 @@ namespace inputFileProcessor{
 
         if ( _config[ "free_macroscale_domains" ] ){
 
-            errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ], _ghost_micro_surface_sets );
+            errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ], _ghost_micro_volume_sets );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the free macroscale domains" );
+                result->addNext( error );
+                return result;
+            }
+
+            error = checkCommonVolumeToSurfaceMapping( _ghost_micro_volume_sets, _ghost_micro_surface_sets );
+            if ( error ){
+                errorOut result = new errorNode( "initializeCouplingDomains",
+                                                 "Error in input-file check of the micro volume to surface mapping for the free macroscale domains" );
                 result->addNext( error );
                 return result;
             }
@@ -446,10 +454,18 @@ namespace inputFileProcessor{
 
         if ( _config[ "ghost_macroscale_domains" ] ){
 
-            errorOut error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ], _free_micro_surface_sets );
+            errorOut error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ], _free_micro_volume_sets );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the ghost macroscale domains" );
+                result->addNext( error );
+                return result;
+            }
+
+            error = checkCommonVolumeToSurfaceMapping( _free_micro_volume_sets, _free_micro_surface_sets );
+            if ( error ){
+                errorOut result = new errorNode( "initializeCouplingDomains",
+                                                 "Error in input-file check of the micro volume to surface mapping for the free macroscale domains" );
                 result->addNext( error );
                 return result;
             }
@@ -502,6 +518,29 @@ namespace inputFileProcessor{
             if ( std::find( _free_micro_surface_sets.begin( ), _free_micro_surface_sets.end( ), *nodeset ) != _free_micro_surface_sets.end( ) ){
                 return new errorNode( "initializeCouplingDomains",
                                       *nodeset + " appears in the ghost and free micro-surface nodeset definitions" );
+            }
+
+            if ( std::find( _non_overlapped_micro_surface_sets.begin( ), _non_overlapped_micro_surface_sets.end( ), *nodeset ) != _non_overlapped_micro_surface_sets.end( ) ){
+                return new errorNode( "initializeCouplingDomains",
+                                      *nodeset + " appears in the ghost and free micro-surface nodeset definitions" );
+            }
+        }
+
+        for ( auto nodeset = _free_micro_surface_sets.begin( ); nodeset != _free_micro_surface_sets.end( ); nodeset++ ){
+
+            if ( std::find( _non_overlapped_micro_surface_sets.begin( ), _non_overlapped_micro_surface_sets.end( ), *nodeset ) != _non_overlapped_micro_surface_sets.end( ) ){
+                return new errorNode( "initializeCouplingDomains",
+                                      *nodeset + " appears in the free and non-overlapped micro-surface nodeset definitions" );
+            }
+
+        }
+
+        //Make sure that no volume nodeset that appears in the ghost micro-scale also appears in the free micro-scale
+        for ( auto nodeset = _ghost_micro_volume_sets.begin( ); nodeset != _ghost_micro_volume_sets.end( ); nodeset++ ){
+
+            if ( std::find( _free_micro_volume_sets.begin( ), _free_micro_volume_sets.end( ), *nodeset ) != _free_micro_volume_sets.end( ) ){
+                return new errorNode( "initializeCouplingDomains",
+                                      *nodeset + " appears in the ghost and free micro-volume nodeset definitions" );
             }
 
         }
@@ -601,6 +640,81 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
+                                                                    stringVector &microSurfaceNodesets ){
+        /*!
+         * Check the common volume to surface node mapping
+         *
+         * :param const stringVector &microVolumeNodesets: The nodesets which represent the volume of the micro-domains
+         * :param const stringVector &microSurfaceNodesets: The nodesets which represent the surfaces of the micro-domains
+         */
+
+        if ( !_config[ "microscale_definition" ][ "volume_surface_node_pairs" ] ){
+            
+            return new errorNode( "checkCommonVolumeToSurfaceMapping",
+                                  "volume_surface_node_pairs must be defined as a keyname attribute of 'microscale_definition'" );
+
+        }
+
+        if ( ( !_config[ "microscale_definition" ][ "volume_surface_node_pairs" ].IsSequence( ) ) && ( microVolumeNodesets.size( ) > 0 ) ){
+            return new errorNode( "checkCommonVolumeToSurfaceMapping",
+                                  "volume_surface_node_pairs must be a sequence" );
+
+        }
+
+        //Loop through the micro-volume nodesets
+        microSurfaceNodesets = stringVector( microVolumeNodesets.size( ) );
+        unsigned int indx = 0;
+        unsigned int p;
+        bool volumeFound = false;
+        for ( auto volumeName = microVolumeNodesets.begin( ); volumeName != microVolumeNodesets.end( ); volumeName++ ){
+
+            p = 1;
+            volumeFound = false;
+            for ( auto pair = _config[ "microscale_definition" ][ "volume_surface_node_pairs" ].begin( );
+                       pair != _config[ "microscale_definition" ][ "volume_surface_node_pairs" ].end( );
+                  pair++ ){
+
+                if ( !( *pair )[ "volume" ] ){
+
+                    return new errorNode( "checkCommonVolumeToSurfaceMapping",
+                                          "'volume' is not a key of 'volume_surface_node_pairs' entry " + std::to_string( p ) );
+
+                }
+                if ( !( *pair )[ "surface" ] ){
+
+                    return new errorNode( "checkCommonVolumeToSurfaceMapping",
+                                          "'surface' is not a key of 'volume_surface_node_pairs' entry " + std::to_string( p ) );
+
+                }
+
+                if ( ( *pair )[ "volume" ].as< std::string >( ).compare( *volumeName ) == 0 ){
+
+                    microSurfaceNodesets[ indx ] = ( *pair )[ "surface" ].as< std::string >( );
+                    volumeFound = true;
+                    break;
+
+                }
+
+                p++;
+
+            }
+
+            if ( !volumeFound ){
+
+                return new errorNode( "checkCommonVolumeToSurfaceMapping"
+                                      "'" + *volumeName + "' not found in 'volume_surface_node_pairs'" );
+
+            }
+
+            indx++;
+
+        }
+
+        return NULL;
+
+    } 
+
     errorOut inputFileProcessor::extractMicroNodeDensities( const unsigned int &increment ){
         /*!
          * Extract the node densities for the micro domain at the indicated increment
@@ -692,7 +806,7 @@ namespace inputFileProcessor{
          * Get the free domain names
          */
 
-        return &_free_micro_surface_sets;
+        return &_free_micro_volume_sets;
     }
 
     const stringVector* inputFileProcessor::getGhostMicroDomainNames( ){
@@ -700,10 +814,26 @@ namespace inputFileProcessor{
          * Get the ghost domain names
          */
 
+        return &_ghost_micro_volume_sets;
+    }
+
+    const stringVector* inputFileProcessor::getFreeMicroSurfaceNames( ){
+        /*!
+         * Get the free domain names
+         */
+
+        return &_free_micro_surface_sets;
+    }
+
+    const stringVector* inputFileProcessor::getGhostMicroSurfaceNames( ){
+        /*!
+         * Get the ghost domain names
+         */
+
         return &_ghost_micro_surface_sets;
     }
 
-    const stringVector* inputFileProcessor::getNonOverlappedMicroDomainNames( ){
+    const stringVector* inputFileProcessor::getNonOverlappedMicroSurfaceNames( ){
         /*!
          * Get the ghost domain names
          */

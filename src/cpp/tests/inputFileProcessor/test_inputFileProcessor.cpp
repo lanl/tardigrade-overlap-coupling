@@ -281,9 +281,99 @@ int test_getGhostMicroDomainNames( std::ostream &results ){
     return 0;
 }
 
-int test_getNonOverlappedMicroDomainNames( std::ostream &results ){
+int test_getFreeMicroSurfaceNames( std::ostream &results ){
     /*!
-     * Test getting a pointer to the ghost micro domain names
+     * Test getting a pointer to the free micro surface names
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getFreeMicroSurfaceNames & False\n";
+        return 1;
+    }
+
+    stringVector answer = { "free_nodeset_surface_1",
+                            "free_nodeset_surface_2",
+                            "free_nodeset_surface_3",
+                            "free_nodeset_surface_4",
+                            "free_nodeset_surface_5",
+                            "free_nodeset_surface_6",
+                            "free_nodeset_surface_7",
+                            "free_nodeset_surface_8" };
+
+    const stringVector *result = reader.getFreeMicroSurfaceNames( );
+
+    unsigned int indx = 0;
+    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+
+        if ( it->compare( answer[ indx ] ) != 0 ){
+
+            results << "test_getFreeMicroSurfaceNames (test 1) & False\n";
+            return 1;
+
+        }
+
+        indx++;
+
+    }
+
+    results << "test_getFreeMicroSurfaceNames & True\n";
+    return 0;
+}
+
+int test_getGhostMicroSurfaceNames( std::ostream &results ){
+    /*!
+     * Test getting a pointer to the ghost micro surface names
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getGhostMicroSurfaceNames & False\n";
+        return 1;
+    }
+
+    stringVector answer = { "ghost_nodeset_surface_1",
+                            "ghost_nodeset_surface_2",
+                            "ghost_nodeset_surface_3",
+                            "ghost_nodeset_surface_4",
+                            "ghost_nodeset_surface_5",
+                            "ghost_nodeset_surface_6",
+                            "ghost_nodeset_surface_7",
+                            "ghost_nodeset_surface_8" };
+
+    const stringVector *result = reader.getGhostMicroSurfaceNames( );
+
+    unsigned int indx = 0;
+    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+
+        if ( it->compare( answer[ indx ] ) != 0 ){
+
+            results << "test_getGhostMicroSurfaceNames (test 1) & False\n";
+            return 1;
+
+        }
+
+        indx++;
+
+    }
+
+    results << "test_getGhostMicroDomainNames & True\n";
+    return 0;
+}
+
+int test_getNonOverlappedMicroSurfaceNames( std::ostream &results ){
+    /*!
+     * Test getting a pointer to the non-overlapped micro surface names
      *
      * :param std::ofstream &results: The output file
      */
@@ -297,23 +387,23 @@ int test_getNonOverlappedMicroDomainNames( std::ostream &results ){
         return 1;
     }
 
-    stringVector answer = { "non_overlapped_nodeset_volume_1",
-                            "non_overlapped_nodeset_volume_2",
-                            "non_overlapped_nodeset_volume_3",
-                            "non_overlapped_nodeset_volume_4",
-                            "non_overlapped_nodeset_volume_5",
-                            "non_overlapped_nodeset_volume_6",
-                            "non_overlapped_nodeset_volume_7",
-                            "non_overlapped_nodeset_volume_8" };
+    stringVector answer = { "non_overlapped_nodeset_surface_1",
+                            "non_overlapped_nodeset_surface_2",
+                            "non_overlapped_nodeset_surface_3",
+                            "non_overlapped_nodeset_surface_4",
+                            "non_overlapped_nodeset_surface_5",
+                            "non_overlapped_nodeset_surface_6",
+                            "non_overlapped_nodeset_surface_7",
+                            "non_overlapped_nodeset_surface_8" };
 
-    const stringVector *result = reader.getNonOverlappedMicroDomainNames( );
+    const stringVector *result = reader.getNonOverlappedMicroSurfaceNames( );
 
     unsigned int indx = 0;
     for ( auto it = result->begin( ); it != result->end( ); it++ ){
 
         if ( it->compare( answer[ indx ] ) != 0 ){
 
-            results << "test_getNonOverlappedMicroDomainNames (test 1) & False\n";
+            results << "test_getNonOverlappedMicroSurfaceNames (test 1) & False\n";
             return 1;
 
         }
@@ -379,7 +469,9 @@ int main(){
     test_initializeIncrement( results );
     test_getFreeMicroDomainNames( results );
     test_getGhostMicroDomainNames( results );
-    test_getNonOverlappedMicroDomainNames( results );
+    test_getFreeMicroSurfaceNames( results );
+    test_getGhostMicroSurfaceNames( results );
+    test_getNonOverlappedMicroSurfaceNames( results );
     test_getCouplingInitialization( results );
 
     //Close the results file

@@ -71,7 +71,10 @@ namespace inputFileProcessor{
 
             const stringVector* getFreeMicroDomainNames( );
             const stringVector* getGhostMicroDomainNames( );
-            const stringVector* getNonOverlappedMicroDomainNames( );
+
+            const stringVector* getFreeMicroSurfaceNames( );
+            const stringVector* getGhostMicroSurfaceNames( );
+            const stringVector* getNonOverlappedMicroSurfaceNames( );
 
             const YAML::Node getCouplingInitialization( );
 
@@ -95,6 +98,10 @@ namespace inputFileProcessor{
             errorOut setSurfaceSets( const unsigned int increment );
             errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
                                                      stringVector &microVolumeNodesets );
+
+            errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
+                                                        stringVector &microSurfaceNodesets );
+
             errorOut checkCouplingInitialization( );
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
@@ -110,9 +117,13 @@ namespace inputFileProcessor{
             floatVector _microDomainWeights;
             floatVector _microDensity;
             floatVector _microVolume;
+
             stringVector _non_overlapped_micro_surface_sets;
             stringVector _free_micro_surface_sets;
             stringVector _ghost_micro_surface_sets;
+
+            stringVector _free_micro_volume_sets;
+            stringVector _ghost_micro_volume_sets;
 
     };
 
