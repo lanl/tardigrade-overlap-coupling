@@ -22,7 +22,7 @@ namespace DOFProjection{
                                                 const floatVector &domainReferenceXis,
                                                 const floatVector &domainMacroInterpolationFunctionValues,
                                                 const unsigned int &nMacroDOF, const floatVector &macroDOFVector,
-                                                const floatVector &domainMicroWeights, floatVector &microDisplacements ){
+                                                const floatVector &microWeights, floatVector &microDisplacements ){
 
         /*!
          * Add the contribution of a macro domain's deformation to the micro-scale
@@ -39,7 +39,7 @@ namespace DOFProjection{
          *     ( only 12 is tested )
          * :param const floatVector &macroDOFVector: The degree of freedom vector for the macro-scale. The ordering for each node
          *     is assumed to be [ u1, u2, u3, phi11, phi12, phi13, phi21, phi22, phi23, phi31, phi32, phi33, ... ]
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node. 
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -49,7 +49,7 @@ namespace DOFProjection{
          */
 
         if ( domainMacroNodeIndices.size() != domainMacroInterpolationFunctionValues.size() ){
-            return new errorNode( "projectMacroDomainDisplacementToMicro",
+            return new errorNode( "addMacroDomainDisplacementToMicro",
                                   "The macro-scale node indices and the macro-scale interpolation function values must be the same length" );
         }
 
@@ -71,10 +71,10 @@ namespace DOFProjection{
 
         //Compute the micro displacements
         errorOut error = addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, u, phi, domainReferenceXis,
-                                                            domainMicroWeights, microDisplacements );
+                                                            microWeights, microDisplacements );
 
         if ( error ){
-            errorOut result = new errorNode( "projectMacroDomainDisplacementToMicro",
+            errorOut result = new errorNode( "addMacroDomainDisplacementToMicro",
                                              "Error in projection of the macro-displacements to the micro-scale" );
             result->addNext( error );
             return result;
@@ -86,7 +86,7 @@ namespace DOFProjection{
     errorOut addMacroDomainDisplacementToMicro( const unsigned int dim, const uIntVector &domainMicroNodeIndices,
                                                 const floatVector &u, const floatVector &phi,
                                                 const floatVector &domainReferenceXis,
-                                                const floatVector &domainMicroWeights, floatVector &microDisplacements ){
+                                                const floatVector &microWeights, floatVector &microDisplacements ){
         /*!
          * Add the contribution of a macro domain's deformation to the micro-scale
          *
@@ -95,7 +95,7 @@ namespace DOFProjection{
          * :param const floatVector &u: The macro-displacement at the local center of mass
          * :param const floatVector &phi: The micro-displacement ( in the micro-morphic sense ) at the local center of mass
          * :param const floatVector &domainReferenceXis: The vectors from the local center of mass to the micro-nodes in the domain.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -104,13 +104,22 @@ namespace DOFProjection{
          *     projection.
          */
 
-        if ( domainMicroWeights.size() != domainMicroNodeIndices.size() ){
-            return new errorNode( "projectMacroDomainDisplacementToMicro",
-                                  "The number of micro domain weights is not equal to the number of micro nodes in the domain" );
+        if ( dim * microWeights.size() != microDisplacements.size() ){
+            return new errorNode( "addMacroDomainDisplacementToMicro",
+                                  "The number of micro domain weights is not consistent with the number of micro displacements" );
+        }
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+            if ( microWeights.size() <= domainMicroNodeIndices[ i ] ){
+                return new errorNode( "addMacroDomainDisplacementToMicro",
+                                      "A micro-node index is larger than the micro-weights vector" );
+            }
+
         }
 
         if ( domainReferenceXis.size() != dim * domainMicroNodeIndices.size() ){
-            return new errorNode( "projectMacroDomainDisplacementToMicro",
+            return new errorNode( "addMacroDomainDisplacementToMicro",
                                   "The number of Xi vectors is not equal to the number of micro nodes in the domain" );
         }
 
@@ -129,7 +138,7 @@ namespace DOFProjection{
             m = domainMicroNodeIndices[ i ];
 
             if ( dim * ( m + 1 ) > microDisplacements.size() ){
-                return new errorNode( "projectMacroDomainDisplacementToMicro",
+                return new errorNode( "addMacroDomainDisplacementToMicro",
                                       "The micro-displacements vector is too small for the micro-nodes" ); 
             }
 
@@ -140,9 +149,9 @@ namespace DOFProjection{
             q = u + vectorTools::matrixMultiply( phi, Xi, dim, dim, dim, 1 );
 
             //Add the contribution to the displacement
-            microDisplacements[ dim * m + 0 ] += domainMicroWeights[ i ] * q[ 0 ]; 
-            microDisplacements[ dim * m + 1 ] += domainMicroWeights[ i ] * q[ 1 ]; 
-            microDisplacements[ dim * m + 2 ] += domainMicroWeights[ i ] * q[ 2 ]; 
+            microDisplacements[ dim * m + 0 ] += microWeights[ m ] * q[ 0 ]; 
+            microDisplacements[ dim * m + 1 ] += microWeights[ m ] * q[ 1 ]; 
+            microDisplacements[ dim * m + 2 ] += microWeights[ m ] * q[ 2 ]; 
 
         }
 
@@ -161,7 +170,7 @@ namespace DOFProjection{
                                                         const uIntVector &domainMacroNodeIndices,
                                                         const floatVector &domainReferenceXis,
                                                         const floatVector &domainMacroInterpolationFunctionValues,
-                                                        const floatVector &domainMicroWeights, SparseMatrix &domainN ){
+                                                        const floatVector &microWeights, SparseMatrix &domainN ){
         /*!
          * Construct the interpolation matrix for a macro domain overlapping with a 
          * micro-domain
@@ -179,7 +188,7 @@ namespace DOFProjection{
          * :param const floatVector &domainReferenceXis: The vectors from the local center of mass to the micro-nodes in the domain.
          * :param const floatVector &domainMacroInterpolationFunctionValues: The values of the interpolation functions
          *     at the local center of mass.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -198,9 +207,16 @@ namespace DOFProjection{
                                   "The number of micro node indices is not equal to the number of Xi vectors" );
         }
 
-        if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
+        if ( nMicroNodes != microWeights.size() ){
             return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
-                                  "The number of micro node indices is not equal to the number of weights" );
+                                  "The number of micro nodes is not equal to the number of weights" );
+        }
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+            if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
+                return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                      "An index in the micro domain is larger than the number of micro weights" );
+            }
         }
 
         if ( domainMacroNodeIndices.size() != domainMacroInterpolationFunctionValues.size() ){
@@ -235,7 +251,7 @@ namespace DOFProjection{
                               domainReferenceXis.begin() + nMicroDOF * i + nMicroDOF );
 
             //Set the value of the weight
-            w = domainMicroWeights[ i ];
+            w = microWeights[ domainMicroNodeIndices[ i ] ];
 
             for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
@@ -272,7 +288,7 @@ namespace DOFProjection{
 
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
-                                                    const floatVector &domainMicroWeights,
+                                                    const floatVector &microWeights,
                                                     floatVector &projectedMicroMasses ){
         /*!
          * Add the contribution of the micro-nodes' mass to the macro nodes.
@@ -283,7 +299,7 @@ namespace DOFProjection{
          * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
          *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
          *     micro-node number and the second is the macro-node number.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -297,8 +313,8 @@ namespace DOFProjection{
                                   "The size of the domain node indices vectors are not consistent with the number of shape functions" );
         }
 
-        if ( domainMicroWeights.size() != domainMicroNodeIndices.size() ){
-            return new errorNode( "addDomainMicroContributionToMacroMass", "The size of the domain's micro weights vector is not equal to the number of domain micro node indices" );
+        if ( microWeights.size() != microMasses.size() ){
+            return new errorNode( "addDomainMicroContributionToMacroMass", "The size of the domain's micro weights vector is not equal to the number of micro masses" );
         }
 
         for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
@@ -321,6 +337,12 @@ namespace DOFProjection{
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
             //Error handling
+            if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
+
+                return new errorNode( "addDomainMicroContributionToMacroMass",
+                                      "The size of the micro weights vector is smaller than a micro node requires" );
+
+            }
             if ( domainMicroNodeIndices[ i ] >= microMasses.size() ){
 
                 return new errorNode( "addDomainMicroContributionToMacroMass",
@@ -332,7 +354,104 @@ namespace DOFProjection{
             mass = microMasses[ domainMicroNodeIndices[ i ] ];
 
             //Get the micro-node's weight
-            weight = domainMicroWeights[ i ];
+            weight = microWeights[ domainMicroNodeIndices[ i ] ];
+
+            //Iterate over the macro-node indices
+            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+
+                //Add the micro-node contribution to the macro node
+                projectedMicroMasses[ domainMacroNodeIndices[ j ] ] += mass * domainMicroShapeFunctions[ i * nMacroNodes + j ] * weight;
+
+            }
+
+        }
+
+        return NULL;
+    }
+
+    errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
+                                                    const floatVector &microVolumes, const floatVector &microDensities,
+                                                    const floatVector &domainMicroShapeFunctions,
+                                                    const floatVector &microWeights,
+                                                    floatVector &projectedMicroMasses ){
+        /*!
+         * Add the contribution of the micro-nodes' mass to the macro nodes.
+         *
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes
+         * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes in the domain
+         * :param const floatVector &microVolumes: The volumes of the micro-nodes
+         * :param const floatVector &microDensities: The densities of the micro-nodes
+         * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
+         *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
+         *     micro-node number and the second is the macro-node number.
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &projectedMicroMasses: The projected micro-masses on all of the macro-scale nodes.
+         */
+
+        //Error handling
+        if ( domainMacroNodeIndices.size() * domainMicroNodeIndices.size() != domainMicroShapeFunctions.size() ){
+            return new errorNode( "addDomainMicroContributionToMacroMass",
+                                  "The size of the domain node indices vectors are not consistent with the number of shape functions" );
+        }
+
+        if ( microWeights.size() != microVolumes.size() ){
+            return new errorNode( "addDomainMicroContributionToMacroMass", "The size of the domain's micro weights vector is not equal to the number of micro volumes" );
+        }
+
+        if ( microWeights.size() != microDensities.size() ){
+            return new errorNode( "addDomainMicroContributionToMacroMass", "The size of the domain's micro weights vector is not equal to the number of micro densities" );
+        }
+
+        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
+            if ( domainMacroNodeIndices[ i ] >= projectedMicroMasses.size() ){
+                return new errorNode( "addDomainMicroContributionToMacroMass",
+                                      "The size of the projected micro mass vector is smaller than a macro node requires" );
+            }
+        }
+
+        //Set the number of macro-nodes in this domain
+        unsigned int nMacroNodes = domainMacroNodeIndices.size();
+
+        //Initialize the micro node mass
+        floatType mass;
+
+        //Initialize the micro node weights
+        floatType weight;
+
+        //Iterate over the micro-node indices
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+            //Error handling
+            if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
+
+                    return new errorNode( "addDomainMicroContributionToMacroMass",
+                                      "The size of the micro weights vector is smaller than a micro node requires" );
+
+            }
+
+            if ( domainMicroNodeIndices[ i ] >= microVolumes.size() ){
+
+                return new errorNode( "addDomainMicroContributionToMacroMass",
+                                      "The micro-node index is too large for the provided volume vector" );
+
+            }
+
+            if ( domainMicroNodeIndices[ i ] >= microDensities.size() ){
+
+                return new errorNode( "addDomainMicroContributionToMacroMass",
+                                      "The micro-node index is too large for the provided density vector" );
+
+            }
+
+            //Get the micro-node's mass
+            mass = microVolumes[ domainMicroNodeIndices[ i ] ] * microDensities[ domainMicroNodeIndices[ i ] ];
+
+            //Get the micro-node's weight
+            weight = microWeights[ domainMicroNodeIndices[ i ] ];
 
             //Iterate over the macro-node indices
             for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
@@ -353,7 +472,7 @@ namespace DOFProjection{
                                                                         const floatVector &domainReferenceXis,
                                                                         const floatVector &microMasses,
                                                                         const floatVector &domainMicroShapeFunctions,
-                                                                        const floatVector &domainMicroWeights,
+                                                                        const floatVector &microWeights,
                                                                         floatVector &projectedMassMicroMomentOfInertia ){
         /*!
          * Add the contribution of the micro-nodes in the domain to the macro moment of inertia.
@@ -366,7 +485,7 @@ namespace DOFProjection{
          * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
          *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
          *     micro-node number and the second is the macro-node number.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -381,7 +500,7 @@ namespace DOFProjection{
         floatVector microDisplacements;
         return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
                                                      domainReferenceXis, microMasses, domainMicroShapeFunctions,
-                                                     domainMicroWeights, microDisplacements,
+                                                     microWeights, microDisplacements,
                                                      projectedMassMicroMomentOfInertia,
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
@@ -393,7 +512,7 @@ namespace DOFProjection{
     errorOut addDomainMassConstant( const unsigned int &dim,
                                     const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                     const floatVector &domainReferenceXis, const floatVector &microMasses,
-                                    const floatVector &domainMicroShapeFunctions, const floatVector &domainMicroWeights,
+                                    const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                     floatVector &projectedMassConstant ){
         /*!
          * Add the contributions of the domain to the mass constant
@@ -406,7 +525,7 @@ namespace DOFProjection{
          * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
          *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
          *     micro-node number and the second is the macro-node number.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -420,7 +539,7 @@ namespace DOFProjection{
         floatVector microDisplacements;
         return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
                                                      domainReferenceXis, microMasses, domainMicroShapeFunctions,
-                                                     domainMicroWeights, microDisplacements,
+                                                     microWeights, microDisplacements,
                                                      projectedMassMicroMomentOfInertia,
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
@@ -432,7 +551,7 @@ namespace DOFProjection{
     errorOut addDomainMassDisplacement( const unsigned int &dim,
                                         const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                         const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
-                                        const floatVector &domainMicroWeights, const floatVector &microDisplacements,
+                                        const floatVector &microWeights, const floatVector &microDisplacements,
                                         floatVector &projectedMassDisplacement ){
         /*!
          * Add the contributions of the domain to the mass constant
@@ -444,7 +563,7 @@ namespace DOFProjection{
          * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
          *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
          *     micro-node number and the second is the macro-node number.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -459,7 +578,7 @@ namespace DOFProjection{
         floatVector domainReferenceXis;
         return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
                                                      domainReferenceXis, microMasses, domainMicroShapeFunctions,
-                                                     domainMicroWeights, microDisplacements,
+                                                     microWeights, microDisplacements,
                                                      projectedMassMicroMomentOfInertia,
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
@@ -471,7 +590,7 @@ namespace DOFProjection{
     errorOut addDomainMassMicroDisplacementPosition( const unsigned int &dim,
                                                      const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                      const floatVector &domainReferenceXis, const floatVector &microMasses,
-                                                     const floatVector &domainMicroShapeFunctions, const floatVector &domainMicroWeights,
+                                                     const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                                      const floatVector &microDisplacements,
                                                      floatVector &projectedMassDisplacementPosition ){
         /*!
@@ -485,7 +604,7 @@ namespace DOFProjection{
          * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
          *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
          *     micro-node number and the second is the macro-node number.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -500,7 +619,7 @@ namespace DOFProjection{
         floatVector projectedMassDisplacement;
         return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
                                                      domainReferenceXis, microMasses, domainMicroShapeFunctions,
-                                                     domainMicroWeights, microDisplacements,
+                                                     microWeights, microDisplacements,
                                                      projectedMassMicroMomentOfInertia,
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
@@ -513,7 +632,7 @@ namespace DOFProjection{
     errorOut addDomainMicroToMacroProjectionTerms( const unsigned int &dim,
                                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                    const floatVector &domainReferenceXis, const floatVector &microMasses,
-                                                   const floatVector &domainMicroShapeFunctions, const floatVector &domainMicroWeights,
+                                                   const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                                    const floatVector &microDisplacements,
                                                    floatVector &projectedMassMicroMomentOfInertia,
                                                    floatVector &projectedMassConstant,
@@ -534,7 +653,7 @@ namespace DOFProjection{
          * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
          *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
          *     micro-node number and the second is the macro-node number.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -559,9 +678,11 @@ namespace DOFProjection{
             }
         }
 
-        if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
-            return new errorNode( "addDomainMicroToMacroProjectionTerms",
-                                  "The number of micro node indices and the micro weights are not the same" );
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+            if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                      "The number of micro node weights is smaller than the micro indices requires" );
+            }
         }
 
         if ( domainMicroNodeIndices.size() * domainMacroNodeIndices.size() != domainMicroShapeFunctions.size() ){
@@ -624,7 +745,389 @@ namespace DOFProjection{
             mass = microMasses[ domainMicroNodeIndices[ i ] ];
 
             //Extract the nodal weight
-            weight = domainMicroWeights[ i ];
+            weight = microWeights[ domainMicroNodeIndices[ i ] ];
+
+            //Extract the current micro-position vectors
+            if ( ( computeMassConstant ) || ( computeMassDisplacementPosition ) ){
+
+                Xi = floatVector( domainReferenceXis.begin() + dim * i, domainReferenceXis.begin() + dim * ( i + 1 ) );
+
+            }
+
+            //Compute the dyadic product of Xi with itself
+            if ( computeMassMomentOfInertia ){
+
+                for ( unsigned int j = 0; j < dim; j++ ){
+    
+                    for ( unsigned int k = 0; k < dim; k++ ){
+    
+                        XiXi[ dim * j + k ] = domainReferenceXis[ dim * i + j ] * domainReferenceXis[ dim * i + k ];
+    
+                    }
+    
+                }
+            }
+
+            if ( ( computeMassMicroDisplacement ) || ( computeMassDisplacementPosition ) ){
+
+                q = floatVector( microDisplacements.begin() + dim * domainMicroNodeIndices[ i ],
+                                 microDisplacements.begin() + dim * domainMicroNodeIndices[ i ] + dim );
+
+            }
+
+            //Loop through the macro nodes
+            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+
+                //Set the shape-function value
+                sf = domainMicroShapeFunctions[ domainMacroNodeIndices.size() * i + j ];
+               
+                if ( computeMassMomentOfInertia ){ 
+
+                    for ( unsigned int k = 0; k < dim * dim; k++ ){
+    
+                        //Add the contribution to the micro-moment of inertia
+                        projectedMassMicroMomentOfInertia[ dim * dim * domainMacroNodeIndices[ j ] + k ]
+                            += weight * mass * sf * XiXi[ k ];
+    
+                    }
+
+                }
+
+                if ( computeMassConstant ){ 
+
+                    for ( unsigned int k = 0; k < dim; k++ ){
+    
+                        //Add the contribution to the micro-moment of inertia
+                        projectedMassConstant[ dim * domainMacroNodeIndices[ j ] + k ] += weight * mass * sf * Xi[ k ];
+    
+                    }
+
+                }
+
+                if ( computeMassMicroDisplacement ) {
+
+                    for ( unsigned int k = 0; k < dim; k++ ){
+
+                        //Add the contribution to the mass weighted micro-displacement
+                        projectedMassDisplacement[ dim * domainMacroNodeIndices[ j ] + k ] += weight * mass * sf * q[ k ];
+
+                    }
+
+                }
+
+                if ( computeMassDisplacementPosition ){
+
+                    for ( unsigned int k = 0; k < dim; k++ ){
+
+                        for ( unsigned int l = 0; l < dim; l++ ){
+                            projectedMassDisplacementPosition[ dim * dim * domainMacroNodeIndices[ j ] + dim * k + l ]
+                                += weight * mass * sf * q[ k ] * Xi[ l ];
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
+                                                                        const uIntVector &domainMicroNodeIndices,
+                                                                        const uIntVector &domainMacroNodeIndices,
+                                                                        const floatVector &domainReferenceXis,
+                                                                        const floatVector &microVolumes,
+                                                                        const floatVector &microDensities,
+                                                                        const floatVector &domainMicroShapeFunctions,
+                                                                        const floatVector &microWeights,
+                                                                        floatVector &projectedMassMicroMomentOfInertia ){
+        /*!
+         * Add the contribution of the micro-nodes in the domain to the macro moment of inertia.
+         *
+         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
+         * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
+         * :param const floatVector &microVolumes: The volumes of the micro-nodes.
+         * :param const floatVector &microDensities: The densities of the micro-nodes.
+         * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
+         *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
+         *     micro-node number and the second is the macro-node number.
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &projectedMassMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
+         *     as projected from the micro-nodes weighted by the mass.
+         */
+
+        floatVector projectedMassConstant;
+        floatVector projectedMassDisplacement;
+        floatVector projectedMassDisplacementPosition;
+        floatVector microDisplacements;
+        return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
+                                                     domainReferenceXis, microVolumes, microDensities,
+                                                     domainMicroShapeFunctions,
+                                                     microWeights, microDisplacements,
+                                                     projectedMassMicroMomentOfInertia,
+                                                     projectedMassConstant,
+                                                     projectedMassDisplacement,
+                                                     projectedMassDisplacementPosition,
+                                                     true, false, false, false );
+
+    }
+
+    errorOut addDomainMassConstant( const unsigned int &dim,
+                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
+                                    const floatVector &domainReferenceXis, const floatVector &microVolumes,
+                                    const floatVector &microDensities, const floatVector &domainMicroShapeFunctions,
+                                    const floatVector &microWeights,
+                                    floatVector &projectedMassConstant ){
+        /*!
+         * Add the contributions of the domain to the mass constant
+         *
+         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
+         * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
+         * :param const floatVector &microVolumes: The volumes of the micro-nodes.
+         * :param const floatVector &microDensities: The densities of the micro-nodes.
+         * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
+         *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
+         *     micro-node number and the second is the macro-node number.
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &projectedMassConstant: The projected mass constant at the macro-scale node.
+         */
+
+        floatVector projectedMassMicroMomentOfInertia;
+        floatVector projectedMassDisplacement;
+        floatVector projectedMassDisplacementPosition;
+        floatVector microDisplacements;
+        return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
+                                                     domainReferenceXis, microVolumes, microDensities,
+                                                     domainMicroShapeFunctions,
+                                                     microWeights, microDisplacements,
+                                                     projectedMassMicroMomentOfInertia,
+                                                     projectedMassConstant,
+                                                     projectedMassDisplacement,
+                                                     projectedMassDisplacementPosition,
+                                                     false, true, false, false );
+
+    }
+
+    errorOut addDomainMassDisplacement( const unsigned int &dim,
+                                        const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
+                                        const floatVector &microVolumes, const floatVector &microDensities,
+                                        const floatVector &domainMicroShapeFunctions,
+                                        const floatVector &microWeights, const floatVector &microDisplacements,
+                                        floatVector &projectedMassDisplacement ){
+        /*!
+         * Add the contributions of the domain to the mass constant
+         *
+         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
+         * :param const floatVector &microVolumes: The volumes of the micro-nodes.
+         * :param const floatVector &microDensities: The densities of the micro-nodes.
+         * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
+         *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
+         *     micro-node number and the second is the macro-node number.
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
+         * :param floatVector &projectedMassDisplacement: The projected mass weighted displacement at the macro-scale node.
+         */
+
+        floatVector projectedMassMicroMomentOfInertia;
+        floatVector projectedMassConstant;
+        floatVector projectedMassDisplacementPosition;
+        floatVector domainReferenceXis;
+        return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
+                                                     domainReferenceXis, microVolumes, microDensities,
+                                                     domainMicroShapeFunctions,
+                                                     microWeights, microDisplacements,
+                                                     projectedMassMicroMomentOfInertia,
+                                                     projectedMassConstant,
+                                                     projectedMassDisplacement,
+                                                     projectedMassDisplacementPosition,
+                                                     false, false, true, false );
+
+    }
+
+    errorOut addDomainMassMicroDisplacementPosition( const unsigned int &dim,
+                                                     const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
+                                                     const floatVector &domainReferenceXis, const floatVector &microVolumes,
+                                                     const floatVector &microDensities,
+                                                     const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
+                                                     const floatVector &microDisplacements,
+                                                     floatVector &projectedMassDisplacementPosition ){
+        /*!
+         * Add the contributions of the domain to the mass constant
+         *
+         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
+         * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
+         * :param const floatVector &microVolumes: The volumes of the micro-nodes.
+         * :param const floatVector &microDensities: The densities of the micro-nodes.
+         * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
+         *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
+         *     micro-node number and the second is the macro-node number.
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
+         * :param floatVector &projectedMassDisplacementPosition: The projected mass weighted dyadic product of displacement
+         *     and the micro-position at the macro-scale node.
+         */
+
+        floatVector projectedMassMicroMomentOfInertia;
+        floatVector projectedMassConstant;
+        floatVector projectedMassDisplacement;
+        return addDomainMicroToMacroProjectionTerms( dim, domainMicroNodeIndices, domainMacroNodeIndices,
+                                                     domainReferenceXis, microVolumes, microDensities, domainMicroShapeFunctions,
+                                                     microWeights, microDisplacements,
+                                                     projectedMassMicroMomentOfInertia,
+                                                     projectedMassConstant,
+                                                     projectedMassDisplacement,
+                                                     projectedMassDisplacementPosition,
+                                                     false, false, false, true );
+
+    }
+
+    errorOut addDomainMicroToMacroProjectionTerms( const unsigned int &dim,
+                                                   const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
+                                                   const floatVector &domainReferenceXis, const floatVector &microVolumes,
+                                                   const floatVector &microDensities, const floatVector &domainMicroShapeFunctions,
+                                                   const floatVector &microWeights,
+                                                   const floatVector &microDisplacements,
+                                                   floatVector &projectedMassMicroMomentOfInertia,
+                                                   floatVector &projectedMassConstant,
+                                                   floatVector &projectedMassDisplacement,
+                                                   floatVector &projectedMassDisplacementPosition,
+                                                   const bool computeMassMomentOfInertia,
+                                                   const bool computeMassConstant,
+                                                   const bool computeMassMicroDisplacement,
+                                                   const bool computeMassDisplacementPosition ){
+        /*!
+         * Solve for the terms required to project from the micro-scale to the macro-scale.
+         *
+         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
+         * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
+         * :param const floatVector &microVolumes: The volumes of the micro-nodes.
+         * :param const floatVector &microDensities: The densities of the micro-nodes.
+         * :param const floatVector &domainMicroShapeFunctions: The shape functions of the macro interpolation functions
+         *     at the micro nodes. Organized as [ N_11, N_12, N_13, ... N_21, N_22, ... ] where the first index is the 
+         *     micro-node number and the second is the macro-node number.
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
+         * :param floatVector &projectedMassMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
+         *     as projected from the micro-nodes weighted by the mass.
+         * :param floatVector &projectedMassDisplacementPosition: The mass weighted dyadic product of the micro displacement
+         *     and the micro position projected to the macro nodes.
+         * :param const bool computeMassMomentOfInertia: Boolean for whether the contribution to the mass-weighted moment 
+         *     of inertia should be computed.
+         * :param const bool computeMassConstant: Boolean for whether the contribution to the mass constant.
+         * :param const bool computeMassMicroDisplacement: Boolean for whether the contribution of the mass-weighted
+         *     displacement should be calculated.
+         */
+
+        //Error handling
+        if ( ( computeMassMomentOfInertia ) || ( computeMassConstant ) || ( computeMassDisplacementPosition ) ){
+            if ( dim * domainMicroNodeIndices.size() != domainReferenceXis.size() ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                      "The number of micro node indices and the micro position vectors do not have consistent sizes" );
+            }
+        }
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+            if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                      "The number of micro node weights is smaller than the micro indices requires" );
+            }
+        }
+
+        if ( domainMicroNodeIndices.size() * domainMacroNodeIndices.size() != domainMicroShapeFunctions.size() ){
+            return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                  "The number of micro and micro node indices are not consistent with the number of shape functions" );
+        }
+
+        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
+            if ( ( projectedMassMicroMomentOfInertia.size() < dim * dim * ( domainMacroNodeIndices[ i ] + 1 ) ) &&
+                 ( computeMassMomentOfInertia ) ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                      "The size of the projected micro moment of inertia weighted by the mass is smaller than required for the provided nodes" );
+            }
+
+            if ( ( projectedMassConstant.size() < dim * ( domainMacroNodeIndices[ i ] + 1 ) ) &&
+                 ( computeMassConstant ) ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                      "The size of the projected mass constant is smaller than required for the provided nodes" );
+            }
+
+            if ( ( projectedMassDisplacement.size() < dim * ( domainMacroNodeIndices[ i ] + 1 ) ) &&
+                 ( computeMassMicroDisplacement ) ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                      "The size of the projected mass-weighted micro displacement is smaller than required for the provided nodes" );
+            }
+
+            if ( ( projectedMassDisplacementPosition.size() < dim * dim * ( domainMacroNodeIndices[ i ] + 1 ) ) &&
+                 ( computeMassDisplacementPosition ) ){
+                return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                      "The size of the projected mass-weighted dyadic product of the micro displacement and the micro position is smaller than required for the provided nodes" );
+            }
+
+        }
+
+        if ( ( computeMassMicroDisplacement ) || ( computeMassDisplacementPosition ) ){
+            for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+                if ( microDisplacements.size() < dim * ( domainMicroNodeIndices[ i ] + 1 ) ){
+                    return new errorNode( "addDomainMicroToMacroProjectionTerms",
+                                          "The size of the micro degree of freedom vector is too small for the provided nodes" );
+                }
+            }
+        }
+
+        //Initialize the micro-mass, weight, and shape function value
+        floatType mass, weight, sf;
+
+        //Initialize the micro-displacement vector
+        floatVector q( dim );
+
+        //Initialize the micro-position vector
+        floatVector Xi( dim );
+
+        //Initialize the dyadic product of the micro-position vector
+        floatVector XiXi( dim * dim );
+
+        //Loop through the micro nodes
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+            //Extract the nodal mass
+            mass = microVolumes[ domainMicroNodeIndices[ i ] ] * microDensities[ domainMicroNodeIndices[ i ] ];
+
+            //Extract the nodal weight
+            weight = microWeights[ domainMicroNodeIndices[ i ] ];
 
             //Extract the current micro-position vectors
             if ( ( computeMassConstant ) || ( computeMassDisplacementPosition ) ){
@@ -717,7 +1220,7 @@ namespace DOFProjection{
 
     errorOut computeDomainCenterOfMass( const unsigned int &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
-                                        const floatVector &microPositions, const floatVector &domainMicroWeights,
+                                        const floatVector &microPositions, const floatVector &microWeights,
                                         floatVector &domainCM ){
         /*!
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
@@ -727,7 +1230,7 @@ namespace DOFProjection{
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microMasses: The masses of the micro nodes.
          * :param const floatVector &microPositions: The positions of the micro-nodes.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -736,14 +1239,14 @@ namespace DOFProjection{
          */
 
         floatType domainMass;
-        return computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, domainMicroWeights,
+        return computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, microWeights,
                                           domainMass, domainCM );
     }
 
     errorOut computeDomainCenterOfMass( const unsigned int &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microPositions,
-                                        const floatVector &domainMicroWeights, floatVector &domainCM ){
+                                        const floatVector &microWeights, floatVector &domainCM ){
         /*!
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
          * within the domain.
@@ -753,7 +1256,7 @@ namespace DOFProjection{
          * :param const floatVector &microVolumes: The volumes of the micro nodes.
          * :param const floatVector &microDensities: The densities of the micro nodes.
          * :param const floatVector &microPositions: The positions of the micro-nodes.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -763,12 +1266,12 @@ namespace DOFProjection{
 
         floatType domainMass;
         return computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities, microPositions,
-                                          domainMicroWeights, domainMass, domainCM );
+                                          microWeights, domainMass, domainCM );
     }
 
     errorOut computeDomainCenterOfMass( const unsigned int &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
-                                        const floatVector &microPositions, const floatVector &domainMicroWeights,
+                                        const floatVector &microPositions, const floatVector &microWeights,
                                         floatType &domainMass, floatVector &domainCM ){
         /*!
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
@@ -778,7 +1281,7 @@ namespace DOFProjection{
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microMasses: The masses of the micro nodes.
          * :param const floatVector &microPositions: The positions of the micro-nodes.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -787,20 +1290,20 @@ namespace DOFProjection{
          * :param floatVector &domainCM: The center of mass of the domain
          */
 
-        if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
-            return new errorNode( "computeDomainCenterOfMass",
-                                  "The number of node indices and the weights must have the same length" );
-        }
-
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
-            if ( microPositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
+            if ( microPositions.size() <= dim * domainMicroNodeIndices[ i ] + dim ){
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-positions vector is not consistent with the micro indices" );
             }
 
-            if ( microMasses.size() < domainMicroNodeIndices[ i ] ){
+            if ( microMasses.size() <= domainMicroNodeIndices[ i ] ){
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-masses vector is not consistent with the micro indices" );
+            }
+
+            if ( microWeights.size( ) <= domainMicroNodeIndices[ i ] ){
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "the size of the micro-weights vector is not consistent with the micro indices" );
             }
         }
 
@@ -814,10 +1317,10 @@ namespace DOFProjection{
 
 
             //Add to the domain's mass
-            domainMass += microMasses[ domainMicroNodeIndices[ i ] ] * domainMicroWeights[ i ];
+            domainMass += microMasses[ domainMicroNodeIndices[ i ] ] * microWeights[ domainMicroNodeIndices[ i ] ];
 
             //Add to the domain's mass weighted position
-            domainCM += microMasses[ domainMicroNodeIndices[ i ] ] * domainMicroWeights[ i ]
+            domainCM += microMasses[ domainMicroNodeIndices[ i ] ] * microWeights[ domainMicroNodeIndices[ i ] ]
                       * floatVector( microPositions.begin() + dim * domainMicroNodeIndices[ i ],
                                      microPositions.begin() + dim * ( domainMicroNodeIndices[ i ] + 1 ) );
 
@@ -833,7 +1336,7 @@ namespace DOFProjection{
     errorOut computeDomainCenterOfMass( const unsigned int &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microPositions,
-                                        const floatVector &domainMicroWeights, floatType &domainMass, floatVector &domainCM ){
+                                        const floatVector &microWeights, floatType &domainMass, floatVector &domainCM ){
         /*!
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
          * within the domain.
@@ -843,7 +1346,7 @@ namespace DOFProjection{
          * :param const floatVector &microVolumes: The volumes of the micro nodes.
          * :param const floatVector &microDensities: The densities of the micro nodes.
          * :param const floatVector &microPositions: The positions of the micro-nodes.
-         * :param const floatVector &domainMicroWeights: The weight associated with each micro-scale node for this domain. 
+         * :param const floatVector &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
@@ -851,11 +1354,6 @@ namespace DOFProjection{
          * :param floatVector &domainMass: The mass of the domain
          * :param floatVector &domainCM: The center of mass of the domain
          */
-
-        if ( domainMicroNodeIndices.size() != domainMicroWeights.size() ){
-            return new errorNode( "computeDomainCenterOfMass",
-                                  "The number of node indices and the weights must have the same length" );
-        }
 
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
             if ( microPositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
@@ -872,6 +1370,11 @@ namespace DOFProjection{
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-densities vector is not consistent with the micro indices" );
             }
+
+            if ( microWeights.size( ) <= domainMicroNodeIndices[ i ] ){
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "the size of the micro-weights vector is not consistent with the micro indices" );
+            }
         }
 
         //Initialize the domain mass
@@ -885,11 +1388,11 @@ namespace DOFProjection{
 
             //Add to the domain's mass
             domainMass += microVolumes[ domainMicroNodeIndices[ i ] ] * microDensities[ domainMicroNodeIndices[ i ] ]
-                        * domainMicroWeights[ i ];
+                        * microWeights[ domainMicroNodeIndices[ i ] ];
 
             //Add to the domain's mass weighted position
             domainCM += microVolumes[ domainMicroNodeIndices[ i ] ] * microDensities[ domainMicroNodeIndices[ i ] ]
-                      * domainMicroWeights[ i ]
+                      * microWeights[ domainMicroNodeIndices[ i ] ]
                       * floatVector( microPositions.begin() + dim * domainMicroNodeIndices[ i ],
                                      microPositions.begin() + dim * ( domainMicroNodeIndices[ i ] + 1 ) );
 
