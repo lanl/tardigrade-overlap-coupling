@@ -95,11 +95,14 @@ namespace inputFileProcessor{
             errorOut setSurfaceSets( const unsigned int increment );
             errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
                                                      stringVector &surfaceNodesets );
+            errorOut checkCouplingInitialization( );
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
 
             //Private Attributes
+            bool _increment_initialized = false;
+            unsigned int _current_increment;
             errorOut _error;
             std::string _configFilename = "";
             YAML::Node _config;

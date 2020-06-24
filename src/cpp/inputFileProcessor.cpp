@@ -64,6 +64,14 @@ namespace inputFileProcessor{
             return;
         }
 
+        //Check the coupling initialization
+        error = checkCouplingInitialization( );
+        if ( error ){
+            _error = new errorNode( "initialize", "Error in the coupling initialization configuration" );
+            _error->addNext( error );
+            return;
+        }
+
         return;
 
     }
@@ -90,6 +98,9 @@ namespace inputFileProcessor{
 
         //Set the new configuration filename
         _configFilename = configurationFilename;
+
+        //Reset whether the increment has been initialized
+        _increment_initialized = false;
 
         initialize( );
 
@@ -372,6 +383,12 @@ namespace inputFileProcessor{
          * :param const unsigned int increment: The increment to prepare for.
          */
 
+        //Check if the requested increment is the currently initialized increment
+        //If so, we don't need to run the initialization
+        if ( ( increment == _current_increment ) && ( _increment_initialized ) ){
+            return NULL;
+        }
+
         errorOut error;
         //Collect the sets
         error = setSurfaceSets( increment );
@@ -402,6 +419,10 @@ namespace inputFileProcessor{
             result->addNext( error );
             return result;
         }
+
+        //Set the current increment
+        _current_increment = increment;
+        _increment_initialized = true;
 
         return NULL;
     }
@@ -697,4 +718,20 @@ namespace inputFileProcessor{
 
         return _config[ "coupling_initialization" ];
     }
+
+    errorOut inputFileProcessor::checkCouplingInitialization( ){
+        /*!
+         * Check the coupling initialization
+         */
+
+        if ( !_config[ "coupling_initialization" ][ "type" ] ){
+
+            _config[ "coupling_initialization" ][ "type" ] = "use_initial_state";
+
+        }
+
+        return NULL;
+
+    }
+
 }
