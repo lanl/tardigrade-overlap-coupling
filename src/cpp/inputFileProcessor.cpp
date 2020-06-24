@@ -511,12 +511,12 @@ namespace inputFileProcessor{
     }
 
     errorOut inputFileProcessor::checkCommonDomainConfiguration( const YAML::Node &domainConfig,
-                                                                 stringVector &microVolumeNodesets ){
+                                                                 stringVector &volumeNodesets ){
         /*!
          * Extract common values in the configuration of a domain
          *
          * :param YAML::Node &domainConfig: The configuration of a particular domain.
-         * :param stringVector &microVolumeNodesets: The nodeset names for the surfaces of the
+         * :param stringVector &volumeNodesets: The nodeset names for the surfaces of the
          *     micro domains
          */
 
@@ -532,7 +532,7 @@ namespace inputFileProcessor{
         unsigned int indx = 1;
         unsigned int indx2 = 1;
         unsigned int nVolumeNodesets = 0;
-        microVolumeNodesets.clear();
+        volumeNodesets.clear();
         for ( auto domain = domainConfig.begin( ); domain != domainConfig.end(); domain++ ){
 
             if ( !( *domain )[ "macro_nodeset" ] ){
@@ -579,19 +579,19 @@ namespace inputFileProcessor{
         }
 
         //Extract the surface nodesets
-        microVolumeNodesets.reserve( nVolumeNodesets );
+        volumeNodesets.reserve( nVolumeNodesets );
         for ( auto domain = domainConfig.begin( ); domain != domainConfig.end( ); domain++ ){
             
             for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
 
-                if ( std::find( microVolumeNodesets.begin( ), microVolumeNodesets.end( ), nodeset->as< std::string >( ) ) != microVolumeNodesets.end( ) ){
+                if ( std::find( volumeNodesets.begin( ), volumeNodesets.end( ), nodeset->as< std::string >( ) ) != volumeNodesets.end( ) ){
 
                     return new errorNode( "checkCommonDomainConfiguration",
                                           nodeset->as< std::string >( ) + " appears more than once in the coupling definition" );
 
                 }
 
-                microVolumeNodesets.push_back( nodeset->as< std::string >( ) );
+                volumeNodesets.push_back( nodeset->as< std::string >( ) );
 
             }
 
