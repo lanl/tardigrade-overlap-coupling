@@ -739,9 +739,9 @@ namespace inputFileProcessor{
         }
 
         //Re-size the micro node density vector
-        errorOut error = _microscale->getMeshData( increment, 
-                                                   _config[ "microscale_definition" ][ "density_variable_name" ].as< std::string >( ),
-                                                   "Node", _microDensities );
+        errorOut error = _microscale->getSolutionData( increment, 
+                                                       _config[ "microscale_definition" ][ "density_variable_name" ].as< std::string >( ),
+                                                       "Node", _microDensities );
 
         if ( error ){
 
@@ -770,9 +770,9 @@ namespace inputFileProcessor{
         }
 
         //Re-size the micro node density vector
-        errorOut error = _microscale->getMeshData( increment, 
-                                                   _config[ "microscale_definition" ][ "volume_variable_name" ].as< std::string >( ),
-                                                   "Node", _microVolumes );
+        errorOut error = _microscale->getSolutionData( increment, 
+                                                       _config[ "microscale_definition" ][ "volume_variable_name" ].as< std::string >( ),
+                                                       "Node", _microVolumes );
 
         if ( error ){
 
@@ -846,7 +846,7 @@ namespace inputFileProcessor{
                 else{
 
                     //Get the displacement
-                    errorOut error = _microscale->getMeshData( increment, dispNode.as< std::string >( ), "Node", disp );
+                    errorOut error = _microscale->getSolutionData( increment, dispNode.as< std::string >( ), "Node", disp );
 
                     if ( error ){
                         
@@ -870,6 +870,7 @@ namespace inputFileProcessor{
         }
 
         return NULL;
+
     }
 
     const floatVector* inputFileProcessor::getMicroDensities( ){
