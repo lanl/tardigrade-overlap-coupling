@@ -280,7 +280,7 @@ int test_XDMFDataFile_getSetNames( std::ofstream &results ){
     return 0;
 }
 
-int test_XDMFDataFile_getMeshData( std::ofstream &results ){
+int test_XDMFDataFile_getSolutionData( std::ofstream &results ){
     /*!
      * Test the function to extract the mesh data
      *
@@ -298,20 +298,20 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
                            -0.01 };
 
     floatVector result;
-    errorOut error = xdf.getMeshData( 1.0, "disp_z", "Node", result );
+    errorOut error = xdf.getSolutionData( 1.0, "disp_z", "Node", result );
 
     if ( error ){
         error->print( );
-        results << "test_XDMFDataFile_getMeshData & False\n";
+        results << "test_XDMFDataFile_getSolutionData & False\n";
         return 1;
     }
 
     if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        results << "test_XDMFDataFile_getMeshData (test 1) & False\n";
+        results << "test_XDMFDataFile_getSolutionData (test 1) & False\n";
         return 1;
     }
 
-    results << "test_XDMFDataFile_getMeshData & True\n";
+    results << "test_XDMFDataFile_getSolutionData & True\n";
     return 0;
 
 }
@@ -334,7 +334,7 @@ int main(){
     test_XDMFDataFile_getDomainNodes( results );
     test_XDMFDataFile_getNumNodes( results );
     test_XDMFDataFile_getSetNames( results );
-    test_XDMFDataFile_getMeshData( results );
+    test_XDMFDataFile_getSolutionData( results );
 
     //Close the results file
     results.close();

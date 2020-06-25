@@ -174,7 +174,7 @@ namespace dataFileInterface{
         return new errorNode( "getSetNames", "The getSetNames function is not defined" );
     }
 
-    errorOut dataFileBase::getMeshData( const unsigned int increment, const std::string &dataName, const std::string &dataCenter,
+    errorOut dataFileBase::getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataCenter,
                                         floatVector &data ){
         /*!
          * Get the values of the mesh data named dataName. This should work for
@@ -187,7 +187,7 @@ namespace dataFileInterface{
          *
          */
 
-        return new errorNode( "getMeshData", "The getMeshData function is not defined" );
+        return new errorNode( "getSolutionData", "The getSolutionData function is not defined" );
     }
 
     /*=========================================================================
@@ -491,10 +491,10 @@ namespace dataFileInterface{
         return NULL;
     }
 
-    errorOut XDMFDataFile::getMeshData( const unsigned int increment, const std::string &dataName, const std::string &dataCenter,
-                                        floatVector &data ){
+    errorOut XDMFDataFile::getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataCenter,
+                                            floatVector &data ){
         /*!
-         * Get the values of the mesh data named dataName. This should work for
+         * Get the values of the solution data named dataName. This should work for
          * nodal values as well as cell values.
          *
          * :param const unsigned int increment: The increment at which to get the data
@@ -508,7 +508,7 @@ namespace dataFileInterface{
         shared_ptr< XdmfUnstructuredGrid > grid;
         errorOut error = getUnstructuredGrid( increment, grid );
         if ( error ){
-            errorOut result = new errorNode( "getMeshData", "Error in the extraction of the grid" );
+            errorOut result = new errorNode( "getSolutionData", "Error in the extraction of the grid" );
             result->addNext( error );
             return result;
         }
@@ -529,7 +529,7 @@ namespace dataFileInterface{
             center = XdmfAttributeCenter::Cell( );
         }
         else{
-            return new errorNode( "getMeshData", "The dataCenter must either be 'Node' or 'Cell'" ); 
+            return new errorNode( "getSolutionData", "The dataCenter must either be 'Node' or 'Cell'" ); 
         }
 
 
@@ -554,7 +554,7 @@ namespace dataFileInterface{
 
         }
 
-        return new errorNode( "getMeshData", "Attribute with dataName '" + dataName + "' and center '" + dataCenter + "' was not found" );
+        return new errorNode( "getSolutionData", "Attribute with dataName '" + dataName + "' and center '" + dataCenter + "' was not found" );
 
     }
 }
