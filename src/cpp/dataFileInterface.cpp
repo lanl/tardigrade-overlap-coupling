@@ -190,6 +190,18 @@ namespace dataFileInterface{
         return new errorNode( "getSolutionData", "The getSolutionData function is not defined" );
     }
 
+    errorOut dataFileBase::getMeshData( const unsigned int increment, floatVector &nodePositions, uIntVector &connectivity ){
+        /*!
+         * Get the mesh data from the datafile.
+         *
+         * :param const unsigned int increment: The increment at which to get the data
+         * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
+         * :param uIntVector &connectivity: The connectivity description in the format [ element_type_1, ..., element_type_2, ..., ]
+         */
+
+        return new errorNode( "getMeshData", "The getMeshData function is not defined" );
+    }
+
     /*=========================================================================
     |                               XDMFDataFile                              |
     =========================================================================*/
@@ -557,4 +569,47 @@ namespace dataFileInterface{
         return new errorNode( "getSolutionData", "Attribute with dataName '" + dataName + "' and center '" + dataCenter + "' was not found" );
 
     }
+
+    errorOut XDMFDataFile::getMeshData( const unsigned int increment, floatVector &nodePositions, uIntVector &connectivity ){
+        /*!
+         * Get the mesh data from the datafile.
+         *
+         * :param const unsigned int increment: The increment at which to get the data
+         * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
+         * :param uIntVector &connectivity: The connectivity description in the format [ element_type_1, ..., element_type_2, ..., ]
+         */
+
+        //Get the grid
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        errorOut error = getUnstructuredGrid( increment, grid );
+
+        if ( error ){
+            errorOut result = new errorNode( "getMeshData", "Error in the extraction of the mesh's grid" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Get the geometry
+        shared_ptr< XdmfGeometry > geom = grid->getGeometry( );
+
+        //Read the geometry into memory
+        geom->read( );
+
+        //Set the node positions
+        nodePositions = floatVector( geom->getSize( ) );
+        geom->getValues( 0, nodePositions.data( ), geom->getSize( ), 1, 1 );
+
+        //Get the topology
+        shared_ptr< XdmfTopology > topology = grid->getTopology( );
+
+        //Read the topology into memory
+        topology->read( );
+
+        //Set the topology values
+        connectivity = uIntVector( topology->getSize( ) );
+        topology->getValues( 0, connectivity.data( ), topology->getSize( ), 1, 1 );
+
+        return NULL;
+    }
+
 }
