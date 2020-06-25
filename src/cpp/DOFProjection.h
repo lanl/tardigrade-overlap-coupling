@@ -160,6 +160,12 @@ namespace DOFProjection{
                                         const floatVector &microWeights, floatType &domainMass, floatVector &domainCM );
 
     errorOut computeDomainCenterOfMass( const unsigned int &dim,
+                                        const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
+                                        const floatVector &microDensities, const floatVector &microReferencePositions,
+                                        const floatVector &microDisplacements, const floatVector &microWeights,
+                                        floatType &domainMass, floatVector &domainCM );
+
+    errorOut computeDomainCenterOfMass( const unsigned int &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
                                         const floatVector &microPositions, const floatVector &microWeights,
                                         floatVector &domainCM );
@@ -168,6 +174,12 @@ namespace DOFProjection{
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microPositions,
                                         const floatVector &microWeights, floatVector &domainCM );
+
+    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+                                        const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
+                                        const floatVector &microDensities, const floatVector &microReferencePositions,
+                                        const floatVector &microDisplacements, const floatVector &microWeights,
+                                        floatVector &domainCM );
 
     errorOut computeDomainXis( const unsigned int &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microPositions,

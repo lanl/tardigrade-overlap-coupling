@@ -682,6 +682,80 @@ int _getTestMicroVolumes( floatVector &microVolumes ){
     return 0;
 }
 
+int _getTestMicroDOFVector( floatVector &microDOFVector ){
+    /*!
+     * Get the micro DOF vector for the tests
+     *
+     * :param floatVector &microDOFVector: The micro degree of freedom vector
+     */
+
+    microDOFVector =
+        {
+            -0.47815683,  0.11715328,  0.31057207,  0.03147764,  0.43046423,
+             0.32806054, -0.1761222 , -0.19464459,  0.13579391, -0.43232412,
+            -0.1864997 ,  0.12848461,  0.12102841, -0.11155524,  0.49454681,
+             0.44873404, -0.37015596,  0.10212058,  0.0131195 ,  0.13441966,
+            -0.31080863, -0.42151718,  0.41225355,  0.26336317,  0.44030755,
+            -0.40645733,  0.09785215,  0.07639859, -0.26056024,  0.13631978,
+            -0.29350511,  0.24518462, -0.39612039,  0.28620459, -0.45130156,
+            -0.12995312, -0.41918328,  0.48073905, -0.23188859, -0.0269726 ,
+            -0.38680168, -0.04561828,  0.14292194,  0.114769  , -0.02797416,
+             0.22849012, -0.05801565, -0.16314311,  0.39780479, -0.02796702,
+            -0.47029618,  0.01796604, -0.4294776 ,  0.41531018, -0.17318479,
+            -0.30477924, -0.18693748,  0.45130208, -0.13553624, -0.36996003,
+            -0.1338707 , -0.45476954,  0.17191359, -0.15228939, -0.22450906,
+            -0.30217662, -0.21660296, -0.21462263,  0.00382422, -0.42620062,
+            -0.33490503,  0.20454609,  0.19040067, -0.05489764,  0.05737371,
+             0.44229584, -0.31881121,  0.25882237,  0.21221044, -0.3949427 ,
+             0.3025407 ,  0.18212535,  0.31818711, -0.44648499,  0.07234197,
+            -0.07687114,  0.38221474,  0.084678  , -0.08207993,  0.49148416,
+            -0.20287964,  0.3471996 ,  0.26584738, -0.18606863,  0.13750737,
+             0.4612098 , -0.04992158,  0.41064854, -0.32062204, -0.27167511,
+             0.16213628,  0.29133891, -0.34487285,  0.49967142,  0.04415691,
+             0.23541525,  0.27576615,  0.49431588, -0.1840614 , -0.18235558,
+            -0.42599766,  0.35098019, -0.18347991, -0.405982  , -0.31367997,
+            -0.23592479,  0.00536977,  0.24166992, -0.17809286, -0.0448921 ,
+             0.15904576, -0.09282193,  0.37975019,  0.40879392, -0.35241746,
+             0.31064395,  0.20500774, -0.03332678, -0.11833369, -0.40666043,
+            -0.22851569,  0.39526357,  0.1121993 ,  0.37578263, -0.30361803,
+            -0.20971604, -0.09924707,  0.41467501, -0.02424485, -0.13086705,
+             0.49250686,  0.01343369,  0.28035766, -0.3948922 , -0.09067201,
+            -0.20351113, -0.18458374, -0.35070946,  0.07265333,  0.45142242,
+            -0.12925198,  0.24673945, -0.29864335,  0.0712613 ,  0.14693656,
+             0.26603952,  0.16847485, -0.21402361, -0.07969775, -0.1603983 ,
+             0.09626608, -0.46185384, -0.14328473,  0.08651218, -0.2517479 ,
+             0.45758106,  0.07070826, -0.16796901,  0.05743893, -0.18211046,
+             0.42780553,  0.13205956, -0.35758375,  0.03959547, -0.22900698,
+            -0.09434894, -0.15786293, -0.43826326,  0.25168129, -0.37096252,
+            -0.0644101 , -0.20530366,  0.25505037, -0.15553927,  0.46314782,
+             0.47986562,  0.04293382,  0.18437559,  0.12040983,  0.17753331,
+             0.4347676 , -0.117143  ,  0.00446705, -0.39590066, -0.18369659,
+            -0.33991689,  0.44814619,  0.46877463, -0.46131871,  0.20203841,
+            -0.14644827,  0.17122091, -0.24974807, -0.35573221, -0.3286751 ,
+            -0.31008834,  0.26494821,  0.17942224, -0.15370262,  0.08229545,
+             0.33003663, -0.02824495,  0.38711099, -0.16346654,  0.44732712,
+            -0.2722094 , -0.2929339 ,  0.40889741, -0.03205831,  0.41638358,
+            -0.37026761,  0.23272104, -0.35498213, -0.24165179,  0.20886418,
+             0.09015691, -0.31048255,  0.2506983 , -0.49229027, -0.30358345,
+             0.35496333,  0.34445513, -0.0733222 , -0.46473048,  0.36109327,
+            -0.49164229, -0.02327105,  0.22474952, -0.16543247,  0.41887953,
+            -0.04557377, -0.25025579,  0.11827521, -0.33615279,  0.37587824,
+             0.04894284,  0.35378454,  0.23199332,  0.11964717, -0.47971267,
+             0.49147591, -0.11018451, -0.03650019, -0.06636097, -0.37686863,
+            -0.3550345 ,  0.15593722, -0.17660278, -0.12111403, -0.39190181,
+            -0.43803839, -0.02448881,  0.02034096, -0.29765506,  0.15875631,
+             0.40829924,  0.02808666,  0.02459575, -0.49819605, -0.04417108,
+             0.43729421, -0.47316741, -0.23785621, -0.2220194 ,  0.31738656,
+            -0.15117008, -0.27439662, -0.42209446, -0.48875435, -0.00122484,
+             0.27318792,  0.39793823, -0.09720956, -0.19894405, -0.32255045,
+            -0.27194891, -0.39496318,  0.32374253,  0.37682517,  0.31047442,
+             0.17991238,  0.01485344, -0.36713704,  0.16462664,  0.47959774,
+            -0.30093662,  0.16630341,  0.31217136,  0.46370583,  0.10461557
+        };
+
+    return 0;
+}
+
 int _getTestMicroMasses( floatVector &microMasses ){
     /*!
      * Compute the micro masses from the micro densities and volumes
@@ -787,6 +861,26 @@ int _getTestMicroDisplacements( floatVector &microDisplacements ){
                             8.88569991e-01,  7.06103647e-01,  6.64582792e-01,  9.87442659e-04 };
     return 0;
 }
+
+int _getTestMicroReferencePositions( floatVector &microReferencePositions ){
+    /*!
+     * Compute the micro reference positions from the micro DOF vector and the 
+     * micro position vector.
+     *
+     * :param floatVector &mmicroReferencePositions: The reference vector for the micro positions
+     */
+
+    floatVector microPositions;
+    _getTestMicroPositions( microPositions );
+
+    floatVector microDisplacements;
+    _getTestMicroDisplacements( microDisplacements );
+
+    microReferencePositions = microPositions - microDisplacements;
+
+    return 0;
+}
+
 
 int _getTestMicroShapeFunctions( floatVector &microShapeFunctions ){
     /*!
@@ -3269,6 +3363,12 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     floatVector microWeights;
     _getTestMicroWeights( microWeights );
 
+    floatVector microReferencePositions;
+    _getTestMicroReferencePositions( microReferencePositions );
+
+    floatVector microDisplacements;
+    _getTestMicroDisplacements( microDisplacements );
+
     floatVector microPositions;
     _getTestMicroPositions( microPositions );
 
@@ -3342,6 +3442,38 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
 
     if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
         results << "test_computeDomainCenterOfMass (test 6) & False\n";
+        return 1;
+    }
+
+    domainCMResult = floatVector( 0, 0 );
+    error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities,
+                                                      microReferencePositions, microDisplacements,
+                                                      microWeights, domainCMResult );
+
+    if ( error ){
+        error->print();
+        results << "test_computeDomainCenterOfMass & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
+        results << "test_computeDomainCenterOfMass (test 7) & False\n";
+        return 1;
+    }
+
+    domainMassResult = 0;
+    domainCMResult = floatVector( 0, 0 );
+    error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities,
+                                                      microReferencePositions, microDisplacements,
+                                                      microWeights, domainMassResult, domainCMResult );
+
+    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
+        results << "test_computeDomainCenterOfMass (test 8) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
+        results << "test_computeDomainCenterOfMass (test 9) & False\n";
         return 1;
     }
 
