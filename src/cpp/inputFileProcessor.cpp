@@ -959,7 +959,7 @@ namespace inputFileProcessor{
 
     }
 
-    const floatVector* inputFileProcessor::getMicroDisplacement( ){
+    const floatVector* inputFileProcessor::getMicroDisplacements( ){
         /*!
          * Get the micro-displacements
          */

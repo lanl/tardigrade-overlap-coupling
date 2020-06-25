@@ -187,6 +187,34 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
+    floatVector answer = { 0., 0., 0.01 };
+
+    const floatVector *displacementResult = reader.getMicroDisplacements( );
+
+    unsigned int itmp = 0;
+
+    for ( auto it = displacementResult->begin( ); it != displacementResult->end( ); it++ ){
+
+        if ( !vectorTools::fuzzyEquals( *it, answer[ itmp ] ) ){
+
+            std::cout << it - displacementResult->begin( ) << "\n";
+            std::cout << *it << "\n";
+            std::cout << answer[ itmp ] << "\n";
+            
+            results << "test_initializeIncrement (test 3) & False\n";
+            return 1;
+
+        }
+        
+        itmp++;
+        if ( itmp >= 3 ){
+
+            itmp = 0;
+
+        }
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

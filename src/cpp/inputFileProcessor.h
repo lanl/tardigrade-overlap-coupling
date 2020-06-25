@@ -68,7 +68,7 @@ namespace inputFileProcessor{
             const floatVector* getMicroDensities( );
             const floatVector* getMicroVolumes( );
             const floatVector* getMicroWeights( );
-            const floatVector* getMicroDisplacement( );
+            const floatVector* getMicroDisplacements( );
 
             const stringVector* getFreeMicroDomainNames( );
             const stringVector* getGhostMicroDomainNames( );
