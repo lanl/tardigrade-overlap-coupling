@@ -979,7 +979,7 @@ namespace inputFileProcessor{
 
         if ( !_config[ "coupling_initialization" ][ "type" ] ){
 
-            _config[ "coupling_initialization" ][ "type" ] = "use_initial_state";
+            _config[ "coupling_initialization" ][ "type" ] = "use_first_increment";
 
         }
 

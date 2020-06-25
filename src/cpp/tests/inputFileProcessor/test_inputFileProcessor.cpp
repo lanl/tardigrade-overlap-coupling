@@ -475,7 +475,7 @@ int test_getCouplingInitialization( std::ofstream &results ){
         return 1;
     }
 
-    std::string typeAnswer = "use_initial_state";
+    std::string typeAnswer = "use_first_increment";
     if ( couplingInitialization[ "type" ].as<std::string>( ).compare( typeAnswer ) ){
         results << "test_getCouplingInitialization (test 2) & False\n";
         return 1;
