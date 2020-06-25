@@ -215,6 +215,13 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatVector *microNodeReferencePositionResult = reader.getMicroNodeReferencePositions( );
+
+    if ( !vectorTools::fuzzyEquals( microNodeReferencePositionResult->size( ), displacementResult->size( ) ) ){
+        results << "test_initializeIncrement (test 4) & False\n";
+        return 1;
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

@@ -384,7 +384,7 @@ namespace inputFileProcessor{
          */
 
         //Check if the requested increment is the currently initialized increment
-        //If so, we don't need to run the initialization
+        //If so, we don't need to re-run the initialization
         if ( ( increment == _current_increment ) && ( _increment_initialized ) ){
             return NULL;
         }
@@ -416,6 +416,15 @@ namespace inputFileProcessor{
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro-node volumes" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Extract the reference positions of the micro-nodes
+        error = extractMicroMeshData( increment );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro-node mesh information" );
             result->addNext( error );
             return result;
         }
@@ -873,6 +882,24 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMicroMeshData( const unsigned int &increment ){
+        /*!
+         * Extract the mesh data for the micro-scale domain
+         *
+         * :param const unsigned int &increment: The increment at which to extract the micro-mesh data
+         */
+
+        errorOut error = _microscale->getMeshData( increment, _microNodeReferencePositions, _microNodeConnectivity );
+
+        if ( error ){
+            errorOut result = new errorNode( "extractMicroMeshData", "Error in the extraction of the micro-mesh information" );
+            result->addNext( error );
+            return result;
+        }
+
+        return NULL;
+    }
+
     const floatVector* inputFileProcessor::getMicroDensities( ){
         /*!
          * Get a pointer to the density
@@ -966,6 +993,15 @@ namespace inputFileProcessor{
          */
 
         return &_microDisplacements;
+    }
+
+    const floatVector* inputFileProcessor::getMicroNodeReferencePositions( ){
+        /*!
+         * Get the nodal positions from which the displacements are
+         * referenced.
+         */
+
+        return &_microNodeReferencePositions;
     }
 
 }
