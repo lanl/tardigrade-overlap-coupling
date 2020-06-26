@@ -190,13 +190,15 @@ namespace dataFileInterface{
         return new errorNode( "getSolutionData", "The getSolutionData function is not defined" );
     }
 
-    errorOut dataFileBase::getMeshData( const unsigned int increment, floatVector &nodePositions, uIntVector &connectivity ){
+    errorOut dataFileBase::getMeshData( const unsigned int increment,
+                                        floatVector &nodePositions, uIntVector &connectivity, unsigned int &cellCounts ){
         /*!
          * Get the mesh data from the datafile.
          *
          * :param const unsigned int increment: The increment at which to get the data
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
          * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
+         * :param unsigned int &cellCounts: The number of cells present.
          */
 
         return new errorNode( "getMeshData", "The getMeshData function is not defined" );
@@ -566,17 +568,20 @@ namespace dataFileInterface{
 
         }
 
-        return new errorNode( "getSolutionData", "Attribute with dataName '" + dataName + "' and center '" + dataCenter + "' was not found" );
+        return new errorNode( "getSolutionData",
+                              "Attribute with dataName '" + dataName + "' and center '" + dataCenter + "' was not found" );
 
     }
 
-    errorOut XDMFDataFile::getMeshData( const unsigned int increment, floatVector &nodePositions, uIntVector &connectivity ){
+    errorOut XDMFDataFile::getMeshData( const unsigned int increment,
+                                        floatVector &nodePositions, uIntVector &connectivity, unsigned int &cellCounts ){
         /*!
          * Get the mesh data from the datafile.
          *
          * :param const unsigned int increment: The increment at which to get the data
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
          * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
+         * :param unsigned int &cellCounts: The number of cells present.
          */
 
         //Get the grid
@@ -608,6 +613,19 @@ namespace dataFileInterface{
         //Set the topology values
         connectivity = uIntVector( topology->getSize( ) );
         topology->getValues( 0, connectivity.data( ), topology->getSize( ), 1, 1 );
+
+        if ( !_config[ "cell_id_variable_name" ] ){
+            return new errorNode( "getMeshData", "The key 'cell_id_variable_name' is not defined" );
+        }
+        else if ( !_config[ "cell_id_variable_name" ].IsScalar( ) ){
+            return new errorNode( "getMeshData", "The key 'cell_id_variable_name' must be a scalar value" );
+        }
+        else if ( !grid->getAttribute( _config[ "cell_id_variable_name" ].as< std::string >( ) ) ){
+            return new errorNode( "getMeshData", "The 'cell_id_variable_name' specified does not exist in the output file" );
+        }
+        else{
+            cellCounts = grid->getAttribute( _config[ "cell_id_variable_name" ].as< std::string >( ) )->getSize( );
+        }
 
         return NULL;
     }
