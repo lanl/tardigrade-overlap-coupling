@@ -80,7 +80,8 @@ namespace dataFileInterface{
             virtual errorOut getSetNames( const unsigned int increment, std::vector< std::string > &setNames ); //Required overload
             virtual errorOut getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
                                               floatVector &data ); //Required overload
-            virtual errorOut getMeshData( const unsigned int increment, floatVector &nodePositions, uIntVector &connectivity ); //Required overload
+            virtual errorOut getMeshData( const unsigned int increment,
+                                          floatVector &nodePositions, uIntVector &connectivity ); //Required overload
 
             errorOut _error;
             std::string _filename;

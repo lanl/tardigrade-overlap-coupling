@@ -196,7 +196,7 @@ namespace dataFileInterface{
          *
          * :param const unsigned int increment: The increment at which to get the data
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
-         * :param uIntVector &connectivity: The connectivity description in the format [ element_type_1, ..., element_type_2, ..., ]
+         * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
          */
 
         return new errorNode( "getMeshData", "The getMeshData function is not defined" );
@@ -576,7 +576,7 @@ namespace dataFileInterface{
          *
          * :param const unsigned int increment: The increment at which to get the data
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
-         * :param uIntVector &connectivity: The connectivity description in the format [ element_type_1, ..., element_type_2, ..., ]
+         * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
          */
 
         //Get the grid
