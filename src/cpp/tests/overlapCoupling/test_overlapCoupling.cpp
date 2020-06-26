@@ -23,7 +23,211 @@ int test_overlapCoupling_constructor( std::ostream &results ){
      * :param std::ofstream &results: The output file
      */
 
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_constructor & False\n";
+        return 1;
+    }
+
     results << "test_overlapCoupling_constructor & True\n";
+    return 0;
+}
+
+int test_overlapCoupling_initializeCoupling( std::ofstream &results ){
+    /*!
+     * Test the initialization of the coupling
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_initializeCoupling & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_initializeCoupling & False\n";
+        return 1;
+    }
+
+    results << "test_overlapCoupling_initializeCoupling & True\n";
+    return 0;
+}
+
+int test_overlapCoupling_getReferenceFreeMicroDomainMasses( std::ofstream &results ){
+    /*!
+     * Test the extraction of the reference free micro-domain mass
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_getReferenceFreeMicroDomainMasses & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_getReferenceFreeMicroDomainMasses & False\n";
+        return 1;
+    }
+
+    floatVector referenceFreeMicroDomainMassesAnswer = { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
+    referenceFreeMicroDomainMassesAnswer *= 2000;
+
+    const floatVector *referenceFreeMicroDomainMassesResult = oc.getReferenceFreeMicroDomainMasses( );
+
+    if ( !vectorTools::fuzzyEquals( referenceFreeMicroDomainMassesAnswer, *referenceFreeMicroDomainMassesResult ) ){
+        results << "test_overlapCoupling_getReferenceFreeMicroDomainMasses (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_overlapCoupling_getReferenceFreeMicroDomainMasses & True\n";
+    return 0;
+}
+
+int test_overlapCoupling_getReferenceGhostMicroDomainMasses( std::ofstream &results ){
+    /*!
+     * Test the extraction of the reference ghost micro-domain mass
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_getReferenceGhostMicroDomainMasses & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_getReferenceGhostMicroDomainMasses & False\n";
+        return 1;
+    }
+
+    floatVector referenceGhostMicroDomainMassesAnswer = { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
+    referenceGhostMicroDomainMassesAnswer *= 2000;
+
+    const floatVector *referenceGhostMicroDomainMassesResult = oc.getReferenceGhostMicroDomainMasses( );
+
+    if ( !vectorTools::fuzzyEquals( referenceGhostMicroDomainMassesAnswer, *referenceGhostMicroDomainMassesResult ) ){
+        results << "test_overlapCoupling_getReferenceGhostMicroDomainMasses (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_overlapCoupling_getReferenceGhostMicroDomainMasses & True\n";
+    return 0;
+}
+int test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( std::ofstream &results ){
+    /*!
+     * Test the extraction of the reference free micro-domain centers of mass
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass & False\n";
+        return 1;
+    }
+
+    floatVector referenceFreeMicroDomainCentersOfMassAnswer = { 0.75, 0.25, 2.75,
+                                                                0.75, 0.25, 2.25,
+                                                                0.25, 0.25, 2.75,
+                                                                0.25, 0.25, 2.25,
+                                                                0.75, 0.75, 2.75,
+                                                                0.75, 0.75, 2.25,
+                                                                0.25, 0.75, 2.75,
+                                                                0.25, 0.75, 2.25 };
+
+    const floatVector *referenceFreeMicroDomainCentersOfMassResult = oc.getReferenceFreeMicroDomainCentersOfMass( );
+
+    if ( !vectorTools::fuzzyEquals( referenceFreeMicroDomainCentersOfMassAnswer, *referenceFreeMicroDomainCentersOfMassResult ) ){
+        vectorTools::print( *referenceFreeMicroDomainCentersOfMassResult );
+        vectorTools::print(  referenceFreeMicroDomainCentersOfMassAnswer );
+        results << "test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass & True\n";
+    return 0;
+}
+
+int test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( std::ofstream &results ){
+    /*!
+     * Test the extraction of the reference ghost micro-domain centers of mass
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass & False\n";
+        return 1;
+    }
+
+    floatVector referenceGhostMicroDomainCentersOfMassAnswer = { 0.75, 0.25, 1.75,
+                                                                 0.75, 0.25, 1.25,
+                                                                 0.25, 0.25, 1.75,
+                                                                 0.25, 0.25, 1.25,
+                                                                 0.75, 0.75, 1.75,
+                                                                 0.75, 0.75, 1.25,
+                                                                 0.25, 0.75, 1.75,
+                                                                 0.25, 0.75, 1.25 };
+
+    const floatVector *referenceGhostMicroDomainCentersOfMassResult = oc.getReferenceGhostMicroDomainCentersOfMass( );
+
+    if ( !vectorTools::fuzzyEquals( referenceGhostMicroDomainCentersOfMassAnswer, *referenceGhostMicroDomainCentersOfMassResult ) ){
+        vectorTools::print( *referenceGhostMicroDomainCentersOfMassResult );
+        vectorTools::print(  referenceGhostMicroDomainCentersOfMassAnswer );
+        results << "test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass (test 1) & False\n";
+        return 1;
+    }
+
+    results << "test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass & True\n";
     return 0;
 }
 
@@ -40,6 +244,11 @@ int main(){
     results.open("results.tex");
 
     test_overlapCoupling_constructor( results );
+    test_overlapCoupling_initializeCoupling( results );
+    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
 
     //Close the results file
     results.close();

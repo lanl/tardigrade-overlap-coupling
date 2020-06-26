@@ -9,6 +9,7 @@
 
 #include<DOFProjection.h>
 #include<inputFileProcessor.h>
+#include<element.h>
 
 namespace overlapCoupling{
 
@@ -22,6 +23,7 @@ namespace overlapCoupling{
     typedef inputFileProcessor::floatVector floatVector;
     typedef inputFileProcessor::floatMatrix floatMatrix;
     typedef inputFileProcessor::uIntVector uIntVector;
+    typedef inputFileProcessor::stringVector stringVector;
 
     class overlapCoupling{
         /*!
@@ -37,10 +39,50 @@ namespace overlapCoupling{
 
             errorOut setConfigurationFilename( const std::string &configurationFilename );
 
+            const errorOut getConstructorError( );
+
+            errorOut initializeCoupling( );
+
+            errorOut processIncrement( const unsigned int &increment );
+
+            //Access functions
+            const floatVector* getReferenceFreeMicroDomainMasses( );
+            const floatVector* getReferenceGhostMicroDomainMasses( );
+            const floatVector* getReferenceFreeMicroDomainCentersOfMass( );
+            const floatVector* getReferenceGhostMicroDomainCentersOfMass( );
+
+            const floatVector* getFreeMicroDomainMasses( );
+            const floatVector* getGhostMicroDomainMasses( );
+            const floatVector* getFreeMicroDomainCentersOfMass( );
+            const floatVector* getGhostMicroDomainCentersOfMass( );
+
         private:
 
+            //Private attributes
+            const unsigned int _dim = 3; //The dimension of the problem is hard-coded to be 3D
             errorOut _error;
             inputFileProcessor::inputFileProcessor _inputProcessor;
+
+            //Domain mass properties
+            floatVector _referenceFreeMicroDomainMasses;
+            floatVector _referenceGhostMicroDomainMasses;
+            floatVector _referenceFreeMicroDomainCentersOfMass;
+            floatVector _referenceGhostMicroDomainCentersOfMass;
+
+            floatVector _freeMicroDomainMasses;
+            floatVector _ghostMicroDomainMasses;
+            floatVector _freeMicroDomainCentersOfMass;
+            floatVector _ghostMicroDomainCentersOfMass;
+
+            //Private functions
+
+            //Compute initial values
+            errorOut setReferenceStateFromIncrement( const unsigned int &increment );
+
+            //Compute the increment's values
+            errorOut computeIncrementCentersOfMass( const unsigned int increment,
+                                                    floatVector &freeDomainMass, floatVector &ghostDomainMass,
+                                                    floatVector &freeDomainCM, floatVector &ghostDomainCM );
 
     };
 
