@@ -10,8 +10,15 @@
 include ../../../../config.mk
 
 # List of executables
-EXECUTABLES=test_element
-OBJECTS=element.o test_element.o
+TESTSOURCE=test_element.cpp
+
+EXECUTABLE=test_element
+
+ERROROBJECT=error.o
+TESTOBJECT=test_element.o
+OBJECT=element.o
+
+OBJECTS=$(ERROROBJECT) $(TESTOBJECT) $(OBJECT)
 INC+=-I../..
 LOCAL_CFLAGS=-ggdb
 
@@ -25,19 +32,22 @@ ifeq ($(METHOD),oprof)
 endif
 
 # Makefile rules
-all: $(EXECUTABLES)
+all: $(EXECUTABLE)
 
-test_element: $(OBJECTS)
+$(EXECUTABLE): $(OBJECTS)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) $^ -o $@ $(CFLAGS) -lstdc++ -std=gnu++11
 
-test_element.o: test_element.cpp ../../element.h
+$(TESTOBJECT): $(TESTSOURCE) $(ERRORHEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
 
-element.o: ../../element.cpp ../../element.h
+$(OBJECT): $(ELEMENTSOURCE) $(ELEMENTHEADER) $(ERRORHEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
+
+$(ERROROBJECT): $(ERRORSOURCE) $(ERRORHEADER)
+	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=c++11
 
 clean:
-	rm -f $(EXECUTABLES)
-	rm $(OBJECTS)
+	rm -f $(EXECUTABLE)
+	rm -f $(OBJECTS)
 
 .PHONY: all clean

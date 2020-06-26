@@ -14,14 +14,21 @@
 #include<memory>
 #include<iostream>
 #include<Eigen/Dense>
+#include<error_tools.h>
 
 namespace elib{
+
+    typedef errorTools::Node errorNode;
+    typedef errorNode* errorOut;
 
     typedef std::vector< unsigned int > uivec;
     typedef std::vector< double > vec;
     typedef std::vector< uivec > vecOfuivec;
     typedef std::vector< vec > vecOfvec;
     typedef std::vector<std::pair< vec, double> > quadrature_rule;
+
+    //Registry of currently implemented elements
+    const std::vector< std::string > elementRegistry = { "Hex8" };
 
     class Element{
         /*!
@@ -41,42 +48,47 @@ namespace elib{
             Element(const std::vector< unsigned int > &global_node_ids, const vecOfvec &nodes, const quadrature_rule &qrule);
 	    virtual ~Element() = default;
 
-            void interpolate(const vec &nodal_values, const vec &local_coordinates,
-                             double &value);
+            errorOut interpolate(const vec &nodal_values, const vec &local_coordinates,
+                                 double &value);
 
-            void interpolate(const vecOfvec &nodal_values, const vec &local_coordinates,
-                             vec &value);
+            errorOut interpolate(const vecOfvec &nodal_values, const vec &local_coordinates,
+                                 vec &value);
 
-            void get_local_gradient(const vec &nodal_values, const vec &local_coordinates,
-			            vec &value);
+            errorOut get_local_gradient(const vec &nodal_values, const vec &local_coordinates,
+	    	                        vec &value);
 
-            void get_local_gradient(const vecOfvec &nodal_values, const vec &local_coordinates,
-                                    vecOfvec &value);
+            errorOut get_local_gradient(const vecOfvec &nodal_values, const vec &local_coordinates,
+                                        vecOfvec &value);
 
-            void get_global_gradient(const vec  &nodal_values, const vec &local_coordinates, const vecOfvec &coords,
-                                     vec &value);
+            errorOut get_global_gradient(const vec  &nodal_values, const vec &local_coordinates, const vecOfvec &coords,
+                                         vec &value);
 
-            void get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates, const vecOfvec &coords,
-                                     vecOfvec &value);
+            errorOut get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates, const vecOfvec &coords,
+                                         vecOfvec &value);
 
-            void get_global_gradient(const vec  &nodal_values, const vec &local_coordinates,
-                                     vec &value);
+            errorOut get_global_gradient(const vec  &nodal_values, const vec &local_coordinates,
+                                         vec &value);
 
-            void get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
-                                     vecOfvec &value);
+            errorOut get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
+                                         vecOfvec &value);
 
-            void get_global_shapefunction_gradients(const vec &local_coordinates, vecOfvec &dNdx, bool use_reference = false);
+            errorOut get_global_shapefunction_gradients(const vec &local_coordinates, vecOfvec &dNdx, bool use_reference = false);
 
-            void get_jacobian(const vec &local_coordinates, const vecOfvec &reference_coordinates,
-                              vecOfvec &jacobian);
+            errorOut get_jacobian(const vec &local_coordinates, const vecOfvec &reference_coordinates,
+                                  vecOfvec &jacobian);
 
-            void estimate_local_coordinates(const vec &global_coordinates, vec &local_coordinates, double tolr=1e-9, double tola=1e-9);
+            errorOut estimate_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
+                                                double tolr=1e-9, double tola=1e-9);
 
-            int compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
-                                          double tolr=1e-9, double tola=1e-9, unsigned int maxiter=20, unsigned int maxls=5);
+            errorOut compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
+                                              double tolr=1e-9, double tola=1e-9, unsigned int maxiter=20, unsigned int maxls=5);
 
-            virtual void get_shape_functions(const vec &local_coordinates, vec &result){} //Must be over-ridden
-            virtual void get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result){} //Must be over-ridden
+            virtual errorOut get_shape_functions(const vec &local_coordinates, vec &result){
+                return new errorNode( "get_shape_functions", "Not implemented" );
+            } //Must be over-ridden
+            virtual errorOut get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result){
+                return new errorNode( "get_local_grad_shape_functions", "Not implemented" );
+            } //Must be over-ridden
             virtual bool local_point_inside(const vec &local_coordinates, const double tol=1e-9){return false;} //Must be over-ridden
 
             bool bounding_box_contains_point(const vec &x);
@@ -112,16 +124,16 @@ namespace elib{
                                           {-1,  1,  1}};
             }
 
-            void get_shape_functions(const vec &local_coordinates, vec &result);
-            void get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
+            errorOut get_shape_functions(const vec &local_coordinates, vec &result);
+            errorOut get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
             bool local_point_inside(const vec &local_coordinates, const double tol=1e-8);
 
     };
 
     //Functions
 
-    void invert(const vecOfvec &A, vecOfvec &Ainv);
-    void solve(const vecOfvec &A, const vec &b, vec &x, int mode=1);
+    errorOut invert(const vecOfvec &A, vecOfvec &Ainv);
+    errorOut solve(const vecOfvec &A, const vec &b, vec &x, int mode=1);
     void print(const vec &a);
     void print(const uivec &a);
     void print(const vecOfvec &A);
@@ -132,5 +144,7 @@ namespace elib{
     std::unique_ptr<Element> build_element_from_string(const std::string &elname, const std::vector< unsigned int > &global_node_is, 
                                                        const vecOfvec &nodes, const quadrature_rule &qrule);
     void determinant_3x3(const vecOfvec &A, double &d);
+
+
 }
 #endif

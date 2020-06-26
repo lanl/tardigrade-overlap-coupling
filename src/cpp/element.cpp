@@ -37,8 +37,8 @@ namespace elib{
 //        }
     }
 
-    void Element::interpolate(const vec &nodal_values, const vec &local_coordinates,
-                              double &value){
+    errorOut Element::interpolate(const vec &nodal_values, const vec &local_coordinates,
+                                  double &value){
         /*!
          * Interpolate the vector of values to the provided local coordinates.
          * 
@@ -48,16 +48,21 @@ namespace elib{
          */
 
         vec shape_functions;
-        get_shape_functions(local_coordinates, shape_functions);
+        errorOut error = get_shape_functions(local_coordinates, shape_functions);
+        if ( error ){
+            errorOut result = new errorNode( "interpolate", "Error in get_shape_functions" );
+            result->addNext( error );
+            return result;
+        }
 
         value = 0;
         for (unsigned int n=0; n<nodes.size(); n++){
             value += shape_functions[n]*nodal_values[n];
         }
-        return;
+        return NULL;
     }
 
-    void Element::interpolate(const vecOfvec &nodal_values, const vec &local_coordinates,
+    errorOut Element::interpolate(const vecOfvec &nodal_values, const vec &local_coordinates,
                               vec &value){
         /*!
          * Interpolate the vector of values to the provided local coordinates.
@@ -68,7 +73,12 @@ namespace elib{
          */
          
         vec shape_functions;
-        get_shape_functions(local_coordinates, shape_functions);
+        errorOut error = get_shape_functions(local_coordinates, shape_functions);
+        if ( error ){
+            errorOut result = new errorNode( "interpolate", "Error in get_shape_functions" );
+            result->addNext( error );
+            return result;
+        }
 
         value.resize(nodal_values[0].size());
         for (unsigned int i=0; i<value.size(); i++){
@@ -80,11 +90,11 @@ namespace elib{
                 value[v] += shape_functions[n]*nodal_values[n][v];
             }
         }
-        return;
+        return NULL;
     }
 
-    void Element::get_local_gradient(const vec &nodal_values, const vec &local_coordinates,
-		                     vec &value){
+    errorOut Element::get_local_gradient(const vec &nodal_values, const vec &local_coordinates,
+	                                 vec &value){
         /*!
          * Compute the gradient of the vector of values at the provided local coordinates.
          * 
@@ -94,7 +104,12 @@ namespace elib{
          */
 
 	vecOfvec local_grad_shape_functions;
-	get_local_grad_shape_functions(local_coordinates, local_grad_shape_functions);
+	errorOut error = get_local_grad_shape_functions(local_coordinates, local_grad_shape_functions);
+        if ( error ){
+            errorOut result = new errorNode( "get_local_gradient", "Error in get_local_grad_shape_functions" );
+            result->addNext( error );
+            return result;
+        }
 
 	value = vec(local_grad_shape_functions[0].size(), 0);
 
@@ -103,11 +118,11 @@ namespace elib{
                 value[i] += nodal_values[n]*local_grad_shape_functions[n][i];
             }
 	}
-	return;
+	return NULL;
     }
 
-    void Element::get_local_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
-                                     vecOfvec &value){
+    errorOut Element::get_local_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
+                                         vecOfvec &value){
         /*!
          * Compute the gradient of the vector of values at the provided local coordinates.
          * 
@@ -117,7 +132,12 @@ namespace elib{
          */
 
         vecOfvec local_grad_shape_functions;
-        get_local_grad_shape_functions(local_coordinates, local_grad_shape_functions);
+        errorOut error = get_local_grad_shape_functions(local_coordinates, local_grad_shape_functions);
+        if ( error ){
+            errorOut result = new errorNode( "get_local_gradient", "Error in get_local_grad_shape_functions" );
+            result->addNext( error );
+            return result;
+        }
 
         value.resize(nodal_values[0].size());
         for (unsigned int v=0; v<value.size(); v++){
@@ -134,11 +154,11 @@ namespace elib{
                 }
             }
         }
-        return;
+        return NULL;
     }
 
-    void Element::get_global_gradient(const vec  &nodal_values, const vec &local_coordinates,
-                                      const vecOfvec &coords, vec &value){
+    errorOut Element::get_global_gradient(const vec  &nodal_values, const vec &local_coordinates,
+                                          const vecOfvec &coords, vec &value){
         /*!
          * Compute the gradient of the values with respect to the provided coordinates.
          * 
@@ -150,10 +170,27 @@ namespace elib{
 
         vec local_gradient;
         vecOfvec dxdxi, dxidx;
-        get_local_gradient(nodal_values, local_coordinates, local_gradient);
-        get_local_gradient(coords, local_coordinates, dxdxi);
+        errorOut error = get_local_gradient(nodal_values, local_coordinates, local_gradient);
+        if ( error ){
+            errorOut result = new errorNode( "get_global_gradient", "Error in getting the local gradient of the reference coordinates" );
+            result->addNext( error );
+            return result;
+        }
+
+        error = get_local_gradient(coords, local_coordinates, dxdxi);
+        if ( error ){
+            errorOut result = new errorNode( "get_global_gradient", "Error in getting the local gradient of the current coordinates" );
+            result->addNext( error );
+            return result;
+        }
         
-        invert(dxdxi, dxidx);
+        error = invert(dxdxi, dxidx);
+        if ( error ){
+            errorOut result = new errorNode( "get_global_gradient",
+                                             "Error in computing the inverse of the current local gradient of the current coordinates" );
+            result->addNext( error );
+            return result;
+        }
 
         value.resize(dxidx[0].size());
         for (unsigned int i=0; i<local_gradient.size(); i++){
@@ -163,11 +200,11 @@ namespace elib{
             }
         }
 
-        return;
+        return NULL;
     }
 
-    void Element::get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
-                                      const vecOfvec &coords, vecOfvec &value){
+    errorOut Element::get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
+                                          const vecOfvec &coords, vecOfvec &value){
         /*!
          * Compute the gradient of the values with respect to the provided coordinates.
          * 
@@ -178,9 +215,27 @@ namespace elib{
          */
 
         vecOfvec local_gradient, dxdxi, dxidx;
-        get_local_gradient(nodal_values, local_coordinates, local_gradient);
-        get_local_gradient(coords, local_coordinates, dxdxi);
-        invert(dxdxi, dxidx);
+        errorOut error = get_local_gradient(nodal_values, local_coordinates, local_gradient);
+        if ( error ){
+            errorOut result = new errorNode( "get_global_gradient", "Error in getting the local gradient of the reference coordinates" );
+            result->addNext( error );
+            return result;
+        }
+
+        error = get_local_gradient(coords, local_coordinates, dxdxi);
+        if ( error ){
+            errorOut result = new errorNode( "get_global_gradient", "Error in getting the local gradient of the current coordinates" );
+            result->addNext( error );
+            return result;
+        }
+
+        error = invert(dxdxi, dxidx);
+        if ( error ){
+            errorOut result = new errorNode( "get_global_gradient",
+                                             "Error in computing the inverse of the current local gradient of the current coordinates" );
+            result->addNext( error );
+            return result;
+        }
 
         value.resize(nodal_values[0].size());
         for (unsigned int v=0; v<value.size(); v++){
@@ -198,10 +253,10 @@ namespace elib{
             }
         }
 
-        return;
+        return NULL;
     }
 
-    void Element::get_global_shapefunction_gradients(const vec &local_coordinates, vecOfvec &dNdx, bool use_reference){
+    errorOut Element::get_global_shapefunction_gradients(const vec &local_coordinates, vecOfvec &dNdx, bool use_reference){
         /*!
          * Compute the gradient of the shape functions w.r.t. the global coordinates.
          * 
@@ -213,17 +268,41 @@ namespace elib{
          */
 
         vecOfvec dNdxi, dxdxi, dxidx;
-        get_local_grad_shape_functions(local_coordinates, dNdxi);
+        errorOut error = get_local_grad_shape_functions(local_coordinates, dNdxi);
+        if ( error ){
+            errorOut result = new errorNode( "get_global_gradient",
+                                             "Error in computing the inverse of the current local gradient of the shape functions" );
+            result->addNext( error );
+            return result;
+        }
 
         if (use_reference){
-            get_local_gradient(reference_nodes, local_coordinates, dxdxi);
+            error = get_local_gradient(reference_nodes, local_coordinates, dxdxi);
+            if ( error ){
+                errorOut result = new errorNode( "get_global_gradient",
+                                                 "Error in computing the inverse of the current local gradient of the shape functions w.r.t. the reference configuration" );
+                result->addNext( error );
+                return result;
+            }
         }
 
         else{
-            get_local_gradient(nodes, local_coordinates, dxdxi);
+            error = get_local_gradient(nodes, local_coordinates, dxdxi);
+            if ( error ){
+                errorOut result = new errorNode( "get_global_gradient",
+                                                 "Error in computing the inverse of the current local gradient of the shape functions w.r.t. the current configuration" );
+                result->addNext( error );
+                return result;
+            }
         }
 
-        invert(dxdxi, dxidx);
+        error = invert(dxdxi, dxidx);
+        if ( error ){
+            errorOut result = new errorNode( "get_global_gradient",
+                                             "Error in computing the inverse of the current local gradient of the current coordinates" );
+            result->addNext( error );
+            return result;
+        }
 
         dNdx.resize(nodes.size());
         for (unsigned int n=0; n<nodes.size(); n++){
@@ -234,11 +313,11 @@ namespace elib{
                 }
             }
         }
-        return; 
+        return NULL; 
     }
 
-    void Element::get_global_gradient(const vec &nodal_values, const vec &local_coordinates,
-                                      vec &value){
+    errorOut Element::get_global_gradient(const vec &nodal_values, const vec &local_coordinates,
+                                          vec &value){
         /*!
          * Compute the gradient of the values with respect to the nodal coordinates.
          * 
@@ -247,12 +326,11 @@ namespace elib{
          * :param vecOfvec &value: The global gradient of the nodal_values
          */
 
-        get_global_gradient(nodal_values, local_coordinates, nodes, value);
-        return;
+        return get_global_gradient(nodal_values, local_coordinates, nodes, value);
     }
 
-    void Element::get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
-                                      vecOfvec &value){
+    errorOut Element::get_global_gradient(const vecOfvec  &nodal_values, const vec &local_coordinates,
+                                          vecOfvec &value){
         /*!
          * Compute the gradient of the values with respect to the nodal coordinates.
          * 
@@ -261,22 +339,21 @@ namespace elib{
          * :param vecOfvec &value: The global gradient of the nodal_values
          */
 
-        get_global_gradient(nodal_values, local_coordinates, nodes, value);
-        return;
+        return get_global_gradient(nodal_values, local_coordinates, nodes, value);
     }
 
-    void Element::get_jacobian(const vec &local_coordinates, const vecOfvec &reference_coordinates,
-                               vecOfvec &jacobian){
+    errorOut Element::get_jacobian(const vec &local_coordinates, const vecOfvec &reference_coordinates,
+                                   vecOfvec &jacobian){
         /*!
          * Compute the jacobian matrix (dxdX) of the element at the given local coordinates.
          * :param vec local_coordinates: The local coordinates at which to interpolate the values. (nnodes, n local dim)
          * :param vecOfvec reference_coordinates: The reference coordinates of the element (nnodes, ndim)
          */
 
-        get_global_gradient(nodes, local_coordinates, reference_coordinates, jacobian);
+        return get_global_gradient(nodes, local_coordinates, reference_coordinates, jacobian);
     }
 
-    void Element::estimate_local_coordinates(const vec &global_coordinates, vec &local_coordinates, double tolr, double tola){
+    errorOut Element::estimate_local_coordinates(const vec &global_coordinates, vec &local_coordinates, double tolr, double tola){
         /*!
          * Estimate the local coordinates of a globally defined node
          * 
@@ -299,8 +376,7 @@ namespace elib{
 
             //Make sure the current node and global point have the same global dimension
             if ((*node).size() != global_coordinates.size()){
-                std::cerr << "Error: point and node have different global dimensions\n";
-                assert(1==0);
+                return new errorNode( "estimate_local_coordinates", "Error: point and node have different global dimensions" );
             }
 
             //Compute the distance
@@ -324,7 +400,7 @@ namespace elib{
         for (auto d=distance.begin(); d!=distance.end(); d++){
             if ((*d) < tol){
                 local_coordinates = local_node_coordinates[index];
-                return;
+                return NULL;
             }
             sum_inv_distance += 1/(*d);
             index++;
@@ -335,8 +411,7 @@ namespace elib{
         local_coordinates = vec(local_node_coordinates[0].size(), 0);
         for (auto node = local_node_coordinates.begin(); node != local_node_coordinates.end(); node++){
             if (local_coordinates.size() != (*node).size()){
-                std::cerr << "Error: local node coordinates have different local dimensions\n";
-                assert(1==0);
+                return new errorNode( "estimate_local_coordinates", "Error: local node coordinates have different local dimensions" );
             }
 
             //Compute the weighted distance
@@ -347,11 +422,11 @@ namespace elib{
             //Increment the index
             index++;
         }
-        return;
+        return NULL;
     }
 
-    int Element::compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
-                                            double tolr, double tola, unsigned int maxiter, unsigned int maxls){
+    errorOut Element::compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
+                                                double tolr, double tola, unsigned int maxiter, unsigned int maxls){
         /*!
          * Compute the local coordinates given the global coordinates. Does this via Newton iteration.
          * 
@@ -364,12 +439,22 @@ namespace elib{
 
         // Set the initial iterate
         vec xi(local_node_coordinates[0].size(), 0);
-        estimate_local_coordinates(global_coordinates, xi);
+        errorOut error = estimate_local_coordinates(global_coordinates, xi);
+        if ( error ){
+            errorOut result = new errorNode( "compute_local_coordinates", "Error in estimation of the local coordinates" );
+            result->addNext( error );
+            return result;
+        }
 
         // Compute the initial result
         vec x(global_coordinates.size(), 0);
 
-        interpolate(nodes, xi, x);
+        error = interpolate(nodes, xi, x);
+        if ( error ){
+            errorOut result = new errorNode( "compute_local_coordinates", "Error in interpolation of the nodes in initialization" );
+            result->addNext( error );
+            return result;
+        }
 
         // Set the initial residual vector
         vec R(global_coordinates.size(), 0);
@@ -391,7 +476,12 @@ namespace elib{
         vec dxi;
         vecOfvec J;
         while ((niter < maxiter) && (Rnorm > tol)){
-            get_local_gradient(nodes, xi, J);
+            error = get_local_gradient(nodes, xi, J);
+            if ( error ){
+                errorOut result = new errorNode( "compute_local_coordinates", "Error in computation of the local gradient in non-linear solve" );
+                result->addNext( error );
+                return result;
+            }
 
 /*            //Estimate the gradient using finite differences
             vecOfvec Jest(R.size(), vec(R.size(), 0));
@@ -411,11 +501,23 @@ namespace elib{
             std::cout << "Jest:\n"; print(Jest);
             std::cout << "J:\n"; print(J);
 */
-            solve(J, R, dxi, 2);
+            error = solve(J, R, dxi, 2);
+            if ( error ){
+                errorOut result = new errorNode( "compute_local_coordinates", "Error in non-linear solve" );
+                result->addNext( error );
+                return result;
+            }
+
             for (unsigned int i=0; i<xi.size(); i++){
                 xi[i] += dxi[i];
             }
-            interpolate(nodes, xi, x);
+            error = interpolate(nodes, xi, x);
+            if ( error ){
+                errorOut result = new errorNode( "compute_local_coordinates", "Error in interpolation in non-linear solve" );
+                result->addNext( error );
+                return result;
+            }
+
             Rnorm = 0;
             for (unsigned int i=0; i<x.size(); i++){
                R[i] = global_coordinates[i] - x[i]; 
@@ -454,7 +556,13 @@ namespace elib{
                     xi[i] += dxi[i];
                 }
 
-                interpolate(nodes, xi, x);
+                error = interpolate(nodes, xi, x);
+                if ( error ){
+                    errorOut result = new errorNode( "compute_local_coordinates", "Error in interpolation in line search" );
+                    result->addNext( error );
+                    return result;
+                }
+
                 Rnorm = 0;
                 for (unsigned int i=0; i<x.size(); i++){
                    R[i] = global_coordinates[i] - x[i];
@@ -475,10 +583,7 @@ namespace elib{
             }
 
             if (nls > maxls){
-                std::cerr << "Failure in line search\n";
-                return 1;
-                assert(1==-1);
-
+                return new errorNode( "compute_local_coordinates", "Failure in line search" );
             }
 
             Rp = Rnorm;
@@ -486,14 +591,12 @@ namespace elib{
             niter += 1;
         }
         if (Rnorm > tol){
-            std::cout << "Error in Newton-Raphson solve\n";
-            return 1;
-            assert(1==-1);
+            return new errorNode( "compute_local_coordinates", "Newton-raphson did not converge" );
         }
         else{
             local_coordinates = xi;
         }
-        return 0;
+        return NULL;
     }
 
     bool Element::bounding_box_contains_point(const vec &x){
@@ -523,10 +626,10 @@ namespace elib{
          */
 
         vec xi;
-        int clc_result = compute_local_coordinates(x, xi);
+        errorOut error = compute_local_coordinates(x, xi);
 
         //We assume that if the local coordinates cannot be computed the point must be outside of the element
-        if (clc_result > 1){
+        if ( error ){
             return false;
         }
         return local_point_inside(xi);
@@ -604,7 +707,7 @@ namespace elib{
         return &global_node_ids;
     }
 
-    void Hex8::get_shape_functions(const vec &local_coordinates, vec &result){
+    errorOut Hex8::get_shape_functions(const vec &local_coordinates, vec &result){
         /*!
          * Compute the shape functions for a Hex8 element.
          * 
@@ -619,9 +722,10 @@ namespace elib{
                               (1 + local_node_coordinates[n][1]*local_coordinates[1])*
                               (1 + local_node_coordinates[n][2]*local_coordinates[2]);
         }
+        return NULL;
     }
 
-    void Hex8::get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result){
+    errorOut Hex8::get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result){
         /*!
          * Compute the local gradients of the shape functions for a Hex8 element.
          *
@@ -635,6 +739,8 @@ namespace elib{
                          0.125*(1 + local_node_coordinates[n][0]*local_coordinates[0])*local_node_coordinates[n][1]*(1 + local_node_coordinates[n][2]*local_coordinates[2]),
                          0.125*(1 + local_node_coordinates[n][0]*local_coordinates[0])*(1 + local_node_coordinates[n][1]*local_coordinates[1])*local_node_coordinates[n][2]};
         }
+
+        return NULL;
     }
 
     bool Hex8::local_point_inside(const vec &local_coordinates, const double tol){
@@ -656,7 +762,7 @@ namespace elib{
 
     //Functions
 
-    void invert(const vecOfvec &A, vecOfvec &Ainv){
+    errorOut invert(const vecOfvec &A, vecOfvec &Ainv){
         /*!
          * Invert the matrix A. Should only be used in very special circumstances.
          * 
@@ -684,9 +790,11 @@ namespace elib{
             }
         }
 
+        return NULL;
+
     }
 
-    void solve(const vecOfvec &A, const vec &b, vec &x, int mode){
+    errorOut solve(const vecOfvec &A, const vec &b, vec &x, int mode){
         /*!
          * Solve an equation of the form Ax = b
          *
@@ -725,6 +833,7 @@ namespace elib{
         else{
             _x = _A.fullPivHouseholderQr().solve(_b);
         }
+        return NULL;
     }
 
     void print(const uivec &a){

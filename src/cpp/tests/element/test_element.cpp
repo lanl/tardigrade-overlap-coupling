@@ -10,6 +10,9 @@ Tests for element.h and element.cpp
 
 #include<element.h>
 
+typedef elib::errorNode errorNode;
+typedef elib::errorOut errorOut;
+
 bool fuzzy_equals(double a, double b, double tolr=1e-6, double tola=1e-6){
     /*!
     Compare two doubles to determine if they are equal.
@@ -701,9 +704,9 @@ int test_compute_local_coordinates(elib::Element &element, elib::vec xtest, bool
 
     elib::vec xi, result;
 
-    int clc_result = element.compute_local_coordinates(xtest, xi);
+    errorOut clc_result = element.compute_local_coordinates(xtest, xi);
 
-    if ((clc_result > 0) && (isoutside)){
+    if ( ( clc_result ) && (isoutside)){
         results << element.name.c_str() << "_test_compute_local_coordinates & True\n";
 
         return 0;
@@ -863,8 +866,8 @@ int test_element_functionality(elib::Element &element, elib::vec &global_test_po
     test_build_element_from_string(element, results);
     if (!isoutside){
         elib::vec local_test_point;
-        int clc_result = element.compute_local_coordinates(global_test_point, local_test_point);
-        if (clc_result == 0){
+        errorOut clc_result = element.compute_local_coordinates(global_test_point, local_test_point);
+        if (clc_result){
             test_get_global_shapefunction_gradients(element, local_test_point, results);
         }
     }
