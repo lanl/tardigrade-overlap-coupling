@@ -429,6 +429,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the reference positions of the macro-nodes
+        error = extractMacroMeshData( increment );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro-node mesh information" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the micro displacements
         error = extractMicroDisplacements( increment );
 
@@ -898,6 +907,26 @@ namespace inputFileProcessor{
         }
 
         return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroMeshData( const unsigned int &increment ){
+        /*!
+         * Extract the mesh data for the macro-scale domain
+         *
+         * :param const unsigned int &increment: The increment at which to extract the macro-mesh data
+         */
+
+        errorOut error = _macroscale->getMeshData( increment, _macroNodeReferencePositions, _macroNodeReferenceConnectivity );
+
+        if ( error ){
+            errorOut result = new errorNode( "extractMacroMeshData", "Error in the extraction of the macro-mesh information" );
+            result->addNext( error );
+            return result;
+        }
+
+        return NULL;
+
     }
 
     const floatVector* inputFileProcessor::getMicroDensities( ){
@@ -1002,6 +1031,24 @@ namespace inputFileProcessor{
          */
 
         return &_microNodeReferencePositions;
+    }
+
+    const floatVector* inputFileProcessor::getMacroNodeReferencePositions( ){
+        /*!
+         * Get the nodal positions from which the displacements are
+         * referenced.
+         */
+
+        return &_macroNodeReferencePositions;
+    }
+
+    const uIntVector* inputFileProcessor::getMacroNodeReferenceConnectivity( ){
+        /*!
+         * Get the nodal positions from which the displacements are
+         * referenced.
+         */
+
+        return &_macroNodeReferenceConnectivity;
     }
 
 }

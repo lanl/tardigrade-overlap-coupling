@@ -71,6 +71,9 @@ namespace inputFileProcessor{
             const floatVector* getMicroDisplacements( );
             const floatVector* getMicroNodeReferencePositions( );
 
+            const floatVector* getMacroNodeReferencePositions( );
+            const uIntVector* getMacroNodeReferenceConnectivity( );
+
             const stringVector* getFreeMicroDomainNames( );
             const stringVector* getGhostMicroDomainNames( );
 
@@ -111,6 +114,8 @@ namespace inputFileProcessor{
             errorOut extractMicroDisplacements( const unsigned int &increment );
             errorOut extractMicroMeshData( const unsigned int &increment );
 
+            errorOut extractMacroMeshData( const unsigned int &increment );
+
             //Private Attributes
             bool _increment_initialized = false;
             unsigned int _current_increment;
@@ -124,6 +129,9 @@ namespace inputFileProcessor{
             floatVector _microDisplacements;
             floatVector _microNodeReferencePositions;
             uIntVector  _microNodeConnectivity;
+
+            floatVector _macroNodeReferencePositions;
+            uIntVector  _macroNodeReferenceConnectivity;
 
             stringVector _non_overlapped_micro_surface_sets;
             stringVector _free_micro_surface_sets;
