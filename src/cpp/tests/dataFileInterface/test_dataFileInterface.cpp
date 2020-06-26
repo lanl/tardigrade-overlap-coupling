@@ -355,10 +355,13 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
                                       4, 15, 12, 10, 11,
                                       4, 10, 8, 9, 11 };
 
+    unsigned int cellCountAnswer = 3;
+
     floatVector nodePositionResult;
     uIntVector connectivityResult;
+    unsigned int cellCountResult;
 
-    errorOut error = xdf.getMeshData( 1, nodePositionResult, connectivityResult );
+    errorOut error = xdf.getMeshData( 1, nodePositionResult, connectivityResult, cellCountResult );
 
     if ( error ){
         error->print( );
@@ -373,6 +376,11 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
 
     if ( !vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) ){
         results << "test_XDMFDataFile_getMeshData (test 2) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( cellCountAnswer, cellCountResult ) ){
+        results << "test_XDMFDataFile_getMeshData (test 3) & False\n";
         return 1;
     }
 

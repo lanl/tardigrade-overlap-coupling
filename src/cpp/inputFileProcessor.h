@@ -116,6 +116,7 @@ namespace inputFileProcessor{
 
             errorOut extractMacroMeshData( const unsigned int &increment );
 
+            errorOut extractCellCounts( const unsigned int &increment );
             //Private Attributes
             bool _increment_initialized = false;
             unsigned int _current_increment;
