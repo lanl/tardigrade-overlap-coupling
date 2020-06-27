@@ -82,6 +82,9 @@ namespace inputFileProcessor{
             const stringVector* getGhostMicroSurfaceNames( );
             const stringVector* getNonOverlappedMicroSurfaceNames( );
 
+            const uIntVector* getFreeMacroCellIds( );
+            const uIntVector* getGhostMacroCellIds( );
+
             const YAML::Node getCouplingInitialization( );
 
             //Core initialization routines
@@ -103,6 +106,7 @@ namespace inputFileProcessor{
             errorOut setMicroNodeWeights( const unsigned int increment );
             errorOut setSurfaceSets( const unsigned int increment );
             errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
+                                                     uIntVector &macroCellIds,
                                                      stringVector &microVolumeNodesets );
 
             errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
@@ -144,6 +148,9 @@ namespace inputFileProcessor{
 
             stringVector _free_micro_volume_sets;
             stringVector _ghost_micro_volume_sets;
+
+            uIntVector _free_macro_cell_ids;
+            uIntVector _ghost_macro_cell_ids;
 
     };
 

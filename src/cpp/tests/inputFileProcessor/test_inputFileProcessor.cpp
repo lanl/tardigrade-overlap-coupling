@@ -254,6 +254,22 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
+    const uIntVector freeMacroCellIdsAnswer = { 1 };
+    const uIntVector ghostMacroCellIdsAnswer = { 2 };
+
+    const uIntVector *freeMacroCellIdsResult = reader.getFreeMacroCellIds( );
+    const uIntVector *ghostMacroCellIdsResult = reader.getGhostMacroCellIds( );
+
+    if ( !vectorTools::fuzzyEquals( freeMacroCellIdsAnswer, *freeMacroCellIdsResult ) ){
+        results << "test_initializeIncrement (test 8) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( ghostMacroCellIdsAnswer, *ghostMacroCellIdsResult ) ){
+        results << "test_initializeIncrement (test 9) & False\n";
+        return 1;
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }
