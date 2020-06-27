@@ -1055,4 +1055,13 @@ namespace inputFileProcessor{
         return &_macroNodeReferenceConnectivity;
     }
 
+    const uIntVector* inputFileProcessor::getMacroNodeReferenceConnectivityCellIndices( ){
+        /*!
+         * Get the nodal positions from which the displacements are
+         * referenced.
+         */
+
+        return &_macroNodeReferenceConnectivityCellIndices;
+    }
+
 }

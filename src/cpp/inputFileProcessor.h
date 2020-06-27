@@ -69,10 +69,11 @@ namespace inputFileProcessor{
             const floatVector* getMicroVolumes( );
             const floatVector* getMicroWeights( );
             const floatVector* getMicroDisplacements( );
-            const floatVector* getMicroNodeReferencePositions( );
 
+            const floatVector* getMicroNodeReferencePositions( );
             const floatVector* getMacroNodeReferencePositions( );
-            const uIntVector* getMacroNodeReferenceConnectivity( );
+            const uIntVector*  getMacroNodeReferenceConnectivity( );
+            const uIntVector*  getMacroNodeReferenceConnectivityCellIndices( );
 
             const stringVector* getFreeMicroDomainNames( );
             const stringVector* getGhostMicroDomainNames( );

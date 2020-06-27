@@ -245,6 +245,15 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
+    const uIntVector macroNodeReferenceConnectivityCellIndicesAnswer = { 0, 9, 18 };
+
+    const uIntVector *macroNodeReferenceConnectivityCellIndicesResult = reader.getMacroNodeReferenceConnectivityCellIndices( );
+
+    if ( !vectorTools::fuzzyEquals( macroNodeReferenceConnectivityCellIndicesAnswer, *macroNodeReferenceConnectivityCellIndicesResult ) ){
+        results << "test_initializeIncrement (test 7) & False\n";
+        return 1;
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }
