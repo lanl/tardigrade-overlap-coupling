@@ -286,6 +286,33 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
+    const floatVector macroDisplacementsAnswer =
+        {
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+            0., 0., -0.01,
+        };
+
+    const floatVector *macroDisplacementsResult = reader.getMacroDisplacements( );
+
+    if ( !vectorTools::fuzzyEquals( macroDisplacementsAnswer, *macroDisplacementsResult ) ){
+        results << "test_initializeIncrement (test 12) & False\n";
+        return 1;
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

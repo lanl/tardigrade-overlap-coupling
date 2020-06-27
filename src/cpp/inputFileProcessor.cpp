@@ -442,7 +442,16 @@ namespace inputFileProcessor{
         error = extractMicroDisplacements( increment );
 
         if ( error ){
-            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro positions" );
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro displacements" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Extract the macro displacements
+        error = extractMacroDisplacements( increment );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro displacements" );
             result->addNext( error );
             return result;
         }
@@ -870,12 +879,12 @@ namespace inputFileProcessor{
 
                 if ( !dispNode ){
 
-                    return new errorNode( "extractMicroPositions", "'" + *it + " is not defined in 'displacement_variable_names'");
+                    return new errorNode( "extractMicroDisplacements", "'" + *it + " is not defined in 'displacement_variable_names'");
 
                 }
                 else if ( !dispNode.IsScalar( ) ){
 
-                    return new errorNode( "extractMicroPositions", "'" + *it + "' is not a scalar" );
+                    return new errorNode( "extractMicroDisplacements", "'" + *it + "' is not a scalar" );
 
                 }
                 else{
@@ -895,6 +904,93 @@ namespace inputFileProcessor{
                     for ( unsigned int i = 0; i < disp.size( ); i++ ){
 
                         _microDisplacements[ displacementKeys.size( ) * i + indx ] = disp[ i ];
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroDisplacements( const unsigned int &increment ){
+        /*!
+         * Extract the positions of the nodes in the macro domain.
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        //Variable definitions
+        unsigned int indx;
+
+        floatVector disp;
+
+        YAML::Node dispNode;
+
+        //Expected displacement keys
+        stringVector displacementKeys = { "u1", "u2", "u3" }; //The dimension is assumed to be 3
+
+        //Initialize the micro displacements vector
+        _macroDisplacements.clear( );
+        unsigned int numNodes;
+
+        errorOut error = _macroscale->getNumNodes( increment, numNodes );
+
+        if ( error ){
+            
+            errorOut result = new errorNode( "extractMacroDisplacements", "Error in the determination of the number of macro-nodes" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        _macroDisplacements.resize( displacementKeys.size( ) * numNodes );
+
+        //Check if the displacement names have been defined
+        if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ] ){
+
+            return new errorNode( "extractMacroDisplacements", "The names of the displacements of the macro-positions are not defined" );
+
+        }
+        else{
+
+            for ( auto it = displacementKeys.begin( ); it != displacementKeys.end( ); it++ ){
+
+                indx = it - displacementKeys.begin( ); //Set the index
+
+                dispNode = _config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ];
+
+                if ( !dispNode ){
+
+                    return new errorNode( "extractMacroDisplacements", "'" + *it + " is not defined in 'displacement_variable_names'");
+
+                }
+                else if ( !dispNode.IsScalar( ) ){
+
+                    return new errorNode( "extractMacroDisplacements", "'" + *it + "' is not a scalar" );
+
+                }
+                else{
+
+                    //Get the displacement
+                    errorOut error = _macroscale->getSolutionData( increment, dispNode.as< std::string >( ), "Node", disp );
+
+                    if ( error ){
+                        
+                        errorOut result = new errorNode( "extractMacroDisplacements", "Error in extraction of '" + *it + "'" );
+                        result->addNext( error );
+                        return result;
+
+                    }
+
+                    //Set the displacements
+                    for ( unsigned int i = 0; i < disp.size( ); i++ ){
+
+                        _macroDisplacements[ displacementKeys.size( ) * i + indx ] = disp[ i ];
 
                     }
 
@@ -1043,6 +1139,14 @@ namespace inputFileProcessor{
          */
 
         return &_microDisplacements;
+    }
+
+    const floatVector* inputFileProcessor::getMacroDisplacements( ){
+        /*!
+         * Get the macro-displacements
+         */
+
+        return &_macroDisplacements;
     }
 
     const floatVector* inputFileProcessor::getMicroNodeReferencePositions( ){
