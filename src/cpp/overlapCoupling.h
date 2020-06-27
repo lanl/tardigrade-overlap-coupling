@@ -56,6 +56,9 @@ namespace overlapCoupling{
             const floatVector* getFreeMicroDomainCentersOfMass( );
             const floatVector* getGhostMicroDomainCentersOfMass( );
 
+            const floatVector* getReferenceFreeMicroDomainCenterOfMassShapeFunctions( );
+            const floatVector* getReferenceGhostMicroDomainCenterOfMassShapeFunctions( );
+
         private:
 
             //Private attributes
@@ -74,6 +77,9 @@ namespace overlapCoupling{
             floatVector _freeMicroDomainCentersOfMass;
             floatVector _ghostMicroDomainCentersOfMass;
 
+            floatVector _referenceFreeMicroDomainCenterOfMassShapeFunctions;
+            floatVector _referenceGhostMicroDomainCenterOfMassShapeFunctions;
+
             //Private functions
 
             //Compute initial values
@@ -83,6 +89,13 @@ namespace overlapCoupling{
             errorOut computeIncrementCentersOfMass( const unsigned int increment,
                                                     floatVector &freeDomainMass, floatVector &ghostDomainMass,
                                                     floatVector &freeDomainCM, floatVector &ghostDomainCM );
+
+            //Compute the shape functions at the centers of mass
+            errorOut computeShapeFunctionsAtPoints( const unsigned int cellID, const floatVector &nodeLocations,
+                                                    const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
+                                                    const floatVector &points, floatVector &shapeFunctions );
+
+            errorOut computeShapeFunctionsAtReferenceCentersOfMass( );
 
     };
 

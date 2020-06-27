@@ -231,6 +231,104 @@ int test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( std::ofstrea
     return 0;
 }
 
+int test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( std::ofstream &results ){
+    /*!
+     * Test of the retrieval of the reference free micro domain centers of mass shape functions
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_ & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions & False\n";
+        return 1;
+    }
+
+    const floatVector referenceFreeMicroDomainCenterOfMassShapeFunctionsAnswer =
+        {
+            0.140625, 0.046875, 0.140625, 0.421875, 0.046875, 0.015625, 0.046875, 0.140625,
+            0.046875, 0.015625, 0.046875, 0.140625, 0.140625, 0.046875, 0.140625, 0.421875,
+            0.421875, 0.140625, 0.046875, 0.140625, 0.140625, 0.046875, 0.015625, 0.046875,
+            0.140625, 0.046875, 0.015625, 0.046875, 0.421875, 0.140625, 0.046875, 0.140625,
+            0.046875, 0.140625, 0.421875, 0.140625, 0.015625, 0.046875, 0.140625, 0.046875,
+            0.015625, 0.046875, 0.140625, 0.046875, 0.046875, 0.140625, 0.421875, 0.140625,
+            0.140625, 0.421875, 0.140625, 0.046875, 0.046875, 0.140625, 0.046875, 0.015625,
+            0.046875, 0.140625, 0.046875, 0.015625, 0.140625, 0.421875, 0.140625, 0.046875
+        };
+
+    const floatVector *referenceFreeMicroDomainCenterOfMassShapeFunctionsResult =
+        oc.getReferenceFreeMicroDomainCenterOfMassShapeFunctions( );
+
+    if ( !vectorTools::fuzzyEquals( referenceFreeMicroDomainCenterOfMassShapeFunctionsAnswer,
+                                   *referenceFreeMicroDomainCenterOfMassShapeFunctionsResult ) ){
+        vectorTools::print( *referenceFreeMicroDomainCenterOfMassShapeFunctionsResult );
+        results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions (test 1) & False\n";
+        return 1;
+    } 
+
+    results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions & True\n";
+    return 0;
+
+}
+
+int test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( std::ofstream &results ){
+    /*!
+     * Test of the retrieval of the reference ghost micro domain centers of mass shape functions
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_ & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions & False\n";
+        return 1;
+    }
+
+    const floatVector referenceGhostMicroDomainCenterOfMassShapeFunctionsAnswer =
+        {
+            0.046875, 0.015625, 0.046875, 0.140625, 0.140625, 0.046875, 0.140625, 0.421875,
+            0.015625, 0.046875, 0.140625, 0.046875, 0.046875, 0.140625, 0.421875, 0.140625,
+            0.140625, 0.046875, 0.015625, 0.046875, 0.421875, 0.140625, 0.046875, 0.140625,
+            0.046875, 0.140625, 0.046875, 0.015625, 0.140625, 0.421875, 0.140625, 0.046875,
+            0.140625, 0.046875, 0.140625, 0.421875, 0.046875, 0.015625, 0.046875, 0.140625,
+            0.046875, 0.140625, 0.421875, 0.140625, 0.015625, 0.046875, 0.140625, 0.046875,
+            0.421875, 0.140625, 0.046875, 0.140625, 0.140625, 0.046875, 0.015625, 0.046875,
+            0.140625, 0.421875, 0.140625, 0.046875, 0.046875, 0.140625, 0.046875, 0.015625
+        };
+
+    const floatVector *referenceGhostMicroDomainCenterOfMassShapeFunctionsResult =
+        oc.getReferenceGhostMicroDomainCenterOfMassShapeFunctions( );
+
+    if ( !vectorTools::fuzzyEquals( referenceGhostMicroDomainCenterOfMassShapeFunctionsAnswer,
+                                   *referenceGhostMicroDomainCenterOfMassShapeFunctionsResult ) ){
+        vectorTools::print( *referenceGhostMicroDomainCenterOfMassShapeFunctionsResult );
+        results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions (test 1) & False\n";
+        return 1;
+    } 
+
+    results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions & True\n";
+    return 0;
+
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -249,6 +347,8 @@ int main(){
     test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
     test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
     test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
 
     //Close the results file
     results.close();
