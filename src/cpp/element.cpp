@@ -944,5 +944,124 @@ namespace elib{
          d += A[0][2]*(A[1][0]*A[2][1] - A[1][1]*A[2][0]);
     }
 
+    errorOut getPolyhedralCellEquivalentElementType( const unsigned int &index0, const uivec &connectivity,
+                                                     unsigned int &XDMFCellType, std::string &elementName,
+                                                     unsigned int &deltaIndex ){
+        /*!
+         * Get the equivalent element for a polyhedral cell in XDMF format
+         *
+         * :param const unsigned int index0: The first index to start at in connectivity
+         * :param const uIntVector connectivity: The cell definition in XDMF format.
+         * :param unsigned int &XDMFCellType: The element type as defined in the XDMF standard.
+         * :param std::string &elementName: The name of the cell.
+         * :param unsigned int &deltaIndex: The change in index to go to the next cell
+         */
+
+        unsigned int nFaces;
+        uivec nNodesOnFace;
+        uivec nodeIndexArrays;
+
+        return getPolyhedralCellEquivalentElementType( index0, connectivity, XDMFCellType, elementName, deltaIndex,
+                                                       nFaces, nNodesOnFace, nodeIndexArrays );
+
+    }
+
+    errorOut getPolyhedralCellEquivalentElementType( const unsigned int &index0, const uivec &connectivity,
+                                                     unsigned int &XDMFCellType, std::string &elementName,
+                                                     unsigned int &deltaIndex,
+                                                     unsigned int &nFaces, uivec &nNodesOnFace, uivec &nodeIndexArrays ){
+        /*!
+         * Get the equivalent element for a polyhedral cell in XDMF format
+         *
+         * :param const unsigned int index0: The first index to start at in connectivity
+         * :param const uIntVector connectivity: The cell definition in XDMF format.
+         * :param unsigned int &XDMFCellType: The element type as defined in the XDMF standard.
+         * :param std::string &elementName: The name of the cell.
+         * :param unsigned int &deltaIndex: The change in index to go to the next cell
+         * :param unsigned int &nFaces: The number of faces in the element
+         * :param uivec &nNodesOnFace: The number of nodes on each face
+         * :param uivec &nodeIndexArrays: Indices of the nodes on each face in, "face major," organization.
+         *     i.e. [ face_1_node_1, face_1_node_2, ... ]
+         */
+
+        if ( connectivity.size( ) <= index0 + 3 ){
+            return new errorNode( "getPolyhedralCellEquivalentElementType",
+                                  "The connectivity vector is too small" );
+        }
+
+        //Get the number of faces defined in the connectivity vector
+        nFaces = connectivity[ index0 + 1 ];
+        nNodesOnFace = uivec( nFaces, 0 );
+
+        //Get the number of nodes on each face
+        unsigned int indx = index0 + 2;
+        unsigned int nCount = 0;
+
+        for ( unsigned int n = 0; n < nFaces; n++ ){
+
+            nNodesOnFace[ n ] = connectivity[ indx ];
+
+            indx += nNodesOnFace[ n ] + 1;
+            nCount += nNodesOnFace[ n ];
+
+        }
+
+        //Extract the nodes on each face
+        nodeIndexArrays = uivec( nCount );
+        indx = index0 + 2;
+        unsigned int i = 0;
+
+        for ( unsigned int n = 0; n < nFaces; n++ ){
+
+            for ( unsigned int m = 1; m < nNodesOnFace[ n ] + 1; m++ ){
+
+                if ( connectivity.size( ) <= indx + m ){
+                    return new errorNode( "getPolyhedralCellEquivalentElementType",
+                                          "The connectivity vector is too small" );
+                }
+
+                nodeIndexArrays[ i ] = connectivity[ indx + m ];
+                i++;
+
+            }
+
+            indx += nNodesOnFace[ n ] + 1;
+
+        }
+        deltaIndex = indx - index0;
+
+        //Return the element id information
+        for ( auto it = elementRegistry.begin( ); it != elementRegistry.end( ); it++ ){
+
+            if ( vectorTools::fuzzyEquals( it->second.first, nFaces ) &&
+                 vectorTools::fuzzyEquals( it->second.second, nNodesOnFace ) ){
+
+                //Set the element name
+                elementName = it->first;
+
+                //Set the XDMFCellType
+                auto it2 = elementNameToXDMFType.find( elementName );
+
+                if ( it2 == elementNameToXDMFType.end( ) ){
+
+                    return new errorNode( "getPolyhedralCellEquivalentElementType",
+                                          "Element name '" + elementName + "' not found in the element name to XDMF type mapping" );
+
+                }
+                else{
+
+                    XDMFCellType = it2->second;
+                    return NULL;
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+
+    }
+
 }
 

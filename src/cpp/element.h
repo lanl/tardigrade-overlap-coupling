@@ -13,8 +13,10 @@
 #include<math.h>
 #include<memory>
 #include<iostream>
+#include<map>
 #include<Eigen/Dense>
 #include<error_tools.h>
+#include<vector_tools.h>
 
 namespace elib{
 
@@ -27,8 +29,16 @@ namespace elib{
     typedef std::vector< vec > vecOfvec;
     typedef std::vector<std::pair< vec, double> > quadrature_rule;
 
-    //Registry of currently implemented elements
-    const std::vector< std::string > elementRegistry = { "Hex8" };
+    //Map of currently implemented elements to the number of faces and the number of nodes on each face
+    const std::map< std::string, std::pair< unsigned int, std::vector< unsigned int > > > elementRegistry =
+        {
+            { "Hex8", { 6, { 4, 4, 4, 4, 4, 4 } } },
+        };
+
+    const std::map< std::string, unsigned int > elementNameToXDMFType =
+        {
+            { "Hex8", 9 },
+        };
 
     class Element{
         /*!
@@ -145,6 +155,13 @@ namespace elib{
                                                        const vecOfvec &nodes, const quadrature_rule &qrule);
     void determinant_3x3(const vecOfvec &A, double &d);
 
+    errorOut getPolyhedralCellEquivalentElementType( const unsigned int &index0, const uivec &connectivity,
+                                                     unsigned int &XDMFCellType, std::string &elementName,
+                                                     unsigned int &deltaIndex );
 
+    errorOut getPolyhedralCellEquivalentElementType( const unsigned int &index0, const uivec &connectivity,
+                                                     unsigned int &XDMFCellType, std::string &elementName,
+                                                     unsigned int &deltaIndex,
+                                                     unsigned int &nFaces, uivec &nNodesOnFace, uivec &nodeIndexArrays );
 }
 #endif
