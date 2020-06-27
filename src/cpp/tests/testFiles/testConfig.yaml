@@ -1,8 +1,13 @@
 # Mesh and datafile definitions of the macro and micro-scales
 
+coupling_initialization:
+        type: use_first_increment #Other options will be "from_file" and "use_current_increment"
+
 macroscale_definition:
         filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/macroscale_xdmf.xdmf
         mode: read
+        node_id_variable_name: NODEID #The variable name of the node IDs
+        cell_id_variable_name: ELEMID #The variable name of the cell IDs
 
 microscale_definition:
         filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/microscale_xdmf.xdmf
@@ -23,6 +28,8 @@ microscale_definition:
                 s21: s31
                 s22: s32
                 s23: s33
+        node_id_variable_name: NODEID
+        cell_id_variable_name: ELEMID
         volume_surface_node_pairs: #Defines the nodesets that represent the volumes and surface of the averaging domains
 #Ghost pairs
                 -
@@ -79,6 +86,7 @@ microscale_definition:
 free_macroscale_domains:
         -
           name: name1 #The macro-scale domains can be named arbitrarily
+          macro_cell: 1 #The index of the cell that corresponds to the macroscale free domain
           macro_nodeset: free_nodes
           micro_nodesets:
                   - ghost_nodeset_volume_1
@@ -93,6 +101,7 @@ free_macroscale_domains:
 ghost_macroscale_domains:
         -
           name: name1 #The macro-scale domains can be named arbitrarily
+          macro_cell: 2 #The index of the cell that corresponds to the macroscale ghost domain
           macro_nodeset: ghost_nodes
           micro_nodesets:
                   - free_nodeset_volume_1
@@ -105,11 +114,11 @@ ghost_macroscale_domains:
                   - free_nodeset_volume_8
 
 non_overlapped_microscale_domains: #Defining these is required for the non-overlapped micro-scale nodes which are adjacent to the overlapped domain
-        - non_overlapped_nodeset_volume_1
-        - non_overlapped_nodeset_volume_2
-        - non_overlapped_nodeset_volume_3
-        - non_overlapped_nodeset_volume_4
-        - non_overlapped_nodeset_volume_5
-        - non_overlapped_nodeset_volume_6
-        - non_overlapped_nodeset_volume_7
-        - non_overlapped_nodeset_volume_8
+        - non_overlapped_nodeset_surface_1
+        - non_overlapped_nodeset_surface_2
+        - non_overlapped_nodeset_surface_3
+        - non_overlapped_nodeset_surface_4
+        - non_overlapped_nodeset_surface_5
+        - non_overlapped_nodeset_surface_6
+        - non_overlapped_nodeset_surface_7
+        - non_overlapped_nodeset_surface_8
