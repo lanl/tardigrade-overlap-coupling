@@ -191,17 +191,115 @@ namespace dataFileInterface{
     }
 
     errorOut dataFileBase::getMeshData( const unsigned int increment,
-                                        floatVector &nodePositions, uIntVector &connectivity, unsigned int &cellCounts ){
+                                        floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
+                                        unsigned int &cellCounts ){
         /*!
          * Get the mesh data from the datafile.
          *
          * :param const unsigned int increment: The increment at which to get the data
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
          * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
+         * :param uIntVector &connectivityCellIndices: The indicices at which a new cell is defined in the connectivity vector.
          * :param unsigned int &cellCounts: The number of cells present.
          */
 
         return new errorNode( "getMeshData", "The getMeshData function is not defined" );
+    }
+
+    errorOut dataFileBase::connectivityToCellIndices( const unsigned int &nCells, const uIntVector &connectivity,
+                                                      uIntVector &connectivityCellIndices ){
+        /*!
+         * Compute the connectivity to cell indices
+         *
+         * :param const unsigned int &nCells: The number of cells
+         * :param const uIntVector &connectivity: The connectivity vector
+         * :param uIntVector &connectivityCellIndices: The indices in the connectivity vector at which the cells are defined.
+         */
+
+        //Set the connectivity cell index vector size
+        connectivityCellIndices = uIntVector( nCells, 0 );
+
+        unsigned int index;
+        unsigned int index_connectivity = 0;
+        unsigned int cellDataCount;
+
+        unsigned int elementType;
+        unsigned int nFaces;
+
+        for ( auto it = connectivityCellIndices.begin( ) + 1; it != connectivityCellIndices.end( ); it++ ){
+
+            //Set the index of the connectivityCellIndices vector
+            index = it - connectivityCellIndices.begin( );
+
+            //Check if the connectivity vector is long enough
+            if ( connectivity.size( ) <= index_connectivity ){
+
+                return new errorNode( "connectivityToCellIndices",
+                                      "The connectivity vector is to short for cell " + std::to_string( index ) );
+
+            }
+
+            //Get the element type
+            elementType = connectivity[ index_connectivity ];
+
+            //Perform different operations based on the element type
+            if ( ( elementType == 2 ) && ( elementType == 3 ) ){ //Polyline and Polygon
+                
+                cellDataCount = connectivity[ index_connectivity + 1 ] + 1;
+
+            }
+            else if ( elementType == 16 ){ //Polyhedron
+
+                if ( connectivity.size( ) <= index_connectivity + 1 ){
+
+                    return new errorNode( "connectivityToCellIndices",
+                                          "The connectivity vector is too short for the polyhedron definition of cell "
+                                          + std::to_string( index ) );
+
+                }
+
+                cellDataCount = 1;
+                nFaces = connectivity[ index_connectivity + cellDataCount ];
+
+                for ( unsigned int n = 0; n < nFaces; n++ ){
+
+                    cellDataCount += 1; //Move to the new face
+
+                    if ( connectivity.size( ) <= cellDataCount ){
+
+                        return new errorNode( "connectivityToCellIndices",
+                                              "The connectivity vector is too short for the polyhedron definition of cell "
+                                              + std::to_string( index ) );
+
+                    }
+
+                    cellDataCount += connectivity[ index_connectivity + cellDataCount ]; //Add the number of nodes on the face
+
+                }
+
+            }
+            else{
+
+                auto elType = cellNodeCount.find( elementType );
+
+                if ( elType == cellNodeCount.end( ) ){
+
+                    return new errorNode( "connectivityToCellIndices",
+                                          "The cell type " + std::to_string( elementType ) + " is not recognized" );
+
+                }
+
+                cellDataCount = elType->second;
+
+            }
+
+            //Update the cell indices
+            index_connectivity += cellDataCount + 1;
+            connectivityCellIndices[ index ] = index_connectivity;
+
+        }
+
+        return NULL;
     }
 
     /*=========================================================================
@@ -574,13 +672,15 @@ namespace dataFileInterface{
     }
 
     errorOut XDMFDataFile::getMeshData( const unsigned int increment,
-                                        floatVector &nodePositions, uIntVector &connectivity, unsigned int &cellCounts ){
+                                        floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
+                                        unsigned int &cellCounts ){
         /*!
          * Get the mesh data from the datafile.
          *
          * :param const unsigned int increment: The increment at which to get the data
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
          * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
+         * :param uIntVector &connectivityCellIndices: The indicices at which a new cell is defined in the connectivity vector.
          * :param unsigned int &cellCounts: The number of cells present.
          */
 
@@ -626,6 +726,8 @@ namespace dataFileInterface{
         else{
             cellCounts = grid->getAttribute( _config[ "cell_id_variable_name" ].as< std::string >( ) )->getSize( );
         }
+
+        error = connectivityToCellIndices( cellCounts, connectivity, connectivityCellIndices );
 
         return NULL;
     }

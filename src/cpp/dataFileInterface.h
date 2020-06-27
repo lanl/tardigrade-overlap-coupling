@@ -30,6 +30,22 @@
 
 namespace dataFileInterface{
 
+    //XDMF Cell Node Counts
+    const std::map< unsigned int, unsigned int > cellNodeCount =
+            {
+                {  1,  1 }, //Polyvertex
+                {  2,  0 }, //Polyline ( special case )
+                {  3,  0 }, //Polygon ( special case )
+                {  4,  3 }, //Triangle
+                {  5,  4 }, //Quadralateral
+                {  6,  4 }, //Tetrahedron
+                {  7,  5 }, //Pyramid
+                {  8,  6 }, //Wedge
+                {  9,  8 }, //Hexahedron
+                { 16,  0 }, //Polyhedron ( special case )
+            };
+
+
     //Typedefs
     typedef errorTools::Node errorNode; //!Redefinition for the error node
     typedef errorNode* errorOut; //!Redefinition for a pointer to the error node
@@ -81,7 +97,8 @@ namespace dataFileInterface{
             virtual errorOut getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
                                               floatVector &data ); //Required overload
             virtual errorOut getMeshData( const unsigned int increment,
-                                          floatVector &nodePositions, uIntVector &connectivity, unsigned int &cellCounts ); //Required overload
+                                          floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
+                                          unsigned int &cellCounts ); //Required overload
 
             errorOut _error;
             std::string _filename;
@@ -90,6 +107,9 @@ namespace dataFileInterface{
         protected:
 
             YAML::Node _config;
+
+            errorOut connectivityToCellIndices( const unsigned int &nCells, const uIntVector &connectivity,
+                                                uIntVector &connectivityCellIndices );
     };
 
     class XDMFDataFile : public dataFileBase{
@@ -116,7 +136,8 @@ namespace dataFileInterface{
             errorOut getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
                                       floatVector &data );
             errorOut getMeshData( const unsigned int increment,
-                                  floatVector &nodePositions, uIntVector &connectivity, unsigned int &cellCounts );
+                                  floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
+                                  unsigned int &cellCounts );
 
         private:
             //Interface Attributes

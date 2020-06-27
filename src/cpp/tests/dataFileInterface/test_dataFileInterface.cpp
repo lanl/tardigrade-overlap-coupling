@@ -323,7 +323,7 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "testConfig_polyhedron.yaml" );
     dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
 
     floatVector nodePositionAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
@@ -355,13 +355,15 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
                                       4, 15, 12, 10, 11,
                                       4, 10, 8, 9, 11 };
 
+    uIntVector connectivityCellIndicesAnswer = { 0, 32, 64 };
+
     unsigned int cellCountAnswer = 3;
 
     floatVector nodePositionResult;
-    uIntVector connectivityResult;
+    uIntVector connectivityResult, connectivityCellIndicesResult;
     unsigned int cellCountResult;
 
-    errorOut error = xdf.getMeshData( 1, nodePositionResult, connectivityResult, cellCountResult );
+    errorOut error = xdf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
 
     if ( error ){
         error->print( );
@@ -384,7 +386,73 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
         return 1;
     }
 
+    if ( !vectorTools::fuzzyEquals( connectivityCellIndicesAnswer, connectivityCellIndicesResult ) ){
+        results << "test_XDMFDataFile_getMeshData (test 4) & False\n";
+        return 1;
+    }
+
     results << "test_XDMFDataFile_getMeshData & True\n";
+    return 0;
+}
+
+int test_XDMFDataFile_getMeshData2( std::ofstream &results ){
+    /*!
+     * Second test the function to get the mesh data
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    floatVector nodePositionAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
+                                       0, 0, 1, 1, 1, 1, 1, 1, 0,
+                                       0, 1, 0, 0, 1, 1, 0, 1, 2,
+                                       1, 1, 2, 0, 0, 2, 1, 0, 2,
+                                       0, 0, 3, 0, 1, 3, 1, 1, 3,
+                                       1, 0, 3 };
+
+    uIntVector connectivityAnswer = { 9,  0,  1,  2,  3,  4, 5, 6,  7,
+                                      9,  8,  7,  4,  9, 10, 3, 0, 11,
+                                      9, 12, 13, 14, 15, 10, 8, 9, 11 };
+
+    uIntVector connectivityCellIndicesAnswer = { 0, 9, 18 };
+
+    unsigned int cellCountAnswer = 3;
+
+    floatVector nodePositionResult;
+    uIntVector connectivityResult, connectivityCellIndicesResult;
+    unsigned int cellCountResult;
+
+    errorOut error = xdf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
+
+    if ( error ){
+        error->print( );
+        results << "test_XDMFDataFile_getMeshData2 & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( nodePositionAnswer, nodePositionResult ) ){
+        results << "test_XDMFDataFile_getMeshData2 (test 1) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) ){
+        results << "test_XDMFDataFile_getMeshData2 (test 2) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( cellCountAnswer, cellCountResult ) ){
+        results << "test_XDMFDataFile_getMeshData2 (test 3) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( connectivityCellIndicesAnswer, connectivityCellIndicesResult ) ){
+        results << "test_XDMFDataFile_getMeshData2 (test 4) & False\n";
+        return 1;
+    }
+
+    results << "test_XDMFDataFile_getMeshData2 & True\n";
     return 0;
 }
 
@@ -408,6 +476,7 @@ int main(){
     test_XDMFDataFile_getSetNames( results );
     test_XDMFDataFile_getSolutionData( results );
     test_XDMFDataFile_getMeshData( results );
+    test_XDMFDataFile_getMeshData2( results );
 
     //Close the results file
     results.close();
