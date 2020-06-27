@@ -192,7 +192,7 @@ namespace dataFileInterface{
 
     errorOut dataFileBase::getMeshData( const unsigned int increment,
                                         floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
-                                        unsigned int &cellCounts ){
+                                        unsigned int &cellCounts) {
         /*!
          * Get the mesh data from the datafile.
          *
@@ -680,6 +680,7 @@ namespace dataFileInterface{
          * :param const unsigned int increment: The increment at which to get the data
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
          * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
+         *     Note the order that the elements appear in the vector are assumed to be their cell Ids starting at zero
          * :param uIntVector &connectivityCellIndices: The indicices at which a new cell is defined in the connectivity vector.
          * :param unsigned int &cellCounts: The number of cells present.
          */
@@ -724,7 +725,8 @@ namespace dataFileInterface{
             return new errorNode( "getMeshData", "The 'cell_id_variable_name' specified does not exist in the output file" );
         }
         else{
-            cellCounts = grid->getAttribute( _config[ "cell_id_variable_name" ].as< std::string >( ) )->getSize( );
+            shared_ptr< XdmfAttribute > attribute = grid->getAttribute( _config[ "cell_id_variable_name" ].as< std::string >( ) );
+            cellCounts = attribute->getSize( );
         }
 
         error = connectivityToCellIndices( cellCounts, connectivity, connectivityCellIndices );
