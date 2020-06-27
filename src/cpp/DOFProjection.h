@@ -185,6 +185,10 @@ namespace DOFProjection{
                                const uIntVector &domainMicroNodeIndices, const floatVector &microPositions,
                                const floatVector &domainCM, floatVector &domainXis );
 
+    errorOut computeDomainXis( const unsigned int &dim,
+                               const uIntVector &domainMicroNodeIndices, const floatVector &microReferencePositions,
+                               const floatVector &microDisplacements, const floatVector &domainCM, floatVector &domainXis );
+
     /*===================================================
     |                Projection Matrices                |
     =====================================================

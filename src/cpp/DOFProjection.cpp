@@ -1562,4 +1562,55 @@ namespace DOFProjection{
 
     }
 
+    errorOut computeDomainXis( const unsigned int &dim,
+                               const uIntVector &domainMicroNodeIndices, const floatVector &microReferencePositions,
+                               const floatVector &microDisplacements, const floatVector &domainCM, floatVector &domainXis ){
+        /*
+         * Compute the relative position vector between the center of mass of a micro domain and the 
+         * micro position.
+         *
+         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const floatVector &microReferencePositions: The reference positions of the micro-nodes.
+         * :param const floatVector &microDisplacements: The displacements of the micro-nodes.
+         * :param floatVector &domainCM: The center of mass of the domain
+         * :param floatVector &domainXis: The relative positions of the micro nodes.
+         */
+
+        //Error Handling
+        if ( domainCM.size() != dim ){
+            return new errorNode( "computeDomainXis",
+                                  "The center of mass is not consistent with the dimension" );
+        }
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+            if ( microReferencePositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "The size of the micro-reference positions vector is not consistent with the micro indices" );
+            }
+            if ( microDisplacements.size() < dim * domainMicroNodeIndices[ i ] + dim ){
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "The size of the micro-displacements vector is not consistent with the micro indices" );
+            }
+        }
+
+        //Resize the Xi vector
+        domainXis.resize( dim * domainMicroNodeIndices.size() );
+
+        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+            for ( unsigned int j = 0; j < dim; j++ ){
+
+                //Compute the relative position vector 
+                domainXis[ dim * i + j ] = (  microReferencePositions[ dim * domainMicroNodeIndices[ i ] + j ]
+                                            + microDisplacements[ dim * domainMicroNodeIndices[ i ] + j ] ) - domainCM[ j ];
+
+            }
+
+        }
+
+        return NULL;
+
+    }
+
 }

@@ -3495,6 +3495,12 @@ int test_computeDomainXis( std::ofstream &results ){
     floatVector microWeights;
     _getTestMicroWeights( microWeights );
 
+    floatVector microReferencePositions;
+    _getTestMicroReferencePositions( microReferencePositions );
+
+    floatVector microDisplacements;
+    _getTestMicroDisplacements( microDisplacements );
+
     floatVector microPositions;
     _getTestMicroPositions( microPositions );
 
@@ -3522,6 +3528,23 @@ int test_computeDomainXis( std::ofstream &results ){
 
     if ( !vectorTools::fuzzyEquals( domainXiAnswer, domainXiResult ) ){
         results << "test_computeDomainXis (test 1) & False\n";
+        return 1;
+    }
+
+    domainXiResult.clear( );
+
+    error = DOFProjection::computeDomainXis( dim, domainMicroNodeIndices, 
+                                             microReferencePositions, microDisplacements,
+                                             domainCM, domainXiResult );
+
+    if ( error ){
+        error->print();
+        results << "test_computeDomainXis & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainXiAnswer, domainXiResult ) ){
+        results << "test_computeDomainXis (test 2) & False\n";
         return 1;
     }
 
