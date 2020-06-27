@@ -234,27 +234,9 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
-    const uIntVector macroNodeReferenceConnectivityAnswer = { 16, 6,
-                                                              4, 0, 3, 2, 1,
-                                                              4, 0, 1, 5, 4,
-                                                              4, 1, 2, 6, 5,
-                                                              4, 2, 3, 7, 6,
-                                                              4, 3, 0, 4, 7,
-                                                              4, 4, 5, 6, 7,
-                                                              16, 6,
-                                                              4, 8, 9, 4, 7,
-                                                              4, 8, 7, 3, 10,
-                                                              4, 7, 4, 0, 3,
-                                                              4, 4, 9, 11, 0,
-                                                              4, 9, 8, 10, 11,
-                                                              4, 10, 3, 0, 11,
-                                                              16, 6,
-                                                              4, 12, 15, 14, 13,
-                                                              4, 12, 13, 8, 10,
-                                                              4, 13, 14, 9, 8,
-                                                              4, 14, 15, 11, 9,
-                                                              4, 15, 12, 10, 11,
-                                                              4, 10, 8, 9, 11 };
+    const uIntVector macroNodeReferenceConnectivityAnswer = { 9,  0,  1,  2,  3,  4, 5, 6,  7,
+                                                              9,  8,  7,  4,  9, 10, 3, 0, 11,
+                                                              9, 12, 13, 14, 15, 10, 8, 9, 11 };
 
     const uIntVector *macroNodeReferenceConnectivityResult = reader.getMacroNodeReferenceConnectivity( );
 

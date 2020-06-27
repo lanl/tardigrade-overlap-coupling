@@ -421,7 +421,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the reference positions of the micro-nodes
-        error = extractMicroMeshData( increment );
+        error = extractReferenceMicroMeshData( increment );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro-node mesh information" );
@@ -430,7 +430,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the reference positions of the macro-nodes
-        error = extractMacroMeshData( increment );
+        error = extractReferenceMacroMeshData( increment );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro-node mesh information" );
@@ -891,14 +891,16 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMicroMeshData( const unsigned int &increment ){
+    errorOut inputFileProcessor::extractReferenceMicroMeshData( const unsigned int &increment ){
         /*!
-         * Extract the mesh data for the micro-scale domain
+         * Extract the mesh data for the micro-scale domain in the reference configuration
          *
          * :param const unsigned int &increment: The increment at which to extract the micro-mesh data
          */
 
-        errorOut error = _microscale->getMeshData( increment, _microNodeReferencePositions, _microNodeConnectivity, _microCellCounts );
+        errorOut error = _microscale->getMeshData( increment, _microNodeReferencePositions,
+                                                   _microNodeReferenceConnectivity,
+                                                   _microNodeReferenceConnectivityCellIndices, _microCellCounts );
 
         if ( error ){
             errorOut result = new errorNode( "extractMicroMeshData", "Error in the extraction of the micro-mesh information" );
@@ -910,14 +912,16 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMacroMeshData( const unsigned int &increment ){
+    errorOut inputFileProcessor::extractReferenceMacroMeshData( const unsigned int &increment ){
         /*!
-         * Extract the mesh data for the macro-scale domain
+         * Extract the mesh data for the macro-scale domain in the reference configuration
          *
          * :param const unsigned int &increment: The increment at which to extract the macro-mesh data
          */
 
-        errorOut error = _macroscale->getMeshData( increment, _macroNodeReferencePositions, _macroNodeReferenceConnectivity, _macroCellCounts );
+        errorOut error = _macroscale->getMeshData( increment, _macroNodeReferencePositions,
+                                                   _macroNodeReferenceConnectivity, _macroNodeReferenceConnectivityCellIndices,
+                                                   _macroCellCounts );
 
         if ( error ){
             errorOut result = new errorNode( "extractMacroMeshData", "Error in the extraction of the macro-mesh information" );

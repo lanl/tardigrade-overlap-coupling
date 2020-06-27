@@ -112,11 +112,10 @@ namespace inputFileProcessor{
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
             errorOut extractMicroDisplacements( const unsigned int &increment );
-            errorOut extractMicroMeshData( const unsigned int &increment );
+            errorOut extractReferenceMicroMeshData( const unsigned int &increment );
 
-            errorOut extractMacroMeshData( const unsigned int &increment );
+            errorOut extractReferenceMacroMeshData( const unsigned int &increment );
 
-            errorOut extractCellCounts( const unsigned int &increment );
             //Private Attributes
             bool _increment_initialized = false;
             unsigned int _current_increment;
@@ -129,10 +128,14 @@ namespace inputFileProcessor{
             floatVector _microVolumes;
             floatVector _microDisplacements;
             floatVector _microNodeReferencePositions;
-            uIntVector  _microNodeConnectivity;
+            uIntVector  _microNodeReferenceConnectivity;
+            uIntVector  _microNodeReferenceConnectivityCellIndices;
+            unsigned int _microCellCounts;
 
             floatVector _macroNodeReferencePositions;
             uIntVector  _macroNodeReferenceConnectivity;
+            uIntVector  _macroNodeReferenceConnectivityCellIndices;
+            unsigned int _macroCellCounts;
 
             stringVector _non_overlapped_micro_surface_sets;
             stringVector _free_micro_surface_sets;
