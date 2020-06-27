@@ -270,6 +270,22 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
+    const uIntVector freeMacroCellMicroDomainCountsAnswer = { 8 };
+    const uIntVector ghostMacroCellMicroDomainCountsAnswer = { 8 };
+
+    const uIntVector *freeMacroCellMicroDomainCountsResult = reader.getFreeMacroCellMicroDomainCounts( );
+    const uIntVector *ghostMacroCellMicroDomainCountsResult = reader.getGhostMacroCellMicroDomainCounts( );
+
+    if ( !vectorTools::fuzzyEquals( freeMacroCellMicroDomainCountsAnswer, *freeMacroCellMicroDomainCountsResult ) ){
+        results << "test_initializeIncrement (test 10) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( ghostMacroCellMicroDomainCountsAnswer, *ghostMacroCellMicroDomainCountsResult ) ){
+        results << "test_initializeIncrement (test 11) & False\n";
+        return 1;
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

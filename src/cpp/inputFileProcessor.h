@@ -85,6 +85,9 @@ namespace inputFileProcessor{
             const uIntVector* getFreeMacroCellIds( );
             const uIntVector* getGhostMacroCellIds( );
 
+            const uIntVector* getFreeMacroCellMicroDomainCounts( );
+            const uIntVector* getGhostMacroCellMicroDomainCounts( );
+
             const YAML::Node getCouplingInitialization( );
 
             //Core initialization routines
@@ -107,6 +110,7 @@ namespace inputFileProcessor{
             errorOut setSurfaceSets( const unsigned int increment );
             errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
                                                      uIntVector &macroCellIds,
+                                                     uIntVector &macroCellMicroDomainCounts,
                                                      stringVector &microVolumeNodesets );
 
             errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
@@ -151,6 +155,9 @@ namespace inputFileProcessor{
 
             uIntVector _free_macro_cell_ids;
             uIntVector _ghost_macro_cell_ids;
+
+            uIntVector _free_macro_cell_micro_domain_counts;
+            uIntVector _ghost_macro_cell_micro_domain_counts;
 
     };
 
