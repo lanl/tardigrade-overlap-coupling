@@ -40,6 +40,25 @@ namespace elib{
             { "Hex8", 9 },
         };
 
+    const std::map< unsigned int, std::string > XDMFTypeToElementName =
+        {
+            { 9, "Hex8" },
+        };
+
+    const std::map< unsigned int, unsigned int > XDMFTypeToNodeCount =
+        {
+            {  1,  1 }, //Polyvertex
+            {  2,  0 }, //Polyline ( special case )
+            {  3,  0 }, //Polygon ( special case )
+            {  4,  3 }, //Triangle
+            {  5,  4 }, //Quadrilateral
+            {  6,  4 }, //Tetrahedron
+            {  7,  5 }, //Pyramid
+            {  8,  6 }, //Wedge
+            {  9,  8 }, //Hexahedron
+            { 16,  0 }, //Polyhedron ( special case )
+        };
+
     class Element{
         /*!
         The base finite element class
@@ -91,7 +110,7 @@ namespace elib{
                                                 double tolr=1e-9, double tola=1e-9);
 
             errorOut compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
-                                              double tolr=1e-9, double tola=1e-9, unsigned int maxiter=20, unsigned int maxls=5);
+                                               double tolr=1e-9, double tola=1e-9, unsigned int maxiter=20, unsigned int maxls=5);
 
             virtual errorOut get_shape_functions(const vec &local_coordinates, vec &result){
                 return new errorNode( "get_shape_functions", "Not implemented" );
@@ -113,6 +132,16 @@ namespace elib{
 
             const std::vector< unsigned int > *get_global_node_ids();
     };
+
+    const double sqrt3 = std::sqrt( 3. );
+    const quadrature_rule Hex8_default_qrule = { { { -1 / sqrt3, -1 / sqrt3, -1 / sqrt3 }, 1. }, 
+                                                 { {  1 / sqrt3, -1 / sqrt3, -1 / sqrt3 }, 1. },
+                                                 { {  1 / sqrt3,  1 / sqrt3, -1 / sqrt3 }, 1. },
+                                                 { { -1 / sqrt3,  1 / sqrt3, -1 / sqrt3 }, 1. },
+                                                 { { -1 / sqrt3, -1 / sqrt3,  1 / sqrt3 }, 1. },
+                                                 { {  1 / sqrt3, -1 / sqrt3,  1 / sqrt3 }, 1. },
+                                                 { {  1 / sqrt3,  1 / sqrt3,  1 / sqrt3 }, 1. },
+                                                 { { -1 / sqrt3,  1 / sqrt3,  1 / sqrt3 }, 1. }  };
 
     class Hex8 : public Element{
         /*!
@@ -163,5 +192,10 @@ namespace elib{
                                                      unsigned int &XDMFCellType, std::string &elementName,
                                                      unsigned int &deltaIndex,
                                                      unsigned int &nFaces, uivec &nNodesOnFace, uivec &nodeIndexArrays );
+
+    const std::map< std::string, quadrature_rule > default_qrules =
+        {
+            { "Hex8", Hex8_default_qrule },
+        };
 }
 #endif
