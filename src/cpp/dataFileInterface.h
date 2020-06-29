@@ -93,6 +93,8 @@ namespace dataFileInterface{
             virtual errorOut readMesh( const unsigned int increment, floatVector &nodalPositions ); //Required overload
             virtual errorOut getDomainNodes( const unsigned int increment, const std::string domainName,
                                              uIntVector &domainNodes ); //Required overload
+            virtual errorOut getNumDomainNodes( const unsigned int increment, const std::string domainName,
+                                                unsigned int &numDomainNodes ); //Required overload
             virtual errorOut getSetNames( const unsigned int increment, std::vector< std::string > &setNames ); //Required overload
             virtual errorOut getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
                                               floatVector &data ); //Required overload
@@ -132,6 +134,8 @@ namespace dataFileInterface{
             errorOut readMesh( const unsigned int increment, floatVector &nodalPositions );
             errorOut getDomainNodes( const unsigned int increment, const std::string domainName,
                                      uIntVector &domainNodes );
+            errorOut getNumDomainNodes( const unsigned int increment, const std::string domainName,
+                                        unsigned int &numDomainNodes );
             errorOut getSetNames( const unsigned int increment, std::vector< std::string > &setNames );
             errorOut getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
                                       floatVector &data );

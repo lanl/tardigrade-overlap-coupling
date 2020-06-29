@@ -456,6 +456,45 @@ int test_XDMFDataFile_getMeshData2( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_getNumDomainNodes( std::ofstream &results ){
+    /*!
+     * Test the determination of the number of nodes are in a given domain
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    unsigned int numDomainNodesAnswer = 8;
+
+    unsigned int numDomainNodesResult;
+    std::string domainName = "left";
+    errorOut error = xdf.getNumDomainNodes( 0, domainName, numDomainNodesResult );
+
+    if ( error ){
+        error->print( );
+        results << "test_XDMFDataFile_getNumDomainNodes & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( numDomainNodesResult, numDomainNodesAnswer ) ){
+        results << "test_XDMFDataFile_getNumDomainNodes (test 1) & False\n";
+        return 1;
+    }
+
+    domainName = "free";
+    error = xdf.getNumDomainNodes( 0, domainName, numDomainNodesResult );
+
+    if ( !error ){
+        results << "test_XDMFDataFile_getNumDomainNodes (test 2) & False\n";
+        return 1;
+    }
+
+    results << "test_XDMFDataFile_getNumDomainNodes & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -471,6 +510,7 @@ int main(){
     test_XDMFDataFile_constructor( results );
     test_XDMFDataFile_getNumIncrements( results );
     test_XDMFDataFile_readMesh( results );
+    test_XDMFDataFile_getNumDomainNodes( results );
     test_XDMFDataFile_getDomainNodes( results );
     test_XDMFDataFile_getNumNodes( results );
     test_XDMFDataFile_getSetNames( results );

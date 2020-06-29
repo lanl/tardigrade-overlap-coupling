@@ -163,6 +163,19 @@ namespace dataFileInterface{
         return new errorNode( "getDomainNodes", "The getDomainNodes function is not defined" );
     }
 
+    errorOut dataFileBase::getNumDomainNodes( const unsigned int increment, const std::string domainName,
+                                              unsigned int &numDomainNodes ){
+        /*!
+         * Get the number of nodes in the provided domain.
+         *
+         * :param const unsigned int increment: The increment at which to get the domain's node count
+         * :param const std::string domainName: The name of the domain to be interrogated.
+         * :param unsigned int numDomainNodes: The number of nodes in the domain
+         */
+
+        return new errorNode( "getDomainNodes", "The getNumDomainNodes function is not defined" );
+    }
+
     errorOut dataFileBase::getSetNames( const unsigned int increment, std::vector< std::string > &setNames ){
         /*!
          * Get the set names from the provided domain at the current increment
@@ -572,6 +585,37 @@ namespace dataFileInterface{
         }
 
         return NULL;
+    }
+
+    errorOut XDMFDataFile::getNumDomainNodes( const unsigned int increment, const std::string domainName,
+                                              unsigned int &numDomainNodes ){
+        /*!
+         * Get the number of nodes in the provided domain.
+         *
+         * :param const unsigned int increment: The increment at which to get the domain's node count
+         * :param const std::string domainName: The name of the domain to be interrogated.
+         * :param unsigned int numDomainNodes: The number of nodes in the domain
+         */
+
+        //Get the grid
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        errorOut error = getUnstructuredGrid( increment, grid );
+        if ( error ){
+            errorOut result = new errorNode( "getDomainNodes", "Error in extraction of the grid" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Get the set
+        shared_ptr< XdmfSet > set = grid->getSet( domainName );
+        if ( !set ){
+            return new errorNode( "getDomainNodes", "No domain of name " + domainName + " found" );
+        }
+
+        numDomainNodes = set->getSize( );
+
+        return NULL;
+
     }
 
     errorOut XDMFDataFile::getSetNames( const unsigned int increment, std::vector< std::string > &setNames ){
