@@ -1222,7 +1222,7 @@ namespace inputFileProcessor{
         /*
          * Set the micro node index mappings for the output matrices.
          * The order that the node appears in the unique node vector
-         * is the 
+         * is the index
          *
          * If a micro-scale node is found in free then it cannot be ghost.
          * We give preference to free nodes since the micro-scale is assumed
@@ -1290,6 +1290,91 @@ namespace inputFileProcessor{
 
         //Remove the duplicate nodes
         error = removeIndicesFromVector( _unique_ghost_micro_nodes, duplicateNodes.begin( ), duplicateNodes.end( ) );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+                                             "Error in the removal of the duplicate values from the vector" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+    }
+
+    errorOut inputFileProcessor::setMacroNodeIndexMappings( const unsigned int &increment ){
+        /*
+         * Set the macro node index mappings for the output matrices.
+         * The order that the node appears in the unique node vectors
+         * is the index.
+         *
+         * If a macro-scale node is found in ghost then it cannot be free.
+         * We give preference to ghost nodes since the micro-scale is assumed
+         * to be more accurate than the macroscale.
+         */
+
+        //Get the unique nodes in the free and ghost domains
+        errorOut error = getUniqueNodesInDomains( increment, _macroscale, _free_macro_volume_sets, _unique_free_macro_nodes );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "setMacroNodeIndexMappings",
+                                             "Error in determining the unique free macroscale nodes" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = getUniqueNodesInDomains( increment, _macroscale, _ghost_macro_volume_sets, _unique_ghost_macro_nodes );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+                                             "Error in determining the unique ghost macroscale nodes" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Remove nodes found in the ghost nodes from the free nodes
+        unsigned int numNodes = 0;
+        unsigned int n;
+
+        //Approximate the size of the duplicate nodes. At worst, this will be the size of the
+        //nodes on the surfaces of the ghost domains
+        for ( auto domain =  _ghost_macro_surface_sets.begin( );
+                   domain != _ghost_macro_surface_sets.end( );
+                   domain++ ){
+
+            _macroscale->getNumDomainNodes( increment, *domain, n );
+            numNodes += n;
+
+        }
+
+        //Loop through the free nodes to find duplicates
+        uIntVector duplicateNodes;
+        duplicateNodes.reserve( numNodes );
+        
+        for ( auto node =  _unique_free_macro_nodes.begin( );
+                   node != _unique_free_macro_nodes.end( );
+                   node++ ){
+
+            //If the free node is found in the ghost nodes add it to the duplicates
+            if ( std::find( _unique_ghost_macro_nodes.begin( ), _unique_ghost_macro_nodes.end( ),  *node )
+                 != _unique_ghost_macro_nodes.end( ) ){
+
+                duplicateNodes.push_back( node - _unique_free_macro_nodes.begin( ) );
+
+            }
+
+        }
+
+        //Sort the duplicate nodes
+        std::sort( duplicateNodes.begin( ), duplicateNodes.end( ) );
+
+        //Remove the duplicate nodes
+        error = removeIndicesFromVector( _unique_free_micro_nodes, duplicateNodes.begin( ), duplicateNodes.end( ) );
 
         if ( error ){
 

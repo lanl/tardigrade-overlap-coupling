@@ -137,6 +137,7 @@ namespace inputFileProcessor{
                                               const stringVector &domainNames, uIntVector &uniqueIds );
 
             errorOut setMicroNodeIndexMappings( const unsigned int &increment );
+            errorOut setMacroNodeIndexMappings( const unsigned int &increment );
 
             template< typename T, typename Iter >
             errorOut removeIndicesFromVector( std::vector< T > & v, Iter begin, Iter end );
