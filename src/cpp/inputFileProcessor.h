@@ -89,6 +89,11 @@ namespace inputFileProcessor{
             const uIntVector* getFreeMacroCellMicroDomainCounts( );
             const uIntVector* getGhostMacroCellMicroDomainCounts( );
 
+            const uIntVector* getFreeMicroNodeIds( );
+            const uIntVector* getGhostMicroNodeIds( );
+
+            const bool computeMicroShapeFunctions( );
+
             const YAML::Node getCouplingInitialization( );
 
             //Core initialization routines
@@ -127,6 +132,15 @@ namespace inputFileProcessor{
             errorOut extractMacroDisplacements( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
 
+            errorOut getUniqueNodesInDomains( const unsigned int &increment,
+                                              const std::shared_ptr< dataFileInterface::dataFileBase > &dataFile,
+                                              const stringVector &domainNames, uIntVector &uniqueIds );
+
+            errorOut setMicroNodeIndexMappings( const unsigned int &increment );
+
+            template< typename T, typename Iter >
+            errorOut removeIndicesFromVector( std::vector< T > & v, Iter begin, Iter end );
+
             //Private Attributes
             bool _increment_initialized = false;
             unsigned int _current_increment;
@@ -161,6 +175,14 @@ namespace inputFileProcessor{
 
             uIntVector _free_macro_cell_micro_domain_counts;
             uIntVector _ghost_macro_cell_micro_domain_counts;
+
+            uIntVector _unique_free_micro_nodes;
+            uIntVector _unique_ghost_micro_nodes;
+
+            uIntVector _unique_free_macro_nodes;
+            uIntVector _unique_ghost_macro_nodes;
+
+            bool _computeMicroShapeFunctions = false;
 
     };
 

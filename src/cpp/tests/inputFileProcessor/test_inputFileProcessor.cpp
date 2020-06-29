@@ -313,6 +313,63 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
+    const uIntVector *freeMicroNodeIds = reader.getFreeMicroNodeIds( );
+    const uIntVector *ghostMicroNodeIds = reader.getGhostMicroNodeIds( );
+
+    for ( auto n  = ghostMicroNodeIds->begin( );
+               n != ghostMicroNodeIds->end( );
+               n++ ){
+
+        if ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) != freeMicroNodeIds->end( ) ){
+            std::cout << "*n: " << *n << "\n";
+            results << "test_initializeIncrement (test 12) & False\n";
+            return 1;
+        }
+    }
+
+    const stringVector *freeMicroDomainNames = reader.getFreeMicroDomainNames( );
+    uIntVector nodes;
+    for ( auto domain  = freeMicroDomainNames->begin( );
+               domain != freeMicroDomainNames->end( );
+               domain++ ){
+
+        reader._microscale->getDomainNodes( 0, *domain, nodes );
+
+        for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
+
+            if ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ){
+
+                results << "test_initializeIncrement (test 13) & False\n";
+                return 1;
+
+            }
+
+        }
+
+    }
+
+    const stringVector *ghostMicroDomainNames = reader.getGhostMicroDomainNames( );
+
+    for ( auto domain  = ghostMicroDomainNames->begin( );
+               domain != ghostMicroDomainNames->end( );
+               domain++ ){
+
+        reader._microscale->getDomainNodes( 0, *domain, nodes );
+
+        for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
+
+            if ( ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
+                 ( std::find( ghostMicroNodeIds->begin( ), ghostMicroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) ){
+
+                results << "test_initializeIncrement (test 14) & False\n";
+                return 1;
+
+            }
+
+        }
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

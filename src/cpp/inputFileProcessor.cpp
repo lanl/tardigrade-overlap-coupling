@@ -456,6 +456,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Set the unique macro and micro nodes
+        error = setMicroNodeIndexMappings( increment );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in setting the unique micro node index mappings" );
+            result->addNext( error );
+            return result;
+        }
+
         //Set the current increment
         _current_increment = increment;
         _increment_initialized = true;
@@ -1129,8 +1138,207 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config[ "coupling_initialization" ][ "projection_type" ] ){
+
+            _config[ "coupling_initialization" ][ "projection_type" ] = "micro_least_squares";
+            _computeMicroShapeFunctions = true;
+
+        }
+
         return NULL;
 
+    }
+
+    errorOut inputFileProcessor::getUniqueNodesInDomains( const unsigned int &increment,
+                                                          const std::shared_ptr< dataFileInterface::dataFileBase > &dataFile,
+                                                          const stringVector &domainNames, uIntVector &uniqueIds ){
+        /*!
+         *
+         * Determine the unique nodes in a collection of domains
+         *
+         * :param const std::shared_ptr< dataFileInterface::dataFileBase > &dataFile: The datafile to read
+         * :param const stringVector &domainNames: The names of the domains to search
+         * :param uIntVector &uniqueIds: The resulting unique Ids.
+         *
+         */
+
+        //Loop over the free micro domains to determine the approximate
+        //size of the micro-domains
+        
+        unsigned int approximateSize = 0;
+        unsigned int n;
+
+        for ( auto domain = domainNames.begin( );
+                   domain != domainNames.end( );
+                   domain++ ){
+
+            dataFile->getNumDomainNodes( increment, *domain, n );
+            approximateSize += n;
+
+        }
+
+        //Loop through the domains and store the unique node ids
+        uniqueIds.clear( );
+        uniqueIds.reserve( approximateSize );
+
+        uIntVector nodes;
+        errorOut error;
+
+        for ( auto domain =  domainNames.begin( );
+                   domain != domainNames.end( );
+                   domain++ ){
+
+            error = _microscale->getDomainNodes( increment, *domain, nodes );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "getUniqueNodesInDomains", "Error in getting the nodes of '" + *domain + "'" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Loop through the nodes
+            for ( auto node =  nodes.begin( );
+                       node != nodes.end( );
+                       node++ ){
+                  
+                //If the node is not found add it 
+                if ( std::find( uniqueIds.begin( ), uniqueIds.end( ), *node ) == uniqueIds.end( ) ){
+
+                    uniqueIds.push_back( *node );
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::setMicroNodeIndexMappings( const unsigned int &increment ){
+        /*
+         * Set the micro node index mappings for the output matrices.
+         * The order that the node appears in the unique node vector
+         * is the 
+         *
+         * If a micro-scale node is found in free then it cannot be ghost.
+         * We give preference to free nodes since the micro-scale is assumed
+         * to be more accurate than the macroscale.
+         */
+
+        //Get the unique nodes in the free and ghost domains
+        errorOut error = getUniqueNodesInDomains( increment, _microscale, _free_micro_volume_sets, _unique_free_micro_nodes );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+                                             "Error in determining the unique free microscale nodes" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = getUniqueNodesInDomains( increment, _microscale, _ghost_micro_volume_sets, _unique_ghost_micro_nodes );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+                                             "Error in determining the unique ghost microscale nodes" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Remove nodes found in the free nodes from the ghost nodes
+        unsigned int numNodes = 0;
+        unsigned int n;
+
+        //Approximate the size of the duplicate nodes. At worst, this will be the size of the
+        //nodes on the surfaces of the free domains
+        for ( auto domain =  _free_micro_surface_sets.begin( );
+                   domain != _free_micro_surface_sets.end( );
+                   domain++ ){
+
+            _microscale->getNumDomainNodes( increment, *domain, n );
+            numNodes += n;
+
+        }
+
+        //Loop through the ghost nodes to find duplicates
+        uIntVector duplicateNodes;
+        duplicateNodes.reserve( numNodes );
+        
+        for ( auto node =  _unique_ghost_micro_nodes.begin( );
+                   node != _unique_ghost_micro_nodes.end( );
+                   node++ ){
+
+            //If the ghost node is found in the free nodes add it to the duplicates
+            if ( std::find( _unique_free_micro_nodes.begin( ), _unique_free_micro_nodes.end( ),  *node )
+                 != _unique_free_micro_nodes.end( ) ){
+
+                duplicateNodes.push_back( node - _unique_ghost_micro_nodes.begin( ) );
+
+            }
+
+        }
+
+        //Sort the duplicate nodes
+        std::sort( duplicateNodes.begin( ), duplicateNodes.end( ) );
+
+        //Remove the duplicate nodes
+        error = removeIndicesFromVector( _unique_ghost_micro_nodes, duplicateNodes.begin( ), duplicateNodes.end( ) );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+                                             "Error in the removal of the duplicate values from the vector" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+    }
+
+    template< typename T, typename Iter >
+    errorOut inputFileProcessor::removeIndicesFromVector( std::vector< T > & v, Iter begin, Iter end ){
+        /*!
+         * Remove the specified indices from the vector
+         *
+         * Method from https://codereview.stackexchange.com/questions/206686/removing-by-indices-several-elements-from-a-vector?rq=1
+         *
+         * :param std::vector< T > & v: The vector to be modified
+         * :param Iter begin: The beginning iterator of the index vector
+         * :param Iter end: The end iterator of the index vector
+         */
+
+        if ( !std::is_sorted( begin, end ) ){
+
+            return new errorNode( "removeIndicesFromVector", "The index vector is not sorted" );
+
+        }
+
+        auto rm_iter = begin;
+        std::size_t current_index = 0;
+
+        const auto pred = [&]( const T& ){
+            
+            // any more to remove?
+            if ( rm_iter == end ) { return false; }
+
+            // is this one specified?
+            if ( *rm_iter == current_index++ ){ return ++rm_iter, true; }
+
+            return false;
+
+        }; 
+
+        v.erase( std::remove_if( v.begin( ), v.end( ), pred ), v.end( ) );
+
+        return NULL;
     }
 
     const floatVector* inputFileProcessor::getMicroDisplacements( ){
@@ -1215,6 +1423,30 @@ namespace inputFileProcessor{
          */
 
         return &_ghost_macro_cell_micro_domain_counts;
+    }
+
+    const bool inputFileProcessor::computeMicroShapeFunctions( ){
+        /*!
+         * Return whether the micro-shape functions should be computed
+         */
+
+        return _computeMicroShapeFunctions;
+    }
+
+    const uIntVector *inputFileProcessor::getFreeMicroNodeIds( ){
+        /*!
+         * Get the free micro-node ids
+         */
+
+        return &_unique_free_micro_nodes;
+    }
+
+    const uIntVector *inputFileProcessor::getGhostMicroNodeIds( ){
+        /*!
+         * Get the ghost micro-node ids
+         */
+
+        return &_unique_ghost_micro_nodes;
     }
 
 }
