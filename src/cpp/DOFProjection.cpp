@@ -22,7 +22,8 @@ namespace DOFProjection{
                                                 const floatVector &domainReferenceXis,
                                                 const floatVector &domainMacroInterpolationFunctionValues,
                                                 const unsigned int &nMacroDOF, const floatVector &macroDOFVector,
-                                                const floatVector &microWeights, floatVector &microDisplacements ){
+                                                const floatVector &microWeights, floatVector &microDisplacements,
+                                                const std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex ){
 
         /*!
          * Add the contribution of a macro domain's deformation to the micro-scale
@@ -46,6 +47,11 @@ namespace DOFProjection{
          *       if the minimum L2 projection is being used.
          * :param floatVector &microDisplacements: The displacements of the micro-scale nodes as determined by the macro-scale
          *     projection.
+         * :param std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex: A map from the micro node index 
+         *     to the indices to be used in the output vector. The micro nodes which are either free or ghost may not be all
+         *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the macro index values
+         *     will be used.
          */
 
         if ( domainMacroNodeIndices.size() != domainMacroInterpolationFunctionValues.size() ){
@@ -71,7 +77,7 @@ namespace DOFProjection{
 
         //Compute the micro displacements
         errorOut error = addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, u, phi, domainReferenceXis,
-                                                            microWeights, microDisplacements );
+                                                            microWeights, microDisplacements, microNodeToLocalIndex );
 
         if ( error ){
             errorOut result = new errorNode( "addMacroDomainDisplacementToMicro",
@@ -86,7 +92,8 @@ namespace DOFProjection{
     errorOut addMacroDomainDisplacementToMicro( const unsigned int dim, const uIntVector &domainMicroNodeIndices,
                                                 const floatVector &u, const floatVector &phi,
                                                 const floatVector &domainReferenceXis,
-                                                const floatVector &microWeights, floatVector &microDisplacements ){
+                                                const floatVector &microWeights, floatVector &microDisplacements,
+                                                const std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex ){
         /*!
          * Add the contribution of a macro domain's deformation to the micro-scale
          *
@@ -102,11 +109,18 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &microDisplacements: The displacements of the micro-scale nodes as determined by the macro-scale
          *     projection.
+         * :param std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex: A map from the micro node index 
+         *     to the indices to be used in the output vector. The micro nodes which are either free or ghost may not be all
+         *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the macro index values
+         *     will be used.
          */
 
-        if ( dim * microWeights.size() != microDisplacements.size() ){
-            return new errorNode( "addMacroDomainDisplacementToMicro",
-                                  "The number of micro domain weights is not consistent with the number of micro displacements" );
+        if ( !microNodeToLocalIndex ){
+            if ( dim * microWeights.size() != microDisplacements.size() ){
+                return new errorNode( "addMacroDomainDisplacementToMicro",
+                                      "The number of micro domain weights is not consistent with the number of micro displacements" );
+            }
         }
 
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
@@ -135,7 +149,28 @@ namespace DOFProjection{
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
             //Get the index of the micro-scale node
-            m = domainMicroNodeIndices[ i ];
+            if ( microNodeToLocalIndex ){
+
+                auto indx = microNodeToLocalIndex->find( domainMicroNodeIndices[ i ] );
+
+                if ( indx == microNodeToLocalIndex->end( ) ){
+                    return new errorNode( "addMacroDomainDisplacementToMicro",
+                                          "Micro node index " + std::to_string( domainMicroNodeIndices[ i ] )
+                                          + " is not found in microNodeToLocalIndex" );
+                }
+
+                if ( indx->second >= microDisplacements.size( ) ){
+                    return new errorNode( "addMacroDomainDisplacementToMicro",
+                                          "Micro node index " + std::to_string( domainMicroNodeIndices[ i ] )
+                                          + " is greater than the size of the micro displacements" );
+                }
+
+                m = indx->second;
+
+            }
+            else{
+                m = domainMicroNodeIndices[ i ];
+            }
 
             if ( dim * ( m + 1 ) > microDisplacements.size() ){
                 return new errorNode( "addMacroDomainDisplacementToMicro",

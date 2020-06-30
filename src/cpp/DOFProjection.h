@@ -14,6 +14,7 @@
 #include<vector_tools.h>
 #include<error_tools.h>
 #include<Eigen/Sparse>
+#include<unordered_map>
 
 namespace DOFProjection{
 
@@ -45,12 +46,14 @@ namespace DOFProjection{
                                                 const floatVector &domainReferenceXis,
                                                 const floatVector &domainMacroInterpolationFunctionValues,
                                                 const unsigned int &nMacroDOF, const floatVector &macroDOFVector,
-                                                const floatVector &microWeights, floatVector &microDisplacements );
+                                                const floatVector &microWeights, floatVector &microDisplacements,
+                                                const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL );
 
     errorOut addMacroDomainDisplacementToMicro( const unsigned int dim, const uIntVector &domainMicroNodeIndices,
                                                 const floatVector &u, const floatVector &phi,
                                                 const floatVector &domainReferenceXis,
-                                                const floatVector &microWeights, floatVector &microDisplacements );
+                                                const floatVector &microWeights, floatVector &microDisplacements,
+                                                const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL );
 
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
