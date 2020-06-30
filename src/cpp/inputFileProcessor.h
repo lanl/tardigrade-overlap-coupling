@@ -100,11 +100,9 @@ namespace inputFileProcessor{
             const stringVector *getFreeMacroDomainNames( );
             const stringVector *getGhostMacroDomainNames( );
 
-            const DOFMap *getFreeMicroGlobalToLocalDOFMap( ); 
-            const DOFMap *getGhostMicroGlobalToLocalDOFMap( );
+            const DOFMap *getMicroGlobalToLocalDOFMap( ); 
 
-            const DOFMap *getFreeMacroGlobalToLocalDOFMap( ); 
-            const DOFMap *getGhostMacroGlobalToLocalDOFMap( ); 
+            const DOFMap *getMacroGlobalToLocalDOFMap( ); 
 
             const bool computeMicroShapeFunctions( );
 
@@ -201,11 +199,9 @@ namespace inputFileProcessor{
             uIntVector _unique_free_macro_nodes;
             uIntVector _unique_ghost_macro_nodes;
 
-            DOFMap _global_to_local_macro_free_node_map;
-            DOFMap _global_to_local_macro_ghost_node_map;
+            DOFMap _global_to_local_macro_node_map;
 
-            DOFMap _global_to_local_micro_free_node_map;
-            DOFMap _global_to_local_micro_ghost_node_map;
+            DOFMap _global_to_local_micro_node_map;
 
             bool _computeMicroShapeFunctions = false;
 

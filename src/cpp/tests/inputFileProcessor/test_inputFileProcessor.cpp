@@ -415,10 +415,9 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const DOFMap *freeMicroGlobalToLocalDOFMap = reader.getFreeMicroGlobalToLocalDOFMap( );
-    const DOFMap *ghostMicroGlobalToLocalDOFMap = reader.getGhostMicroGlobalToLocalDOFMap( );
+    const DOFMap *microGlobalToLocalDOFMap = reader.getMicroGlobalToLocalDOFMap( );
 
-    if ( freeMicroGlobalToLocalDOFMap->size( ) != freeMicroNodeIds->size( ) ){
+    if ( microGlobalToLocalDOFMap->size( ) != ( freeMicroNodeIds->size( ) + ghostMicroNodeIds->size( ) ) ){
 
         results << "test_initializeIncrement (test 18) & False\n";
         return 1;
@@ -429,7 +428,7 @@ int test_initializeIncrement( std::ofstream &results ){
                n != freeMicroNodeIds->end( );
                n++ ){
 
-        if ( freeMicroGlobalToLocalDOFMap->find( *n ) == freeMicroGlobalToLocalDOFMap->end( ) ){
+        if ( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ){
 
             results << "test_initializeIncrement (test 19) & False\n";
             return 1;
@@ -438,32 +437,24 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    if ( ghostMicroGlobalToLocalDOFMap->size( ) != ghostMicroNodeIds->size( ) ){
-
-        results << "test_initializeIncrement (test 19) & False\n";
-        return 1;
-
-    }
-
     for ( auto n  = ghostMicroNodeIds->begin( );
                n != ghostMicroNodeIds->end( );
                n++ ){
 
-        if ( ghostMicroGlobalToLocalDOFMap->find( *n ) == ghostMicroGlobalToLocalDOFMap->end( ) ){
+        if ( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ){
 
-            results << "test_initializeIncrement (test 21) & False\n";
+            results << "test_initializeIncrement (test 20) & False\n";
             return 1;
 
         }
 
     }
 
-    const DOFMap *freeMacroGlobalToLocalDOFMap = reader.getFreeMacroGlobalToLocalDOFMap( );
-    const DOFMap *ghostMacroGlobalToLocalDOFMap = reader.getGhostMacroGlobalToLocalDOFMap( );
+    const DOFMap *macroGlobalToLocalDOFMap = reader.getMacroGlobalToLocalDOFMap( );
 
-    if ( freeMacroGlobalToLocalDOFMap->size( ) != freeMacroNodeIds->size( ) ){
+    if ( macroGlobalToLocalDOFMap->size( ) != ( freeMacroNodeIds->size( ) + ghostMacroNodeIds->size( ) ) ){
 
-        results << "test_initializeIncrement (test 22) & False\n";
+        results << "test_initializeIncrement (test 21) & False\n";
         return 1;
 
     }
@@ -472,19 +463,12 @@ int test_initializeIncrement( std::ofstream &results ){
                n != freeMacroNodeIds->end( );
                n++ ){
 
-        if ( freeMacroGlobalToLocalDOFMap->find( *n ) == freeMacroGlobalToLocalDOFMap->end( ) ){
+        if ( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ){
 
-            results << "test_initializeIncrement (test 23) & False\n";
+            results << "test_initializeIncrement (test 22) & False\n";
             return 1;
 
         }
-
-    }
-
-    if ( ghostMacroGlobalToLocalDOFMap->size( ) != ghostMacroNodeIds->size( ) ){
-
-        results << "test_initializeIncrement (test 24) & False\n";
-        return 1;
 
     }
 
@@ -492,9 +476,9 @@ int test_initializeIncrement( std::ofstream &results ){
                n != ghostMacroNodeIds->end( );
                n++ ){
 
-        if ( ghostMacroGlobalToLocalDOFMap->find( *n ) == ghostMacroGlobalToLocalDOFMap->end( ) ){
+        if ( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ){
 
-            results << "test_initializeIncrement (test 25) & False\n";
+            results << "test_initializeIncrement (test 23) & False\n";
             return 1;
 
         }

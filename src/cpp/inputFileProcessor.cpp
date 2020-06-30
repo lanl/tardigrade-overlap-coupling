@@ -1324,25 +1324,23 @@ namespace inputFileProcessor{
         }
 
         //Set the local to global maps
-        _global_to_local_micro_free_node_map.clear();
-        _global_to_local_micro_free_node_map.reserve( _unique_free_micro_nodes.size( ) );
+        _global_to_local_micro_node_map.clear();
+        _global_to_local_micro_node_map.reserve( _unique_free_micro_nodes.size( ) + _unique_ghost_micro_nodes.size( ) );
 
         for ( auto node  = _unique_free_micro_nodes.begin( );
                    node != _unique_free_micro_nodes.end( );
                    node++ ){
 
-            _global_to_local_micro_free_node_map[ *node ] = node - _unique_free_micro_nodes.begin( );
+            _global_to_local_micro_node_map[ *node ] = node - _unique_free_micro_nodes.begin( );
 
         }
-
-        _global_to_local_micro_ghost_node_map.clear();
-        _global_to_local_micro_ghost_node_map.reserve( _unique_ghost_micro_nodes.size( ) );
 
         for ( auto node  = _unique_ghost_micro_nodes.begin( );
                    node != _unique_ghost_micro_nodes.end( );
                    node++ ){
 
-            _global_to_local_micro_ghost_node_map[ *node ] = node - _unique_ghost_micro_nodes.begin( );
+            _global_to_local_micro_node_map[ *node ] = node - _unique_ghost_micro_nodes.begin( )
+                                                     + _unique_free_micro_nodes.size( );
 
         }
 
@@ -1435,25 +1433,23 @@ namespace inputFileProcessor{
         }
 
         //Set the global to local maps
-        _global_to_local_macro_free_node_map.clear();
-        _global_to_local_macro_free_node_map.reserve( _unique_free_macro_nodes.size( ) );
+        _global_to_local_macro_node_map.clear();
+        _global_to_local_macro_node_map.reserve( _unique_free_macro_nodes.size( ) + _unique_ghost_macro_nodes.size( ) );
 
         for ( auto node  = _unique_free_macro_nodes.begin( );
                    node != _unique_free_macro_nodes.end( );
                    node++ ){
 
-            _global_to_local_macro_free_node_map[ *node ] = node - _unique_free_macro_nodes.begin( );
+            _global_to_local_macro_node_map[ *node ] = node - _unique_free_macro_nodes.begin( );
 
         }
-
-        _global_to_local_macro_ghost_node_map.clear();
-        _global_to_local_macro_ghost_node_map.reserve( _unique_ghost_macro_nodes.size( ) );
 
         for ( auto node  = _unique_ghost_macro_nodes.begin( );
                    node != _unique_ghost_macro_nodes.end( );
                    node++ ){
 
-            _global_to_local_macro_ghost_node_map[ *node ] = node - _unique_ghost_macro_nodes.begin( );
+            _global_to_local_macro_node_map[ *node ] = node - _unique_ghost_macro_nodes.begin( )
+                                                     + _unique_free_macro_nodes.size( );
 
         }
 
@@ -1638,36 +1634,20 @@ namespace inputFileProcessor{
         return &_unique_ghost_macro_nodes;
     }
 
-    const DOFMap *inputFileProcessor::getFreeMicroGlobalToLocalDOFMap( ){
+    const DOFMap *inputFileProcessor::getMicroGlobalToLocalDOFMap( ){
         /*!
-         * Get the DOF map from the global to local DOF Id for the free micro nodes
+         * Get the DOF map from the global to local DOF Id for the micro nodes
          */
 
-        return &_global_to_local_micro_free_node_map;
+        return &_global_to_local_micro_node_map;
     }
 
-    const DOFMap *inputFileProcessor::getGhostMicroGlobalToLocalDOFMap( ){
+    const DOFMap *inputFileProcessor::getMacroGlobalToLocalDOFMap( ){
         /*!
-         * Get the DOF map from the global to local DOF Id for the ghost micro nodes
+         * Get the DOF map from the global to local DOF Id for the macro nodes
          */
 
-        return &_global_to_local_micro_ghost_node_map;
-    }
-
-    const DOFMap *inputFileProcessor::getFreeMacroGlobalToLocalDOFMap( ){
-        /*!
-         * Get the DOF map from the global to local DOF Id for the free macro nodes
-         */
-
-        return &_global_to_local_macro_free_node_map;
-    }
-
-    const DOFMap *inputFileProcessor::getGhostMacroGlobalToLocalDOFMap( ){
-        /*!
-         * Get the DOF map from the global to local DOF Id for the ghost macro nodes
-         */
-
-        return &_global_to_local_macro_ghost_node_map;
+        return &_global_to_local_macro_node_map;
     }
 
 }
