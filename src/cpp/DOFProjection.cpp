@@ -210,7 +210,9 @@ namespace DOFProjection{
                                                         const uIntVector &domainMacroNodeIndices,
                                                         const floatVector &domainReferenceXis,
                                                         const floatVector &domainMacroInterpolationFunctionValues,
-                                                        const floatVector &microWeights, SparseMatrix &domainN ){
+                                                        const floatVector &microWeights, SparseMatrix &domainN,
+                                                        const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex,
+                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
         /*!
          * Construct the interpolation matrix for a macro domain overlapping with a 
          * micro-domain
@@ -234,6 +236,16 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param SparseMatrix &domainN: The macro domain's interpolation function.
+         * :param std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex: A map from the micro node index 
+         *     to the indices to be used in the output vector. The micro nodes which are either free or ghost may not be all
+         *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         //Error handling
@@ -247,15 +259,10 @@ namespace DOFProjection{
                                   "The number of micro node indices is not equal to the number of Xi vectors" );
         }
 
-        if ( nMicroNodes != microWeights.size() ){
-            return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
-                                  "The number of micro nodes is not equal to the number of weights" );
-        }
-
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
-            if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
+        if ( !microNodeToLocalIndex ){
+            if ( nMicroNodes != microWeights.size() ){
                 return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
-                                      "An index in the micro domain is larger than the number of micro weights" );
+                                      "The number of micro nodes is not equal to the number of weights" );
             }
         }
 
@@ -281,22 +288,80 @@ namespace DOFProjection{
         //Initialize the value of the weight and shapefunction value
         floatType w, sf;
 
+        //Initialize the global micro node index
+        unsigned int m;
+
+        //Initialize the global macro node index
+        unsigned int n;
+
+        //Initialize the output index for the micro-nodes
+        unsigned int o;
+
+        //Initialize the output index for the macro-nodes
+        unsigned int p;
+
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
+            //Set the global micro node index
+            m = domainMicroNodeIndices[ i ];
+
+            if ( m >= microWeights.size( ) ){
+                return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                      "The number of micro-weights is smaller than required for micro-node " + std::to_string( m ) );
+            }
+
             //Set the row index
-            row0 = nMicroDOF * domainMicroNodeIndices[ i ];
+            if ( microNodeToLocalIndex ){
+
+                auto indx = microNodeToLocalIndex->find( m );
+
+                if ( indx == microNodeToLocalIndex->end( ) ){
+
+                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                          "The micro node " + std::to_string( m ) + " is not found in the micro node to local index map" );
+
+                }
+
+                o = indx->second;
+            }
+            else{
+                o = domainMicroNodeIndices[ i ];
+            }
+
+            row0 = nMicroDOF * o;
 
             //Set the micro-position vector
             Xi = floatVector( domainReferenceXis.begin() + nMicroDOF * i,
                               domainReferenceXis.begin() + nMicroDOF * i + nMicroDOF );
 
             //Set the value of the weight
-            w = microWeights[ domainMicroNodeIndices[ i ] ];
+            w = microWeights[ m ];
 
             for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
+                //Set the global macro node index
+                n = domainMacroNodeIndices[ j ];
+
                 //Set the column index
-                col0 = nMacroDOF * domainMacroNodeIndices[ j ];
+                if ( macroNodeToLocalIndex ){
+    
+                    auto indx = macroNodeToLocalIndex->find( n );
+    
+                    if ( indx == macroNodeToLocalIndex->end( ) ){
+    
+                        return new errorNode( "formMacroDomaintoMicroInterpolationMatrix",
+                                              "The macro node " + std::to_string( n ) + " is not found in the macro node to local index map" );
+    
+                    }
+    
+                    p = indx->second;
+    
+                }
+                else{
+                    p = domainMacroNodeIndices[ j ];
+                }
+
+                col0 = nMacroDOF * p;
 
                 //Set the shape function value
                 sf = domainMacroInterpolationFunctionValues[ j ];

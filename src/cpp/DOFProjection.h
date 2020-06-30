@@ -204,7 +204,9 @@ namespace DOFProjection{
                                                         const uIntVector &domainMacroNodeIndices,
                                                         const floatVector &domainReferenceXis,
                                                         const floatVector &domainMacroInterpolationFunctionValues,
-                                                        const floatVector &microWeights, SparseMatrix &domainN );
+                                                        const floatVector &microWeights, SparseMatrix &domainN,
+                                                        const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL,
+                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
 }
 
 #endif
