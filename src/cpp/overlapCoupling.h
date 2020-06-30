@@ -24,6 +24,8 @@ namespace overlapCoupling{
     typedef inputFileProcessor::floatMatrix floatMatrix;
     typedef inputFileProcessor::uIntVector uIntVector;
     typedef inputFileProcessor::stringVector stringVector;
+    typedef inputFileProcessor::DOFMap DOFMap;
+    typedef DOFProjection::SparseMatrix SparseMatrix;
 
     class overlapCoupling{
         /*!
@@ -81,6 +83,9 @@ namespace overlapCoupling{
             floatVector _referenceGhostMicroDomainCenterOfMassShapeFunctions;
 
             //Private functions
+            errorOut processDomainMassData( const unsigned int &increment, const std::string &domainName,
+                                            floatType &domainMass, floatVector &domainCenterOfMass,
+                                            floatVector &domainXiVectors );
 
             //Compute initial values
             errorOut setReferenceStateFromIncrement( const unsigned int &increment );
@@ -95,7 +100,39 @@ namespace overlapCoupling{
                                                     const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
                                                     const floatVector &points, floatVector &shapeFunctions );
 
+            errorOut computeShapeFunctionsAtPoints( const unsigned int cellID,
+                                                    const floatVector &nodeReferenceLocations, const floatVector &nodeDisplacements,
+                                                    const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
+                                                    const floatVector &points, floatVector &shapeFunctions );
+
             errorOut computeShapeFunctionsAtReferenceCentersOfMass( );
+
+            errorOut computeDomainShapeFunctionInformation( const unsigned int &cellID,
+                                                            const std::string &domainName,
+                                                            const unsigned int &increment,
+                                                            const floatVector &domainCenterOfMass,
+                                                            floatVector &domainCenterOfMassShapeFunctionValues,
+                                                            floatVector &domainMicroPositionShapeFunctionValues );
+
+            errorOut addDomainContributionToInterpolationMatrix( const uIntVector  &domainNodes,
+                                                                 const uIntVector  &macroNodes,
+                                                                 const floatVector &domainReferenceXis,
+                                                                 const floatVector &domainCenterOfMassShapeFunctionValues );
+                                                                   
+            //Construct the interpolation matrix
+            SparseMatrix _N;
+
+            //Construct the projection matrices for the L2 projection
+            Eigen::MatrixXd _L2_BQhatQ;
+            Eigen::MatrixXd _L2_BQhatD;
+            Eigen::MatrixXd _L2_BDhatQ;
+            Eigen::MatrixXd _L2_BDhatD;
+
+            //Construct the projection matrices for the direct projection
+            SparseMatrix _DP_BQhatQ;
+            SparseMatrix _DP_BQhatD;
+            SparseMatrix _DP_BDhatQ;
+            SparseMatrix _DP_BDhatD;
 
     };
 

@@ -159,6 +159,148 @@ namespace overlapCoupling{
         return NULL;
     }
 
+    errorOut overlapCoupling::processDomainMassData( const unsigned int &increment, const std::string &domainName,
+                                                     floatType &domainMass, floatVector &domainCenterOfMass,
+                                                     floatVector &domainXiVectors ){
+        /*!
+         * Process a micro-scale domain
+         *
+         * :param const unsigned int increment: The increment to process
+         * :param const std::string &domainName: The name of the domain
+         * :param floatType &domainMass: The mass of the domain
+         * :param floatVector &domainCenterOfMass
+         * :param floatVector &domainXiVectors
+         */
+
+        //Get the domain's nodes
+        uIntVector domainNodes;
+
+        errorOut error = _inputProcessor._microscale->getDomainNodes( increment, domainName, domainNodes );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processDomain",
+                                             "Error in getting the nodes from the micro domain '" + domainName + "'" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Compute the center of mass of the domain
+        error = DOFProjection::computeDomainCenterOfMass( _dim, domainNodes, *_inputProcessor.getMicroVolumes( ),
+                                                          *_inputProcessor.getMicroDensities( ),
+                                                          *_inputProcessor.getMicroNodeReferencePositions( ),
+                                                          *_inputProcessor.getMicroDisplacements( ),
+                                                          *_inputProcessor.getMicroWeights( ),
+                                                          domainMass, domainCenterOfMass );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processDomain", "Error in calculation of '" + domainName + "' center of mass" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Compute the relative position vectors
+        error = DOFProjection::computeDomainXis( _dim, domainNodes,
+                                                 *_inputProcessor.getMicroNodeReferencePositions( ),
+                                                 *_inputProcessor.getMicroDisplacements( ),
+                                                 domainCenterOfMass, domainXiVectors );
+
+        if ( error ){
+            
+            errorOut result = new errorNode( "processDomain", "Error in calculation of '" + domainName + "' xi vectors" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut overlapCoupling::computeDomainShapeFunctionInformation( const unsigned int &cellID,
+                                                                     const std::string &domainName,
+                                                                     const unsigned int &increment,
+                                                                     const floatVector &domainCenterOfMass,
+                                                                     floatVector &domainCenterOfMassShapeFunctionValues,
+                                                                     floatVector &domainMicroPositionShapeFunctionValues ){
+        /*!
+         * Compute the shape function values at the required locations
+         */
+
+        //Compute the shape functions of the domain's center of mass
+        errorOut error = computeShapeFunctionsAtPoints( cellID,
+                                                        *_inputProcessor.getMacroNodeReferencePositions( ),
+                                                        *_inputProcessor.getMacroDisplacements( ),
+                                                        *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                                        *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
+                                                        domainCenterOfMass, domainCenterOfMassShapeFunctionValues );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeDomainShapeFunctionInformation",
+                                             "Error in the computation of the center of mass for a micro domain" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Get the domain's nodes
+        uIntVector domainNodes;
+
+        error = _inputProcessor._microscale->getDomainNodes( increment, domainName, domainNodes );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeDomainShapeFunctionInformation",
+                                             "Error in the extraction of the nodes in the micro domain" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        if ( _inputProcessor.computeMicroShapeFunctions( ) ){
+
+            //Get the micro-node positions
+            floatVector microNodePositions( domainNodes.size( ) );
+    
+            unsigned int index;
+            const floatVector *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
+            const floatVector *microDisplacements      = _inputProcessor.getMicroDisplacements( );
+    
+            for ( auto it = domainNodes.begin( ); it != domainNodes.end( ); it++ ){
+    
+                index = it - domainNodes.begin( );
+                microNodePositions[ index ] = ( *microReferencePositions )[ index ] + ( *microDisplacements )[ index ];
+    
+            }
+    
+            //Compute the shape function values at the micro positions
+            error = computeShapeFunctionsAtPoints( cellID,
+                                                   *_inputProcessor.getMacroNodeReferencePositions( ),
+                                                   *_inputProcessor.getMacroDisplacements( ),
+                                                   *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                                   *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
+                                                   microNodePositions,
+                                                   domainMicroPositionShapeFunctionValues );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "computeDomainShapeFunctionInformation",
+                                                 "Error in the computation of the center of mass for a micro domain" );
+                result->addNext( error );
+                return result;
+    
+            }
+
+        }
+
+        return NULL;
+
+    }
+
     errorOut overlapCoupling::computeIncrementCentersOfMass( const unsigned int increment,
                                                              floatVector &freeDomainMass, floatVector &ghostDomainMass,
                                                              floatVector &freeDomainCM, floatVector &ghostDomainCM ){
@@ -396,6 +538,134 @@ namespace overlapCoupling{
             
     }
 
+    errorOut overlapCoupling::computeShapeFunctionsAtPoints( const unsigned int cellID,
+                                                             const floatVector &nodeReferenceLocations,
+                                                             const floatVector &nodeDisplacements,
+                                                             const uIntVector &connectivity,
+                                                             const uIntVector &connectivityCellIndices,
+                                                             const floatVector &points,
+                                                             floatVector &shapeFunctions ){
+        /*!
+         * Compute the shape functions of a given macro-scale domain at the given points
+         *
+         * :param const unsigned int &cellID: The cell ID at which to compute the shape functions
+         * :param const floatVector &nodeReferenceLocations: The nodal reference location vector
+         * :param const floatVector &nodeDisplacements: The nodal reference location vector
+         * :param const uIntVector &connectivity: The connectivity vector
+         * :param const uIntVector &connectivityCellIndices: The indices of the different cells
+         *     in the connectivity vector.
+         * :param const floatVector &points: The points at which to compute the shape functions
+         * :param floatVector &shapeFunctions: The shapefunctions at the points
+         */
+
+        //Make sure the cellID is allowable
+        if ( cellID >= connectivityCellIndices.size( ) ){
+
+            return new errorNode( "computeShapeFunctionsAtPoints",
+                                  "The cellID is too large for the connectivity cell indices vector" );
+
+        }
+
+        //Make sure the number of points and the size of the output are consistent
+        unsigned nPoints = points.size( ) / _dim;
+        if ( ( points.size( ) % _dim ) > 0 ){
+
+            return new errorNode( "computeShapeFunctionsAtPoints",
+                                  "The points vector is inconsistent with the dimension" );
+
+        }
+
+        //Get the XDMF cell type
+        unsigned int index0 = connectivityCellIndices[ cellID ];
+        unsigned int cellType = connectivity[ index0 ];
+
+        //Get the element name
+        auto it = elib::XDMFTypeToElementName.find( cellType );
+
+        if ( it == elib::XDMFTypeToElementName.end( ) ){
+
+            return new errorNode( "computeShapeFunctionsAtPoints",
+                                  "The cell type " + std::to_string(cellType) + " is not supported" );
+
+        }
+        
+        //Get the number of nodes
+        auto it2 = elib::XDMFTypeToNodeCount.find( cellType );
+
+        if ( it2 == elib::XDMFTypeToNodeCount.end( ) ){
+
+            return new errorNode( "computeShapeFunctionsAtPoints",
+                                  "The cell type " + std::to_string( cellType ) + " is not found in the node count map" );
+
+        }
+
+        shapeFunctions.clear();
+        shapeFunctions.reserve( it2->second * nPoints );
+
+        //Get the nodes from the file
+        elib::vecOfvec nodes( it2->second, elib::vec( _dim, 0 ) );
+        for ( unsigned int n = 0; n < it2->second; n++ ){
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                nodes[ n ][ i ] = nodeReferenceLocations[ _dim * connectivity[ index0 + 1 + n ] + i ]
+                                + nodeDisplacements[ _dim * connectivity[ index0 + 1 + n ] + i ];
+
+            }
+
+        }
+        
+        //Get the element
+        auto qrule = elib::default_qrules.find( it->second );
+        if ( qrule == elib::default_qrules.end( ) ){
+
+            return new errorNode( "computeShapeFunctionsAtPoints",
+                                  "The element type " + it->second + " is not found in the default quadrature rules map" );
+
+        }
+
+        std::unique_ptr< elib::Element > element = elib::build_element_from_string( it->second, { }, nodes, qrule->second );
+
+        //Compute the shape functions at each point
+        floatVector point;
+        floatVector localPosition, pointShapeFunctions;
+        errorOut error;
+
+        //Loop over the output vector
+        for ( unsigned int p = 0; p < nPoints; p++ ){
+
+            point = floatVector( points.begin( ) + _dim * p, points.begin( ) + _dim * ( p + 1 ) );
+
+            error = element->compute_local_coordinates( point, localPosition );
+
+            if ( error ) {
+
+                return new errorNode( "computeShapeFunctionsAtPoints",
+                                      "Error in computing the local coordinates for point " + std::to_string( p ) );
+
+            }
+
+            error = element->get_shape_functions( localPosition, pointShapeFunctions );
+
+            if ( error ) {
+
+                return new errorNode( "computeShapeFunctionsAtPoints",
+                                      "Error in the computation of the shape functions for point " + std::to_string( p ) );
+
+            }
+
+            for ( unsigned int i = 0; i < pointShapeFunctions.size( ); i++ ){
+
+                shapeFunctions.push_back( pointShapeFunctions[ i ] );
+
+            }
+
+        }
+
+        return NULL;
+            
+    }
+
     errorOut overlapCoupling::computeShapeFunctionsAtReferenceCentersOfMass( ){
         /*!
          * Compute the shape functions at the reference centers of mass
@@ -497,6 +767,58 @@ namespace overlapCoupling{
 
         return NULL;
         
+    }
+
+    errorOut overlapCoupling::addDomainContributionToInterpolationMatrix( const uIntVector  &domainNodes,
+                                                                          const uIntVector  &macroNodes,
+                                                                          const floatVector &domainReferenceXis,
+                                                                          const floatVector &domainCenterOfMassShapeFunctionValues ){
+        /*!
+         * Add the contribution of a domain to the interpolation matrices
+         *
+         * :param const std::string &domainName: The name of the domain
+         * :param const floatVector &domainReferenceXis: The micro-position vectors of the nodes within the domain
+         * :param const floatVector &domainCenterOfMassShapeFunctionValues: The shape function values at the centers of 
+         *     mass of the micro-domains.
+         */
+
+        //Initialize the sparse matrix
+        SparseMatrix domainN;
+
+        //Extract the DOF maps
+        const DOFMap *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
+        const DOFMap *macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+        //Form the interpolation matrix contributions from the current domain
+        errorOut error = DOFProjection::formMacroDomainToMicroInterpolationMatrix( _dim,
+                                                                                   microGlobalToLocalDOFMap->size( ),
+                                                                                   macroGlobalToLocalDOFMap->size( ),
+                                                                                   domainNodes, macroNodes, domainReferenceXis,
+                                                                                   domainCenterOfMassShapeFunctionValues,
+                                                                                   *_inputProcessor.getMicroWeights( ),
+                                                                                   domainN,
+                                                                                   microGlobalToLocalDOFMap,
+                                                                                   macroGlobalToLocalDOFMap );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "addDomainContributionToInterpolationMatrix",
+                                             "Error in computation of the contribution of the domain to the interpolation matrix" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Add the contribution to the total shapefunction matrix
+        if ( _N.nonZeros( ) > 0 ){
+            _N += domainN;
+        }
+        else{
+            _N = domainN;
+        }
+
+        return NULL;
+
     }
 
     const floatVector* overlapCoupling::getReferenceFreeMicroDomainMasses( ){
