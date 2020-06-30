@@ -1092,6 +1092,28 @@ int _getTestMicroShapeFunctions( floatVector &microShapeFunctions ){
     return 0;
 }
 
+int _getMicroNodeToLocalIndex( std::unordered_map< unsigned int, unsigned int > &microNodeToLocalIndex ){
+    /*!
+     * Get the micro-node to local index map
+     *
+     * :param std::unordered_map< unsigned int, unsigned int > &microNodeToLocalIndex: The map between the
+     *     micro node Ids to the local indices.
+     */
+
+    microNodeToLocalIndex = { { 53, 2 },
+                              { 28, 7 },
+                              { 63, 1 },
+                              { 97, 0 },
+                              { 93, 9 },
+                              { 90, 4 },
+                              {  8, 5 },
+                              {  5, 3 },
+                              {  0, 6 },
+                              { 62, 8 } };
+    return 0;
+
+}
+
 int test_addMacroDomainDisplacementToMicro( std::ofstream &results ){
     /*!
      * Test the projection of the macro-domain's displacement to the 
@@ -1120,6 +1142,9 @@ int test_addMacroDomainDisplacementToMicro( std::ofstream &results ){
 
     floatVector microWeights;
     _getTestMicroWeights( microWeights);
+
+    std::unordered_map< unsigned int, unsigned int > microNodeToLocalIndex;
+    _getMicroNodeToLocalIndex( microNodeToLocalIndex );
 
     const floatVector answer =
         {
@@ -1199,6 +1224,41 @@ int test_addMacroDomainDisplacementToMicro( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( result, answer ) ){
         results << "test_addMacroDomainDisplacementToMicro (test 1) & False\n";
         return 1;
+    }
+
+    result.clear( );
+    result.resize( dim * 27 );
+    error = DOFProjection::addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, u, phi, domainReferenceXis,
+                                                              microWeights, result, &microNodeToLocalIndex );
+
+    if ( error ){
+        error->print( );
+        results << "test_addMacroDomainDisplacementToMicro & False\n";
+        return 1;
+    }
+
+    for ( auto it = domainMicroNodeIndices.begin( ); it != domainMicroNodeIndices.end( ); it++ ){
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
+                                                     answer.begin( ) + dim * ( ( *it ) + 1 )
+                                                   ),
+                                        floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
+                                                     result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 )
+                                                   )
+                                      )
+           ){
+
+            vectorTools::print( floatVector( answer.begin( ) + dim * ( *it ),
+                                             answer.begin( ) + dim * ( ( *it ) + 1 )
+                                           )
+                              );
+            vectorTools::print( floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
+                                             result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
+                                           )
+                              );
+            results << "test_addMacroDomainDisplacementToMicro (test 2) & False\n";
+            return 1;
+
+        }
     }
 
     results << "test_addMicroDomainDisplacementToMicro & True\n";

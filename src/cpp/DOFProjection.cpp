@@ -140,6 +140,9 @@ namespace DOFProjection{
         //The current micro node number
         unsigned int m;
 
+        //The current output index
+        unsigned int o;
+
         //The current reference micro-position vector
         floatVector Xi;
 
@@ -148,7 +151,7 @@ namespace DOFProjection{
 
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
-            //Get the index of the micro-scale node
+            //Get the index of the micro-scale node and the output index
             if ( microNodeToLocalIndex ){
 
                 auto indx = microNodeToLocalIndex->find( domainMicroNodeIndices[ i ] );
@@ -165,14 +168,16 @@ namespace DOFProjection{
                                           + " is greater than the size of the micro displacements" );
                 }
 
-                m = indx->second;
+                o = indx->second;
+                m = domainMicroNodeIndices[ i ];
 
             }
             else{
+                o = domainMicroNodeIndices[ i ];
                 m = domainMicroNodeIndices[ i ];
             }
 
-            if ( dim * ( m + 1 ) > microDisplacements.size() ){
+            if ( dim * ( o + 1 ) > microDisplacements.size() ){
                 return new errorNode( "addMacroDomainDisplacementToMicro",
                                       "The micro-displacements vector is too small for the micro-nodes" ); 
             }
@@ -184,9 +189,9 @@ namespace DOFProjection{
             q = u + vectorTools::matrixMultiply( phi, Xi, dim, dim, dim, 1 );
 
             //Add the contribution to the displacement
-            microDisplacements[ dim * m + 0 ] += microWeights[ m ] * q[ 0 ]; 
-            microDisplacements[ dim * m + 1 ] += microWeights[ m ] * q[ 1 ]; 
-            microDisplacements[ dim * m + 2 ] += microWeights[ m ] * q[ 2 ]; 
+            microDisplacements[ dim * o + 0 ] += microWeights[ m ] * q[ 0 ]; 
+            microDisplacements[ dim * o + 1 ] += microWeights[ m ] * q[ 1 ]; 
+            microDisplacements[ dim * o + 2 ] += microWeights[ m ] * q[ 2 ]; 
 
         }
 
