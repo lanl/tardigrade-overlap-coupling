@@ -108,7 +108,10 @@ namespace DOFProjection{
                                                    const bool computeMassMomentOfInertia = true,
                                                    const bool computeMassConstant = true,
                                                    const bool computeMassMicroDisplacement = true,
-                                                   const bool computeMassDisplacementPosition = true );
+                                                   const bool computeMassDisplacementPosition = true,
+                                                   const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+
+                    );
 
     errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
                                                                         const uIntVector &domainMicroNodeIndices,
