@@ -2884,6 +2884,9 @@ int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
     floatVector microDisplacements;
     _getTestMicroDisplacements( microDisplacements );
 
+    std::unordered_map< unsigned int, unsigned int > macroNodeToLocalIndex;
+    _getMacroNodeToLocalIndex( macroNodeToLocalIndex );
+
     floatVector domainMicroShapeFunctions( domainMacroNodeIndices.size() * domainMicroNodeIndices.size(), 0 );
     for ( unsigned int n = 0; n < domainMicroNodeIndices.size(); n++ ){
         for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
@@ -3623,6 +3626,76 @@ int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( answerMassDisplacementPosition, resultMassDisplacementPosition ) ){
         results << "test_addDomainMicroToMacroProjectionTerms (test 4) & False\n";
         return 1;
+    }
+
+    error = DOFProjection::addDomainMicroToMacroProjectionTerms( dim,
+                                                                 domainMicroNodeIndices, domainMacroNodeIndices,
+                                                                 domainReferenceXis, microMasses,
+                                                                 domainMicroShapeFunctions, microWeights,
+                                                                 microDisplacements,
+                                                                 resultMassMomentOfInertia, resultMassConstant,
+                                                                 resultMassDisplacements, resultMassDisplacementPosition,
+                                                                 true, true, true, true,
+                                                                 &macroNodeToLocalIndex );
+
+    if ( error ){
+        error->print();
+        results << "test_addDomainMicroToMacroProjectionTerms & False\n";
+        return 1;
+    }
+
+    for ( auto indx  = macroNodeToLocalIndex.begin( );
+               indx != macroNodeToLocalIndex.end( );
+               indx++ ){
+
+        if ( !vectorTools::fuzzyEquals( floatVector( answerMassMomentOfInertia.begin( ) + dim * dim * indx->first,
+                                                     answerMassMomentOfInertia.begin( ) + dim * dim * ( indx->first + 1 )
+                                                   ),
+                                        floatVector( resultMassMomentOfInertia.begin( ) + dim * dim * indx->second,
+                                                     resultMassMomentOfInertia.begin( ) + dim * dim * ( indx->second + 1 )
+                                                   )
+                                      )
+           ){
+            results << "test_addDomainMicroToMacroProjectionTerms (test 5) & False\n";
+            return 1;
+        }
+    
+        if ( !vectorTools::fuzzyEquals( floatVector( answerMassConstant.begin( ) + dim * indx->first,
+                                                     answerMassConstant.begin( ) + dim * ( indx->first + 1 )
+                                                   ),
+                                        floatVector( resultMassConstant.begin( ) + dim * indx->second,
+                                                     resultMassConstant.begin( ) + dim * ( indx->second + 1 )
+                                                   )
+                                      )
+           ){
+            results << "test_addDomainMicroToMacroProjectionTerms (test 6) & False\n";
+            return 1;
+        }
+    
+        if ( !vectorTools::fuzzyEquals( floatVector( answerMassDisplacements.begin( ) + dim * indx->first,
+                                                     answerMassDisplacements.begin( ) + dim * ( indx->first + 1 )
+                                                   ),
+                                        floatVector( resultMassDisplacements.begin( ) + dim * indx->second,
+                                                     resultMassDisplacements.begin( ) + dim * ( indx->second + 1 )
+                                                   )
+                                      )
+           ){
+            results << "test_addDomainMicroToMacroProjectionTerms (test 7) & False\n";
+            return 1;
+        }
+    
+        if ( !vectorTools::fuzzyEquals( floatVector( answerMassDisplacementPosition.begin( ) + dim * dim * indx->first,
+                                                     answerMassDisplacementPosition.begin( ) + dim * dim * ( indx->first + 1 )
+                                                   ),
+                                        floatVector( resultMassDisplacementPosition.begin( ) + dim * dim * indx->second,
+                                                     resultMassDisplacementPosition.begin( ) + dim * dim * ( indx->second + 1 )
+                                                   )
+                                      )
+           ){
+            results << "test_addDomainMicroToMacroProjectionTerms (test 8) & False\n";
+            return 1;
+        }
+
     }
 
     results << "test_addDomainMicroToMacroProjectionTerms & True\n";
