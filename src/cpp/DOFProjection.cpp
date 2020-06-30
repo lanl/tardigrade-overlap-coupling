@@ -662,7 +662,9 @@ namespace DOFProjection{
                                                                         const floatVector &microMasses,
                                                                         const floatVector &domainMicroShapeFunctions,
                                                                         const floatVector &microWeights,
-                                                                        floatVector &projectedMassMicroMomentOfInertia ){
+                                                                        floatVector &projectedMassMicroMomentOfInertia,
+                                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                                                      ){
         /*!
          * Add the contribution of the micro-nodes in the domain to the macro moment of inertia.
          *
@@ -681,6 +683,11 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMassMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
          *     as projected from the micro-nodes weighted by the mass.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         floatVector projectedMassConstant;
@@ -694,7 +701,9 @@ namespace DOFProjection{
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
                                                      projectedMassDisplacementPosition,
-                                                     true, false, false, false );
+                                                     true, false, false, false,
+                                                     macroNodeToLocalIndex
+                                                    );
 
     }
 
@@ -702,7 +711,9 @@ namespace DOFProjection{
                                     const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                     const floatVector &domainReferenceXis, const floatVector &microMasses,
                                     const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
-                                    floatVector &projectedMassConstant ){
+                                    floatVector &projectedMassConstant,
+                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                  ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
@@ -720,6 +731,11 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMassConstant: The projected mass constant at the macro-scale node.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         floatVector projectedMassMicroMomentOfInertia;
@@ -733,7 +749,9 @@ namespace DOFProjection{
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
                                                      projectedMassDisplacementPosition,
-                                                     false, true, false, false );
+                                                     false, true, false, false,
+                                                     macroNodeToLocalIndex
+                                                   );
 
     }
 
@@ -741,7 +759,9 @@ namespace DOFProjection{
                                         const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                         const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                         const floatVector &microWeights, const floatVector &microDisplacements,
-                                        floatVector &projectedMassDisplacement ){
+                                        floatVector &projectedMassDisplacement,
+                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                      ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
@@ -759,6 +779,11 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
          * :param floatVector &projectedMassDisplacement: The projected mass weighted displacement at the macro-scale node.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         floatVector projectedMassMicroMomentOfInertia;
@@ -772,7 +797,9 @@ namespace DOFProjection{
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
                                                      projectedMassDisplacementPosition,
-                                                     false, false, true, false );
+                                                     false, false, true, false,
+                                                     macroNodeToLocalIndex
+                                                   );
 
     }
 
@@ -781,7 +808,9 @@ namespace DOFProjection{
                                                      const floatVector &domainReferenceXis, const floatVector &microMasses,
                                                      const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                                      const floatVector &microDisplacements,
-                                                     floatVector &projectedMassDisplacementPosition ){
+                                                     floatVector &projectedMassDisplacementPosition,
+                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                                   ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
@@ -801,6 +830,11 @@ namespace DOFProjection{
          * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
          * :param floatVector &projectedMassDisplacementPosition: The projected mass weighted dyadic product of displacement
          *     and the micro-position at the macro-scale node.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         floatVector projectedMassMicroMomentOfInertia;
@@ -813,7 +847,9 @@ namespace DOFProjection{
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
                                                      projectedMassDisplacementPosition,
-                                                     false, false, false, true );
+                                                     false, false, false, true,
+                                                     macroNodeToLocalIndex
+                                                   );
 
     }
 
@@ -1091,7 +1127,9 @@ namespace DOFProjection{
                                                                         const floatVector &microDensities,
                                                                         const floatVector &domainMicroShapeFunctions,
                                                                         const floatVector &microWeights,
-                                                                        floatVector &projectedMassMicroMomentOfInertia ){
+                                                                        floatVector &projectedMassMicroMomentOfInertia,
+                                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                                                      ){
         /*!
          * Add the contribution of the micro-nodes in the domain to the macro moment of inertia.
          *
@@ -1111,6 +1149,11 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMassMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
          *     as projected from the micro-nodes weighted by the mass.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         floatVector projectedMassConstant;
@@ -1125,7 +1168,8 @@ namespace DOFProjection{
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
                                                      projectedMassDisplacementPosition,
-                                                     true, false, false, false );
+                                                     true, false, false, false,
+                                                     macroNodeToLocalIndex );
 
     }
 
@@ -1134,7 +1178,8 @@ namespace DOFProjection{
                                     const floatVector &domainReferenceXis, const floatVector &microVolumes,
                                     const floatVector &microDensities, const floatVector &domainMicroShapeFunctions,
                                     const floatVector &microWeights,
-                                    floatVector &projectedMassConstant ){
+                                    floatVector &projectedMassConstant,
+                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
@@ -1153,6 +1198,11 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMassConstant: The projected mass constant at the macro-scale node.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         floatVector projectedMassMicroMomentOfInertia;
@@ -1167,7 +1217,8 @@ namespace DOFProjection{
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
                                                      projectedMassDisplacementPosition,
-                                                     false, true, false, false );
+                                                     false, true, false, false,
+                                                     macroNodeToLocalIndex );
 
     }
 
@@ -1176,7 +1227,8 @@ namespace DOFProjection{
                                         const floatVector &microVolumes, const floatVector &microDensities,
                                         const floatVector &domainMicroShapeFunctions,
                                         const floatVector &microWeights, const floatVector &microDisplacements,
-                                        floatVector &projectedMassDisplacement ){
+                                        floatVector &projectedMassDisplacement,
+                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
@@ -1195,6 +1247,11 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
          * :param floatVector &projectedMassDisplacement: The projected mass weighted displacement at the macro-scale node.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         floatVector projectedMassMicroMomentOfInertia;
@@ -1209,7 +1266,8 @@ namespace DOFProjection{
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
                                                      projectedMassDisplacementPosition,
-                                                     false, false, true, false );
+                                                     false, false, true, false,
+                                                     macroNodeToLocalIndex );
 
     }
 
@@ -1219,7 +1277,8 @@ namespace DOFProjection{
                                                      const floatVector &microDensities,
                                                      const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                                      const floatVector &microDisplacements,
-                                                     floatVector &projectedMassDisplacementPosition ){
+                                                     floatVector &projectedMassDisplacementPosition,
+                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
@@ -1240,6 +1299,11 @@ namespace DOFProjection{
          * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
          * :param floatVector &projectedMassDisplacementPosition: The projected mass weighted dyadic product of displacement
          *     and the micro-position at the macro-scale node.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         floatVector projectedMassMicroMomentOfInertia;
@@ -1252,7 +1316,8 @@ namespace DOFProjection{
                                                      projectedMassConstant,
                                                      projectedMassDisplacement,
                                                      projectedMassDisplacementPosition,
-                                                     false, false, false, true );
+                                                     false, false, false, true,
+                                                     macroNodeToLocalIndex );
 
     }
 
