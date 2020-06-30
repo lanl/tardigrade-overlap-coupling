@@ -394,7 +394,8 @@ namespace DOFProjection{
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &microWeights,
-                                                    floatVector &projectedMicroMasses ){
+                                                    floatVector &projectedMicroMasses,
+                                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
         /*!
          * Add the contribution of the micro-nodes' mass to the macro nodes.
          *
@@ -410,6 +411,11 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMicroMasses: The projected micro-masses on all of the macro-scale nodes.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         //Error handling
@@ -423,9 +429,17 @@ namespace DOFProjection{
         }
 
         for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
-            if ( domainMacroNodeIndices[ i ] >= projectedMicroMasses.size() ){
-                return new errorNode( "addDomainMicroContributionToMacroMass",
-                                      "The size of the projected micro mass vector is smaller than a macro node requires" );
+            if ( !macroNodeToLocalIndex ){
+                if ( domainMacroNodeIndices[ i ] >= projectedMicroMasses.size() ){
+                    return new errorNode( "addDomainMicroContributionToMacroMass",
+                                          "The size of the projected micro mass vector is smaller than a macro node requires" );
+                }
+            }
+            else{
+                if ( macroNodeToLocalIndex->find( domainMacroNodeIndices[ i ] ) == macroNodeToLocalIndex->end( ) ){
+                    return new errorNode( "addDomainMicroContributionToMacroMass",
+                                          std::to_string( domainMacroNodeIndices[ i ] ) + " is not found in the gobal to local macro id map" );
+                }
             }
         }
 
@@ -438,17 +452,29 @@ namespace DOFProjection{
         //Initialize the micro node weights
         floatType weight;
 
+        //Initialize the global micro id
+        unsigned int m;
+
+        //Initialize the global macro id
+        unsigned int n;
+
+        //Initialize the local macro id
+        unsigned int p;
+
         //Iterate over the micro-node indices
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
+            //Set the global micro id
+            m = domainMicroNodeIndices[ i ];
+
             //Error handling
-            if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
+            if ( m >= microWeights.size() ){
 
                 return new errorNode( "addDomainMicroContributionToMacroMass",
                                       "The size of the micro weights vector is smaller than a micro node requires" );
 
             }
-            if ( domainMicroNodeIndices[ i ] >= microMasses.size() ){
+            if ( m >= microMasses.size() ){
 
                 return new errorNode( "addDomainMicroContributionToMacroMass",
                                       "The micro-node index is too large for the provided mass and shape function vectors" );
@@ -456,16 +482,32 @@ namespace DOFProjection{
             }
 
             //Get the micro-node's mass
-            mass = microMasses[ domainMicroNodeIndices[ i ] ];
+            mass = microMasses[ m ];
 
             //Get the micro-node's weight
-            weight = microWeights[ domainMicroNodeIndices[ i ] ];
+            weight = microWeights[ m ];
 
             //Iterate over the macro-node indices
             for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
+                //Set the global macro id
+                n = domainMacroNodeIndices[ j ];
+
+                //Find the local macro node index
+                if ( macroNodeToLocalIndex ){
+
+                    auto indx = macroNodeToLocalIndex->find( n );
+                    p = indx->second;
+
+                }
+                else{
+
+                    p = n;
+
+                }
+
                 //Add the micro-node contribution to the macro node
-                projectedMicroMasses[ domainMacroNodeIndices[ j ] ] += mass * domainMicroShapeFunctions[ i * nMacroNodes + j ] * weight;
+                projectedMicroMasses[ p ] += mass * domainMicroShapeFunctions[ i * nMacroNodes + j ] * weight;
 
             }
 
@@ -478,7 +520,8 @@ namespace DOFProjection{
                                                     const floatVector &microVolumes, const floatVector &microDensities,
                                                     const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &microWeights,
-                                                    floatVector &projectedMicroMasses ){
+                                                    floatVector &projectedMicroMasses,
+                                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
         /*!
          * Add the contribution of the micro-nodes' mass to the macro nodes.
          *
@@ -495,6 +538,11 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMicroMasses: The projected micro-masses on all of the macro-scale nodes.
+         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
          */
 
         //Error handling
@@ -512,9 +560,17 @@ namespace DOFProjection{
         }
 
         for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
-            if ( domainMacroNodeIndices[ i ] >= projectedMicroMasses.size() ){
-                return new errorNode( "addDomainMicroContributionToMacroMass",
-                                      "The size of the projected micro mass vector is smaller than a macro node requires" );
+            if ( !macroNodeToLocalIndex ){
+                if ( domainMacroNodeIndices[ i ] >= projectedMicroMasses.size() ){
+                    return new errorNode( "addDomainMicroContributionToMacroMass",
+                                          "The size of the projected micro mass vector is smaller than a macro node requires" );
+                }
+            }
+            else{
+                if ( macroNodeToLocalIndex->find( domainMacroNodeIndices[ i ] ) == macroNodeToLocalIndex->end( ) ){
+                    return new errorNode( "addDomainMicroContributionToMacroMass",
+                                          std::to_string( domainMacroNodeIndices[ i ] ) + " is not found in the gobal to local macro id map" );
+                }
             }
         }
 
@@ -527,25 +583,37 @@ namespace DOFProjection{
         //Initialize the micro node weights
         floatType weight;
 
+        //Initialize the global micro id
+        unsigned int m;
+
+        //Initialize the global macro id
+        unsigned int n;
+
+        //Initialize the local macro id
+        unsigned int p;
+
         //Iterate over the micro-node indices
         for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
+            //Set the global micro id
+            m = domainMicroNodeIndices[ i ];
+
             //Error handling
-            if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
+            if ( m >= microWeights.size() ){
 
                     return new errorNode( "addDomainMicroContributionToMacroMass",
                                       "The size of the micro weights vector is smaller than a micro node requires" );
 
             }
 
-            if ( domainMicroNodeIndices[ i ] >= microVolumes.size() ){
+            if ( m >= microVolumes.size() ){
 
                 return new errorNode( "addDomainMicroContributionToMacroMass",
                                       "The micro-node index is too large for the provided volume vector" );
 
             }
 
-            if ( domainMicroNodeIndices[ i ] >= microDensities.size() ){
+            if ( m >= microDensities.size() ){
 
                 return new errorNode( "addDomainMicroContributionToMacroMass",
                                       "The micro-node index is too large for the provided density vector" );
@@ -553,16 +621,32 @@ namespace DOFProjection{
             }
 
             //Get the micro-node's mass
-            mass = microVolumes[ domainMicroNodeIndices[ i ] ] * microDensities[ domainMicroNodeIndices[ i ] ];
+            mass = microVolumes[ m ] * microDensities[ m ];
 
             //Get the micro-node's weight
-            weight = microWeights[ domainMicroNodeIndices[ i ] ];
+            weight = microWeights[ m ];
 
             //Iterate over the macro-node indices
             for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
+                //Set the global macro id
+                n = domainMacroNodeIndices[ j ];
+
+                //Find the local macro node index
+                if ( macroNodeToLocalIndex ){
+
+                    auto indx = macroNodeToLocalIndex->find( n );
+                    p = indx->second;
+
+                }
+                else{
+
+                    p = n;
+
+                }
+
                 //Add the micro-node contribution to the macro node
-                projectedMicroMasses[ domainMacroNodeIndices[ j ] ] += mass * domainMicroShapeFunctions[ i * nMacroNodes + j ] * weight;
+                projectedMicroMasses[ p ] += mass * domainMicroShapeFunctions[ i * nMacroNodes + j ] * weight;
 
             }
 

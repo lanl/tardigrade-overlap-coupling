@@ -58,13 +58,15 @@ namespace DOFProjection{
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &microWeights,
-                                                    floatVector &projectedMicroMasses );
+                                                    floatVector &projectedMicroMasses,
+                                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
 
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microVolumes, const floatVector &microDensities,
                                                     const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &microWeights,
-                                                    floatVector &projectedMicroMasses );
+                                                    floatVector &projectedMicroMasses,
+                                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
 
     errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
                                                                         const uIntVector &domainMicroNodeIndices,
