@@ -52,6 +52,9 @@ namespace DOFProjection{
          *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the macro index values
          *     will be used.
+         *
+         *     Note: If a node is not located in microNodeToLocalIndex ( and microNodeToLocalIndex is not NULL ) this node
+         *           will be skipped.
          */
 
         if ( domainMacroNodeIndices.size() != domainMacroInterpolationFunctionValues.size() ){
@@ -114,6 +117,9 @@ namespace DOFProjection{
          *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the macro index values
          *     will be used.
+         *
+         *     Note: If a node is not located in microNodeToLocalIndex ( and microNodeToLocalIndex is not NULL ) this node
+         *           will be skipped.
          */
 
         if ( !microNodeToLocalIndex ){
@@ -157,9 +163,10 @@ namespace DOFProjection{
                 auto indx = microNodeToLocalIndex->find( domainMicroNodeIndices[ i ] );
 
                 if ( indx == microNodeToLocalIndex->end( ) ){
-                    return new errorNode( "addMacroDomainDisplacementToMicro",
-                                          "Micro node index " + std::to_string( domainMicroNodeIndices[ i ] )
-                                          + " is not found in microNodeToLocalIndex" );
+                    continue;
+//                    return new errorNode( "addMacroDomainDisplacementToMicro",
+//                                          "Micro node index " + std::to_string( domainMicroNodeIndices[ i ] )
+//                                          + " is not found in microNodeToLocalIndex" );
                 }
 
                 if ( indx->second >= microDisplacements.size( ) ){
@@ -241,6 +248,9 @@ namespace DOFProjection{
          *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
          *     will be used.
+         *
+         *     Note: If a node is not located in microNodeToLocalIndex ( and microNodeToLocalIndex is not NULL ) this node
+         *           will be skipped.
          * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
@@ -317,8 +327,9 @@ namespace DOFProjection{
 
                 if ( indx == microNodeToLocalIndex->end( ) ){
 
-                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
-                                          "The micro node " + std::to_string( m ) + " is not found in the micro node to local index map" );
+                    continue;
+//                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+//                                          "The micro node " + std::to_string( m ) + " is not found in the micro node to local index map" );
 
                 }
 
