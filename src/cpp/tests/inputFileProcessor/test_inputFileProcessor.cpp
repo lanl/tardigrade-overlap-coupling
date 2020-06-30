@@ -14,6 +14,7 @@ typedef inputFileProcessor::floatVector floatVector; //! Define a vector of floa
 typedef inputFileProcessor::floatMatrix floatMatrix; //!Define a matrix of floats
 typedef inputFileProcessor::uIntVector uIntVector; //!Define a vector of unsigned ints
 typedef inputFileProcessor::stringVector stringVector; //!Define a vector of strings
+typedef inputFileProcessor::DOFMap DOFMap; //!Define the map between DOF values
 
 int test_openConfigurationFile( std::ofstream &results ){
     /*!
@@ -409,6 +410,92 @@ int test_initializeIncrement( std::ofstream &results ){
                 return 1;
 
             }
+
+        }
+
+    }
+
+    const DOFMap *freeMicroGlobalToLocalDOFMap = reader.getFreeMicroGlobalToLocalDOFMap( );
+    const DOFMap *ghostMicroGlobalToLocalDOFMap = reader.getGhostMicroGlobalToLocalDOFMap( );
+
+    if ( freeMicroGlobalToLocalDOFMap->size( ) != freeMicroNodeIds->size( ) ){
+
+        results << "test_initializeIncrement (test 18) & False\n";
+        return 1;
+
+    }
+
+    for ( auto n  = freeMicroNodeIds->begin( );
+               n != freeMicroNodeIds->end( );
+               n++ ){
+
+        if ( freeMicroGlobalToLocalDOFMap->find( *n ) == freeMicroGlobalToLocalDOFMap->end( ) ){
+
+            results << "test_initializeIncrement (test 19) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    if ( ghostMicroGlobalToLocalDOFMap->size( ) != ghostMicroNodeIds->size( ) ){
+
+        results << "test_initializeIncrement (test 19) & False\n";
+        return 1;
+
+    }
+
+    for ( auto n  = ghostMicroNodeIds->begin( );
+               n != ghostMicroNodeIds->end( );
+               n++ ){
+
+        if ( ghostMicroGlobalToLocalDOFMap->find( *n ) == ghostMicroGlobalToLocalDOFMap->end( ) ){
+
+            results << "test_initializeIncrement (test 21) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    const DOFMap *freeMacroGlobalToLocalDOFMap = reader.getFreeMacroGlobalToLocalDOFMap( );
+    const DOFMap *ghostMacroGlobalToLocalDOFMap = reader.getGhostMacroGlobalToLocalDOFMap( );
+
+    if ( freeMacroGlobalToLocalDOFMap->size( ) != freeMacroNodeIds->size( ) ){
+
+        results << "test_initializeIncrement (test 22) & False\n";
+        return 1;
+
+    }
+
+    for ( auto n  = freeMacroNodeIds->begin( );
+               n != freeMacroNodeIds->end( );
+               n++ ){
+
+        if ( freeMacroGlobalToLocalDOFMap->find( *n ) == freeMacroGlobalToLocalDOFMap->end( ) ){
+
+            results << "test_initializeIncrement (test 23) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    if ( ghostMacroGlobalToLocalDOFMap->size( ) != ghostMacroNodeIds->size( ) ){
+
+        results << "test_initializeIncrement (test 24) & False\n";
+        return 1;
+
+    }
+
+    for ( auto n  = ghostMacroNodeIds->begin( );
+               n != ghostMacroNodeIds->end( );
+               n++ ){
+
+        if ( ghostMacroGlobalToLocalDOFMap->find( *n ) == ghostMacroGlobalToLocalDOFMap->end( ) ){
+
+            results << "test_initializeIncrement (test 25) & False\n";
+            return 1;
 
         }
 

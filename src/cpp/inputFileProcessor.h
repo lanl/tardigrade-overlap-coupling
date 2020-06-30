@@ -12,6 +12,7 @@
 #include<vector_tools.h>
 #include<error_tools.h>
 #include<yaml-cpp/yaml.h>
+#include<unordered_map>
 
 #include<dataFileInterface.h>
 
@@ -24,6 +25,7 @@ namespace inputFileProcessor{
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
     typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
     typedef std::vector< std::string > stringVector; //!Define a vector of strings
+    typedef std::unordered_map< unsigned int, unsigned int > DOFMap;
 
     class dataFileReaderBase;
 
@@ -97,6 +99,12 @@ namespace inputFileProcessor{
 
             const stringVector *getFreeMacroDomainNames( );
             const stringVector *getGhostMacroDomainNames( );
+
+            const DOFMap *getFreeMicroGlobalToLocalDOFMap( ); 
+            const DOFMap *getGhostMicroGlobalToLocalDOFMap( );
+
+            const DOFMap *getFreeMacroGlobalToLocalDOFMap( ); 
+            const DOFMap *getGhostMacroGlobalToLocalDOFMap( ); 
 
             const bool computeMicroShapeFunctions( );
 
@@ -192,6 +200,12 @@ namespace inputFileProcessor{
 
             uIntVector _unique_free_macro_nodes;
             uIntVector _unique_ghost_macro_nodes;
+
+            DOFMap _global_to_local_macro_free_node_map;
+            DOFMap _global_to_local_macro_ghost_node_map;
+
+            DOFMap _global_to_local_micro_free_node_map;
+            DOFMap _global_to_local_micro_ghost_node_map;
 
             bool _computeMicroShapeFunctions = false;
 

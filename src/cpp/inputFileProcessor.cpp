@@ -1323,6 +1323,29 @@ namespace inputFileProcessor{
 
         }
 
+        //Set the local to global maps
+        _global_to_local_micro_free_node_map.clear();
+        _global_to_local_micro_free_node_map.reserve( _unique_free_micro_nodes.size( ) );
+
+        for ( auto node  = _unique_free_micro_nodes.begin( );
+                   node != _unique_free_micro_nodes.end( );
+                   node++ ){
+
+            _global_to_local_micro_free_node_map[ *node ] = node - _unique_free_micro_nodes.begin( );
+
+        }
+
+        _global_to_local_micro_ghost_node_map.clear();
+        _global_to_local_micro_ghost_node_map.reserve( _unique_ghost_micro_nodes.size( ) );
+
+        for ( auto node  = _unique_ghost_micro_nodes.begin( );
+                   node != _unique_ghost_micro_nodes.end( );
+                   node++ ){
+
+            _global_to_local_micro_ghost_node_map[ *node ] = node - _unique_ghost_micro_nodes.begin( );
+
+        }
+
         return NULL;
     }
 
@@ -1408,6 +1431,29 @@ namespace inputFileProcessor{
                                              "Error in the removal of the duplicate values from the vector" );
             result->addNext( error );
             return result;
+
+        }
+
+        //Set the global to local maps
+        _global_to_local_macro_free_node_map.clear();
+        _global_to_local_macro_free_node_map.reserve( _unique_free_macro_nodes.size( ) );
+
+        for ( auto node  = _unique_free_macro_nodes.begin( );
+                   node != _unique_free_macro_nodes.end( );
+                   node++ ){
+
+            _global_to_local_macro_free_node_map[ *node ] = node - _unique_free_macro_nodes.begin( );
+
+        }
+
+        _global_to_local_macro_ghost_node_map.clear();
+        _global_to_local_macro_ghost_node_map.reserve( _unique_ghost_macro_nodes.size( ) );
+
+        for ( auto node  = _unique_ghost_macro_nodes.begin( );
+                   node != _unique_ghost_macro_nodes.end( );
+                   node++ ){
+
+            _global_to_local_macro_ghost_node_map[ *node ] = node - _unique_ghost_macro_nodes.begin( );
 
         }
 
@@ -1590,6 +1636,38 @@ namespace inputFileProcessor{
          */
 
         return &_unique_ghost_macro_nodes;
+    }
+
+    const DOFMap *inputFileProcessor::getFreeMicroGlobalToLocalDOFMap( ){
+        /*!
+         * Get the DOF map from the global to local DOF Id for the free micro nodes
+         */
+
+        return &_global_to_local_micro_free_node_map;
+    }
+
+    const DOFMap *inputFileProcessor::getGhostMicroGlobalToLocalDOFMap( ){
+        /*!
+         * Get the DOF map from the global to local DOF Id for the ghost micro nodes
+         */
+
+        return &_global_to_local_micro_ghost_node_map;
+    }
+
+    const DOFMap *inputFileProcessor::getFreeMacroGlobalToLocalDOFMap( ){
+        /*!
+         * Get the DOF map from the global to local DOF Id for the free macro nodes
+         */
+
+        return &_global_to_local_macro_free_node_map;
+    }
+
+    const DOFMap *inputFileProcessor::getGhostMacroGlobalToLocalDOFMap( ){
+        /*!
+         * Get the DOF map from the global to local DOF Id for the ghost macro nodes
+         */
+
+        return &_global_to_local_macro_ghost_node_map;
     }
 
 }
