@@ -1705,6 +1705,9 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
     floatVector microShapeFunctions;
     _getTestMicroShapeFunctions( microShapeFunctions );
 
+    std::unordered_map< unsigned int, unsigned int > macroNodeToLocalIndex;
+    _getMacroNodeToLocalIndex( macroNodeToLocalIndex );
+
     floatVector domainMicroShapeFunctions( domainMacroNodeIndices.size() * domainMicroNodeIndices.size(), 0 );
     for ( unsigned int n = 0; n < domainMicroNodeIndices.size(); n++ ){
         for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
@@ -1790,6 +1793,55 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( answer, result ) ){
         results << "test_addDomainMicroContributionToMacroMass (test 2) & False\n";
         return 1;
+    }
+
+    result = floatVector( 27, 0 );
+    error = DOFProjection::addDomainMicroContributionToMacroMass( domainMicroNodeIndices, domainMacroNodeIndices, microMasses, 
+                                                                  domainMicroShapeFunctions, microWeights, result,
+                                                                  &macroNodeToLocalIndex );
+
+    if ( error ){
+        error->print();
+        results << "test_addDomainMicroContributionToMacroMass & False\n";
+        return 1;
+    }
+
+    for ( auto it  = macroNodeToLocalIndex.begin( );
+               it != macroNodeToLocalIndex.end( );
+               it++ ){
+
+        if ( !vectorTools::fuzzyEquals( answer[ it->first ], result[ it->second ] ) ){
+
+            results << "test_addDomainMicroContributionToMacroMass (test 3) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    result = floatVector( 27, 0 );
+
+    error = DOFProjection::addDomainMicroContributionToMacroMass( domainMicroNodeIndices, domainMacroNodeIndices, microVolumes,
+                                                                  microDensities, domainMicroShapeFunctions, microWeights, result,
+                                                                  &macroNodeToLocalIndex );
+
+    if ( error ){
+        error->print();
+        results << "test_addDomainMicroContributionToMacroMass & False\n";
+        return 1;
+    }
+
+    for ( auto it  = macroNodeToLocalIndex.begin( );
+               it != macroNodeToLocalIndex.end( );
+               it++ ){
+
+        if ( !vectorTools::fuzzyEquals( answer[ it->first ], result[ it->second ] ) ){
+
+            results << "test_addDomainMicroContributionToMacroMass (test 4) & False\n";
+            return 1;
+
+        }
+
     }
 
     results << "test_addDomainMicroContributionToMacroMass & True\n";
