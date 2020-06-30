@@ -314,8 +314,20 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
+    const uIntVector *nonOverlappedMicroNodeIds = reader.getNonOverlappedMicroNodeIds( );
     const uIntVector *freeMicroNodeIds = reader.getFreeMicroNodeIds( );
     const uIntVector *ghostMicroNodeIds = reader.getGhostMicroNodeIds( );
+
+    for ( auto n  = freeMicroNodeIds->begin( );
+               n != freeMicroNodeIds->end( );
+               n++ ){
+
+        if ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) != nonOverlappedMicroNodeIds->end( ) ){
+            std::cout << "*n: " << *n << "\n";
+            results << "test_initializeIncrement (test 13) & False\n";
+            return 1;
+        }
+    }
 
     for ( auto n  = ghostMicroNodeIds->begin( );
                n != ghostMicroNodeIds->end( );
@@ -323,13 +335,39 @@ int test_initializeIncrement( std::ofstream &results ){
 
         if ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) != freeMicroNodeIds->end( ) ){
             std::cout << "*n: " << *n << "\n";
-            results << "test_initializeIncrement (test 12) & False\n";
+            results << "test_initializeIncrement (test 14) & False\n";
             return 1;
         }
+
+        if ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) != nonOverlappedMicroNodeIds->end( ) ){
+            std::cout << "*n: " << *n << "\n";
+            results << "test_initializeIncrement (test 15) & False\n";
+            return 1;
+        }
+
+    }
+
+    const stringVector *nonOverlappedMicroSurfaceNames = reader.getNonOverlappedMicroSurfaceNames( );
+    uIntVector nodes;
+
+    for ( auto surface  = nonOverlappedMicroSurfaceNames->begin( );
+               surface != nonOverlappedMicroSurfaceNames->end( );
+               surface++ ){
+
+        reader._microscale->getDomainNodes( 0, *surface, nodes );
+
+        for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
+
+            if ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) == nonOverlappedMicroNodeIds->end( ) ){
+                results << "test_initializeIncrement (test 16) & False\n";
+                return 1;
+            }
+
+        }
+
     }
 
     const stringVector *freeMicroDomainNames = reader.getFreeMicroDomainNames( );
-    uIntVector nodes;
     for ( auto domain  = freeMicroDomainNames->begin( );
                domain != freeMicroDomainNames->end( );
                domain++ ){
@@ -338,9 +376,10 @@ int test_initializeIncrement( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ){
+            if ( ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) == nonOverlappedMicroNodeIds->end( ) ) &&
+                 ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) ){
 
-                results << "test_initializeIncrement (test 13) & False\n";
+                results << "test_initializeIncrement (test 17) & False\n";
                 return 1;
 
             }
@@ -359,10 +398,11 @@ int test_initializeIncrement( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
+            if ( ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) == nonOverlappedMicroNodeIds->end( ) ) &&
+                 ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
                  ( std::find( ghostMicroNodeIds->begin( ), ghostMicroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) ){
 
-                results << "test_initializeIncrement (test 14) & False\n";
+                results << "test_initializeIncrement (test 18) & False\n";
                 return 1;
 
             }
@@ -385,7 +425,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
             if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) ){
 
-                results << "test_initializeIncrement (test 16) & False\n";
+                results << "test_initializeIncrement (test 19) & False\n";
                 return 1;
 
             }
@@ -406,7 +446,7 @@ int test_initializeIncrement( std::ofstream &results ){
             if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) &&
                  ( std::find( freeMacroNodeIds->begin( ), freeMacroNodeIds->end( ), *n ) == freeMacroNodeIds->end( ) ) ){
 
-                results << "test_initializeIncrement (test 17) & False\n";
+                results << "test_initializeIncrement (test 20) & False\n";
                 return 1;
 
             }
@@ -419,7 +459,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
     if ( microGlobalToLocalDOFMap->size( ) != ( freeMicroNodeIds->size( ) + ghostMicroNodeIds->size( ) ) ){
 
-        results << "test_initializeIncrement (test 18) & False\n";
+        results << "test_initializeIncrement (test 21) & False\n";
         return 1;
 
     }
@@ -430,7 +470,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
         if ( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ){
 
-            results << "test_initializeIncrement (test 19) & False\n";
+            results << "test_initializeIncrement (test 22) & False\n";
             return 1;
 
         }
@@ -443,7 +483,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
         if ( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ){
 
-            results << "test_initializeIncrement (test 20) & False\n";
+            results << "test_initializeIncrement (test 23) & False\n";
             return 1;
 
         }
@@ -454,7 +494,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
     if ( macroGlobalToLocalDOFMap->size( ) != ( freeMacroNodeIds->size( ) + ghostMacroNodeIds->size( ) ) ){
 
-        results << "test_initializeIncrement (test 21) & False\n";
+        results << "test_initializeIncrement (test 24) & False\n";
         return 1;
 
     }
@@ -465,7 +505,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
         if ( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ){
 
-            results << "test_initializeIncrement (test 22) & False\n";
+            results << "test_initializeIncrement (test 25) & False\n";
             return 1;
 
         }
@@ -478,7 +518,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
         if ( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ){
 
-            results << "test_initializeIncrement (test 23) & False\n";
+            results << "test_initializeIncrement (test 26) & False\n";
             return 1;
 
         }

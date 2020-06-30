@@ -91,6 +91,7 @@ namespace inputFileProcessor{
             const uIntVector* getFreeMacroCellMicroDomainCounts( );
             const uIntVector* getGhostMacroCellMicroDomainCounts( );
 
+            const uIntVector* getNonOverlappedMicroNodeIds( );
             const uIntVector* getFreeMicroNodeIds( );
             const uIntVector* getGhostMicroNodeIds( );
 
@@ -193,6 +194,7 @@ namespace inputFileProcessor{
             uIntVector _free_macro_cell_micro_domain_counts;
             uIntVector _ghost_macro_cell_micro_domain_counts;
 
+            uIntVector _unique_non_overlapped_micro_nodes;
             uIntVector _unique_free_micro_nodes;
             uIntVector _unique_ghost_micro_nodes;
 
