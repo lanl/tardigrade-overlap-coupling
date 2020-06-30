@@ -1297,6 +1297,9 @@ int test_addMacroDomainDisplacementToMicro2( std::ofstream &results ){
     floatVector microWeights;
     _getTestMicroWeights( microWeights);
 
+    std::unordered_map< unsigned int, unsigned int > microNodeToLocalIndex;
+    _getMicroNodeToLocalIndex( microNodeToLocalIndex );
+
     floatVector macroDOFVector;
     _getTestMacroDOFVector( macroDOFVector );
 
@@ -1379,6 +1382,42 @@ int test_addMacroDomainDisplacementToMicro2( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( result, answer ) ){
         results << "test_addMacroDomainDisplacementToMicro2 (test 1) & False\n";
         return 1;
+    }
+
+    result.clear( );
+    result.resize( dim * 27 );
+    error = DOFProjection::addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, domainMacroNodeIndices,
+                                                              domainReferenceXis, domainMacroInterpolationFunctionValues,
+                                                              nMacroDOF, macroDOFVector, microWeights, result, &microNodeToLocalIndex );
+
+    if ( error ){
+        error->print( );
+        results << "test_addMacroDomainDisplacementToMicro & False\n";
+        return 1;
+    }
+
+    for ( auto it = domainMicroNodeIndices.begin( ); it != domainMicroNodeIndices.end( ); it++ ){
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
+                                                     answer.begin( ) + dim * ( ( *it ) + 1 )
+                                                   ),
+                                        floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
+                                                     result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 )
+                                                   )
+                                      )
+           ){
+
+            vectorTools::print( floatVector( answer.begin( ) + dim * ( *it ),
+                                             answer.begin( ) + dim * ( ( *it ) + 1 )
+                                           )
+                              );
+            vectorTools::print( floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
+                                             result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
+                                           )
+                              );
+            results << "test_addMacroDomainDisplacementToMicro (test 2) & False\n";
+            return 1;
+
+        }
     }
 
     results << "test_addMicroDomainDisplacementToMicro2 & True\n";
