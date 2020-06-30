@@ -1861,11 +1861,20 @@ int test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( std::ofstrea
 
     const uIntVector domainMacroNodeIndices = { 98,  31,  90,  71,  74, 113,  11, 148 };
 
+    floatVector microDensities;
+    _getTestMicroDensities( microDensities );
+
+    floatVector microVolumes;
+    _getTestMicroVolumes( microVolumes );
+
     floatVector microMasses;
     _getTestMicroMasses( microMasses );
 
     floatVector microShapeFunctions;
     _getTestMicroShapeFunctions( microShapeFunctions );
+
+    std::unordered_map< unsigned int, unsigned int > macroNodeToLocalIndex;
+    _getMacroNodeToLocalIndex( macroNodeToLocalIndex );
 
     floatVector domainMicroShapeFunctions( domainMacroNodeIndices.size() * domainMicroNodeIndices.size(), 0 );
     for ( unsigned int n = 0; n < domainMicroNodeIndices.size(); n++ ){
@@ -2111,6 +2120,100 @@ int test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( std::ofstrea
         return 1;
     }
 
+    result = floatVector( dim * dim * 200, 0 );
+
+    error = DOFProjection::addDomainMicroContributionToMacroMicroMassMomentOfInertia( dim,
+                                                                                      domainMicroNodeIndices,
+                                                                                      domainMacroNodeIndices,
+                                                                                      domainReferenceXis,
+                                                                                      microVolumes, microDensities,
+                                                                                      domainMicroShapeFunctions,
+                                                                                      microWeights,
+                                                                                      result );
+
+    if ( error ){
+        error->print();
+        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( answer, result ) ){
+        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia (test 2) & False\n";
+        return 1;
+    }
+
+    result = floatVector( dim * dim * 137, 0 );
+
+    error = DOFProjection::addDomainMicroContributionToMacroMicroMassMomentOfInertia( dim,
+                                                                                      domainMicroNodeIndices,
+                                                                                      domainMacroNodeIndices,
+                                                                                      domainReferenceXis,
+                                                                                      microMasses,
+                                                                                      domainMicroShapeFunctions,
+                                                                                      microWeights,
+                                                                                      result,
+                                                                                      &macroNodeToLocalIndex );
+
+    if ( error ){
+        error->print();
+        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & False\n";
+        return 1;
+    }
+
+    for ( auto indx  = macroNodeToLocalIndex.begin( );
+               indx != macroNodeToLocalIndex.end( );
+               indx++ ){
+
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
+                                                     answer.begin( ) + dim * dim * ( indx->first + 1 )
+                                                   ),
+                                        floatVector( result.begin( ) + dim * dim * indx->second,
+                                                     result.begin( ) + dim * dim * ( indx->second + 1 )
+                                                   )
+                                      )
+           ){
+            results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia (test 3) & False\n";
+            return 1;
+        }
+
+    }
+
+    result = floatVector( dim * dim * 200, 0 );
+
+    error = DOFProjection::addDomainMicroContributionToMacroMicroMassMomentOfInertia( dim,
+                                                                                      domainMicroNodeIndices,
+                                                                                      domainMacroNodeIndices,
+                                                                                      domainReferenceXis,
+                                                                                      microVolumes, microDensities,
+                                                                                      domainMicroShapeFunctions,
+                                                                                      microWeights,
+                                                                                      result,
+                                                                                      &macroNodeToLocalIndex );
+
+    if ( error ){
+        error->print();
+        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & False\n";
+        return 1;
+    }
+
+    for ( auto indx  = macroNodeToLocalIndex.begin( );
+               indx != macroNodeToLocalIndex.end( );
+               indx++ ){
+
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
+                                                     answer.begin( ) + dim * dim * ( indx->first + 1 )
+                                                   ),
+                                        floatVector( result.begin( ) + dim * dim * indx->second,
+                                                     result.begin( ) + dim * dim * ( indx->second + 1 )
+                                                   )
+                                      )
+           ){
+            results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia (test 3) & False\n";
+            return 1;
+        }
+
+    }
+
     results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & True\n";
     return 0;
 }
@@ -2139,6 +2242,9 @@ int test_addDomainMassConstant( std::ofstream &results ){
 
     floatVector microShapeFunctions;
     _getTestMicroShapeFunctions( microShapeFunctions );
+
+    std::unordered_map< unsigned int, unsigned int > macroNodeToLocalIndex;
+    _getMacroNodeToLocalIndex( macroNodeToLocalIndex );
 
     floatVector domainMicroShapeFunctions( domainMacroNodeIndices.size() * domainMicroNodeIndices.size(), 0 );
     for ( unsigned int n = 0; n < domainMicroNodeIndices.size(); n++ ){
@@ -2318,6 +2424,56 @@ int test_addDomainMassConstant( std::ofstream &results ){
         vectorTools::print( result );
         results << "test_addDomainMassConstant (test 2) & False\n";
         return 1;
+    }
+
+    result = floatVector( dim * 137, 0 );
+
+    error = DOFProjection::addDomainMassConstant( dim, domainMicroNodeIndices, domainMacroNodeIndices,
+                                                  domainReferenceXis, microMasses,
+                                                  domainMicroShapeFunctions,
+                                                  microWeights, result, &macroNodeToLocalIndex );
+
+    for ( auto indx  = macroNodeToLocalIndex.begin( );
+               indx != macroNodeToLocalIndex.end( );
+               indx++ ){
+
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
+                                                     answer.begin( ) + dim * ( indx->first + 1 )
+                                                   ),
+                                        floatVector( result.begin( ) + dim * indx->second,
+                                                     result.begin( ) + dim * ( indx->second + 1 )
+                                                   )
+                                      )
+           ){
+            results << "test_addDomainMassconstant (test 3) & False\n";
+            return 1;
+        }
+
+    }
+
+    result = floatVector( dim * 137, 0 );
+
+    error = DOFProjection::addDomainMassConstant( dim, domainMicroNodeIndices, domainMacroNodeIndices,
+                                                  domainReferenceXis, microVolumes, microDensities,
+                                                  domainMicroShapeFunctions,
+                                                  microWeights, result, &macroNodeToLocalIndex );
+
+    for ( auto indx  = macroNodeToLocalIndex.begin( );
+               indx != macroNodeToLocalIndex.end( );
+               indx++ ){
+
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
+                                                     answer.begin( ) + dim * ( indx->first + 1 )
+                                                   ),
+                                        floatVector( result.begin( ) + dim * indx->second,
+                                                     result.begin( ) + dim * ( indx->second + 1 )
+                                                   )
+                                      )
+           ){
+            results << "test_addDomainMassconstant (test 4) & False\n";
+            return 1;
+        }
+
     }
 
     results << "test_addDomainMassConstant & True\n";
