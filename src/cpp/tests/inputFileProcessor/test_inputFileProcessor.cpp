@@ -370,6 +370,50 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const uIntVector *freeMacroNodeIds = reader.getFreeMacroNodeIds( );
+    const uIntVector *ghostMacroNodeIds = reader.getGhostMacroNodeIds( );
+
+    const stringVector *ghostMacroDomainNames = reader.getGhostMacroDomainNames( );
+    for ( auto domain  = ghostMacroDomainNames->begin( );
+               domain != ghostMacroDomainNames->end( );
+               domain++ ){
+
+        reader._macroscale->getDomainNodes( 0, *domain, nodes );
+
+        for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
+
+            if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) ){
+
+                results << "test_initializeIncrement (test 16) & False\n";
+                return 1;
+
+            }
+
+        }
+
+    }
+
+    const stringVector *freeMacroDomainNames = reader.getFreeMacroDomainNames( );
+    for ( auto domain  = freeMacroDomainNames->begin( );
+               domain != freeMacroDomainNames->end( );
+               domain++ ){
+
+        reader._macroscale->getDomainNodes( 0, *domain, nodes );
+
+        for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
+
+            if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) &&
+                 ( std::find( freeMacroNodeIds->begin( ), freeMacroNodeIds->end( ), *n ) == freeMacroNodeIds->end( ) ) ){
+
+                results << "test_initializeIncrement (test 17) & False\n";
+                return 1;
+
+            }
+
+        }
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }
@@ -634,6 +678,84 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
 }
 
+int test_getFreeMacroDomainNames( std::ofstream &results ){
+    /*!
+     * Test getting the free macro volume sets from the configuration file
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getFreeMacroDomainNames & False\n";
+        return 1;
+    }
+
+    stringVector answer = { "free_nodes" };
+
+    const stringVector *result = reader.getFreeMacroDomainNames( );
+
+    unsigned int indx = 0;
+    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+
+        if ( it->compare( answer[ indx ] ) != 0 ){
+
+            results << "test_getFreeMacroDomainNames (test 1) & False\n";
+            return 1;
+
+        }
+
+        indx++;
+
+    }
+
+    results << "test_getFreeMacroDomainNames & True\n";
+    return 0;
+
+}
+
+int test_getGhostMacroDomainNames( std::ofstream &results ){
+    /*!
+     * Test getting the ghost macro volume sets from the configuration file
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getGhostMacroDomainNames & False\n";
+        return 1;
+    }
+
+    stringVector answer = { "ghost_nodes" };
+
+    const stringVector *result = reader.getGhostMacroDomainNames( );
+
+    unsigned int indx = 0;
+    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+
+        if ( it->compare( answer[ indx ] ) != 0 ){
+
+            results << "test_getGhostMacroDomainNames (test 1) & False\n";
+            return 1;
+
+        }
+
+        indx++;
+
+    }
+
+    results << "test_getGhostMacroDomainNames & True\n";
+    return 0;
+
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -654,6 +776,8 @@ int main(){
     test_getGhostMicroDomainNames( results );
     test_getFreeMicroSurfaceNames( results );
     test_getGhostMicroSurfaceNames( results );
+    test_getFreeMacroDomainNames( results );
+    test_getGhostMacroDomainNames( results );
     test_getNonOverlappedMicroSurfaceNames( results );
     test_getCouplingInitialization( results );
 

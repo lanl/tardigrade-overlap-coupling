@@ -465,6 +465,14 @@ namespace inputFileProcessor{
             return result;
         }
 
+        error = setMacroNodeIndexMappings( increment );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in setting the unique macro node index mappings" );
+            result->addNext( error );
+            return result;
+        }
+
         //Set the current increment
         _current_increment = increment;
         _increment_initialized = true;
@@ -481,6 +489,7 @@ namespace inputFileProcessor{
 
             errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ],
                                                              _free_macro_cell_ids, _free_macro_cell_micro_domain_counts,
+                                                             _free_macro_volume_sets,
                                                              _ghost_micro_volume_sets );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
@@ -503,6 +512,7 @@ namespace inputFileProcessor{
 
             errorOut error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ],
                                                              _ghost_macro_cell_ids, _ghost_macro_cell_micro_domain_counts,
+                                                             _ghost_macro_volume_sets,
                                                              _free_micro_volume_sets );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
@@ -601,20 +611,21 @@ namespace inputFileProcessor{
     errorOut inputFileProcessor::checkCommonDomainConfiguration( const YAML::Node &domainConfig,
                                                                  uIntVector &macroCellIds,
                                                                  uIntVector &macroCellMicroDomainCounts,
-                                                                 stringVector &volumeNodesets ){
+                                                                 stringVector &macroVolumeNodesets,
+                                                                 stringVector &microVolumeNodesets ){
         /*!
          * Extract common values in the configuration of a domain
          *
          * :param YAML::Node &domainConfig: The configuration of a particular domain.
          * :param uIntVector &macroCellIds: The macro-cell Ids corresponding to the domain
          * :param uIntVector &macroCellMicroDomainCounts: The number of micro domains in each macro domain
-         * :param stringVector &volumeNodesets: The nodeset names for the nodes in the
+         * :param stringVector &macroVolumeNodesets: The nodeset names for the nodes in the
+         *     macro domains
+         * :param stringVector &microVolumeNodesets: The nodeset names for the nodes in the
          *     micro domains
          */
 
         if ( ( !domainConfig.IsSequence() ) && ( !domainConfig.IsNull( ) ) ){
-
-            std::cout << domainConfig[ "macro_free_1" ][ "macro_nodeset" ].as<std::string>( ) <<"\n";
 
             return new errorNode( "checkCommonDomainConfiguration",
                                   "The definition of the domains must either be empty or a sequence" );
@@ -624,7 +635,7 @@ namespace inputFileProcessor{
         unsigned int indx = 1;
         unsigned int indx2 = 1;
         unsigned int nVolumeNodesets = 0;
-        volumeNodesets.clear();
+        microVolumeNodesets.clear();
         for ( auto domain = domainConfig.begin( ); domain != domainConfig.end(); domain++ ){
 
             if ( !( *domain )[ "macro_nodeset" ] ){
@@ -640,6 +651,16 @@ namespace inputFileProcessor{
             if ( ( *domain )[ "macro_nodeset" ].IsNull( ) ){
                 return new errorNode( "checkCommonDomainConfiguration",
                                       "'macro_nodeset' cannot be empty in entry " + std::to_string( indx ) );
+            }
+
+            if ( !( *domain )[ "macro_nodeset" ] ){
+                return new errorNode( "checkCommonDomainConfiguration",
+                                      "The macro-nodeset is not defined in entry " + std::to_string( indx ) );
+            }
+
+            if ( !( *domain )[ "macro_nodeset" ].IsScalar( ) ){
+                return new errorNode( "checkCommonDomainConfiguration",
+                                      "The macro-nodeset must be a scalar string value " + std::to_string( indx ) );
             }
 
             if ( !( *domain )[ "micro_nodesets" ] ){
@@ -674,25 +695,27 @@ namespace inputFileProcessor{
 
         }
 
-        //Extract the surface nodesets
+        //Extract the volume nodesets
         macroCellIds.reserve( domainConfig.size( ) );
         macroCellMicroDomainCounts.reserve( domainConfig.size( ) );
-        volumeNodesets.reserve( nVolumeNodesets );
+        macroVolumeNodesets.reserve( domainConfig.size( ) );
+        microVolumeNodesets.reserve( nVolumeNodesets );
         for ( auto domain = domainConfig.begin( ); domain != domainConfig.end( ); domain++ ){
 
             macroCellIds.push_back( ( *domain )[ "macro_cell" ].as< unsigned int >( ) );
+            macroVolumeNodesets.push_back( ( *domain )[ "macro_nodeset" ].as< std::string >( ) );
             macroCellMicroDomainCounts.push_back( ( *domain )[ "micro_nodesets" ].size( ) );
 
             for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
 
-                if ( std::find( volumeNodesets.begin( ), volumeNodesets.end( ), nodeset->as< std::string >( ) ) != volumeNodesets.end( ) ){
+                if ( std::find( microVolumeNodesets.begin( ), microVolumeNodesets.end( ), nodeset->as< std::string >( ) ) != microVolumeNodesets.end( ) ){
 
                     return new errorNode( "checkCommonDomainConfiguration",
                                           nodeset->as< std::string >( ) + " appears more than once in the coupling definition" );
 
                 }
 
-                volumeNodesets.push_back( nodeset->as< std::string >( ) );
+                microVolumeNodesets.push_back( nodeset->as< std::string >( ) );
 
             }
 
@@ -1188,7 +1211,7 @@ namespace inputFileProcessor{
                    domain != domainNames.end( );
                    domain++ ){
 
-            error = _microscale->getDomainNodes( increment, *domain, nodes );
+            error = dataFile->getDomainNodes( increment, *domain, nodes );
 
             if ( error ){
 
@@ -1330,7 +1353,7 @@ namespace inputFileProcessor{
 
         if ( error ){
 
-            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+            errorOut result = new errorNode( "setMacroNodeIndexMappings",
                                              "Error in determining the unique ghost macroscale nodes" );
             result->addNext( error );
             return result;
@@ -1342,9 +1365,12 @@ namespace inputFileProcessor{
         unsigned int n;
 
         //Approximate the size of the duplicate nodes. At worst, this will be the size of the
-        //nodes on the surfaces of the ghost domains
-        for ( auto domain =  _ghost_macro_surface_sets.begin( );
-                   domain != _ghost_macro_surface_sets.end( );
+        //nodes on the surfaces of the ghost domains. Since there should be many less nodes 
+        //in the macroscale than the microscale we will just loop through the existing macro-scale
+        //nodesets of the volumes.
+
+        for ( auto domain =  _ghost_macro_volume_sets.begin( );
+                   domain != _ghost_macro_volume_sets.end( );
                    domain++ ){
 
             _macroscale->getNumDomainNodes( increment, *domain, n );
@@ -1374,11 +1400,11 @@ namespace inputFileProcessor{
         std::sort( duplicateNodes.begin( ), duplicateNodes.end( ) );
 
         //Remove the duplicate nodes
-        error = removeIndicesFromVector( _unique_free_micro_nodes, duplicateNodes.begin( ), duplicateNodes.end( ) );
+        error = removeIndicesFromVector( _unique_free_macro_nodes, duplicateNodes.begin( ), duplicateNodes.end( ) );
 
         if ( error ){
 
-            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+            errorOut result = new errorNode( "setMacroNodeIndexMappings",
                                              "Error in the removal of the duplicate values from the vector" );
             result->addNext( error );
             return result;
@@ -1532,6 +1558,38 @@ namespace inputFileProcessor{
          */
 
         return &_unique_ghost_micro_nodes;
+    }
+
+    const stringVector *inputFileProcessor::getFreeMacroDomainNames( ){
+        /*!
+         * Get the free macro volume sets
+         */
+
+        return &_free_macro_volume_sets;
+    }
+
+    const stringVector *inputFileProcessor::getGhostMacroDomainNames( ){
+        /*!
+         * Get the ghost macro volume sets
+         */
+
+        return &_ghost_macro_volume_sets;
+    }
+
+    const uIntVector *inputFileProcessor::getFreeMacroNodeIds( ){
+        /*!
+         * Get the free micro-node ids
+         */
+
+        return &_unique_free_macro_nodes;
+    }
+
+    const uIntVector *inputFileProcessor::getGhostMacroNodeIds( ){
+        /*!
+         * Get the ghost micro-node ids
+         */
+
+        return &_unique_ghost_macro_nodes;
     }
 
 }
