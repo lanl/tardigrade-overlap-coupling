@@ -90,6 +90,12 @@ namespace overlapCoupling{
         //Project the degrees of freedom
         error = projectDegreesOfFreedom( );
 
+        if ( error ){
+            errorOut result = new errorNode( "processIncrement", "Error in the projection of the ghost degrees of freedom" );
+            result->addNext( error );
+            return result;
+        }
+
         return NULL;
     }
 
@@ -1327,12 +1333,27 @@ namespace overlapCoupling{
     }
 
     const floatVector* overlapCoupling::getReferenceGhostMicroDomainCenterOfMassShapeFunctions( ){
-
         /*!
          * Get access to the shapefunction values of the reference ghost micro domain centers of mass
          */
 
-        return &_referenceGhostMicroDomainCenterOfMassShapeFunctions;
+        return &_referenceGhostMicroDomainCenterOfMassShapeFunctions; 
+    }
+
+    const floatVector* overlapCoupling::getProjectedGhostMacroDisplacement( ){
+        /*!
+         * Get access to the projected ghost macro displacements
+         */
+
+        return &_projected_ghost_macro_displacement;
+    }
+
+    const floatVector* overlapCoupling::getProjectedGhostMicroDisplacement( ){
+        /*!
+         * Get access to the projected ghost macro displacements
+         */
+
+        return &_projected_ghost_micro_displacement;
     }
 
 }

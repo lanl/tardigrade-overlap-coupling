@@ -61,6 +61,9 @@ namespace overlapCoupling{
             const floatVector* getReferenceFreeMicroDomainCenterOfMassShapeFunctions( );
             const floatVector* getReferenceGhostMicroDomainCenterOfMassShapeFunctions( );
 
+            const floatVector* getProjectedGhostMacroDisplacement( );
+            const floatVector* getProjectedGhostMicroDisplacement( );
+
         private:
 
             //Private attributes
