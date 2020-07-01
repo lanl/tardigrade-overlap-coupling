@@ -303,7 +303,11 @@ namespace overlapCoupling{
 
         }
 
+        //Compress the shape-function matrix
+        _N.makeCompressed( );
+
         //Form the projectors
+        //assert( 1 == 0 );
         error = formTheProjectors( );
 
         if ( error ){
@@ -384,7 +388,9 @@ namespace overlapCoupling{
         //Extract the part of the shapefunction matrix that interpolates between ghost micromorphic DOF and free classical DOF
         Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
         std::cout << "Performing QR decomposition of NQDhat\n";
-        solver.compute( _N.block( 0, nFreeMacroDOF, nFreeMicroDOF, nGhostMacroDOF ) );
+        SparseMatrix NQDhat = _N.block( 0, nFreeMacroDOF, nFreeMicroDOF, nGhostMacroDOF );
+        NQDhat.makeCompressed( );
+        solver.compute( NQDhat );//_N.block( 0, nFreeMacroDOF, nFreeMicroDOF, nGhostMacroDOF ) );
 
         if ( solver.info( ) != Eigen::Success ){
 
@@ -408,7 +414,21 @@ namespace overlapCoupling{
         _L2_BQhatD = _N.block( nFreeMicroDOF, 0, nGhostMicroDOF, nFreeMacroDOF )
                    + _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
 
-        std::cout << "Exiting L2 projector formation\n";
+        floatType tmp = 0;
+        for ( unsigned int l = 2; l < _N.rows( ); l+=3 ){
+            tmp = 0;
+            for ( unsigned int k = 0; k < _N.cols( ); k++ ){
+    
+                if ( ( k % 12 ) == 2 ){
+                    tmp += _N.coeff( l, k );
+                }
+    
+            }
+            if ( !vectorTools::fuzzyEquals( tmp, 1. ) ){
+                std::cout << tmp << "\n";
+                assert( 1 == -1 );
+            }
+        }
 
         return NULL;
     }
@@ -504,6 +524,8 @@ namespace overlapCoupling{
             result->addNext( error );
             return result;
         }
+
+//        if ( _inputProcessor.getCouplingInitialization[ "projection_type" ] )
 
         return NULL;
 
@@ -1268,6 +1290,16 @@ namespace overlapCoupling{
 
             Dhat = _L2_BDhatQ * Q + _L2_BDhatD * D;
             Qhat = _L2_BQhatQ * Q + _L2_BQhatD * D;
+//            std::cout << "Dhat1:\n" << _L2_BDhatQ * Q << "\n\n";
+//            std::cout << "Dhat2:\n" << _L2_BDhatD * D << "\n\n";
+//            std::cout << "RHS:\n" << _N.block( 0, nMacroDispDOF * freeMacroNodeIds->size( ), nMicroDispDOF * freeMicroNodeIds->size( ), nMacroDispDOF * ghostMacroNodeIds->size( ) ).transpose( ) * ( Q - _N.block( 0, 0, nMicroDispDOF * freeMicroNodeIds->size( ), nMacroDispDOF * freeMacroNodeIds->size( ) ) * D ) << "\n\n";
+////            std::cout << "Q:\n";
+////            std::cout << Q << "\n\n";
+//            std::cout << "D:\n";
+//            std::cout << D << "\n\n";
+//            std::cout << "Dhat:\n";
+//            std::cout << Dhat << "\n";
+//            assert( 1 == 0 );
 
         }
         else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
@@ -1283,7 +1315,6 @@ namespace overlapCoupling{
 
         }
 
-        std::cout << "exiting projection\n";
         return NULL;
 
     }

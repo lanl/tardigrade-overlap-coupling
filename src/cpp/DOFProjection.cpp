@@ -328,8 +328,6 @@ namespace DOFProjection{
                 if ( indx == microNodeToLocalIndex->end( ) ){
 
                     continue;
-//                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
-//                                          "The micro node " + std::to_string( m ) + " is not found in the micro node to local index map" );
 
                 }
 
@@ -398,7 +396,6 @@ namespace DOFProjection{
         //Assemble the sparse matrix
         domainN = SparseMatrix( nMicroDOF * nMicroNodes, nMacroDOF * nMacroNodes );
         domainN.setFromTriplets( coefficients.begin(), coefficients.end() );
-        domainN.makeCompressed( );
 
         return NULL;
     }

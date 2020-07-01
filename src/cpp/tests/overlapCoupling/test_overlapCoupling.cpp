@@ -367,10 +367,15 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     const floatVector *projectedGhostMacroDisplacement = oc.getProjectedGhostMacroDisplacement( );
     const floatVector *projectedGhostMicroDisplacement = oc.getProjectedGhostMicroDisplacement( );
 
-    std::cout << "\nmacro displacements\n";
-    vectorTools::print( *projectedGhostMacroDisplacement );
-    std::cout << "\nmicro displacements\n";
-    vectorTools::print( *projectedGhostMicroDisplacement );
+    if ( projectedGhostMacroDisplacement->size( ) == 0 ){
+        results << "test_overlapCoupling_initializeCoupling (test 1) & False\n";
+        return 1;
+    }
+
+    if ( projectedGhostMicroDisplacement->size( ) == 0 ){
+        results << "test_overlapCoupling_initializeCoupling (test 2) & False\n";
+        return 1;
+    }
 
     results << "test_overlapCoupling_initializeCoupling & True\n";
     return 0;
