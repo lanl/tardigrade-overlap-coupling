@@ -118,6 +118,21 @@ namespace overlapCoupling{
                                                                  const uIntVector  &macroNodes,
                                                                  const floatVector &domainReferenceXis,
                                                                  const floatVector &domainCenterOfMassShapeFunctionValues );
+
+            errorOut processDomainReference( const unsigned int &increment,
+                                             const unsigned int &domainIndex, const std::string &domainName,
+                                             const unsigned int cellID, const uIntVector &macroNodes,
+                                             floatType   &referenceMicroDomainMass,
+                                             floatVector &referenceMicroDomainCentersOfMass,
+                                             floatVector &domainReferenceXiVectors,
+                                             floatVector &domainCenterOfMassShapeFunctionValues,
+                                             floatVector &domainMicroPositionShapeFunctionValues );
+
+            errorOut formTheProjectors( );
+
+            errorOut formL2Projectors( );
+
+            errorOut formDirectProjectionProjectors( );
                                                                    
             //Construct the interpolation matrix
             SparseMatrix _N;

@@ -94,6 +94,9 @@ int test_overlapCoupling_getReferenceFreeMicroDomainMasses( std::ofstream &resul
     const floatVector *referenceFreeMicroDomainMassesResult = oc.getReferenceFreeMicroDomainMasses( );
 
     if ( !vectorTools::fuzzyEquals( referenceFreeMicroDomainMassesAnswer, *referenceFreeMicroDomainMassesResult ) ){
+        vectorTools::print( referenceFreeMicroDomainMassesAnswer );
+        vectorTools::print( *referenceFreeMicroDomainMassesResult );
+        std::cout << referenceFreeMicroDomainMassesResult->size( ) << "\n";
         results << "test_overlapCoupling_getReferenceFreeMicroDomainMasses (test 1) & False\n";
         return 1;
     }

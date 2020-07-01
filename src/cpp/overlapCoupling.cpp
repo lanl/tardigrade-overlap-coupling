@@ -132,31 +132,325 @@ namespace overlapCoupling{
          * :param const unsigned int &increment: The increment at which to set the reference state
          */
 
-        //Compute the centers of mass and the total mass
-        errorOut error = computeIncrementCentersOfMass( increment, _referenceFreeMicroDomainMasses, _referenceGhostMicroDomainMasses,
-                                                        _referenceFreeMicroDomainCentersOfMass, _referenceGhostMicroDomainCentersOfMass );
-
+        //Initialize the input processor
+        errorOut error = _inputProcessor.initializeIncrement( increment );
         if ( error ){
-            errorOut result = new errorNode( "setReferenceFromIncrement",
-                                             "Error in computing the center of mass of increment " + std::to_string( increment ) );
+            errorOut result = new errorNode( "processIncrement", "Error in initialization of the input processor" );
             result->addNext( error );
             return result;
         }
 
-        //Compute the shape functions at the centers of mass
-        error = computeShapeFunctionsAtReferenceCentersOfMass( );
+        //Get the macro cell ids
+        const uIntVector *freeMacroCellIDs = _inputProcessor.getFreeMacroCellIds( );
+        const uIntVector *ghostMacroCellIDs = _inputProcessor.getGhostMacroCellIds( );
+
+        //Get the macro domain names
+        const stringVector *freeMacroDomainNames = _inputProcessor.getFreeMacroDomainNames( );
+        const stringVector *ghostMacroDomainNames = _inputProcessor.getGhostMacroDomainNames( );
+
+        //Get the micro cell names
+        const stringVector *freeMicroDomainNames = _inputProcessor.getFreeMicroDomainNames( );
+        const stringVector *ghostMicroDomainNames = _inputProcessor.getGhostMicroDomainNames( );
+
+        //Get the macro cell counts
+        const uIntVector *freeMacroCellMicroDomainCounts = _inputProcessor.getFreeMacroCellMicroDomainCounts( );
+        const uIntVector *ghostMacroCellMicroDomainCounts = _inputProcessor.getGhostMacroCellMicroDomainCounts( );
+
+        //Set the output vector sizes
+        unsigned int numFreeMicroDomains  = _inputProcessor.getFreeMicroDomainNames( )->size( );
+        unsigned int numGhostMicroDomains = _inputProcessor.getGhostMicroDomainNames( )->size( );
+
+        //Set the reference micro domain mass vector sizes
+        _referenceFreeMicroDomainMasses = floatVector( numFreeMicroDomains, 0 );
+        _referenceGhostMicroDomainMasses = floatVector( numGhostMicroDomains, 0 );
+
+        //Set the reference micro domain center of mass vector sizes
+        _referenceFreeMicroDomainCentersOfMass = floatVector( _dim * numFreeMicroDomains, 0 );
+        _referenceGhostMicroDomainCentersOfMass = floatVector( _dim * numGhostMicroDomains, 0 );
+
+        //Loop over the free macro-scale cells
+        unsigned int cellIndex;
+        unsigned int nMicroDomains;
+        unsigned int domainIndex = 0;
+
+        uIntVector macroNodes;
+
+        floatVector domainReferenceXiVectors;
+        floatVector domainCenterOfMassShapeFunctionValues;
+        floatVector domainMicroPositionShapeFunctionValues;
+
+        for ( auto cellID  = freeMacroCellIDs->begin( );
+                   cellID != freeMacroCellIDs->end( );
+                   cellID++ ){
+
+                //Set the index
+                cellIndex = cellID - freeMacroCellIDs->begin( );
+
+                //Set the number of micro-domains encompassed by the cell
+                nMicroDomains = ( *freeMacroCellMicroDomainCounts )[ cellIndex ];
+
+                //Get the macro-node set
+                error = _inputProcessor._macroscale->getDomainNodes( increment, ( *freeMacroDomainNames )[ cellIndex ], macroNodes );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                                     "Error in extracting the free macro-node set" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                //Loop over the micro-domains
+                for ( auto domain  = ghostMicroDomainNames->begin( ) + domainIndex;
+                           domain != ghostMicroDomainNames->begin( ) + domainIndex + nMicroDomains;
+                           domain++ ){
+
+                    error = processDomainReference( increment,
+                                                    domain - ghostMicroDomainNames->begin( ), *domain,
+                                                    *cellID, macroNodes,
+                                                    _referenceGhostMicroDomainMasses[ domain - ghostMicroDomainNames->begin( ) ],
+                                                    _referenceGhostMicroDomainCentersOfMass,
+                                                    domainReferenceXiVectors,
+                                                    domainCenterOfMassShapeFunctionValues,
+                                                    domainMicroPositionShapeFunctionValues );
+
+                    if ( error ){
+
+                        errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                                         "Error in processing '" + *domain + "' for a free reference state" );
+                        result->addNext( error );
+                        return result;
+
+                    }
+
+                }
+
+                //TODO: Add direct projection projector construction here
+
+                domainIndex += nMicroDomains;
+
+        }
+
+        //Loop over the ghost macro-scale cells
+
+        domainIndex = 0;
+
+        for ( auto cellID  = ghostMacroCellIDs->begin( );
+                   cellID != ghostMacroCellIDs->end( );
+                   cellID++ ){
+
+                //Set the index
+                cellIndex = cellID - ghostMacroCellIDs->begin( );
+
+                //Set the number of micro-domains encompassed by the cell
+                nMicroDomains = ( *ghostMacroCellMicroDomainCounts )[ cellIndex ];
+
+                //Get the macro-node set
+                error = _inputProcessor._macroscale->getDomainNodes( increment, ( *ghostMacroDomainNames )[ cellIndex ], macroNodes );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                                     "Error in extracting the ghost macro-node set" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                //Loop over the micro-domains
+                for ( auto domain  = freeMicroDomainNames->begin( ) + domainIndex;
+                           domain != freeMicroDomainNames->begin( ) + domainIndex + nMicroDomains;
+                           domain++ ){
+
+                    error = processDomainReference( increment,
+                                                    domain - freeMicroDomainNames->begin( ), *domain,
+                                                    *cellID, macroNodes,
+                                                    _referenceFreeMicroDomainMasses[ domain - freeMicroDomainNames->begin( ) ],
+                                                    _referenceFreeMicroDomainCentersOfMass,
+                                                    domainReferenceXiVectors,
+                                                    domainCenterOfMassShapeFunctionValues,
+                                                    domainMicroPositionShapeFunctionValues );
+
+                    if ( error ){
+
+                        errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                                         "Error in processing '" + *domain + "' for a ghost reference state" );
+                        result->addNext( error );
+                        return result;
+
+                    }
+
+                }
+
+                //TODO: Add direct projection projector construction here
+
+                domainIndex += nMicroDomains;
+
+        }
+
+        //Form the projectors
+        error = formTheProjectors( );
 
         if ( error ){
 
             errorOut result = new errorNode( "setReferenceStateFromIncrement",
-                                             "Error in computing the shape functions at the centers of mass of increment "
-                                             + std::to_string( increment ) );
+                                             "Error in the formation of the projectors" );
             result->addNext( error );
             return result;
 
         }
 
         return NULL;
+    }
+
+    errorOut overlapCoupling::formTheProjectors( ){
+        /*!
+         * Form the projection operators
+         */
+
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
+
+        if ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ){
+
+            errorOut error = formL2Projectors( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                                 "Error in the formation of the L2 projectors" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+        else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+
+            errorOut error = formDirectProjectionProjectors( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                                 "Error in the formation of the direct projection projectors" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+        else{
+
+            return new errorNode( "formTheProjectors",
+                                  "'projection_type' '" + config[ "projection_type" ].as< std::string >( ) + "' not recognized" );
+
+        }
+
+        return NULL;
+    }
+
+    errorOut overlapCoupling::formL2Projectors( ){
+        /*!
+         * Form the projectors if the L2 projection is to be used
+         */
+
+        return NULL;
+    }
+
+    errorOut overlapCoupling::formDirectProjectionProjectors( ){
+        /*!
+         * Form the projectors if the direct projection is to be used
+         */
+
+        return NULL;
+    }
+
+    errorOut overlapCoupling::processDomainReference( const unsigned int &increment,
+                                                      const unsigned int &domainIndex, const std::string &domainName,
+                                                      const unsigned int cellID, const uIntVector &macroNodes,
+                                                      floatType   &referenceMicroDomainMass,
+                                                      floatVector &referenceMicroDomainCentersOfMass,
+                                                      floatVector &domainReferenceXiVectors,
+                                                      floatVector &domainCenterOfMassShapeFunctionValues,
+                                                      floatVector &domainMicroPositionShapeFunctionValues ){
+        /*!
+         * Process the domain for use with preparing the reference configuration
+         *
+         * :param const unsigned int &increment: The increment at which to compute the reference
+         * :param const unsigned int &domainIndex: The index of the domain
+         * :param const std::string &domainName: The name of the domain
+         * :param const unsigned int cellID: The global cell ID number
+         * :param const uIntVector &macroNodes: The nodes of the macro domain
+         * :param floatType   &referenceMicroDomainMass: The reference mass of the micro domain. This
+         *     should be a reference to the micro-domain mass vector
+         * :param floatVector &referenceMicroDomainCentersOfMass: The reference micro-domain center of mass
+         *     vector for all of the micro domains
+         * :param floatVector &domainReferenceXiVectors: The reference Xi vectors for the domain.
+         * :param floatVector &domainCenterOfMassShapeFunctionValues: The shape function values at the 
+         *     center of mass
+         * :param floatVector &domainMicroPositionShapeFunctionValues: The shape function values at the
+         *     micro node positions inside of the domain. This is only computed if indicated by the 
+         *     configuration file.
+         */
+
+        //Process the domain mass data
+        floatVector domainCenterOfMass;
+
+        errorOut error = processDomainMassData( increment, domainName, referenceMicroDomainMass,
+                                                domainCenterOfMass, domainReferenceXiVectors );
+
+        if ( error ){
+            
+            errorOut result = new errorNode( "processDomainReference",
+                                             "Error in processing the mass data for the micro domain '" + domainName + "'" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Save the center of mass
+        for ( unsigned int i = 0; i < domainCenterOfMass.size( ); i++ ){
+
+            referenceMicroDomainCentersOfMass[ _dim * domainIndex + i ] = domainCenterOfMass[ i ];
+
+        }
+
+        //Compute the domain's shape function information
+        error = computeDomainShapeFunctionInformation( cellID, domainName, increment, domainCenterOfMass,
+                                                       domainCenterOfMassShapeFunctionValues,
+                                                       domainMicroPositionShapeFunctionValues );
+
+        if ( error ){
+            errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                             "Error in computing the shape function values for the domain center of mass or the domainMicroPositionShapeFunctionValues" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Get the domain node ids
+        uIntVector domainNodes;
+        error = _inputProcessor._microscale->getDomainNodes( increment, domainName, domainNodes );
+
+        if ( error ){
+            errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                             "Error in extracting the micro-node set" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Add the domain's contribution to the shape function matrix
+        error = addDomainContributionToInterpolationMatrix( domainNodes, macroNodes, domainReferenceXiVectors,
+                                                            domainCenterOfMassShapeFunctionValues );
+
+        if ( error ){
+            errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                             "Error in adding part of the shapefunction matrix determined from '" + domainName + "'" );
+            result->addNext( error );
+            return result;
+        }
+
+        return NULL;
+
     }
 
     errorOut overlapCoupling::processDomainMassData( const unsigned int &increment, const std::string &domainName,
@@ -264,16 +558,18 @@ namespace overlapCoupling{
         if ( _inputProcessor.computeMicroShapeFunctions( ) ){
 
             //Get the micro-node positions
-            floatVector microNodePositions( domainNodes.size( ) );
+            floatVector microNodePositions( _dim * domainNodes.size( ) );
     
             unsigned int index;
             const floatVector *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
             const floatVector *microDisplacements      = _inputProcessor.getMicroDisplacements( );
-    
+
             for ( auto it = domainNodes.begin( ); it != domainNodes.end( ); it++ ){
     
                 index = it - domainNodes.begin( );
-                microNodePositions[ index ] = ( *microReferencePositions )[ index ] + ( *microDisplacements )[ index ];
+                for ( unsigned int i = 0; i < _dim; i++ ){
+                    microNodePositions[ index ] = ( *microReferencePositions )[ index + i ] + ( *microDisplacements )[ index + i ];
+                }
     
             }
     
@@ -444,7 +740,9 @@ namespace overlapCoupling{
         if ( ( points.size( ) % _dim ) > 0 ){
 
             return new errorNode( "computeShapeFunctionsAtPoints",
-                                  "The points vector is inconsistent with the dimension" );
+                                  "The points vector is inconsistent with the dimension\n"
+                                  "    points.size( ): " + std::to_string( points.size( ) ) + "\n" +
+                                  "    nPoints: " + std::to_string( nPoints ) );
 
         }
 
@@ -571,7 +869,9 @@ namespace overlapCoupling{
         if ( ( points.size( ) % _dim ) > 0 ){
 
             return new errorNode( "computeShapeFunctionsAtPoints",
-                                  "The points vector is inconsistent with the dimension" );
+                                  "The points vector is inconsistent with the dimension\n"
+                                  "    points.size( ): " + std::to_string( points.size( ) ) + "\n" +
+                                  "    nPoints: " + std::to_string( nPoints ) );
 
         }
 
