@@ -1163,7 +1163,12 @@ namespace inputFileProcessor{
 
         if ( !_config[ "coupling_initialization" ][ "projection_type" ] ){
 
-            _config[ "coupling_initialization" ][ "projection_type" ] = "micro_least_squares";
+            _config[ "coupling_initialization" ][ "projection_type" ] = "direct_projection";
+
+        }
+
+        if ( _config[ "coupling_initialization" ][ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+
             _computeMicroShapeFunctions = true;
 
         }
