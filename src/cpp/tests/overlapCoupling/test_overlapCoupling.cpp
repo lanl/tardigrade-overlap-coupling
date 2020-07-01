@@ -350,8 +350,8 @@ int main(){
     test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
     test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
     test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
 
     //Close the results file
     results.close();

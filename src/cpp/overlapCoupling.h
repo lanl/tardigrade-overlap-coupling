@@ -82,6 +82,9 @@ namespace overlapCoupling{
             floatVector _referenceFreeMicroDomainCenterOfMassShapeFunctions;
             floatVector _referenceGhostMicroDomainCenterOfMassShapeFunctions;
 
+            floatVector _projected_ghost_macro_displacement;
+            floatVector _projected_ghost_micro_displacement;
+
             //Private functions
             errorOut processDomainMassData( const unsigned int &increment, const std::string &domainName,
                                             floatType &domainMass, floatVector &domainCenterOfMass,
@@ -133,8 +136,10 @@ namespace overlapCoupling{
             errorOut formL2Projectors( );
 
             errorOut formDirectProjectionProjectors( );
+
+            errorOut projectDegreesOfFreedom( );
                                                                    
-            //Construct the interpolation matrix
+            //The interpolation matrix
             SparseMatrix _N;
 
             //Construct the projection matrices for the L2 projection

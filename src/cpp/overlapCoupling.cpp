@@ -5,6 +5,7 @@
 =============================================================================*/
 
 #include<overlapCoupling.h>
+#include<Eigen/SparseQR>
 
 namespace overlapCoupling{
 
@@ -85,6 +86,9 @@ namespace overlapCoupling{
             result->addNext( error );
             return result;
         }
+
+        //Project the degrees of freedom
+        error = projectDegreesOfFreedom( );
 
         return NULL;
     }
@@ -353,6 +357,46 @@ namespace overlapCoupling{
         /*!
          * Form the projectors if the L2 projection is to be used
          */
+            
+        //Set the dimension of the displacement DOF
+        unsigned int nDispMicroDOF = _dim;
+
+        unsigned int nDispMacroDOF = _dim + _dim * _dim;
+
+        //Get the number of micro degrees of freedom which are free and ghost
+        unsigned int nFreeMicroDOF = nDispMicroDOF * _inputProcessor.getFreeMicroNodeIds( )->size( );
+        unsigned int nGhostMicroDOF = nDispMicroDOF * _inputProcessor.getGhostMicroNodeIds( )->size( );
+
+        //Get the number of macro degrees of freedom which are free and ghost
+        unsigned int nFreeMacroDOF = nDispMacroDOF * _inputProcessor.getFreeMacroNodeIds( )->size( );
+        unsigned int nGhostMacroDOF = nDispMacroDOF * _inputProcessor.getGhostMacroNodeIds( )->size( );
+
+        //Extract the part of the shapefunction matrix that interpolates between ghost micromorphic DOF and free classical DOF
+        Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
+        std::cout << "Performing QR decomposition of NQDhat\n";
+        solver.compute( _N.block( 0, nFreeMacroDOF, nFreeMicroDOF, nGhostMacroDOF ) );
+
+        if ( solver.info( ) != Eigen::Success ){
+
+            return new errorNode( "formL2Projectors",
+                                  "The QR decomposition of the ghost macro to free micro interpolation matrix failed" );
+
+        }
+
+        //Form the identity matrix
+        SparseMatrix I( nFreeMicroDOF, nFreeMicroDOF );
+        I.reserve( nFreeMicroDOF );
+        for ( unsigned int i = 0; i < nFreeMicroDOF; i++ ){
+            I.insert( i, i ) = 1;
+        }
+
+        std::cout << "Performing linear solve for BDhatQ\n";
+        _L2_BDhatQ = solver.solve( I.toDense( ) );
+        _L2_BDhatD = -_L2_BDhatQ * _N.block( 0, 0, nFreeMicroDOF, nFreeMacroDOF );
+
+        _L2_BQhatQ = _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatQ;
+        _L2_BQhatD = _N.block( nFreeMicroDOF, 0, nGhostMicroDOF, nFreeMacroDOF )
+                   + _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
 
         return NULL;
     }
@@ -1115,6 +1159,95 @@ namespace overlapCoupling{
         }
         else{
             _N = domainN;
+        }
+
+        return NULL;
+
+    }
+
+    errorOut overlapCoupling::projectDegreesOfFreedom( ){
+        /*!
+         * Project the degrees of freedom of the ghost nodes
+         * for the current increment
+         */
+
+        //Get the displacement vectors
+        const floatVector *macroDisplacements = _inputProcessor.getMacroDisplacements( );
+        const floatVector *microDisplacements = _inputProcessor.getMicroDisplacements( );
+
+        //Get the free and ghost node ids
+        const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
+        const uIntVector *ghostMacroNodeIds = _inputProcessor.getGhostMacroNodeIds( );
+
+        const uIntVector *freeMicroNodeIds = _inputProcessor.getFreeMicroNodeIds( );
+        const uIntVector *ghostMicroNodeIds = _inputProcessor.getGhostMicroNodeIds( );
+
+        //Set the number of displacement degrees of freedom
+        unsigned int nMacroDispDOF = _dim + _dim * _dim;
+        unsigned int nMicroDispDOF = _dim;
+
+        //Assemble the free displacements
+        floatVector freeMacroDisplacements( nMacroDispDOF * freeMacroNodeIds->size( ) );
+        floatVector freeMicroDisplacements( nMicroDispDOF * freeMicroNodeIds->size( ) );
+
+        for ( auto it = freeMacroNodeIds->begin( ); it != freeMacroNodeIds->end( ); it++ ){
+
+            for ( unsigned int i = 0; i < nMacroDispDOF; i++ ){
+
+                freeMacroDisplacements[ it - freeMacroNodeIds->begin( ) + i ] = ( *macroDisplacements )[ *it + i ];
+
+            }
+
+        }
+
+        for ( auto it = freeMicroNodeIds->begin( ); it != freeMicroNodeIds->end( ); it++ ){
+
+            for ( unsigned int i = 0; i < nMicroDispDOF; i++ ){
+
+                freeMicroDisplacements[ it - freeMicroNodeIds->begin( ) + i ] = ( *microDisplacements )[ *it + i ];
+
+            }
+
+        }
+
+        //Map the macro and micro free displacements to Eigen matrices
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > Q( freeMicroDisplacements.data(), freeMicroDisplacements.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > D( freeMacroDisplacements.data(), freeMacroDisplacements.size( ), 1 );
+
+        //Map the output vectors to Eigen matrices
+        _projected_ghost_macro_displacement.clear( );
+        _projected_ghost_macro_displacement.resize( nMacroDispDOF * ghostMacroNodeIds->size( ) );
+
+        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > Qhat( _projected_ghost_micro_displacement.data(),
+                                                               _projected_ghost_micro_displacement.size( ), 1 );
+
+        _projected_ghost_micro_displacement.clear( );
+        _projected_ghost_micro_displacement.resize( nMicroDispDOF * ghostMicroNodeIds->size( ) );
+
+        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > Dhat( _projected_ghost_macro_displacement.data(),
+                                                               _projected_ghost_macro_displacement.size( ), 1 );
+
+
+
+        YAML::Node config = _inputProcessor.getCouplingInitialization( );
+
+        if ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ){
+
+            Dhat = _L2_BDhatQ * Q + _L2_BDhatD * D;
+            Qhat = _L2_BQhatQ * Q + _L2_BQhatD * D;
+
+        }
+        else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+
+            Dhat = _DP_BDhatQ * Q + _DP_BDhatD * D;
+            Qhat = _DP_BQhatQ * Q + _DP_BQhatD * D;
+
+        }
+        else{
+
+            return new errorNode( "projectDegreesOfFreedom",
+                                  "'projection_type' '" + config[ "projection_type" ].as< std::string >( ) + "' is not recognized" );
+
         }
 
         return NULL;
