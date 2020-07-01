@@ -45,7 +45,8 @@ namespace overlapCoupling{
 
             errorOut initializeCoupling( );
 
-            errorOut processIncrement( const unsigned int &increment );
+            errorOut processIncrement( const unsigned int &microIncrement,
+                                       const unsigned int &macroIncrement );
 
             //Access functions
             const floatVector* getReferenceFreeMicroDomainMasses( );
@@ -89,15 +90,15 @@ namespace overlapCoupling{
             floatVector _projected_ghost_micro_displacement;
 
             //Private functions
-            errorOut processDomainMassData( const unsigned int &increment, const std::string &domainName,
+            errorOut processDomainMassData( const unsigned int &microIncrement, const std::string &domainName,
                                             floatType &domainMass, floatVector &domainCenterOfMass,
                                             floatVector &domainXiVectors );
 
             //Compute initial values
-            errorOut setReferenceStateFromIncrement( const unsigned int &increment );
+            errorOut setReferenceStateFromIncrement( const unsigned int &microIncrement, const unsigned int &macroIncrement );
 
             //Compute the increment's values
-            errorOut computeIncrementCentersOfMass( const unsigned int increment,
+            errorOut computeIncrementCentersOfMass( const unsigned int microIncrement, const unsigned int macroIncrement,
                                                     floatVector &freeDomainMass, floatVector &ghostDomainMass,
                                                     floatVector &freeDomainCM, floatVector &ghostDomainCM );
 
@@ -115,7 +116,7 @@ namespace overlapCoupling{
 
             errorOut computeDomainShapeFunctionInformation( const unsigned int &cellID,
                                                             const std::string &domainName,
-                                                            const unsigned int &increment,
+                                                            const unsigned int &microIncrement,
                                                             const floatVector &domainCenterOfMass,
                                                             floatVector &domainCenterOfMassShapeFunctionValues,
                                                             floatVector &domainMicroPositionShapeFunctionValues );
@@ -125,7 +126,7 @@ namespace overlapCoupling{
                                                                  const floatVector &domainReferenceXis,
                                                                  const floatVector &domainCenterOfMassShapeFunctionValues );
 
-            errorOut processDomainReference( const unsigned int &increment,
+            errorOut processDomainReference( const unsigned int &microIncrement,
                                              const unsigned int &domainIndex, const std::string &domainName,
                                              const unsigned int cellID, const uIntVector &macroNodes,
                                              floatType   &referenceMicroDomainMass,

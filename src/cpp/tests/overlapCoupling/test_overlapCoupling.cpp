@@ -332,6 +332,50 @@ int test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions(
 
 }
 
+int test_overlapCoupling_processIncrement( std::ofstream &results ){
+    /*!
+     * Test the initialization of the coupling
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_initializeCoupling & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_initializeCoupling & False\n";
+        return 1;
+    }
+
+    error = oc.processIncrement( 1, 1 );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_initializeCoupling & False\n";
+        return 1;
+    }
+
+    const floatVector *projectedGhostMacroDisplacement = oc.getProjectedGhostMacroDisplacement( );
+    const floatVector *projectedGhostMicroDisplacement = oc.getProjectedGhostMicroDisplacement( );
+
+    std::cout << "\nmacro displacements\n";
+    vectorTools::print( *projectedGhostMacroDisplacement );
+    std::cout << "\nmicro displacements\n";
+    vectorTools::print( *projectedGhostMicroDisplacement );
+
+    results << "test_overlapCoupling_initializeCoupling & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -345,7 +389,8 @@ int main(){
     results.open("results.tex");
 
     test_overlapCoupling_constructor( results );
-    test_overlapCoupling_initializeCoupling( results );
+//    test_overlapCoupling_initializeCoupling( results );
+    test_overlapCoupling_processIncrement( results );
 //    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
 //    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
 //    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );

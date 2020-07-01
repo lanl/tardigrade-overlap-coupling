@@ -62,15 +62,17 @@ namespace overlapCoupling{
         return _error;
     }
 
-    errorOut overlapCoupling::processIncrement( const unsigned int &increment ){
+    errorOut overlapCoupling::processIncrement( const unsigned int &microIncrement,
+                                                const unsigned int &macroIncrement ){
         /*!
          * Process the indicated increment
          *
-         * :param const unsigned int &increment: The increment to process
+         * :param const unsigned int &microIncrement: The micro increment to process
+         * :param const unsigned int &macroIncrement: The macro increment to process
          */
 
         //Initialize the input processor
-        errorOut error = _inputProcessor.initializeIncrement( increment );
+        errorOut error = _inputProcessor.initializeIncrement( microIncrement, macroIncrement );
         if ( error ){
             errorOut result = new errorNode( "processIncrement", "Error in initialization of the input processor" );
             result->addNext( error );
@@ -78,7 +80,7 @@ namespace overlapCoupling{
         }
 
         //Compute the centers of mass of the free and ghost domains
-        error = computeIncrementCentersOfMass( increment,
+        error = computeIncrementCentersOfMass( microIncrement, macroIncrement,
                                                _freeMicroDomainMasses, _ghostMicroDomainMasses,
                                                _freeMicroDomainCentersOfMass, _ghostMicroDomainCentersOfMass );
         if ( error ){
@@ -118,7 +120,7 @@ namespace overlapCoupling{
 
         errorOut error;
         if ( couplingInitialization[ "type" ].as< std::string >( ).compare( "use_first_increment" ) == 0 ){
-            error = setReferenceStateFromIncrement( 0 );
+            error = setReferenceStateFromIncrement( 0, 0 );
         }
         else{
             return new errorNode( "initializeCoupling",
@@ -135,15 +137,17 @@ namespace overlapCoupling{
         return NULL;
     }
 
-    errorOut overlapCoupling::setReferenceStateFromIncrement( const unsigned int &increment ){
+    errorOut overlapCoupling::setReferenceStateFromIncrement( const unsigned int &microIncrement,
+                                                              const unsigned int &macroIncrement ){
         /*!
          * Set the reference state from the indicated increment
          *
-         * :param const unsigned int &increment: The increment at which to set the reference state
+         * :param const unsigned int &microIncrement: The micro increment at which to set the reference state
+         * :param const unsigned int &macroIncrement: The macro increment at which to set the reference state
          */
 
         //Initialize the input processor
-        errorOut error = _inputProcessor.initializeIncrement( increment );
+        errorOut error = _inputProcessor.initializeIncrement( microIncrement, macroIncrement );
         if ( error ){
             errorOut result = new errorNode( "processIncrement", "Error in initialization of the input processor" );
             result->addNext( error );
@@ -200,7 +204,7 @@ namespace overlapCoupling{
                 nMicroDomains = ( *freeMacroCellMicroDomainCounts )[ cellIndex ];
 
                 //Get the macro-node set
-                error = _inputProcessor._macroscale->getDomainNodes( increment, ( *freeMacroDomainNames )[ cellIndex ], macroNodes );
+                error = _inputProcessor._macroscale->getDomainNodes( macroIncrement, ( *freeMacroDomainNames )[ cellIndex ], macroNodes );
 
                 if ( error ){
 
@@ -216,7 +220,7 @@ namespace overlapCoupling{
                            domain != ghostMicroDomainNames->begin( ) + domainIndex + nMicroDomains;
                            domain++ ){
 
-                    error = processDomainReference( increment,
+                    error = processDomainReference( microIncrement,
                                                     domain - ghostMicroDomainNames->begin( ), *domain,
                                                     *cellID, macroNodes,
                                                     _referenceGhostMicroDomainMasses[ domain - ghostMicroDomainNames->begin( ) ],
@@ -257,7 +261,7 @@ namespace overlapCoupling{
                 nMicroDomains = ( *ghostMacroCellMicroDomainCounts )[ cellIndex ];
 
                 //Get the macro-node set
-                error = _inputProcessor._macroscale->getDomainNodes( increment, ( *ghostMacroDomainNames )[ cellIndex ], macroNodes );
+                error = _inputProcessor._macroscale->getDomainNodes( macroIncrement, ( *ghostMacroDomainNames )[ cellIndex ], macroNodes );
 
                 if ( error ){
 
@@ -273,7 +277,7 @@ namespace overlapCoupling{
                            domain != freeMicroDomainNames->begin( ) + domainIndex + nMicroDomains;
                            domain++ ){
 
-                    error = processDomainReference( increment,
+                    error = processDomainReference( microIncrement,
                                                     domain - freeMicroDomainNames->begin( ), *domain,
                                                     *cellID, macroNodes,
                                                     _referenceFreeMicroDomainMasses[ domain - freeMicroDomainNames->begin( ) ],
@@ -404,6 +408,8 @@ namespace overlapCoupling{
         _L2_BQhatD = _N.block( nFreeMicroDOF, 0, nGhostMicroDOF, nFreeMacroDOF )
                    + _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
 
+        std::cout << "Exiting L2 projector formation\n";
+
         return NULL;
     }
 
@@ -415,7 +421,7 @@ namespace overlapCoupling{
         return NULL;
     }
 
-    errorOut overlapCoupling::processDomainReference( const unsigned int &increment,
+    errorOut overlapCoupling::processDomainReference( const unsigned int &microIncrement,
                                                       const unsigned int &domainIndex, const std::string &domainName,
                                                       const unsigned int cellID, const uIntVector &macroNodes,
                                                       floatType   &referenceMicroDomainMass,
@@ -426,7 +432,7 @@ namespace overlapCoupling{
         /*!
          * Process the domain for use with preparing the reference configuration
          *
-         * :param const unsigned int &increment: The increment at which to compute the reference
+         * :param const unsigned int &microIncrement: The micro-scale increment at which to compute the reference
          * :param const unsigned int &domainIndex: The index of the domain
          * :param const std::string &domainName: The name of the domain
          * :param const unsigned int cellID: The global cell ID number
@@ -446,7 +452,7 @@ namespace overlapCoupling{
         //Process the domain mass data
         floatVector domainCenterOfMass;
 
-        errorOut error = processDomainMassData( increment, domainName, referenceMicroDomainMass,
+        errorOut error = processDomainMassData( microIncrement, domainName, referenceMicroDomainMass,
                                                 domainCenterOfMass, domainReferenceXiVectors );
 
         if ( error ){
@@ -466,12 +472,12 @@ namespace overlapCoupling{
         }
 
         //Compute the domain's shape function information
-        error = computeDomainShapeFunctionInformation( cellID, domainName, increment, domainCenterOfMass,
+        error = computeDomainShapeFunctionInformation( cellID, domainName, microIncrement, domainCenterOfMass,
                                                        domainCenterOfMassShapeFunctionValues,
                                                        domainMicroPositionShapeFunctionValues );
 
         if ( error ){
-            errorOut result = new errorNode( "setReferenceStateFromIncrement",
+            errorOut result = new errorNode( "processDomainReference",
                                              "Error in computing the shape function values for the domain center of mass or the domainMicroPositionShapeFunctionValues" );
             result->addNext( error );
             return result;
@@ -479,10 +485,10 @@ namespace overlapCoupling{
 
         //Get the domain node ids
         uIntVector domainNodes;
-        error = _inputProcessor._microscale->getDomainNodes( increment, domainName, domainNodes );
+        error = _inputProcessor._microscale->getDomainNodes( microIncrement, domainName, domainNodes );
 
         if ( error ){
-            errorOut result = new errorNode( "setReferenceStateFromIncrement",
+            errorOut result = new errorNode( "processDomainReference",
                                              "Error in extracting the micro-node set" );
             result->addNext( error );
             return result;
@@ -493,7 +499,7 @@ namespace overlapCoupling{
                                                             domainCenterOfMassShapeFunctionValues );
 
         if ( error ){
-            errorOut result = new errorNode( "setReferenceStateFromIncrement",
+            errorOut result = new errorNode( "processDomainReference",
                                              "Error in adding part of the shapefunction matrix determined from '" + domainName + "'" );
             result->addNext( error );
             return result;
@@ -503,13 +509,13 @@ namespace overlapCoupling{
 
     }
 
-    errorOut overlapCoupling::processDomainMassData( const unsigned int &increment, const std::string &domainName,
+    errorOut overlapCoupling::processDomainMassData( const unsigned int &microIncrement, const std::string &domainName,
                                                      floatType &domainMass, floatVector &domainCenterOfMass,
                                                      floatVector &domainXiVectors ){
         /*!
          * Process a micro-scale domain
          *
-         * :param const unsigned int increment: The increment to process
+         * :param const unsigned int microIncrement: The micro increment to process
          * :param const std::string &domainName: The name of the domain
          * :param floatType &domainMass: The mass of the domain
          * :param floatVector &domainCenterOfMass
@@ -519,7 +525,7 @@ namespace overlapCoupling{
         //Get the domain's nodes
         uIntVector domainNodes;
 
-        errorOut error = _inputProcessor._microscale->getDomainNodes( increment, domainName, domainNodes );
+        errorOut error = _inputProcessor._microscale->getDomainNodes( microIncrement, domainName, domainNodes );
 
         if ( error ){
 
@@ -566,12 +572,20 @@ namespace overlapCoupling{
 
     errorOut overlapCoupling::computeDomainShapeFunctionInformation( const unsigned int &cellID,
                                                                      const std::string &domainName,
-                                                                     const unsigned int &increment,
+                                                                     const unsigned int &microIncrement,
                                                                      const floatVector &domainCenterOfMass,
                                                                      floatVector &domainCenterOfMassShapeFunctionValues,
                                                                      floatVector &domainMicroPositionShapeFunctionValues ){
         /*!
          * Compute the shape function values at the required locations
+         *
+         * :param const unsigned int &cellID: The ID number of the cell which contains the domain
+         * :param const std::string &domainName: The name of the nodeset which defines the micro-scale domain
+         * :param const unsigned int &microIncrement: The micro-scale increment to analyze
+         * :param const floatVector &domainCenterOfMass: The center of mass of the domain
+         * :param floatVector &domainCenterOfMassShapeFunctionValues: The shapefunction values at the center of mass
+         * :param floatVector &domainMicroPositionShapeFunctionValues: The shapefunction values at all of the micro nodes
+         *     contained within the domain.
          */
 
         //Compute the shape functions of the domain's center of mass
@@ -594,7 +608,7 @@ namespace overlapCoupling{
         //Get the domain's nodes
         uIntVector domainNodes;
 
-        error = _inputProcessor._microscale->getDomainNodes( increment, domainName, domainNodes );
+        error = _inputProcessor._microscale->getDomainNodes( microIncrement, domainName, domainNodes );
 
         if ( error ){
 
@@ -647,13 +661,14 @@ namespace overlapCoupling{
 
     }
 
-    errorOut overlapCoupling::computeIncrementCentersOfMass( const unsigned int increment,
+    errorOut overlapCoupling::computeIncrementCentersOfMass( const unsigned int microIncrement, const unsigned int macroIncrement,
                                                              floatVector &freeDomainMass, floatVector &ghostDomainMass,
                                                              floatVector &freeDomainCM, floatVector &ghostDomainCM ){
         /*!
-         * Compute the centers of mass for an increment. Also computes the mass of the micro-scale domains
+         * Compute the centers of mass for an micro increment. Also computes the mass of the micro-scale domains
          *
-         * :param const unsigned int increment: The increment at which to compute the centers of mass
+         * :param const unsigned int microIncrement: The micro increment at which to compute the centers of mass
+         * :param const unsigned int macroIncrement: The macro increment at which to compute the centers of mass
          * :param floatVector &freeDomainMass: The mass of the free domains
          * :param floatVector &ghostDomainMass: The mass of the ghost domains
          * :param floatVector &freeDomainCM: The center of mass of the free domains
@@ -661,7 +676,7 @@ namespace overlapCoupling{
          */
 
         //Compute the centers of mass of each domain
-        errorOut error = _inputProcessor.initializeIncrement( increment );
+        errorOut error = _inputProcessor.initializeIncrement( microIncrement, macroIncrement );
         if ( error ){
             errorOut result = new errorNode( "computeInitialCentersOfMass", "Error in initialization of the initial increment" );
             result->addNext( error );
@@ -681,7 +696,7 @@ namespace overlapCoupling{
 
         for ( auto name = freeDomains->begin( ); name != freeDomains->end( ); name++ ){
 
-            error = _inputProcessor._microscale->getDomainNodes( increment, *name, domainNodes );
+            error = _inputProcessor._microscale->getDomainNodes( microIncrement, *name, domainNodes );
 
             if ( error ){
 
@@ -724,7 +739,7 @@ namespace overlapCoupling{
 
         for ( auto name = ghostDomains->begin( ); name != ghostDomains->end( ); name++ ){
 
-            error = _inputProcessor._microscale->getDomainNodes( increment, *name, domainNodes );
+            error = _inputProcessor._microscale->getDomainNodes( microIncrement, *name, domainNodes );
 
             if ( error ){
 
@@ -1178,7 +1193,7 @@ namespace overlapCoupling{
          */
 
         //Get the displacement vectors
-        const floatVector *macroDisplacements = _inputProcessor.getMacroDisplacements( );
+        const floatVector *macroDispDOFVector = _inputProcessor.getMacroDispDOFVector( );
         const floatVector *microDisplacements = _inputProcessor.getMicroDisplacements( );
 
         //Get the free and ghost node ids
@@ -1198,11 +1213,24 @@ namespace overlapCoupling{
 
         for ( auto it = freeMacroNodeIds->begin( ); it != freeMacroNodeIds->end( ); it++ ){
 
-            for ( unsigned int i = 0; i < nMacroDispDOF; i++ ){
+            auto map = _inputProcessor.getMacroGlobalToLocalDOFMap( )->find( *it );
 
-                freeMacroDisplacements[ it - freeMacroNodeIds->begin( ) + i ] = ( *macroDisplacements )[ *it + i ];
+            if ( map == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
+
+                return new errorNode( "projectDegreesOfFreedom",
+                                      "Global degree of freedom '" + std::to_string( *it ) + "' not found in degree of freedom map" );
 
             }
+
+            //Set the macro displacements
+            for ( unsigned int i = 0; i < nMacroDispDOF; i++ ){
+
+                freeMacroDisplacements[ nMacroDispDOF * ( map->second ) + i ]
+                    = ( *macroDispDOFVector )[ nMacroDispDOF * map->first + i ];
+
+            }
+
+            //Set the micro deformation phi
 
         }
 
@@ -1210,7 +1238,8 @@ namespace overlapCoupling{
 
             for ( unsigned int i = 0; i < nMicroDispDOF; i++ ){
 
-                freeMicroDisplacements[ it - freeMicroNodeIds->begin( ) + i ] = ( *microDisplacements )[ *it + i ];
+                freeMicroDisplacements[ nMicroDispDOF * ( it - freeMicroNodeIds->begin( ) ) + i ]
+                    = ( *microDisplacements )[ nMicroDispDOF * ( *it ) + i ];
 
             }
 
@@ -1224,16 +1253,14 @@ namespace overlapCoupling{
         _projected_ghost_macro_displacement.clear( );
         _projected_ghost_macro_displacement.resize( nMacroDispDOF * ghostMacroNodeIds->size( ) );
 
-        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > Qhat( _projected_ghost_micro_displacement.data(),
-                                                               _projected_ghost_micro_displacement.size( ), 1 );
-
         _projected_ghost_micro_displacement.clear( );
         _projected_ghost_micro_displacement.resize( nMicroDispDOF * ghostMicroNodeIds->size( ) );
 
+        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > Qhat( _projected_ghost_micro_displacement.data(),
+                                                               _projected_ghost_micro_displacement.size( ), 1 );
+
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > Dhat( _projected_ghost_macro_displacement.data(),
                                                                _projected_ghost_macro_displacement.size( ), 1 );
-
-
 
         YAML::Node config = _inputProcessor.getCouplingInitialization( );
 
@@ -1256,6 +1283,7 @@ namespace overlapCoupling{
 
         }
 
+        std::cout << "exiting projection\n";
         return NULL;
 
     }
