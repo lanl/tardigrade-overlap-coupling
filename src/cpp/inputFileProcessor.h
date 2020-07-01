@@ -72,6 +72,7 @@ namespace inputFileProcessor{
             const floatVector* getMicroWeights( );
             const floatVector* getMicroDisplacements( );
             const floatVector* getMacroDisplacements( );
+            const floatVector* getMacroDispDOFVector( );
 
             const floatVector* getMicroNodeReferencePositions( );
             const floatVector* getMacroNodeReferencePositions( );
@@ -144,6 +145,7 @@ namespace inputFileProcessor{
             errorOut extractReferenceMicroMeshData( const unsigned int &increment );
 
             errorOut extractMacroDisplacements( const unsigned int &increment );
+            errorOut extractMacroDispDOFVector( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
 
             errorOut getUniqueNodesInDomains( const unsigned int &increment,
@@ -174,6 +176,7 @@ namespace inputFileProcessor{
             unsigned int _microCellCounts;
 
             floatVector _macroDisplacements;
+            floatVector _macroDispDOFVector;
             floatVector _macroNodeReferencePositions;
             uIntVector  _macroNodeReferenceConnectivity;
             uIntVector  _macroNodeReferenceConnectivityCellIndices;

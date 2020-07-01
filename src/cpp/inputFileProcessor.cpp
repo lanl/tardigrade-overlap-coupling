@@ -461,6 +461,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the macro displacement DOF vector
+        error = extractMacroDispDOFVector( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro displacement DOF vector" );
+            result->addNext( error );
+            return result;
+        }
+
         //Set the unique macro and micro nodes
         error = setMicroNodeIndexMappings( microIncrement );
 
@@ -880,8 +889,6 @@ namespace inputFileProcessor{
 
         floatVector disp;
 
-        YAML::Node dispNode;
-
         //Expected displacement keys
         stringVector displacementKeys = { "u1", "u2", "u3" }; //The dimension is assumed to be 3
 
@@ -913,14 +920,12 @@ namespace inputFileProcessor{
 
                 indx = it - displacementKeys.begin( ); //Set the index
 
-                dispNode = _config[ "microscale_definition" ][ "displacement_variable_names" ][ *it ];
-
-                if ( !dispNode ){
+                if ( !_config[ "microscale_definition" ][ "displacement_variable_names" ][ *it ] ){
 
                     return new errorNode( "extractMicroDisplacements", "'" + *it + " is not defined in 'displacement_variable_names'");
 
                 }
-                else if ( !dispNode.IsScalar( ) ){
+                else if ( !_config[ "microscale_definition" ][ "displacement_variable_names" ][ *it ].IsScalar( ) ){
 
                     return new errorNode( "extractMicroDisplacements", "'" + *it + "' is not a scalar" );
 
@@ -928,7 +933,10 @@ namespace inputFileProcessor{
                 else{
 
                     //Get the displacement
-                    errorOut error = _microscale->getSolutionData( increment, dispNode.as< std::string >( ), "Node", disp );
+                    errorOut error =
+                        _microscale->getSolutionData( increment, 
+                                                      _config[ "microscale_definition" ][ "displacement_variable_names" ][ *it ].as< std::string >( ),
+                                                      "Node", disp );
 
                     if ( error ){
                         
@@ -967,8 +975,6 @@ namespace inputFileProcessor{
 
         floatVector disp;
 
-        YAML::Node dispNode;
-
         //Expected displacement keys
         stringVector displacementKeys = { "u1", "u2", "u3" }; //The dimension is assumed to be 3
 
@@ -1000,14 +1006,12 @@ namespace inputFileProcessor{
 
                 indx = it - displacementKeys.begin( ); //Set the index
 
-                dispNode = _config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ];
-
-                if ( !dispNode ){
+                if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ] ){
 
                     return new errorNode( "extractMacroDisplacements", "'" + *it + " is not defined in 'displacement_variable_names'");
 
                 }
-                else if ( !dispNode.IsScalar( ) ){
+                else if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ].IsScalar( ) ){
 
                     return new errorNode( "extractMacroDisplacements", "'" + *it + "' is not a scalar" );
 
@@ -1015,7 +1019,10 @@ namespace inputFileProcessor{
                 else{
 
                     //Get the displacement
-                    errorOut error = _macroscale->getSolutionData( increment, dispNode.as< std::string >( ), "Node", disp );
+                    errorOut error
+                        = _macroscale->getSolutionData( increment, 
+                                                        _config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ].as< std::string >( ),
+                                                        "Node", disp );
 
                     if ( error ){
                         
@@ -1041,6 +1048,96 @@ namespace inputFileProcessor{
         return NULL;
 
     }
+
+    errorOut inputFileProcessor::extractMacroDispDOFVector( const unsigned int &increment ){
+        /*!
+         * Extract the displacement degrees of freedom of the nodes in the macro domain.
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        //Variable definitions
+        unsigned int indx;
+
+        floatVector disp;
+
+        //Expected displacement keys
+        stringVector displacementKeys = { "u1", "u2", "u3",
+                                          "phi11", "phi12", "phi13", 
+                                          "phi21", "phi22", "phi23", 
+                                          "phi31", "phi32", "phi33" }; //The dimension is assumed to be 3
+
+        //Initialize the micro displacement degree of freedom vector
+        _macroDispDOFVector.clear( );
+        unsigned int numNodes;
+
+        errorOut error = _macroscale->getNumNodes( increment, numNodes );
+
+        if ( error ){
+            
+            errorOut result = new errorNode( "extractMacroDispDOFVector", "Error in the determination of the number of macro-nodes" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        _macroDispDOFVector.resize( displacementKeys.size( ) * numNodes );
+
+        //Check if the displacement names have been defined
+        if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ] ){
+
+            return new errorNode( "extractMacroDispDOFVector", "The names of the displacements of the macro-positions are not defined" );
+
+        }
+        else{
+
+            for ( auto it = displacementKeys.begin( ); it != displacementKeys.end( ); it++ ){
+
+                indx = it - displacementKeys.begin( ); //Set the index
+
+                if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ] ){
+
+                    return new errorNode( "extractMacroDispDOFVector", "'" + *it + " is not defined in 'displacement_variable_names'");
+
+                }
+                else if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ].IsScalar( ) ){
+
+                    return new errorNode( "extractMacroDispDOFVector", "'" + *it + "' is not a scalar" );
+
+                }
+                else{
+
+                    //Get the displacement
+                    errorOut error
+                        = _macroscale->getSolutionData( increment, 
+                                                        _config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ].as< std::string >( ),
+                                                        "Node", disp );
+
+                    if ( error ){
+                        
+                        errorOut result = new errorNode( "extractMacroDispDOFVector", "Error in extraction of '" + *it + "'" );
+                        result->addNext( error );
+                        return result;
+
+                    }
+
+                    //Set the displacements
+                    for ( unsigned int i = 0; i < disp.size( ); i++ ){
+
+                        _macroDispDOFVector[ displacementKeys.size( ) * i + indx ] = disp[ i ];
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+
+    }
+
 
     errorOut inputFileProcessor::extractReferenceMicroMeshData( const unsigned int &increment ){
         /*!
@@ -1602,6 +1699,14 @@ namespace inputFileProcessor{
          */
 
         return &_macroDisplacements;
+    }
+
+    const floatVector* inputFileProcessor::getMacroDispDOFVector( ){
+        /*!
+         * Get the macro-displacement DOF vector
+         */
+
+        return &_macroDispDOFVector;
     }
 
     const floatVector* inputFileProcessor::getMicroNodeReferencePositions( ){

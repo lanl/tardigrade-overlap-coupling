@@ -525,6 +525,33 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatVector *macroDispDOFVectorResult = reader.getMacroDispDOFVector( );
+
+    const floatVector macroDispDOFVectorAnswer =
+        {
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        };
+   
+    if ( !vectorTools::fuzzyEquals( macroDispDOFVectorAnswer, *macroDispDOFVectorResult ) ){
+        results << "test_initializeIncrement (test 27) & False\n";
+        return 1;
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }
