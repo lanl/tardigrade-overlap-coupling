@@ -110,7 +110,7 @@ namespace inputFileProcessor{
             const YAML::Node getCouplingInitialization( );
 
             //Core initialization routines
-            errorOut initializeIncrement( const unsigned int increment );
+            errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
 
             //Attributes
             std::shared_ptr< dataFileInterface::dataFileBase > _macroscale;
@@ -126,7 +126,7 @@ namespace inputFileProcessor{
             errorOut openConfigurationFile( );
             errorOut openConfigurationFile( const std::string &configurationFilename );
             errorOut setMicroNodeWeights( const unsigned int increment );
-            errorOut setSurfaceSets( const unsigned int increment );
+            errorOut setSurfaceSets( const unsigned int microIncrement, const unsigned int macroIncrement );
             errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
                                                      uIntVector &macroCellIds,
                                                      uIntVector &macroCellMicroDomainCounts,
@@ -158,7 +158,8 @@ namespace inputFileProcessor{
 
             //Private Attributes
             bool _increment_initialized = false;
-            unsigned int _current_increment;
+            unsigned int _current_macroIncrement;
+            unsigned int _current_microIncrement;
             errorOut _error;
             std::string _configFilename = "";
             YAML::Node _config;

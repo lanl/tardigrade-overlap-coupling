@@ -152,7 +152,7 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
-    errorOut error = reader.initializeIncrement( 1 );
+    errorOut error = reader.initializeIncrement( 1, 3 );
     if ( error ){
         error->print( );
         results << "test_initializeIncrement & False\n";
@@ -289,22 +289,22 @@ int test_initializeIncrement( std::ofstream &results ){
 
     const floatVector macroDisplacementsAnswer =
         {
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
-            0., 0., -0.01,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
+            0., 0., -0.03,
         };
 
     const floatVector *macroDisplacementsResult = reader.getMacroDisplacements( );

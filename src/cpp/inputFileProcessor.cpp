@@ -355,20 +355,22 @@ namespace inputFileProcessor{
         return NULL;
     }
 
-    errorOut inputFileProcessor::setSurfaceSets( const unsigned int increment ){
+    errorOut inputFileProcessor::setSurfaceSets( const unsigned int microIncrement,
+                                                 const unsigned int macroIncrement ){
         /*!
          * Set the surface sets
          *
-         * :param const unsigned int increment: The increment to extract the surface sets
+         * :param const unsigned int microIncrement: The increment to extract the micro surface sets
+         * :param const unsigned int macroIncrement: The increment to extract the macro surface sets
          */
 
         //Extract the set names from the microscale simulation
         stringVector setNames;
-        errorOut error = _microscale->getSetNames( increment, setNames );
+        errorOut error = _microscale->getSetNames( microIncrement, setNames );
 
         if ( error ){
             errorOut result = new errorNode( "setSurfaceSets",
-                                             "Error in extraction of the current increment's set names" );
+                                             "Error in extraction of the current micro increment's set names" );
             result->addNext( error );
             return result;
         }
@@ -376,25 +378,28 @@ namespace inputFileProcessor{
         return NULL;
     }
 
-    errorOut inputFileProcessor::initializeIncrement( const unsigned int increment ){
+    errorOut inputFileProcessor::initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement ){
         /*!
          * Initialize the processor for the indicated increment.
          *
-         * :param const unsigned int increment: The increment to prepare for.
+         * :param const unsigned int microIncrement: The micro increment to prepare for.
+         * :param const unsigned int macroIncrement: The micro increment to prepare for.
          */
 
         //Check if the requested increment is the currently initialized increment
         //If so, we don't need to re-run the initialization
-        if ( ( increment == _current_increment ) && ( _increment_initialized ) ){
+        if ( ( macroIncrement == _current_macroIncrement ) &&
+             ( microIncrement == _current_microIncrement ) &&
+             ( _increment_initialized ) ){
             return NULL;
         }
 
         errorOut error;
         //Collect the sets
-        error = setSurfaceSets( increment );
+        error = setSurfaceSets( microIncrement, macroIncrement );
 
         //Set the weights of the micro-nodes
-        error = setMicroNodeWeights( increment );
+        error = setMicroNodeWeights( microIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in computation of the micro-node weights" );
@@ -403,7 +408,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the densities of the micro-nodes
-        error = extractMicroNodeDensities( increment );
+        error = extractMicroNodeDensities( microIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro-node densities" );
@@ -412,7 +417,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the volumes of the micro-nodes
-        error = extractMicroNodeVolumes( increment );
+        error = extractMicroNodeVolumes( microIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro-node volumes" );
@@ -421,7 +426,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the reference positions of the micro-nodes
-        error = extractReferenceMicroMeshData( increment );
+        error = extractReferenceMicroMeshData( microIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro-node mesh information" );
@@ -430,7 +435,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the reference positions of the macro-nodes
-        error = extractReferenceMacroMeshData( increment );
+        error = extractReferenceMacroMeshData( macroIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro-node mesh information" );
@@ -439,7 +444,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the micro displacements
-        error = extractMicroDisplacements( increment );
+        error = extractMicroDisplacements( microIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro displacements" );
@@ -448,7 +453,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the macro displacements
-        error = extractMacroDisplacements( increment );
+        error = extractMacroDisplacements( macroIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro displacements" );
@@ -457,7 +462,7 @@ namespace inputFileProcessor{
         }
 
         //Set the unique macro and micro nodes
-        error = setMicroNodeIndexMappings( increment );
+        error = setMicroNodeIndexMappings( microIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in setting the unique micro node index mappings" );
@@ -465,7 +470,7 @@ namespace inputFileProcessor{
             return result;
         }
 
-        error = setMacroNodeIndexMappings( increment );
+        error = setMacroNodeIndexMappings( macroIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in setting the unique macro node index mappings" );
@@ -474,7 +479,8 @@ namespace inputFileProcessor{
         }
 
         //Set the current increment
-        _current_increment = increment;
+        _current_macroIncrement = macroIncrement;
+        _current_microIncrement = microIncrement;
         _increment_initialized = true;
 
         return NULL;
