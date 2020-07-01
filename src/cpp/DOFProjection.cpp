@@ -398,6 +398,7 @@ namespace DOFProjection{
         //Assemble the sparse matrix
         domainN = SparseMatrix( nMicroDOF * nMicroNodes, nMacroDOF * nMacroNodes );
         domainN.setFromTriplets( coefficients.begin(), coefficients.end() );
+        domainN.makeCompressed( );
 
         return NULL;
     }
