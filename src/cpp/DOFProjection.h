@@ -229,7 +229,7 @@ namespace DOFProjection{
                                                         const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL,
                                                         const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
 
-errorOut formMicroDomainToMacroProjectionMatrix( const unsigned int &dim,
+    errorOut formMicroDomainToMacroProjectionMatrix( const unsigned int &dim,
                                                      const unsigned int nMicroNodes,
                                                      const unsigned int nMacroNodes,
                                                      const uIntVector  &domainMicroNodeIndices,
