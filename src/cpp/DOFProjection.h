@@ -228,6 +228,22 @@ namespace DOFProjection{
                                                         const floatVector &microWeights, SparseMatrix &domainN,
                                                         const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL,
                                                         const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
+
+    errorOut formMicroDomainToMacroProjectionMatrix( const unsigned int &dim, 
+                                                     const uIntVector  &domainNodes,
+                                                     const floatVector &microVolumes,
+                                                     const floatVector &microDensities,
+                                                     const floatVector &microWeights,
+                                                     const floatVector &domainReferenceXiVectors,
+                                                     const floatVector &domainShapeFunctionValues,
+                                                     const floatVector &macroNodeProjectedMass,
+                                                     const floatVector &macroNodeProjectedMassMomentOfInertia,
+                                                     const floatVector &macroNodeMassRelativePositionConstant,
+                                                     SparseMatrix &projector,
+                                                     const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL,
+                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
+
 }
+
 
 #endif
