@@ -89,6 +89,13 @@ namespace overlapCoupling{
             floatVector _projected_ghost_macro_displacement;
             floatVector _projected_ghost_micro_displacement;
 
+            floatVector _macroNodeProjectedMass;
+            floatVector _macroNodeProjectedMassMomentOfInertia;
+            floatVector _macroNodeMassRelativePositionConstant;
+
+            floatVector _macroReferencePositions;
+            floatVector _microReferencePositions;
+
             //Private functions
             errorOut processDomainMassData( const unsigned int &microIncrement, const std::string &domainName,
                                             floatType &domainMass, floatVector &domainCenterOfMass,
@@ -134,6 +141,12 @@ namespace overlapCoupling{
                                              floatVector &domainReferenceXiVectors,
                                              floatVector &domainCenterOfMassShapeFunctionValues,
                                              floatVector &domainMicroPositionShapeFunctionValues );
+
+            errorOut addDomainToDirectProjectionReferenceValues( const uIntVector &domainNodes,
+                                                                 const uIntVector &macroNodes,
+                                                                 const floatVector &domainReferenceXiVectors,
+                                                                 const floatVector &domainMicroPositionShapeFunctionValues
+                                                               );
 
             errorOut formTheProjectors( );
 

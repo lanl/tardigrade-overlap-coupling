@@ -121,6 +121,24 @@ namespace overlapCoupling{
         errorOut error;
         if ( couplingInitialization[ "type" ].as< std::string >( ).compare( "use_first_increment" ) == 0 ){
             error = setReferenceStateFromIncrement( 0, 0 );
+
+            bool save_reference_positions = false;
+
+            if ( couplingInitialization[ "projection_type" ].as< std::string >( ).compare(  "direct_projection" ) == 0 ){
+
+                save_reference_positions = true;
+
+            }
+
+            if ( save_reference_positions ){
+
+                _macroReferencePositions = *_inputProcessor.getMacroNodeReferencePositions( )
+                                         + *_inputProcessor.getMacroDisplacements( );
+
+                _microReferencePositions = *_inputProcessor.getMicroNodeReferencePositions( )
+                                         + *_inputProcessor.getMicroDisplacements( );
+
+            }
         }
         else{
             return new errorNode( "initializeCoupling",
@@ -182,6 +200,19 @@ namespace overlapCoupling{
         _referenceFreeMicroDomainCentersOfMass = floatVector( _dim * numFreeMicroDomains, 0 );
         _referenceGhostMicroDomainCentersOfMass = floatVector( _dim * numGhostMicroDomains, 0 );
 
+        if ( _inputProcessor.getCouplingInitialization( )[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+
+            _macroNodeProjectedMass
+                = floatVector( _inputProcessor.getMacroGlobalToLocalDOFMap( )->size( ), 0 );
+
+            _macroNodeProjectedMassMomentOfInertia
+                = floatVector( _dim * _dim * _inputProcessor.getMacroGlobalToLocalDOFMap( )->size( ), 0 );
+
+            _macroNodeMassRelativePositionConstant
+                = floatVector( _dim * _inputProcessor.getMacroGlobalToLocalDOFMap( )->size( ), 0 );
+
+        }
+
         //Loop over the free macro-scale cells
         unsigned int cellIndex;
         unsigned int nMicroDomains;
@@ -240,8 +271,6 @@ namespace overlapCoupling{
 
                 }
 
-                //TODO: Add direct projection projector construction here
-
                 domainIndex += nMicroDomains;
 
         }
@@ -296,8 +325,6 @@ namespace overlapCoupling{
                     }
 
                 }
-
-                //TODO: Add direct projection projector construction here
 
                 domainIndex += nMicroDomains;
 
@@ -414,22 +441,6 @@ namespace overlapCoupling{
         _L2_BQhatD = _N.block( nFreeMicroDOF, 0, nGhostMicroDOF, nFreeMacroDOF )
                    + _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
 
-        floatType tmp = 0;
-        for ( unsigned int l = 2; l < _N.rows( ); l+=3 ){
-            tmp = 0;
-            for ( unsigned int k = 0; k < _N.cols( ); k++ ){
-    
-                if ( ( k % 12 ) == 2 ){
-                    tmp += _N.coeff( l, k );
-                }
-    
-            }
-            if ( !vectorTools::fuzzyEquals( tmp, 1. ) ){
-                std::cout << tmp << "\n";
-                assert( 1 == -1 );
-            }
-        }
-
         return NULL;
     }
 
@@ -437,6 +448,9 @@ namespace overlapCoupling{
         /*!
          * Form the projectors if the direct projection is to be used
          */
+
+        //Form the
+        assert( 1 == 0 ); 
 
         return NULL;
     }
@@ -525,7 +539,23 @@ namespace overlapCoupling{
             return result;
         }
 
-//        if ( _inputProcessor.getCouplingInitialization[ "projection_type" ] )
+        //If the projection time is the direct projection method, we need to save some values
+        if ( _inputProcessor.getCouplingInitialization( )[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+
+            //Save the contributions of the domain to the direct projection values
+            error = addDomainToDirectProjectionReferenceValues( domainNodes, macroNodes, domainReferenceXiVectors,
+                                                                domainMicroPositionShapeFunctionValues );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "processDomainReference",
+                                                 "Error in saving the direct projection reference values" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
 
         return NULL;
 
@@ -654,7 +684,8 @@ namespace overlapCoupling{
     
                 index = it - domainNodes.begin( );
                 for ( unsigned int i = 0; i < _dim; i++ ){
-                    microNodePositions[ index ] = ( *microReferencePositions )[ index + i ] + ( *microDisplacements )[ index + i ];
+                    microNodePositions[ _dim * index + i ] = ( *microReferencePositions )[ _dim * ( *it ) + i ]
+                                                           + ( *microDisplacements )[ _dim * ( *it ) + i ];
                 }
     
             }
@@ -667,7 +698,7 @@ namespace overlapCoupling{
                                                    *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
                                                    microNodePositions,
                                                    domainMicroPositionShapeFunctionValues );
-    
+
             if ( error ){
     
                 errorOut result = new errorNode( "computeDomainShapeFunctionInformation",
@@ -895,6 +926,13 @@ namespace overlapCoupling{
 
             error = element->compute_local_coordinates( point, localPosition );
 
+            if ( !element->local_point_inside( localPosition ) ){
+
+                shapeFunctions.push_back( 0. );
+                continue;
+
+            }
+
             if ( error ) {
 
                 return new errorNode( "computeShapeFunctionsAtPoints",
@@ -1024,6 +1062,13 @@ namespace overlapCoupling{
             point = floatVector( points.begin( ) + _dim * p, points.begin( ) + _dim * ( p + 1 ) );
 
             error = element->compute_local_coordinates( point, localPosition );
+
+            if ( !element->local_point_inside( localPosition ) ){
+
+                shapeFunctions.push_back( 0. );
+                continue;
+
+            }
 
             if ( error ) {
 
@@ -1290,16 +1335,6 @@ namespace overlapCoupling{
 
             Dhat = _L2_BDhatQ * Q + _L2_BDhatD * D;
             Qhat = _L2_BQhatQ * Q + _L2_BQhatD * D;
-//            std::cout << "Dhat1:\n" << _L2_BDhatQ * Q << "\n\n";
-//            std::cout << "Dhat2:\n" << _L2_BDhatD * D << "\n\n";
-//            std::cout << "RHS:\n" << _N.block( 0, nMacroDispDOF * freeMacroNodeIds->size( ), nMicroDispDOF * freeMicroNodeIds->size( ), nMacroDispDOF * ghostMacroNodeIds->size( ) ).transpose( ) * ( Q - _N.block( 0, 0, nMicroDispDOF * freeMicroNodeIds->size( ), nMacroDispDOF * freeMacroNodeIds->size( ) ) * D ) << "\n\n";
-////            std::cout << "Q:\n";
-////            std::cout << Q << "\n\n";
-//            std::cout << "D:\n";
-//            std::cout << D << "\n\n";
-//            std::cout << "Dhat:\n";
-//            std::cout << Dhat << "\n";
-//            assert( 1 == 0 );
 
         }
         else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
@@ -1317,6 +1352,101 @@ namespace overlapCoupling{
 
         return NULL;
 
+    }
+
+    errorOut overlapCoupling::addDomainToDirectProjectionReferenceValues( const uIntVector &domainNodes,
+                                                                          const uIntVector &macroNodes,
+                                                                          const floatVector &domainReferenceXiVectors,
+                                                                          const floatVector &domainMicroPositionShapeFunctionValues ){
+        /*!
+         * Add the current domain information to the direct projection reference values
+         *
+         * :param const uIntVector &domainNodes: The nodes associated with the current domain
+         * :param const uIntVector &macroNodes: The macro nodes associated with the current domain
+         * :param const floatVector &domainReferenceXiVectors: The relative position vectors of the domain
+         * :param const floatVector &domainMicroPositionShapeFunctionValues: The shape function values at the micro
+         *     node positions.
+         */
+
+        const floatVector *microDensities = _inputProcessor.getMicroDensities( );
+        const floatVector *microVolumes   = _inputProcessor.getMicroVolumes( );
+        const floatVector *microWeights   = _inputProcessor.getMicroWeights( );
+
+        //Additional values
+        unsigned int m, n, p;
+
+        floatType microMass, weight, sf;
+        floatVector Xi;
+
+        //Loop through the micro nodes
+        for ( auto microNode  = domainNodes.begin( );
+                   microNode != domainNodes.end( );
+                   microNode++ ){
+
+            //Set the index
+            m = microNode - domainNodes.begin( );
+
+            //Compute the micro-mass
+            microMass = ( *microDensities )[ *microNode ] * ( *microVolumes )[ *microNode ];
+
+            //Extract the micro Xi vector
+            Xi = floatVector( domainReferenceXiVectors.begin( ) + _dim * m,
+                              domainReferenceXiVectors.begin( ) + _dim * ( m + 1 ) );
+
+            //Extract the weighting value
+            weight = ( *microWeights )[ *microNode ];
+
+            //Loop through the macro nodes
+            for ( auto macroNode  = macroNodes.begin( );
+                       macroNode != macroNodes.end( );
+                       macroNode++ ){
+
+                //Set the index
+                n = macroNode - macroNodes.begin( );
+
+                auto indx = _inputProcessor.getMacroGlobalToLocalDOFMap( )->find( *macroNode );
+
+                if ( indx == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
+
+                    return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                                          "Macro node '" + std::to_string( n ) + "' not found in global to local macro node map" );
+
+                }
+                else{
+
+                    p = indx->second;
+
+                }
+
+                //Get the shape function
+                sf = domainMicroPositionShapeFunctionValues[ macroNodes.size( ) * m + n ];
+
+                //Add the contribution to the nodal mass
+                _macroNodeProjectedMass[ p ] += microMass * sf * weight;
+
+                //Add the contribution to the mass-moment of inertia
+                for ( unsigned int I = 0; I < _dim; I++ ){
+
+                    for ( unsigned int J = 0; J < _dim; J++ ){
+
+                        _macroNodeProjectedMassMomentOfInertia[ _dim * _dim * p + _dim * I + J ]
+                            += microMass * sf * weight * Xi[ I ] * Xi[ J ];
+
+                    }
+                }
+
+                //Add the contribution to the mass relative position constant
+                for ( unsigned int I = 0; I < _dim; I++ ){
+
+                    _macroNodeMassRelativePositionConstant[ _dim * p + I ] += microMass * sf * weight * Xi[ I ];
+
+                }
+
+            }
+
+        }
+
+        return NULL;
     }
 
     const floatVector* overlapCoupling::getReferenceFreeMicroDomainMasses( ){
