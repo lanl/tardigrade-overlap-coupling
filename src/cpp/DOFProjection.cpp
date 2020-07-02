@@ -1999,14 +1999,14 @@ namespace DOFProjection{
 
     errorOut formMicroDomainToMacroProjectionMatrix( const unsigned int &dim,
                                                      const unsigned int nMicroNodes,
-                                                     const unsigned int mMacroNodes,
+                                                     const unsigned int nMacroNodes,
                                                      const uIntVector  &domainMicroNodeIndices,
                                                      const uIntVector  &domainMacroNodeIndices,
                                                      const floatVector &microVolumes,
                                                      const floatVector &microDensities,
                                                      const floatVector &microWeights,
                                                      const floatVector &domainReferenceXiVectors,
-                                                     const floatVector &domainShapeFunctionValues,
+                                                     const floatVector &domainInterpolationFunctionValues,
                                                      const floatVector &macroNodeProjectedMass,
                                                      const floatVector &macroNodeProjectedMassMomentOfInertia,
                                                      const floatVector &macroNodeMassRelativePositionConstant,
@@ -2024,7 +2024,7 @@ namespace DOFProjection{
          * :param const floatVector &microDensities: The densities of the micro-nodes ( global vector )
          * :param const floatVector &microWeights: The weighting values of the micro-nodes ( global vector )
          * :param const floatVector &domainReferenceXiVectors: The relative position vectors of the nodes in the domain
-         * :param const floatVector &domainShapeFunctionValues: The values of the macro shape functions ( interpolation functions )
+         * :param const floatVector &domainInterpolationFunctionValues: The values of the macro interpolation functions
          *     at each of the micro nodes.
          * :param const floatVector &macroNodeProjectedMass: The masses of the macro nodes derived from the
          *     projection of the micro masses.
@@ -2046,7 +2046,7 @@ namespace DOFProjection{
                                   "Only 3D domains are currently supported" );
         }
 
-        if ( dim * domainMicroNodeIndices.size() != domainReferenceXis.size() ){
+        if ( dim * domainMicroNodeIndices.size() != domainReferenceXiVectors.size() ){
             return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                   "The number of micro node indices is not equal to the number of Xi vectors" );
         }
@@ -2068,19 +2068,14 @@ namespace DOFProjection{
             }
         }
 
-        if ( _dim * _dim * macroNodeProjectedMass.size( ) != macroNodeProjectedMassMomentOfInertia ){
+        if ( dim * dim * macroNodeProjectedMass.size( ) != macroNodeProjectedMassMomentOfInertia.size( ) ){
             return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                   "The macro node projected mass and macro node projected mass moment of inertia vectors are not of consistent sizes" );
         }
 
-        if ( _dim * macroNodeProjectedMass.size( ) != macroNodeMassRelativePositionConstant ){
+        if ( dim * macroNodeProjectedMass.size( ) != macroNodeMassRelativePositionConstant.size( ) ){
             return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                   "The macro node projected mass and macro node mass weighted relative position constant vectors are not of consistent sizes" );
-        }
-
-        if ( domainMacroNodeIndices.size() != domainMacroInterpolationFunctionValues.size() ){
-            return new errorNode( "formMicroDomainToMacroProjectionMatrix",
-                                  "The number of macro indices is not equal to the number of macro interpolation function values" );
         }
 
         //Set the number of spatial degrees of freedom for the two scales
@@ -2167,13 +2162,13 @@ namespace DOFProjection{
 
             //Set the inverse macro node mass moment of inertia
             inverseMacroMassMomentOfInertia
-                = vectorTools::inverse( floatVector( macroNodeProjectedMassMomentOfInertia.begin( ) + _dim * _dim * p,
-                                                     macroNodeProjectedMassMomentOfInertia.begin( ) + _dim * _dim * ( p + 1 ) ),
-                                        _dim, _dim );
+                = vectorTools::inverse( floatVector( macroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * p,
+                                                     macroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * ( p + 1 ) ),
+                                        dim, dim );
 
             //Set the mass weighted relative position constant
-            C = floatVector ( macroNodeMassRelativePositionConstant.begin( ) + _dim * p,
-                              macroNodeMassRelativePositionConstant.begin( ) + _dim * ( p + 1 ) );
+            C = floatVector ( macroNodeMassRelativePositionConstant.begin( ) + dim * p,
+                              macroNodeMassRelativePositionConstant.begin( ) + dim * ( p + 1 ) );
 
             //Loop over the micro nodes
 
@@ -2211,7 +2206,7 @@ namespace DOFProjection{
                                           "The number of micro-weights is smaller than required for micro-node " + std::to_string( m ) );
                 }
 
-                if ( domainMacroNodeIndices.size( ) * j + i >= domainShapeFunctionValues.size( ) ){
+                if ( domainMacroNodeIndices.size( ) * j + i >= domainInterpolationFunctionValues.size( ) ){
                     return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
                                           "The number of micro shape functions in the domain is msaller than required for micro-node "
                                           + std::to_string( m ) + " and macro node " + std::to_string( n ) );
@@ -2224,7 +2219,7 @@ namespace DOFProjection{
                 w = microWeights[ m ];
 
                 //Set the shape function
-                sf = domainShapeFunctionValues[ domainMacroNodeIndices.size( ) * j + i ];
+                sf = domainInterpolationFunctionValues[ domainMacroNodeIndices.size( ) * j + i ];
 
                 //Compute the weighted mass term
                 weightedMassTerm = microMass * w * sf;
@@ -2236,20 +2231,22 @@ namespace DOFProjection{
                 //Add the matrix coefficients
                 
                 //Macro displacements
-                coefficients.push_back( ( row0 + 0, col0 + 0, ( weightedMassTerm / macroNodeMass ) ) );
-                coefficients.push_back( ( row0 + 1, col0 + 1, ( weightedMassTerm / macroNodeMass ) ) );
-                coefficients.push_back( ( row0 + 2, col0 + 2, ( weightedMassTerm / macroNodeMass ) ) );
+                coefficients.push_back( T( row0 + 0, col0 + 0, ( weightedMassTerm / macroNodeMass ) ) );
+                coefficients.push_back( T( row0 + 1, col0 + 1, ( weightedMassTerm / macroNodeMass ) ) );
+                coefficients.push_back( T( row0 + 2, col0 + 2, ( weightedMassTerm / macroNodeMass ) ) );
 
                 //Micro displacement ( phi )
-                coefficients.push_back( ( row0 +  3, col0 + 0, postionTerm[ 0 ] ) ); 
-                coefficients.push_back( ( row0 +  4, col0 + 0, postionTerm[ 1 ] ) ); 
-                coefficients.push_back( ( row0 +  5, col0 + 0, postionTerm[ 2 ] ) ); 
-                coefficients.push_back( ( row0 +  6, col0 + 1, postionTerm[ 0 ] ) ); 
-                coefficients.push_back( ( row0 +  7, col0 + 1, postionTerm[ 1 ] ) ); 
-                coefficients.push_back( ( row0 +  8, col0 + 1, postionTerm[ 2 ] ) ); 
-                coefficients.push_back( ( row0 +  9, col0 + 2, postionTerm[ 0 ] ) ); 
-                coefficients.push_back( ( row0 + 10, col0 + 2, postionTerm[ 1 ] ) ); 
-                coefficients.push_back( ( row0 + 11, col0 + 2, postionTerm[ 2 ] ) );
+                coefficients.push_back( T( row0 +  3, col0 + 0, positionTerm[ 0 ] ) ); 
+                coefficients.push_back( T( row0 +  4, col0 + 0, positionTerm[ 1 ] ) ); 
+                coefficients.push_back( T( row0 +  5, col0 + 0, positionTerm[ 2 ] ) ); 
+                coefficients.push_back( T( row0 +  6, col0 + 1, positionTerm[ 0 ] ) ); 
+                coefficients.push_back( T( row0 +  7, col0 + 1, positionTerm[ 1 ] ) ); 
+                coefficients.push_back( T( row0 +  8, col0 + 1, positionTerm[ 2 ] ) ); 
+                coefficients.push_back( T( row0 +  9, col0 + 2, positionTerm[ 0 ] ) ); 
+                coefficients.push_back( T( row0 + 10, col0 + 2, positionTerm[ 1 ] ) ); 
+                coefficients.push_back( T( row0 + 11, col0 + 2, positionTerm[ 2 ] ) );
+
+            }
 
         }
 
