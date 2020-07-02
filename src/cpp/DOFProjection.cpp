@@ -2007,9 +2007,9 @@ namespace DOFProjection{
                                                      const floatVector &microWeights,
                                                      const floatVector &domainReferenceXiVectors,
                                                      const floatVector &domainInterpolationFunctionValues,
-                                                     const floatVector &macroNodeProjectedMass,
-                                                     const floatVector &macroNodeProjectedMassMomentOfInertia,
-                                                     const floatVector &macroNodeMassRelativePositionConstant,
+                                                     const floatVector &domainMacroNodeProjectedMass,
+                                                     const floatVector &domainMacroNodeProjectedMassMomentOfInertia,
+                                                     const floatVector &domainMacroNodeMassRelativePositionConstant,
                                                      SparseMatrix &projector,
                                                      const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex,
                                                      const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
@@ -2025,13 +2025,14 @@ namespace DOFProjection{
          * :param const floatVector &microWeights: The weighting values of the micro-nodes ( global vector )
          * :param const floatVector &domainReferenceXiVectors: The relative position vectors of the nodes in the domain
          * :param const floatVector &domainInterpolationFunctionValues: The values of the macro interpolation functions
-         *     at each of the micro nodes.
-         * :param const floatVector &macroNodeProjectedMass: The masses of the macro nodes derived from the
-         *     projection of the micro masses.
-         * :param const floatVector &macroNodeProjectedMassMomentOfInertia: The mass weighted moment of inertia of the macro nodes
-         *     derived from the projection of the micro masses and relative positions. [ I1_11, I1_12, I1_13, I1_21, ... ]
-         * :param const floatVEctor &macroNodeMassRelativePositionConstant: The mass-weighted relative position vector constant
-         *     at each of the macro nodes derived from the projection of the micro masses and relative positions.
+         *     at each of the micro nodes organized via [ N_11, N_12, ... ] where the first index is the micro node number
+         *     and the second is the macro node number in the domain.
+         * :param const floatVector &domainMacroNodeProjectedMass: The masses of the macro nodes derived from the
+         *     projection of the micro masses in the domain.
+         * :param const floatVector &domainMacroNodeProjectedMassMomentOfInertia: The mass weighted moment of inertia of the macro nodes
+         *     derived from the projection of the micro masses and relative positions. [ I1_11, I1_12, I1_13, I1_21, ... ] in the domain
+         * :param const floatVEctor &domainMacroNodeMassRelativePositionConstant: The mass-weighted relative position vector constant
+         *     at each of the macro nodes derived from the projection of the micro masses and relative positions in the domain.
          *     [ C1_1, C1_2, C1_3, C2_1, ... ]
          * :param SparseMatrix &projector: The contribution of the current domain to the projector
          * :param const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex: The map from the global micro node IDs
@@ -2068,12 +2069,12 @@ namespace DOFProjection{
             }
         }
 
-        if ( dim * dim * macroNodeProjectedMass.size( ) != macroNodeProjectedMassMomentOfInertia.size( ) ){
+        if ( dim * dim * domainMacroNodeProjectedMass.size( ) != domainMacroNodeProjectedMassMomentOfInertia.size( ) ){
             return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                   "The macro node projected mass and macro node projected mass moment of inertia vectors are not of consistent sizes" );
         }
 
-        if ( dim * macroNodeProjectedMass.size( ) != macroNodeMassRelativePositionConstant.size( ) ){
+        if ( dim * domainMacroNodeProjectedMass.size( ) != domainMacroNodeMassRelativePositionConstant.size( ) ){
             return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                   "The macro node projected mass and macro node mass weighted relative position constant vectors are not of consistent sizes" );
         }
@@ -2150,7 +2151,7 @@ namespace DOFProjection{
 
             row0 = nMacroDOF * p;
 
-            if ( p > macroNodeProjectedMass.size( ) ){
+            if ( i > domainMacroNodeProjectedMass.size( ) ){
 
                 return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
                                       "The macro node " + std::to_string( n ) + " is too large for the macro node projected mass vector" );
@@ -2158,17 +2159,17 @@ namespace DOFProjection{
             }
 
             //Set the macro node mass
-            macroNodeMass = macroNodeProjectedMass[ p ];
+            macroNodeMass = domainMacroNodeProjectedMass[ i ];
 
             //Set the inverse macro node mass moment of inertia
             inverseMacroMassMomentOfInertia
-                = vectorTools::inverse( floatVector( macroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * p,
-                                                     macroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * ( p + 1 ) ),
+                = vectorTools::inverse( floatVector( domainMacroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * i,
+                                                     domainMacroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * ( i + 1 ) ),
                                         dim, dim );
 
             //Set the mass weighted relative position constant
-            C = floatVector ( macroNodeMassRelativePositionConstant.begin( ) + dim * p,
-                              macroNodeMassRelativePositionConstant.begin( ) + dim * ( p + 1 ) );
+            C = floatVector ( domainMacroNodeMassRelativePositionConstant.begin( ) + dim * i,
+                              domainMacroNodeMassRelativePositionConstant.begin( ) + dim * ( i + 1 ) );
 
             //Loop over the micro nodes
 
@@ -2192,7 +2193,7 @@ namespace DOFProjection{
                         continue;
     
                     }
-    
+   
                     o = indx->second;
                 }
                 else{
@@ -2220,6 +2221,10 @@ namespace DOFProjection{
 
                 //Set the shape function
                 sf = domainInterpolationFunctionValues[ domainMacroNodeIndices.size( ) * j + i ];
+
+                //Extract the micro-position
+                Xi = floatVector( domainReferenceXiVectors.begin( ) + dim * j,
+                                  domainReferenceXiVectors.begin( ) + dim * ( j + 1 ) );
 
                 //Compute the weighted mass term
                 weightedMassTerm = microMass * w * sf;

@@ -229,7 +229,7 @@ namespace DOFProjection{
                                                         const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL,
                                                         const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
 
-    errorOut formMicroDomainToMacroProjectionMatrix( const unsigned int &dim,
+errorOut formMicroDomainToMacroProjectionMatrix( const unsigned int &dim,
                                                      const unsigned int nMicroNodes,
                                                      const unsigned int nMacroNodes,
                                                      const uIntVector  &domainMicroNodeIndices,
@@ -239,13 +239,12 @@ namespace DOFProjection{
                                                      const floatVector &microWeights,
                                                      const floatVector &domainReferenceXiVectors,
                                                      const floatVector &domainInterpolationFunctionValues,
-                                                     const floatVector &macroNodeProjectedMass,
-                                                     const floatVector &macroNodeProjectedMassMomentOfInertia,
-                                                     const floatVector &macroNodeMassRelativePositionConstant,
+                                                     const floatVector &domainMacroNodeProjectedMass,
+                                                     const floatVector &domainMacroNodeProjectedMassMomentOfInertia,
+                                                     const floatVector &domainMacroNodeMassRelativePositionConstant,
                                                      SparseMatrix &projector,
-                                                     const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex,
-                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ); 
-
+                                                     const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL,
+                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
 }
 
 
