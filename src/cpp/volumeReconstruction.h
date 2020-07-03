@@ -39,6 +39,7 @@ namespace volumeReconstruction{
          */
 
         public:
+
             //Constructors
             volumeReconstructionBase( );
             volumeReconstructionBase( const YAML::Node &config );
@@ -46,16 +47,30 @@ namespace volumeReconstruction{
     
             //The factory for child classes
             std::shared_ptr< volumeReconstructionBase > create( );
-            std::shared_ptr< volumeReconstructionBase > create( const std::string &type );
 
             //Error output
             errorOut getError( );
 
+            //Main functions
+            errorOut loadPoints( const floatVector *points );
+
+            //Interface functions
+            const floatVector *getPoints( );
+
         protected:
 
+            virtual errorOut initialize( );
+
+            //Protected attributes
             YAML::Node _config;
             errorOut _error;
             std::string _type;
+
+            const floatVector *_points;
+
+        private:
+
+            std::shared_ptr< volumeReconstructionBase > create( const std::string &type );
     };
 
     //Dual contouring class
@@ -69,9 +84,15 @@ namespace volumeReconstruction{
          */
 
         public:
+
             //Constructors
             dualContouring( );
             dualContouring( const YAML::Node &configuration );
+
+        protected:
+
+            errorOut initialize( );
+
     };
 }
 

@@ -107,6 +107,39 @@ namespace volumeReconstruction{
         return _error;
     }
 
+    errorOut volumeReconstructionBase::loadPoints( const floatVector *points ){
+        /*!
+         * Load the datapoints to the file
+         *
+         * :param const floatVector *points: A pointer to the data points. These points are stored as [ x1, y1, z1, x2, y2, z2, ... ]
+         */
+
+        if ( ( points->size( ) % 3 ) != 0 ){
+            _error = new errorNode( "loadPoints", "The points vector's size is not a multiple of 3" );
+            return _error;
+        }
+
+        _points = points;
+
+        return NULL;
+    }
+
+    errorOut volumeReconstructionBase::initialize( ){
+        /*!
+         * Base initialization
+         */
+
+        return NULL;
+    }
+
+    const floatVector *volumeReconstructionBase::getPoints( ){
+        /*!
+         * Get the points used in this class
+         */
+
+        return _points;
+    }
+
     /*=========================================================================
     |                             dualContouring                              |
     =========================================================================*/
@@ -129,5 +162,24 @@ namespace volumeReconstruction{
         if ( _error ){
             return;
         }
+    }
+
+    errorOut dualContouring::initialize( ){
+        /*!
+         * Initialization for the dualContouring method
+         */
+
+        //Preserve the base initialization
+        errorOut error = volumeReconstructionBase::initialize( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "initialize", "Error in base initialization" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
     }
 }
