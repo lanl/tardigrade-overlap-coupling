@@ -114,12 +114,31 @@ namespace volumeReconstruction{
          * :param const floatVector *points: A pointer to the data points. These points are stored as [ x1, y1, z1, x2, y2, z2, ... ]
          */
 
-        if ( ( points->size( ) % 3 ) != 0 ){
-            _error = new errorNode( "loadPoints", "The points vector's size is not a multiple of 3" );
+        if ( ( points->size( ) % _dim ) != 0 ){
+            _error = new errorNode( "loadPoints", "The points vector's size is not consistent with the dimension" );
             return _error;
         }
 
         _points = points;
+        _nPoints = _points->size( );
+
+        return NULL;
+    }
+
+    errorOut volumeReconstructionBase::loadFunction( const floatVector *function ){
+        /*!
+         * Load the function values at the points to the file
+         *
+         * :param const floatVector *function: A pointer to the function values at the data points.
+         *     These points are stored as [ x1, y1, z1, x2, y2, z2, ... ]
+         */
+
+        if ( function->size( ) != _nPoints ){
+            _error = new errorNode( "loadPoints", "The function vector and the points vector are not consistent in size" );
+            return _error;
+        }
+
+        _functionValues = function;
 
         return NULL;
     }
@@ -128,6 +147,31 @@ namespace volumeReconstruction{
         /*!
          * Base initialization
          */
+
+        setInterpolationConfiguration( );
+
+        return NULL;
+    }
+
+    errorOut volumeReconstructionBase::setInterpolationConfiguration( ){
+        /*!
+         * Set the interpolation configuration
+         */
+
+        //Set the default interpolation configuration
+        if ( !_config[ "interpolation" ] ){
+            _config[ "interpolation" ][ "type" ] = "constant";
+            _config[ "interpolation" ][ "constant_value" ] = 1;
+        }
+
+        if ( _config[ "interpolation" ][ "type" ].as< std::string >( ).compare( "from_vector" ) == 0 ){
+            
+            //Check if _functionValues is null
+            if ( !_functionValues ){
+                return new errorNode(  "setInterpolationConfiguration",
+                                       "'from_vector' is specified in the configuration but the function values have not been set\nThe use order is constructor -> loadPoints -> loadFunction -> evaluate" );
+            }
+        }
 
         return NULL;
     }

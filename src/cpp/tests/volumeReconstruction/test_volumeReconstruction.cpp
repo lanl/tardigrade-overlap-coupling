@@ -23,7 +23,7 @@ int test_dualContouring_constructor( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "reconstructionConfiguration.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
     if ( dc.getError( ) ){
@@ -58,7 +58,7 @@ int test_dualContouring_loadPoints( std::ofstream &results ){
 
     floatVector points = { 1, 2, 3, 4, 5, 6 };
 
-    YAML::Node yf = YAML::LoadFile( "reconstructionConfiguration.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
     if ( dc.getError ( ) ){

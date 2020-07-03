@@ -53,11 +53,14 @@ namespace volumeReconstruction{
 
             //Main functions
             errorOut loadPoints( const floatVector *points );
+            errorOut loadFunction( const floatVector *function );
 
             //Interface functions
             const floatVector *getPoints( );
 
         protected:
+
+            unsigned int _dim = 3; //The dimension is hard coded to 3
 
             virtual errorOut initialize( );
 
@@ -67,6 +70,10 @@ namespace volumeReconstruction{
             std::string _type;
 
             const floatVector *_points;
+            const floatVector *_functionValues = NULL;
+            unsigned int _nPoints;
+
+            errorOut setInterpolationConfiguration( );
 
         private:
 
