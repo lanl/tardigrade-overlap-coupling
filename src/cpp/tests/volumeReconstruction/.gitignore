@@ -1,0 +1,4 @@
+*.o
+results.tex
+test_volumeReconstruction
+*.as_evaluated
