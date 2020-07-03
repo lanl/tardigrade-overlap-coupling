@@ -28,8 +28,8 @@ namespace volumeReconstruction{
     //and in the map to allow them to be accessed by strings. They must also 
     //be registerd in volumeReconstructionBase::create
 
-    enum registry { };
-    static std::map< std::string, registry > registryMap = {};
+    enum registry { DUAL_CONTOURING };
+    static std::map< std::string, registry > registryMap = { { "dual_contouring", registry::DUAL_CONTOURING } };
 
     class volumeReconstructionBase {
         /*!
@@ -48,13 +48,30 @@ namespace volumeReconstruction{
             std::shared_ptr< volumeReconstructionBase > create( );
             std::shared_ptr< volumeReconstructionBase > create( const std::string &type );
 
+            //Error output
             errorOut getError( );
 
-        private:
+        protected:
 
             YAML::Node _config;
             errorOut _error;
             std::string _type;
+    };
+
+    //Dual contouring class
+    class dualContouring : public volumeReconstructionBase {
+        /*!
+         * The Dual contouring volume reconstruction method
+         *
+         * TODO: Consider moving this to its own header at some
+         *       point. At this time, there is only one reconstruction
+         *       type so it isn't a big deal.
+         */
+
+        public:
+            //Constructors
+            dualContouring( );
+            dualContouring( const YAML::Node &configuration );
     };
 }
 

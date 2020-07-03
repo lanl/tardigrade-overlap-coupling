@@ -86,8 +86,8 @@ namespace volumeReconstruction{
             return std::make_shared< volumeReconstructionBase >( _config, _error ); //The requested class is not defined
         }
         else{ //Register new volumeReconstruction objects below
-            if ( 1 == -1 ){
-                return NULL;
+            if ( T->second == DUAL_CONTOURING ){
+                return std::make_shared< dualContouring >( _config );
             }
             else{
                 _error = new errorNode( "create", "The volume reconstruction type ( " + type + " ) is not recognized" );
@@ -107,5 +107,27 @@ namespace volumeReconstruction{
         return _error;
     }
 
+    /*=========================================================================
+    |                             dualContouring                              |
+    =========================================================================*/
 
+    dualContouring::dualContouring( ) : volumeReconstructionBase( ){
+        /*!
+         * The dualContouring default constructor
+         */
+        
+        return;
+    }
+
+    dualContouring::dualContouring( const YAML::Node &configuration ) : volumeReconstructionBase( configuration ){
+        /*!
+         * The dualContouring constructor with a YAML node
+         *
+         * :param const YAMLL::Node &configuration: The YAML configuration file for the dualContouring object
+         */
+
+        if ( _error ){
+            return;
+        }
+    }
 }
