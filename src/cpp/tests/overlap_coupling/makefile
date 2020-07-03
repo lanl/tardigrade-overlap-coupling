@@ -1,11 +1,12 @@
-# Micromorphic filter, a variationally based filter for DNS
+# overlap_coupling, Routines for processing DNS and macroscale
+# data for overlap coupling.
 # 
 # Author: Nathan A. Miller (LANL / CU Boulder)
 # Email:  nathanm@lanl.gov
 # Date:   July 13, 2018
 #
-# This is the makefile for processDNS.cpp. It generates the 
-# micromorphic filter
+# This is the makefile for test_overlap_coupling.cpp. It generates test
+# functions for overlap_coupling.cpp
 
 include ../../../../config.mk
 

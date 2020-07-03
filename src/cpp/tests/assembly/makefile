@@ -1,11 +1,11 @@
-# Micromorphic filter, a variationally based filter for DNS
+# assembly, routines to assemble FEA systems
 # 
 # Author: Nathan A. Miller (LANL / CU Boulder)
 # Email:  nathanm@lanl.gov
 # Date:   July 13, 2018
 #
-# This is the makefile for processDNS.cpp. It generates the 
-# micromorphic filter
+# This is the makefile for test_assembly.cpp. It generates the 
+# test functions for the assembly routines
 
 include ../../../../config.mk
 

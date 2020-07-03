@@ -1,11 +1,11 @@
-# Micromorphic filter, a variationally based filter for DNS
+# vector_tools, the vector tools library ( test file is depreciated )
 # 
 # Author: Nathan A. Miller (LANL / CU Boulder)
 # Email:  nathanm@lanl.gov
 # Date:   July 13, 2018
 #
-# This is the makefile for processDNS.cpp. It generates the 
-# micromorphic filter
+# This is the makefile for test_vector_tools.cpp. It generates the 
+# test files for vector_tools.cpp
 
 include ../../../../config.mk
 

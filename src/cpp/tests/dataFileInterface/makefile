@@ -1,11 +1,11 @@
-# DOFProjection, a collection of routines to project the degrees of freedom
+# dataFileInterface, a collection of routines to interface with datafiles
 # 
 # Author: Nathan A. Miller (LANL / CU Boulder)
 # Email:  nathanm@lanl.gov
 # Date:   June 10, 2020
 #
-# This is the makefile for test_DOFProjection.cpp. It generates the 
-# tests for the projection of the degrees of freedom
+# This is the makefile for test_dataFileInterface.cpp. It generates the 
+# tests for the interface with the datafile
 
 include ../../../../config.mk
 

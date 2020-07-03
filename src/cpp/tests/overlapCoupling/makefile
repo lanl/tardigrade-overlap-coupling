@@ -1,11 +1,11 @@
-# DOFProjection, a collection of routines to project the degrees of freedom
+# overlapCoupling, a collection of routines to performt the overlap coupling operations
 # 
 # Author: Nathan A. Miller (LANL / CU Boulder)
 # Email:  nathanm@lanl.gov
 # Date:   June 10, 2020
 #
-# This is the makefile for test_DOFProjection.cpp. It generates the 
-# tests for the projection of the degrees of freedom
+# This is the makefile for test_overlapCoupling.cpp. It generates the 
+# tests for the overlap coupling.
 
 include ../../../../config.mk
 
