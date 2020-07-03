@@ -118,9 +118,9 @@ namespace dataFileInterface{
         /*!
          * The XDMF data file interface definition
          *
-         * TODO: Consider moving this to it's own header at some point
-         *       at this time, there is only one IO file type so it isn't
-         *       a bit deal.
+         * TODO: Consider moving this to its own header at some point.
+         *       At this time, there is only one IO file type so it isn't
+         *       a big deal.
          */
 
         public:
