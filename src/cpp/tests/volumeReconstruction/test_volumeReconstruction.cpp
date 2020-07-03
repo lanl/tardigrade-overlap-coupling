@@ -164,6 +164,47 @@ int test_dualContouring_loadFunction( std::ofstream &results ){
     return 0;
 }
 
+int test_KDNode_constructor( std::ofstream &results ){
+    /*!
+     * Test the KD tree creation
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    floatVector points = { 2, 3, 5, 4, 9, 6, 4, 7, 8, 1, 7, 2 };
+    uIntVector  ownedIndices = { 0, 2, 4, 6, 8, 10 };
+    unsigned int dim = 2;
+
+    volumeReconstruction::KDNode tree( &points, ownedIndices, 0, dim );
+
+    results << "test_KDNode_constructor & True\n";
+    return 0;
+}
+
+int test_KDNode_getIndex( std::ofstream &results ){
+    /*!
+     * Test getting the index of the KDNode
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    floatVector points = { 2, 3, 5, 4, 9, 6, 4, 7, 8, 1, 7, 2 };
+    uIntVector  ownedIndices = { 0, 2, 4, 6, 8, 10 };
+    unsigned int dim = 2;
+
+    volumeReconstruction::KDNode tree( &points, ownedIndices, 0, dim );
+
+    if ( !( tree.getIndex( ), 10 ) ){
+        
+        results << "test_KDNode_getIndex (test 1) & True\n";
+        return 1;
+
+    }
+
+    results << "test_KDNode_getIndex & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -179,6 +220,8 @@ int main(){
     test_dualContouring_constructor( results );
     test_dualContouring_loadPoints( results );
     test_dualContouring_loadFunction( results );
+    test_KDNode_constructor( results );
+    test_KDNode_getIndex( results );
 
     //Close the results file
     results.close();

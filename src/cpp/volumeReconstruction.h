@@ -31,6 +31,32 @@ namespace volumeReconstruction{
     enum registry { DUAL_CONTOURING };
     static std::map< std::string, registry > registryMap = { { "dual_contouring", registry::DUAL_CONTOURING } };
 
+    //KD tree definitions
+    class KDNode{
+        /*!
+         * Node which forms a simple KD tree
+         */
+
+        public:
+
+            //Constructor
+            KDNode( const floatVector *points, const uIntVector &ownedIndices,
+                    const unsigned int &depth, const unsigned int &dim );
+
+            const unsigned int* getIndex( );
+
+            floatVector getUpperBound( unsigned int &dim );
+
+        private:
+            const floatVector *_points;
+            unsigned int _index;
+            unsigned int _depth;
+
+            std::unique_ptr< KDNode > left_child = NULL;
+            std::unique_ptr< KDNode > right_child = NULL;
+
+    };
+
     class volumeReconstructionBase {
         /*!
          * The base class for volume reconstruction from pointsets. This allows

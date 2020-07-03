@@ -8,6 +8,150 @@
 
 namespace volumeReconstruction{
 
+    KDNode::KDNode( const floatVector *points, const uIntVector &ownedIndices,
+                    const unsigned int &depth, const unsigned int &dim ){
+
+        /*!
+         * The constructor for the KD tree
+         *
+         * :param const floatVector *points: The points to be sorted into the tree
+         * :param const uIntVector &ownedIndices: The indices of the points which this
+         *     node is dividing. These are indices to the first values of the 
+         *     points in the 'points' vector.
+         * :param const unsigned int &depth: The depth of the current node
+         * :param const unsigned int &dim: The dimension of the points
+         */
+
+        //Set the points
+        _points = points;
+
+        //Set the depth of the node
+        _depth = depth;
+
+        //Determine if this is the last node in the chain
+        if ( ownedIndices.size( ) == 1 ){
+            _index = ownedIndices[ 0 ];
+            return;
+        }
+
+        //Determine the bounding box of the points
+        floatVector lowerBound( _points->begin( ) + ownedIndices[ 0 ],
+                                _points->begin( ) + ownedIndices[ 0 ] + dim );
+
+        floatVector upperBound( _points->begin( ) + ownedIndices[ 0 ],
+                                _points->begin( ) + ownedIndices[ 0 ] + dim );
+
+        for ( auto index = ownedIndices.begin( ) + 1; index != ownedIndices.end( ); index++ ){
+
+            //Compare the current point against the bounds
+            for ( unsigned int i = 0; i < dim; i++ ){
+                if ( ( *_points )[ *index + i ] > upperBound[ i ] ){
+                    upperBound[ i ] = ( *_points )[ *index + i ];
+                }
+                else if ( ( *_points )[ *index + i ] < lowerBound[ i ] ){
+                    lowerBound[ i ] = ( *_points )[ *index + i ];
+                }
+            }
+
+        }
+
+        //Determine which dimension has the largest variation. That is the axis
+        //we want to split our domain by
+        floatVector delta = upperBound - lowerBound;
+        unsigned int axis = 0;
+        floatType deltaMax = delta[ axis ];
+
+        for ( auto v = delta.begin( ) + 1; v != delta.end( ); v++ ){
+
+            if ( deltaMax < *v ){
+
+                axis = v - delta.begin( );
+                deltaMax = *v;
+
+            }            
+
+        }
+
+        //Accumulate the dimension indicated by axis
+        typedef std::pair< const unsigned int*, const floatType* > valueMap;
+        
+        std::vector< valueMap > values;
+        values.reserve( _points->size( ) / dim );
+
+        for ( auto index = ownedIndices.begin( ); index != ownedIndices.end( ); index++ ){
+
+            values.push_back( valueMap( &( *index), &( *_points )[ *index + axis ] ) );
+
+        }
+
+        //Sort the value vector
+        sort( values.begin( ), values.end( ),
+              []( const valueMap &a,
+                  const valueMap &b ){
+                  return *a.second < *b.second;
+              }
+            );
+
+        //Get the index of the current node
+        _index = *values[ values.size( ) / 2 ].first;
+
+        //Split the indices into left and right indices
+        uIntVector left_indices;
+        left_indices.reserve( values.size( ) / 2 );
+
+        uIntVector right_indices;
+        right_indices.reserve( values.size( ) - ( values.size( ) / 2 + 1 ) );
+
+        for ( auto v = values.begin( ); v < values.begin( ) + values.size( ) / 2; v++ ){
+
+            left_indices.push_back( *v->first );
+
+        }
+
+        for ( auto v = values.begin( ) + values.size( ) /2 + 1; v != values.end( ); v++ ){
+
+            right_indices.push_back( *v->first );
+
+        }
+
+        //Form the left and right nodes
+        if ( left_indices.size( ) > 0 ){
+
+            left_child  = std::unique_ptr< KDNode >( new KDNode( _points, left_indices, depth + 1, dim ) );
+
+        }
+
+        if ( right_indices.size( ) > 0 ){
+
+            right_child = std::unique_ptr< KDNode >( new KDNode( _points, right_indices, depth + 1, dim ) );
+
+        }
+
+        return;
+    }
+
+    const unsigned int* KDNode::getIndex( ){
+        /*!
+         * Get the index associated with this KD node
+         */
+
+        return &_index;
+    }
+
+    floatVector KDNode::getUpperBound( unsigned int &dim ){
+        /*!
+         * Get the upper bound of the points in the KD tree
+         */
+
+        if ( right_child ){
+            
+            return right_child->getUpperBound( dim );
+
+        }
+
+        return floatVector( _points->begin( ) + _index, _points->begin( ) + _index + dim );
+    }
+
     volumeReconstructionBase::volumeReconstructionBase( ){
         /*!
          * The base volumeReconstruction constructor
