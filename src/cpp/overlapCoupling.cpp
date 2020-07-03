@@ -334,8 +334,7 @@ namespace overlapCoupling{
         _N.makeCompressed( );
 
         //Form the projectors
-        //assert( 1 == 0 );
-        error = formTheProjectors( );
+        error = formTheProjectors( microIncrement, macroIncrement );
 
         if ( error ){
 
@@ -349,9 +348,12 @@ namespace overlapCoupling{
         return NULL;
     }
 
-    errorOut overlapCoupling::formTheProjectors( ){
+    errorOut overlapCoupling::formTheProjectors( const unsigned int &microIncrement, const unsigned int &macroIncrement ){
         /*!
          * Form the projection operators
+         *
+         * :param const unsigned int &microIncrement: The increment in the micro-scale
+         * :param const unsigned int &macroIncrement: The increment in the macro-scale
          */
 
         const YAML::Node config = _inputProcessor.getCouplingInitialization( );
@@ -362,7 +364,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                errorOut result = new errorNode( "formTheProjectors",
                                                  "Error in the formation of the L2 projectors" );
                 result->addNext( error );
                 return result;
@@ -372,11 +374,11 @@ namespace overlapCoupling{
         }
         else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
 
-            errorOut error = formDirectProjectionProjectors( );
+            errorOut error = formDirectProjectionProjectors( microIncrement, macroIncrement );
 
             if ( error ){
 
-                errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                errorOut result = new errorNode( "formTheProjectors",
                                                  "Error in the formation of the direct projection projectors" );
                 result->addNext( error );
                 return result;
@@ -444,13 +446,97 @@ namespace overlapCoupling{
         return NULL;
     }
 
-    errorOut overlapCoupling::formDirectProjectionProjectors( ){
+    errorOut overlapCoupling::formDirectProjectionProjectors( const unsigned int &microIncrement, const unsigned int &macroIncrement ){
         /*!
          * Form the projectors if the direct projection is to be used
+         *
+         * :param const unsigned int &microIncrement: The micro increment at which to form the projectors
+         * :param const unsigned int &macroIncrement: The macro increment at which to form the projectors
          */
 
-        //Form the
-        assert( 1 == 0 ); 
+        //Get the ghost macro cell IDs
+        const uIntVector *ghostMacroCellIDs = _inputProcessor.getGhostMacroCellIds( );
+        const uIntVector *ghostMacroCellMicroDomainCounts = _inputProcessor.getGhostMacroCellMicroDomainCounts( );
+
+        const stringVector *ghostMacroDomainNames = _inputProcessor.getGhostMacroDomainNames( );
+        const stringVector *freeMicroDomainNames = _inputProcessor.getFreeMicroDomainNames( );
+
+        unsigned int cellIndex;
+        unsigned int nMicroDomains;
+
+        errorOut error;
+
+        uIntVector macroNodes;
+
+        unsigned int domainIndex = 0;
+
+        //Form the projector from the free micro-scale to the ghost macro-scale
+        for ( auto cellID  = ghostMacroCellIDs->begin( );
+                   cellID != ghostMacroCellIDs->end( );
+                   cellID++ ){
+
+            //Set the index
+            cellIndex = cellID - ghostMacroCellIDs->begin( );
+
+            //Set the number of micro-domains encompassed by the cell
+            nMicroDomains = ( *ghostMacroCellMicroDomainCounts )[ cellIndex ];
+
+            //Get the macro-node set
+            error = _inputProcessor._macroscale->getDomainNodes( macroIncrement, ( *ghostMacroDomainNames )[ cellIndex ], macroNodes );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formDirectProjectionProjectors",
+                                                 "Error in extracting the ghost macro-node set" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Loop over the free micro-domains
+            for ( auto domain  = freeMicroDomainNames->begin( ) + domainIndex;
+                       domain != freeMicroDomainNames->begin( ) + domainIndex + nMicroDomains;
+                       domain++ ){
+
+                error = addDomainContributionToDirectFreeMicroToGhostMacroProjector( cellIndex, *cellID, microIncrement, 
+                                                                                     *domain, macroNodes );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "formDirectProjectionProjectors",
+                                                     "Error in processing free micro-scale domain '" + *domain + "' for a ghost macro domain reference state" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+            }
+
+            domainIndex += nMicroDomains;
+
+        }
+
+        //Set the dimension of the displacement DOF
+        unsigned int nDispMicroDOF = _dim;
+
+        unsigned int nDispMacroDOF = _dim + _dim * _dim;
+
+        //Get the number of micro degrees of freedom which are free and ghost
+        unsigned int nFreeMicroDOF = nDispMicroDOF * _inputProcessor.getFreeMicroNodeIds( )->size( );
+        unsigned int nGhostMicroDOF = nDispMicroDOF * _inputProcessor.getGhostMicroNodeIds( )->size( );
+
+        //Get the number of macro degrees of freedom which are free and ghost
+        unsigned int nFreeMacroDOF = nDispMacroDOF * _inputProcessor.getFreeMacroNodeIds( )->size( );
+        unsigned int nGhostMacroDOF = nDispMacroDOF * _inputProcessor.getGhostMacroNodeIds( )->size( );
+
+        //Assemble the remaining projectors
+
+        _DP_BDhatD = -_DP_BDhatQ * _N.block( 0, 0, nFreeMicroDOF, nFreeMacroDOF );
+
+        _DP_BQhatQ = _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _DP_BDhatQ;
+
+        _DP_BQhatD = _N.block( nFreeMicroDOF, 0, nGhostMicroDOF, nFreeMacroDOF )
+                   + _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _DP_BDhatD;
 
         return NULL;
     }
@@ -651,7 +737,7 @@ namespace overlapCoupling{
         if ( error ){
 
             errorOut result = new errorNode( "computeDomainShapeFunctionInformation",
-                                             "Error in the computation of the center of mass for a micro domain" );
+                                             "Error in the computation of the shape function at the center of mass for a micro domain" );
             result->addNext( error );
             return result;
 
@@ -702,7 +788,7 @@ namespace overlapCoupling{
             if ( error ){
     
                 errorOut result = new errorNode( "computeDomainShapeFunctionInformation",
-                                                 "Error in the computation of the center of mass for a micro domain" );
+                                                 "Error in the computation of the shape function at the center of mass for a micro domain" );
                 result->addNext( error );
                 return result;
     
@@ -1447,6 +1533,158 @@ namespace overlapCoupling{
         }
 
         return NULL;
+    }
+
+    errorOut overlapCoupling::addDomainContributionToDirectFreeMicroToGhostMacroProjector( const unsigned int &cellIndex,
+                                                                                           const unsigned int &cellID,
+                                                                                           const unsigned int &microIncrement,
+                                                                                           const std::string &domainName,
+                                                                                           const uIntVector &macroNodes ){
+        /*!
+         * Compute the current domain's contribution to the direct free micro to ghost macro
+         * projection matrix
+         */
+
+        //Compute the shape functions at the micro-nodes for the domain
+
+        //Get the domain node ids
+        uIntVector domainNodes;
+        errorOut error = _inputProcessor._microscale->getDomainNodes( microIncrement, domainName, domainNodes );
+
+        //Get the micro-node positions and relative position vectors
+        floatVector microNodePositions( _dim * domainNodes.size( ) );
+ 
+        unsigned int index;
+        const floatVector *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
+        const floatVector *microDisplacements      = _inputProcessor.getMicroDisplacements( );
+        floatVector domainReferenceXiVectors( _dim * domainNodes.size( ) );
+
+        const floatVector domainCenterOfMass = floatVector( _referenceFreeMicroDomainCentersOfMass.begin( ) + _dim * cellIndex,
+                                                            _referenceFreeMicroDomainCentersOfMass.begin( ) + _dim * ( cellIndex + 1 ) );
+ 
+        for ( auto it = domainNodes.begin( ); it != domainNodes.end( ); it++ ){
+ 
+            index = it - domainNodes.begin( );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+                microNodePositions[ _dim * index + i ] = ( *microReferencePositions )[ _dim * ( *it ) + i ]
+                                                       + ( *microDisplacements )[ _dim * ( *it ) + i ];
+
+                domainReferenceXiVectors[ _dim * index + i ] = microNodePositions[ _dim * index + i ]
+                                                             - domainCenterOfMass[ i ];
+            }
+ 
+        }
+ 
+        //Compute the shape function values at the micro positions
+        floatVector domainMicroPositionShapeFunctionValues;
+        error = computeShapeFunctionsAtPoints( cellID,
+                                               *_inputProcessor.getMacroNodeReferencePositions( ),
+                                               *_inputProcessor.getMacroDisplacements( ),
+                                               *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                               *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
+                                               microNodePositions,
+                                               domainMicroPositionShapeFunctionValues );
+
+        if ( error ){
+ 
+            errorOut result = new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+                                             "Error in the computation of the shape functions at the center of mass for a micro domain" );
+            result->addNext( error );
+            return result;
+ 
+        }
+
+        //Construct the contribution of the domain
+        
+        //Get the domain's mass properties
+        floatVector domainMacroNodeProjectedMass( macroNodes.size( ) );
+        floatVector domainMacroNodeProjectedMassMomentOfInertia( _dim * _dim * macroNodes.size( ) );
+        floatVector domainMacroNodeProjectedMassRelativePositionConstant( _dim * macroNodes.size( ) );
+        
+        auto microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
+        auto macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+        //We also specify the global to local map for the projector.
+        //This is not the same as the existing global map for the macro nodes
+        //because we store the free nodes first, so we have to shift them by 
+        //the number of free macro-scale nodes
+        DOFMap projectorMacroGlobalToLocalDOFMap;
+        projectorMacroGlobalToLocalDOFMap.reserve( _inputProcessor.getGhostMacroNodeIds( )->size( ) );
+
+        for ( auto md  = macroNodes.begin( );
+                   md != macroNodes.end( );
+                   md++ ){
+
+            auto indx = macroGlobalToLocalDOFMap->find( *md );
+
+            if ( indx == microGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+                                      "'" + std::to_string( *md ) + "' not found in the DOF map" );
+
+            }
+
+            projectorMacroGlobalToLocalDOFMap.emplace( indx->first, indx->second - _inputProcessor.getFreeMacroNodeIds( )->size( ) );
+
+            unsigned int mdi = md - macroNodes.begin( );
+
+            domainMacroNodeProjectedMass[ mdi ] = _macroNodeProjectedMass[ indx->second ];
+            
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                domainMacroNodeProjectedMassRelativePositionConstant[ _dim * mdi + i ]
+                    = _macroNodeMassRelativePositionConstant[ _dim * indx->second + i ];
+
+                for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    domainMacroNodeProjectedMassMomentOfInertia[ _dim * _dim * mdi + _dim * i + j ]
+                        = _macroNodeProjectedMassMomentOfInertia[ _dim * _dim * indx->second + _dim * i + j ];
+
+                }
+
+            }
+
+        }
+
+        //Construct the projector contribution for this domain
+        SparseMatrix domainProjector;
+
+        error = DOFProjection::formMicroDomainToMacroProjectionMatrix( _dim,
+                                                                       _inputProcessor.getFreeMicroNodeIds( )->size( ),
+                                                                       _inputProcessor.getGhostMacroNodeIds( )->size( ),
+                                                                       domainNodes, macroNodes,
+                                                                       *_inputProcessor.getMicroVolumes( ),
+                                                                       *_inputProcessor.getMicroDensities( ),
+                                                                       *_inputProcessor.getMicroWeights( ),
+                                                                       domainReferenceXiVectors,
+                                                                       domainMicroPositionShapeFunctionValues,
+                                                                       domainMacroNodeProjectedMass,
+                                                                       domainMacroNodeProjectedMassMomentOfInertia,
+                                                                       domainMacroNodeProjectedMassRelativePositionConstant,
+                                                                       domainProjector,
+                                                                       microGlobalToLocalDOFMap,
+                                                                       &projectorMacroGlobalToLocalDOFMap );
+
+        if ( error ){
+            errorOut result = new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+                                             "Error in the computation of the domain's contribution to the micro to macro projection matrix" );
+            result->addNext( error );
+            return result;
+        }
+
+        if ( _DP_BQhatQ.nonZeros( ) == 0 ){
+
+            _DP_BDhatQ = domainProjector;
+
+        }
+        else{
+
+            _DP_BDhatQ += domainProjector;
+
+        }
+
+        return NULL;
+
     }
 
     const floatVector* overlapCoupling::getReferenceFreeMicroDomainMasses( ){

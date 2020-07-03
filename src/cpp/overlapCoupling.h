@@ -148,12 +148,17 @@ namespace overlapCoupling{
                                                                  const floatVector &domainMicroPositionShapeFunctionValues
                                                                );
 
-            errorOut formTheProjectors( );
+            errorOut formTheProjectors( const unsigned int &microIncrement, const unsigned int &macroIncrement );
 
             errorOut formL2Projectors( );
 
-            errorOut formDirectProjectionProjectors( );
+            errorOut formDirectProjectionProjectors( const unsigned int &microIncrement, const unsigned int &macroIncrement );
 
+            errorOut addDomainContributionToDirectFreeMicroToGhostMacroProjector( const unsigned int &cellIndex,
+                                                                                  const unsigned int &cellID,
+                                                                                  const unsigned int &microIncrement,
+                                                                                  const std::string &domainName,
+                                                                                  const uIntVector &macroNodes );
             errorOut projectDegreesOfFreedom( );
                                                                    
             //The interpolation matrix

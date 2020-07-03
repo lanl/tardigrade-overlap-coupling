@@ -2,7 +2,7 @@
 
 coupling_initialization:
         type: use_first_increment #Other options will be "from_file" and "use_current_increment"
-        projection_type: "l2_projection" #Other options will be direct_projection
+        projection_type: "direct_projection" #Other options are "l2_projection"
 
 macroscale_definition:
         filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/macroscale_xdmf.xdmf
