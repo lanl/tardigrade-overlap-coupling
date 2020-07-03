@@ -57,6 +57,7 @@ namespace volumeReconstruction{
 
             //Interface functions
             const floatVector *getPoints( );
+            const floatVector *getFunction( );
 
         protected:
 

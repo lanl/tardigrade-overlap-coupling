@@ -184,6 +184,14 @@ namespace volumeReconstruction{
         return _points;
     }
 
+    const floatVector *volumeReconstructionBase::getFunction( ){
+        /*!
+         * Get the values of the function at the points
+         */
+
+        return _functionValues;
+    }
+
     /*=========================================================================
     |                             dualContouring                              |
     =========================================================================*/
