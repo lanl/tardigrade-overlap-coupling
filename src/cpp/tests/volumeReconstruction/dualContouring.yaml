@@ -1,0 +1,4 @@
+type: dual_contouring
+interpolation: #Configuration for the interpolation of the points to the background grid
+        function_type: constant #Other options are "from_vector"
+write_config: #Write the configuration file to disk 

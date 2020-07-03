@@ -59,6 +59,21 @@ namespace volumeReconstruction{
         return;
     }
 
+    volumeReconstructionBase::~volumeReconstructionBase( ){
+        /*!
+         * The base volumeReconstruction destructor
+         */
+
+        if ( _config[ "write_config" ] ){
+            if ( !_config[ "write_config" ].IsScalar( ) ){
+                _config[ "write_config" ] = "defaultOutput.yaml";
+            }
+
+            std::ofstream yamlOut( _config[ "write_config" ].as< std::string >( ) + ".as_evaluated" );
+            yamlOut << _config;
+        }
+    }
+
     std::shared_ptr<volumeReconstructionBase> volumeReconstructionBase::create( ){
         /*!
          * Create a new volumeReconstruction object using the configuration file
@@ -162,6 +177,28 @@ namespace volumeReconstruction{
         if ( !_config[ "interpolation" ] ){
             _config[ "interpolation" ][ "type" ] = "constant";
             _config[ "interpolation" ][ "constant_value" ] = 1;
+            _functionValue = 1;
+        }
+
+        if ( !_config[ "interpolation" ][ "type" ] ){
+            _config[ "interpolation" ][ "type" ] = "constant";
+            _config[ "interpolation" ][ "constant_value" ] = 1;
+            _functionValue = 1;
+        }
+
+        if ( ( _config[ "interpolation" ][ "type" ].as< std::string >( ).compare( "constant" ) == 0 ) &&
+             ( !_config[ "interpolation" ][ "constant_value" ] ) ){
+
+            _config[ "interpolation" ][ "constant_value" ] = 1;
+            _functionValue = 1;
+            
+        }
+        
+        if ( ( _config[ "interpolation" ][ "type" ].as< std::string >( ).compare( "constant" ) == 0 ) &&
+             ( _config[ "interpolation" ][ "constant_value" ] ) ){
+
+            _functionValue = _config[ "interpolation" ][ "constant_value" ].as< floatType >( );
+            
         }
 
         if ( _config[ "interpolation" ][ "type" ].as< std::string >( ).compare( "from_vector" ) == 0 ){

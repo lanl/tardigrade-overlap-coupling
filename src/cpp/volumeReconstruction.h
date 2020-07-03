@@ -44,6 +44,8 @@ namespace volumeReconstruction{
             volumeReconstructionBase( );
             volumeReconstructionBase( const YAML::Node &config );
             volumeReconstructionBase( const YAML::Node &config, errorOut error );
+
+            ~volumeReconstructionBase( );
     
             //The factory for child classes
             std::shared_ptr< volumeReconstructionBase > create( );
@@ -71,6 +73,7 @@ namespace volumeReconstruction{
             std::string _type;
 
             const floatVector *_points;
+            floatType _functionValue;
             const floatVector *_functionValues = NULL;
             unsigned int _nPoints;
 
