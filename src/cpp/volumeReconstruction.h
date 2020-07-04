@@ -47,6 +47,8 @@ namespace volumeReconstruction{
 
             floatType getMinimumValueDimension( const unsigned int &d );
 
+            floatType getMaximumValueDimension( const unsigned int &d );
+
         private:
             const floatVector *_points;
             unsigned int _index;

@@ -145,16 +145,19 @@ namespace volumeReconstruction{
          * :param const unsigned int &d: The dimension ( starting at zero ) of each point to search
          */
 
+        floatType currentValue = ( *_points )[ _index + d ];
+
         if ( _axis == d ){
 
             if ( left_child ){
 
-                return left_child->getMinimumValueDimension( d );
+                return std::fmin( left_child->getMinimumValueDimension( d ),
+                                  currentValue );
 
             }
             else{
 
-                return ( *_points )[ _index + d ];
+                return currentValue;
 
             }
 
@@ -163,23 +166,83 @@ namespace volumeReconstruction{
 
             if ( ( left_child ) && ( !right_child ) ){
 
-                return left_child->getMinimumValueDimension( d );
+                return std::fmin( left_child->getMinimumValueDimension( d ),
+                                  currentValue );
 
             }
             else if ( ( !left_child ) && ( right_child ) ){
 
-                return right_child->getMinimumValueDimension( d );
+                return std::fmin( right_child->getMinimumValueDimension( d ),
+                                  currentValue );
 
             }
             else if ( ( left_child ) && ( right_child ) ){
 
-                return std::fmin( left_child->getMinimumValueDimension( d ),
-                                  right_child->getMinimumValueDimension( d ) );
+                return std::fmin( std::fmin( left_child->getMinimumValueDimension( d ),
+                                             right_child->getMinimumValueDimension( d ) ),
+                                  currentValue );
+
 
             }
             else{
 
-                return ( *_points )[ _index + d ];
+                return currentValue;
+
+            }
+
+        }
+
+    }
+
+    floatType KDNode::getMaximumValueDimension( const unsigned int &d ){
+        /*!
+         * Get the maximum value of a given dimension in the tree
+         *
+         * :param const unsigned int &d: The dimension ( starting at zero ) of each point to search
+         */
+
+
+        floatType currentValue = ( *_points )[ _index + d ];
+
+        if ( _axis == d ){
+
+            if ( right_child ){
+
+                return std::fmax( right_child->getMaximumValueDimension( d ),
+                                  currentValue );
+
+            }
+            else{
+
+                return currentValue;
+
+            }
+
+        }
+        else{
+
+            if ( ( left_child ) && ( !right_child ) ){
+
+                return std::fmax( left_child->getMaximumValueDimension( d ),
+                                  currentValue );
+
+            }
+            else if ( ( !left_child ) && ( right_child ) ){
+
+                return std::fmax( right_child->getMaximumValueDimension( d ),
+                                  currentValue );
+
+            }
+            else if ( ( left_child ) && ( right_child ) ){
+
+                return std::fmax( std::fmax( left_child->getMaximumValueDimension( d ),
+                                             right_child->getMaximumValueDimension( d ) ),
+                                  currentValue );
+
+            }
+            else{
+
+                return currentValue;
 
             }
 
