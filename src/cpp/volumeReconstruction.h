@@ -45,12 +45,13 @@ namespace volumeReconstruction{
 
             const unsigned int* getIndex( );
 
-            floatVector getUpperBound( unsigned int &dim );
+            floatType getMinimumValueDimension( const unsigned int &d );
 
         private:
             const floatVector *_points;
             unsigned int _index;
             unsigned int _depth;
+            unsigned int _axis;
 
             std::unique_ptr< KDNode > left_child = NULL;
             std::unique_ptr< KDNode > right_child = NULL;

@@ -205,6 +205,62 @@ int test_KDNode_getIndex( std::ofstream &results ){
     return 0;
 }
 
+int test_KDNode_getMinimumValueDimension( std::ofstream &results ){
+    /*!
+     * Test getting the upper bound of the KD tree
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    floatVector points = { 2, 3, 5, 4, 9, 6, 4, 7, 8, 1, 7, 2 };
+    uIntVector  ownedIndices = { 0, 2, 4, 6, 8, 10 };
+    unsigned int dim = 2;
+
+    volumeReconstruction::KDNode tree( &points, ownedIndices, 0, dim );
+
+    floatType answer1 = 2;
+    floatType answer2 = 1;
+
+    floatType result = tree.getMinimumValueDimension( 0 );
+
+    if ( !vectorTools::fuzzyEquals( result, answer1 ) ){
+        results << "test_KDNode_getMinimumValueDimension (test 1) & False\n";
+        return 1;
+    }
+
+    result = tree.getMinimumValueDimension( 1 );
+
+    if ( !vectorTools::fuzzyEquals( result, answer2 ) ){
+        results << "test_KDNode_getMinimumValueDimesnion (test 2) & False\n";
+        return 1;
+    }
+
+    floatVector points2 = { 1, 10, 50, 50, 10, 30, 35, 90, 55, 1, 60, 80, 25, 40, 70, 70, 51, 75 };
+    uIntVector ownedIndices2 = { 0, 2, 4, 6, 8, 10, 12, 14, 16 };
+
+    volumeReconstruction::KDNode tree2( &points2, ownedIndices2, 0, dim );
+
+    floatType answer3 = 1;
+    floatType answer4 = 1;
+
+    result = tree2.getMinimumValueDimension( 0 );
+
+    if ( !vectorTools::fuzzyEquals( result, answer3 ) ){
+        results << "test_KDNode_getMinimumValueDimension (test 3) & False\n";
+        return 1;
+    }
+
+    result = tree2.getMinimumValueDimension( 1 );
+
+    if ( !vectorTools::fuzzyEquals( result, answer4 ) ){
+        results << "test_KDNode_getMinimumValueDimension (test 4) & False\n";
+        return 1;
+    }
+
+    results << "test_KDNode_getMinimumValueDimension & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -222,6 +278,7 @@ int main(){
     test_dualContouring_loadFunction( results );
     test_KDNode_constructor( results );
     test_KDNode_getIndex( results );
+    test_KDNode_getMinimumValueDimension( results );
 
     //Close the results file
     results.close();

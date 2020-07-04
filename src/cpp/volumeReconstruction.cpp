@@ -58,14 +58,14 @@ namespace volumeReconstruction{
         //Determine which dimension has the largest variation. That is the axis
         //we want to split our domain by
         floatVector delta = upperBound - lowerBound;
-        unsigned int axis = 0;
-        floatType deltaMax = delta[ axis ];
+        _axis = 0;
+        floatType deltaMax = delta[ _axis ];
 
         for ( auto v = delta.begin( ) + 1; v != delta.end( ); v++ ){
 
             if ( deltaMax < *v ){
 
-                axis = v - delta.begin( );
+                _axis = v - delta.begin( );
                 deltaMax = *v;
 
             }            
@@ -80,7 +80,7 @@ namespace volumeReconstruction{
 
         for ( auto index = ownedIndices.begin( ); index != ownedIndices.end( ); index++ ){
 
-            values.push_back( valueMap( &( *index), &( *_points )[ *index + axis ] ) );
+            values.push_back( valueMap( &( *index), &( *_points )[ *index + _axis ] ) );
 
         }
 
@@ -138,18 +138,53 @@ namespace volumeReconstruction{
         return &_index;
     }
 
-    floatVector KDNode::getUpperBound( unsigned int &dim ){
+    floatType KDNode::getMinimumValueDimension( const unsigned int &d ){
         /*!
-         * Get the upper bound of the points in the KD tree
+         * Get the minimum value of a given dimension in the tree
+         *
+         * :param const unsigned int &d: The dimension ( starting at zero ) of each point to search
          */
 
-        if ( right_child ){
-            
-            return right_child->getUpperBound( dim );
+        if ( _axis == d ){
+
+            if ( left_child ){
+
+                return left_child->getMinimumValueDimension( d );
+
+            }
+            else{
+
+                return ( *_points )[ _index + d ];
+
+            }
+
+        }
+        else{
+
+            if ( ( left_child ) && ( !right_child ) ){
+
+                return left_child->getMinimumValueDimension( d );
+
+            }
+            else if ( ( !left_child ) && ( right_child ) ){
+
+                return right_child->getMinimumValueDimension( d );
+
+            }
+            else if ( ( left_child ) && ( right_child ) ){
+
+                return std::fmin( left_child->getMinimumValueDimension( d ),
+                                  right_child->getMinimumValueDimension( d ) );
+
+            }
+            else{
+
+                return ( *_points )[ _index + d ];
+
+            }
 
         }
 
-        return floatVector( _points->begin( ) + _index, _points->begin( ) + _index + dim );
     }
 
     volumeReconstructionBase::volumeReconstructionBase( ){
