@@ -8,6 +8,14 @@
 
 namespace volumeReconstruction{
 
+    KDNode::KDNode( ){
+        /*!
+         * The default constructor for the KD tree
+         */
+
+        return;
+    }
+
     KDNode::KDNode( const floatVector *points, const uIntVector &ownedIndices,
                     const unsigned int &depth, const unsigned int &dim ){
 
@@ -502,7 +510,16 @@ namespace volumeReconstruction{
         }
 
         _points = points;
-        _nPoints = _points->size( );
+        _nPoints = _points->size( ) / _dim;
+
+        uIntVector ownedIndices;
+        ownedIndices.reserve( _nPoints );
+        for ( unsigned int i = 0; i < _dim * _nPoints; i+=3 ){
+            ownedIndices.push_back( i );
+        }
+
+        //Form the KD tree
+        _tree = KDNode( _points, ownedIndices, 0, _dim );
 
         return NULL;
     }
@@ -530,7 +547,40 @@ namespace volumeReconstruction{
          * Base initialization
          */
 
-        setInterpolationConfiguration( );
+        errorOut error = setInterpolationConfiguration( );
+
+        if ( error ){
+            errorOut result = new errorNode( "initialize", "Error in setting the interpolation configuration" );
+            result->addNext( error );
+            return result;
+        }
+
+        error = computeGeometryInformation( );
+
+        if ( error ){
+            errorOut result = new errorNode( "initialize", "Error in computation of the base geometry information" );
+            result->addNext( error );
+            return result;
+        }
+
+        return NULL;
+    }
+
+    errorOut volumeReconstructionBase::evaluate( ){
+        /*!
+         * Base function which evaluates the volume reconstruction.
+         *
+         * A child class should call the base class' evaluate function to ensure that
+         * the general information is computed.
+         */
+
+        errorOut error = initialize( );
+
+        if ( error ){
+            errorOut result = new errorNode( "evaluate", "Error in the base class initialize function" );
+            result->addNext( error );
+            return result;
+        }
 
         return NULL;
     }
@@ -580,6 +630,25 @@ namespace volumeReconstruction{
         return NULL;
     }
 
+    errorOut volumeReconstructionBase::computeGeometryInformation( ){
+        /*!
+         * Compute basic geometry information of the domain
+         */
+
+        //Get the domain bounding box
+        _upperBounds.resize( _dim );
+        _lowerBounds.resize( _dim );
+
+        for ( unsigned int i = 0; i < _dim; i++ ){
+
+            _upperBounds[ i ] = _tree.getMaximumValueDimension( i );
+            _lowerBounds[ i ] = _tree.getMinimumValueDimension( i );
+
+        }
+        
+        return NULL;
+    }
+
     const floatVector *volumeReconstructionBase::getPoints( ){
         /*!
          * Get the points used in this class
@@ -594,6 +663,22 @@ namespace volumeReconstruction{
          */
 
         return _functionValues;
+    }
+
+    const floatVector *volumeReconstructionBase::getLowerBounds( ){
+        /*!
+         * Get the lower bounds of the domain
+         */
+
+        return &_lowerBounds;
+    }
+
+    const floatVector *volumeReconstructionBase::getUpperBounds( ){
+        /*!
+         * Get the upper bounds of the domain
+         */
+
+        return &_upperBounds;
     }
 
     /*=========================================================================
@@ -636,6 +721,31 @@ namespace volumeReconstruction{
 
         }
 
+        if ( !_config[ "discretization_interval" ] ){
+
+            _config[ "discretization_interval" ] = 10;
+
+        }
+
         return NULL;
     }
+
+    errorOut dualContouring::evaluate( ){
+        /*!
+         * Evaluate the dual contouring volume reconstruction
+         */
+
+        //Preserve the base class evaluate
+        errorOut error = volumeReconstructionBase::evaluate( );
+
+        if ( error ){
+            errorOut result = new errorNode( "evaluate", "Error in base class evaluate" );
+            result->addNext( error );
+            return result;
+        }
+
+        return NULL;
+    }
+
+    errorOut interpolateFunctionToBackgroundGrid( );
 }

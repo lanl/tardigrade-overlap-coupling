@@ -40,6 +40,7 @@ namespace volumeReconstruction{
         public:
 
             //Constructor
+            KDNode( );
             KDNode( const floatVector *points, const uIntVector &ownedIndices,
                     const unsigned int &depth, const unsigned int &dim );
 
@@ -92,14 +93,22 @@ namespace volumeReconstruction{
             //Main functions
             errorOut loadPoints( const floatVector *points );
             errorOut loadFunction( const floatVector *function );
+            virtual errorOut evaluate( );
 
             //Interface functions
             const floatVector *getPoints( );
             const floatVector *getFunction( );
 
+            const floatVector *getLowerBounds( );
+            const floatVector *getUpperBounds( );
+
         protected:
 
             unsigned int _dim = 3; //The dimension is hard coded to 3
+                                   //It will be attempted to make the
+                                   //code as general as possible but
+                                   //only 3D will be explicitly 
+                                   //implemented
 
             virtual errorOut initialize( );
 
@@ -109,15 +118,19 @@ namespace volumeReconstruction{
             std::string _type;
 
             const floatVector *_points;
+            KDNode _tree;
             floatType _functionValue;
             const floatVector *_functionValues = NULL;
             unsigned int _nPoints;
 
-            errorOut setInterpolationConfiguration( );
-
         private:
 
             std::shared_ptr< volumeReconstructionBase > create( const std::string &type );
+            floatVector _upperBounds;
+            floatVector _lowerBounds;
+
+            errorOut setInterpolationConfiguration( );
+            errorOut computeGeometryInformation( );
     };
 
     //Dual contouring class
@@ -136,9 +149,13 @@ namespace volumeReconstruction{
             dualContouring( );
             dualContouring( const YAML::Node &configuration );
 
+            errorOut evaluate( );
+
         protected:
 
             errorOut initialize( );
+
+            errorOut interpolateFunctionToBackgroundGrid( );
 
     };
 }

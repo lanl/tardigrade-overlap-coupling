@@ -132,7 +132,7 @@ int test_dualContouring_loadFunction( std::ofstream &results ){
 
     }
 
-    floatVector function = { -1, -2, 1, 7, 8, 10 };
+    floatVector function = { -1, 10 };
 
     error = dc.loadFunction( &function );
 
@@ -481,6 +481,82 @@ int test_KDNode_getPointsInRange( std::ofstream &results ){
     return 0;
 }
 
+int test_dualContouring_evaluate( std::ofstream &results ){
+    /*!
+     * Test the dualContouring evaluate function. This prepares the 
+     * volume reconstruction object to perform the other functions
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    floatVector points =
+        {
+            0.88993453,  0.76248591, -0.93419017,  0.16825499, -0.64930721,
+           -0.02736989,  0.3818072 , -0.56789234,  0.19636903, -0.01416032,
+           -0.0726343 , -0.17899304,  0.58038292,  0.49538273, -0.16969211,
+           -0.01199516,  0.83431932, -0.5944871 ,  0.68423515, -0.78823811,
+           -0.30881808,  0.57273371, -0.3135023 , -0.0364649 ,  0.79618035,
+           -0.36185261, -0.1701662 ,  0.4627748 , -0.22219916, -0.87057911,
+           -0.34563548, -0.32495209,  0.90188535, -0.16083641, -0.67036656,
+            0.04278752, -0.72313702, -0.62661373,  0.04437484, -0.62416924,
+            0.3790917 , -0.99593042, -0.4127237 , -0.33142047,  0.91994519,
+           -0.20164988,  0.48012869, -0.21532596,  0.92378245,  0.03305427,
+            0.64008042,  0.36990853,  0.20280656,  0.82268547,  0.70533715,
+            0.37676147,  0.16014946,  0.85054661,  0.82638332, -0.63426782
+        };
+
+    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    volumeReconstruction::dualContouring dc( yf );
+
+    if ( dc.getError ( ) ){
+
+        dc.getError( )->print( );
+
+        results << "test_dualContouring_evaluate & False\n";
+        return 1;
+
+    }
+
+    errorOut error = dc.loadPoints( &points );
+
+    if ( error ){
+        error->print( );
+        results << "test_dualContouring_evaluate & False\n";
+        return 1;
+    }
+
+    error = dc.evaluate( );
+
+    if ( error ){
+        error->print( );
+        results << "test_dualContouring_evaluate & False\n";
+        return 1;
+    }
+
+    const floatVector upperBoundsAnswer = { 0.92378245, 0.83431932, 0.91994519 };
+
+    const floatVector lowerBoundsAnswer = { -0.72313702, -0.78823811, -0.99593042 };
+
+
+    const floatVector* upperBoundsResult = dc.getUpperBounds( );
+    const floatVector* lowerBoundsResult = dc.getLowerBounds( );
+
+    if ( !vectorTools::fuzzyEquals( *upperBoundsResult, upperBoundsAnswer ) ){
+        vectorTools::print( *upperBoundsResult );
+        results << "test_dualContouring_evaluate (test 1) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( *lowerBoundsResult, lowerBoundsAnswer ) ){
+        vectorTools::print( *lowerBoundsResult );
+        results << "test_dualContouring_evaluate (test 2) & False\n";
+        return 1;
+    }
+
+    results << "test_dualContouring_evaluate & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -496,6 +572,8 @@ int main(){
     test_dualContouring_constructor( results );
     test_dualContouring_loadPoints( results );
     test_dualContouring_loadFunction( results );
+    test_dualContouring_evaluate( results );
+
     test_KDNode_constructor( results );
     test_KDNode_getIndex( results );
     test_KDNode_getMinimumValueDimension( results );
