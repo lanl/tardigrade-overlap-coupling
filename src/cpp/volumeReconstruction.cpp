@@ -721,9 +721,45 @@ namespace volumeReconstruction{
 
         }
 
-        if ( !_config[ "discretization_interval" ] ){
+        if ( !_config[ "interpolation" ][ "discretization_count" ] ){
 
-            _config[ "discretization_interval" ] = 10;
+            _config[ "interpolation" ][ "discretization_count" ] = std::max( ( unsigned int )( std::pow( ( floatType )_nPoints, 1. / 3. ) ),
+                                                                                                         ( unsigned int )1 );
+
+        }
+
+        if ( _config[ "interpolation" ][ "discretization_count" ].IsScalar( ) ){
+
+            unsigned int v = _config[ "interpolation" ][ "discretization_count" ].as< unsigned int >( );
+            _domainDiscretization = { v, v, v };
+
+        }
+        else if ( _config[ "interpolation" ][ "discretization_count" ].IsSequence( ) ){
+
+            _domainDiscretization.resize( _config[ "interpolation" ][ "discretization_count" ].size( ) );
+
+            if ( _domainDiscretization.size( ) != _dim ){
+
+                return new errorNode( "initialize",
+                                      "The number of discretization indices ( " + std::to_string( _domainDiscretization.size( ) ) 
+                                      + " ) is not the same as the dimension ( " + std::to_string( _dim ) + " )" );
+
+            }
+
+            unsigned int i = 0;
+            for ( auto it  = _config[ "interpolation" ][ "discretization_count" ].begin( );
+                       it != _config[ "interpolation" ][ "discretization_count" ].end( );
+                       it++ ){
+
+                _domainDiscretization[ i ] = it->as< unsigned int>( );
+
+                i++;
+            }
+
+        }
+        else{
+            
+            return new errorNode( "initialize", "The type of 'discretization_count' must be a scalar or sequence" );
 
         }
 

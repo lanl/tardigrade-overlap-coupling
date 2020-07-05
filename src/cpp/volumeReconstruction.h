@@ -157,6 +157,10 @@ namespace volumeReconstruction{
 
             errorOut interpolateFunctionToBackgroundGrid( );
 
+        private:
+
+            uIntVector _domainDiscretization;
+
     };
 }
 
