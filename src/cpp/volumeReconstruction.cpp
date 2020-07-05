@@ -186,24 +186,8 @@ namespace volumeReconstruction{
         }
 
         //Check if the current point is within the range
-        if ( _depth == 0 ){
-            std::cout << "upperBounds: "; vectorTools::print( upperBounds );
-            std::cout << "lowerBounds: "; vectorTools::print( lowerBounds );
-        }
-        std::cout << "depth: " << _depth << "\n";
-        std::cout << "index: " << _index << "\n";
-        std::cout << "axis:  " << _axis  << "\n";
         upperDelta = upperBounds - median;
         lowerDelta = median - lowerBounds;
-
-        std::cout << "median:      "; vectorTools::print( median );
-        std::cout << "domainUpperBounds: "; vectorTools::print( *domainUpperBounds );
-        std::cout << "domainLowerBounds: "; vectorTools::print( *domainLowerBounds );
-
-        std::cout << "  median: "; vectorTools::print( median );
-        std::cout << "    upper: "; vectorTools::print( upperDelta );
-        std::cout << "    lower: "; vectorTools::print( lowerDelta );
-        std::cout << "\n";
 
         if ( ( std::all_of( upperDelta.begin( ),
                             upperDelta.end( ),
@@ -212,32 +196,33 @@ namespace volumeReconstruction{
                             lowerDelta.end( ),
                             [&]( floatType v ){ return v >= 0; } ) ){
 
-            std::cout << "saving index\n";
             indices.push_back( _index );
 
         }
 
-        //Check the left child exists and is within range
+        //Check the left child exists and is within range for the current axis
         if ( ( left_child ) &&
-             std::all_of( lowerDelta.begin( ),
-                          lowerDelta.end( ),
-                          [&]( floatType v ){ return v >= 0; } ) ){
+             lowerDelta[ _axis ] >= 0 ){
+
+             floatVector newDomainUpperBounds = *domainUpperBounds;
+             newDomainUpperBounds[ _axis ] = median[ _axis ];
 
              left_child->getPointsInRange( upperBounds, lowerBounds,
                                            indices,
-                                           &median, domainLowerBounds );
+                                           &newDomainUpperBounds, domainLowerBounds );
 
         }
 
         //Check the right child exists and is within range
         if ( ( right_child ) &&
-             std::all_of( upperDelta.begin( ),
-                          upperDelta.end( ),
-                          [&]( floatType v ){ return v >= 0; } ) ){
+             upperDelta[ _axis ] >= 0 ){
+
+             floatVector newDomainLowerBounds = *domainLowerBounds;
+             newDomainLowerBounds[ _axis ] = median[ _axis ];
 
              right_child->getPointsInRange( upperBounds, lowerBounds,
                                             indices,
-                                            domainUpperBounds, &median );
+                                            domainUpperBounds, &newDomainLowerBounds );
 
         }
 

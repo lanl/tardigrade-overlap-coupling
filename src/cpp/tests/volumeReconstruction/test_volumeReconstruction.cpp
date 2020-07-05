@@ -420,8 +420,6 @@ int test_KDNode_getPointsInRange( std::ofstream &results ){
     tree.getPointsInRange( upperBound, lowerBound, result );
 
     if ( !vectorTools::fuzzyEquals( result, answer ) ){
-        vectorTools::print( result );
-        vectorTools::print( answer );
         results << "test_KDNode_getPointsInRange (test 1) & False\n";
         return 1;
     }
@@ -441,8 +439,6 @@ int test_KDNode_getPointsInRange( std::ofstream &results ){
     tree2.getPointsInRange( upperBound, lowerBound, result );
 
     if ( !vectorTools::fuzzyEquals( result, answer ) ){
-        vectorTools::print( result );
-        vectorTools::print( answer );
         results << "test_KDNode_getPointsInRange (test 2) & False\n";
         return 1;
     }
@@ -467,7 +463,7 @@ int test_KDNode_getPointsInRange( std::ofstream &results ){
 
     volumeReconstruction::KDNode tree3( &points3, ownedIndices3, 0, 3 );
 
-    answer = { 3, 9, 21 };
+    answer = { 21, 9, 3 };
 
     upperBound = {  0.75,  0.35,  0.0 };
     lowerBound = { -0.70, -0.70, -0.7 };
@@ -477,8 +473,6 @@ int test_KDNode_getPointsInRange( std::ofstream &results ){
     tree3.getPointsInRange( upperBound, lowerBound, result );
 
     if ( !vectorTools::fuzzyEquals( result, answer ) ){
-        vectorTools::print( result );
-        vectorTools::print( answer );
         results << "test_KDNode_getPointsInRange (test 3) & False\n";
         return 1;
     }
