@@ -49,6 +49,13 @@ namespace volumeReconstruction{
 
             floatType getMaximumValueDimension( const unsigned int &d );
 
+            void getPointsInRange( const floatVector &upperBounds, const floatVector &lowerBounds,
+                                   uIntVector &indices,
+                                   floatVector *domainUpperBounds = NULL,
+                                   floatVector *domainLowerBounds = NULL);
+
+            void printData( const unsigned int &dim );
+
         private:
             const floatVector *_points;
             unsigned int _index;

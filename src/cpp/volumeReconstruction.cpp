@@ -138,6 +138,111 @@ namespace volumeReconstruction{
         return &_index;
     }
 
+    void KDNode::getPointsInRange( const floatVector &upperBounds, const floatVector &lowerBounds,
+                                   uIntVector &indices,
+                                   floatVector *domainUpperBounds,
+                                   floatVector *domainLowerBounds ){
+        /*!
+         * Get all of the points within the range specified by the rectangular boundary defined by the bounds
+         *
+         * :param const floatVector &upperBounds: The upper bounds of the boundary
+         * :param const floatVector &lowerBounds: The lower bounds of the boundary
+         * :param uIntVector &indices: The indices of the points ( or rather their first index in the point vector )
+         *     of the points contained within the boundary
+         * :param floatVector *domainUpperBounds: The upper boundary of the current domain. If NULL it will be
+         *     calculated
+         * :param floatVector &domainLowerBounds: The lower boundary of the current domain. If NULL it will be
+         *     calculated
+         */
+
+        //Get the dimension
+        unsigned int dim = upperBounds.size( );
+
+        floatVector _domainUpperBounds;
+        floatVector _domainLowerBounds;
+
+        //Assemble the current point
+        floatVector median( _points->begin( ) + _index,
+                            _points->begin( ) + _index + dim );
+
+        floatVector upperDelta, lowerDelta;
+
+        if( !domainUpperBounds ){
+            
+            _domainUpperBounds = floatVector( dim );
+            _domainLowerBounds = floatVector( dim );
+
+            for ( unsigned int i = 0; i < dim; i++ ){
+
+                _domainUpperBounds[ i ] = getMaximumValueDimension( i );
+                _domainLowerBounds[ i ] = getMinimumValueDimension( i );
+
+            }
+
+            //Reassign the pointers
+            domainUpperBounds = &_domainUpperBounds;
+            domainLowerBounds = &_domainLowerBounds;
+
+        }
+
+        //Check if the current point is within the range
+        if ( _depth == 0 ){
+            std::cout << "upperBounds: "; vectorTools::print( upperBounds );
+            std::cout << "lowerBounds: "; vectorTools::print( lowerBounds );
+        }
+        std::cout << "depth: " << _depth << "\n";
+        std::cout << "index: " << _index << "\n";
+        std::cout << "axis:  " << _axis  << "\n";
+        upperDelta = upperBounds - median;
+        lowerDelta = median - lowerBounds;
+
+        std::cout << "median:      "; vectorTools::print( median );
+        std::cout << "domainUpperBounds: "; vectorTools::print( *domainUpperBounds );
+        std::cout << "domainLowerBounds: "; vectorTools::print( *domainLowerBounds );
+
+        std::cout << "  median: "; vectorTools::print( median );
+        std::cout << "    upper: "; vectorTools::print( upperDelta );
+        std::cout << "    lower: "; vectorTools::print( lowerDelta );
+        std::cout << "\n";
+
+        if ( ( std::all_of( upperDelta.begin( ),
+                            upperDelta.end( ),
+                            [&]( floatType v ){ return v >= 0; } ) ) &&
+               std::all_of( lowerDelta.begin( ),
+                            lowerDelta.end( ),
+                            [&]( floatType v ){ return v >= 0; } ) ){
+
+            std::cout << "saving index\n";
+            indices.push_back( _index );
+
+        }
+
+        //Check the left child exists and is within range
+        if ( ( left_child ) &&
+             std::all_of( lowerDelta.begin( ),
+                          lowerDelta.end( ),
+                          [&]( floatType v ){ return v >= 0; } ) ){
+
+             left_child->getPointsInRange( upperBounds, lowerBounds,
+                                           indices,
+                                           &median, domainLowerBounds );
+
+        }
+
+        //Check the right child exists and is within range
+        if ( ( right_child ) &&
+             std::all_of( upperDelta.begin( ),
+                          upperDelta.end( ),
+                          [&]( floatType v ){ return v >= 0; } ) ){
+
+             right_child->getPointsInRange( upperBounds, lowerBounds,
+                                            indices,
+                                            domainUpperBounds, &median );
+
+        }
+
+    }
+
     floatType KDNode::getMinimumValueDimension( const unsigned int &d ){
         /*!
          * Get the minimum value of a given dimension in the tree
@@ -249,6 +354,41 @@ namespace volumeReconstruction{
         }
 
     }
+
+    void KDNode::printData( const unsigned int &dim ){
+        /*!
+         * Print the data associated with this node to the terminal
+         */
+
+        std::cout << "NODE: " << _index << "\n";
+        std::cout << "  depth: " << _depth << "\n";
+        std::cout << "  value: "; vectorTools::print( floatVector( _points->begin( ) + _index,
+                                                                   _points->begin( ) + _index + dim ) );
+        std::cout << "  left: ";
+        if ( left_child ){
+            std::cout << *left_child->getIndex( ) << "\n";
+        }
+        else{
+            std::cout << "NULL\n";
+        }
+        std::cout << "  right: ";
+        if ( right_child ){
+            std::cout << *right_child->getIndex( ) << "\n";
+        }
+        else{
+            std::cout << "NULL\n";
+        }
+        std::cout << "\n";
+
+        if ( left_child ){
+            left_child->printData( dim );
+        }
+
+        if ( right_child ){
+            right_child->printData( dim );
+        }
+    }
+
 
     volumeReconstructionBase::volumeReconstructionBase( ){
         /*!
