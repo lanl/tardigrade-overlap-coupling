@@ -665,13 +665,13 @@ namespace volumeReconstruction{
         return _functionValues;
     }
 
-    errorOut volumeReconstructionBase::getFunctionValue( const unsigned int i, const floatType *value ){
+    errorOut volumeReconstructionBase::getFunctionValue( const unsigned int i, floatType &value ){
         /*!
          * Get the function value at the provided index. This is the index of the function-value vector
          * corresponding to a given point not the index in the points vector.
          *
          * :param const unsigned int i: The index of the point
-         * :param const floatType *value: A pointer to the value of the function
+         * :param floatType &value: The value of the function
          */
 
         if ( i > _nPoints ){
@@ -683,12 +683,12 @@ namespace volumeReconstruction{
 
         if ( !_functionValues ){
 
-            value = &_functionValue;
+            value = _functionValue;
 
         }
         else{
 
-            value = _functionValues->data( ) + i;
+            value = ( *_functionValues )[ i ];
 
         }
 
@@ -811,6 +811,26 @@ namespace volumeReconstruction{
         else{
             
             _config[ "interpolation" ][ "exterior_relative_delta" ] = _exteriorRelativeDelta;
+
+        }
+
+        if ( _config[ "interpolation" ][ "isosurface_cutoff" ] ){
+
+            if ( _config[ "interpolation" ][ "isosurface_cutoff" ].IsScalar( ) ){
+
+                _isosurfaceCutoff = _config[ "interpolation" ][ "isosurface_cutoff" ].as< floatType >( );
+
+            }
+            else{
+
+                return new errorNode( "initialize", "'isosurface_cutoff' must be a floating point number" );
+
+            }
+
+        }
+        else{
+
+            _config[ "interpolation" ][ "isosurface_cutoff" ] = _isosurfaceCutoff;
 
         }
 
@@ -966,7 +986,7 @@ namespace volumeReconstruction{
 
         //Initialize the implicit function's values at the nodes
         implicitFunctionNodalValues = floatVector( nodes.size( ), 0 ); 
-        floatType *fxn = NULL;
+        floatType fxn;
 
         for ( auto pI = pointIndices.begin( ); pI != pointIndices.end( ); pI++ ){
 
@@ -1012,7 +1032,7 @@ namespace volumeReconstruction{
             }
 
             //Project the implicit function to the nodes
-            implicitFunctionNodalValues += ( *fxn ) * elementShapeFunctions;
+            implicitFunctionNodalValues += ( fxn - _isosurfaceCutoff ) * elementShapeFunctions;
 
         }
 

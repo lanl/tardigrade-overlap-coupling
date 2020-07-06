@@ -99,7 +99,7 @@ namespace volumeReconstruction{
             //Interface functions
             const floatVector *getPoints( );
             const floatVector *getFunction( );
-            errorOut getFunctionValue( const unsigned int i, const floatType *value );
+            errorOut getFunctionValue( const unsigned int i, floatType &value );
 
             const floatVector *getLowerBounds( );
             const floatVector *getUpperBounds( );
@@ -121,7 +121,7 @@ namespace volumeReconstruction{
 
             const floatVector *_points;
             KDNode _tree;
-            floatType _functionValue;
+            floatType _functionValue = 1;
             const floatVector *_functionValues = NULL;
             unsigned int _nPoints;
 
@@ -172,6 +172,7 @@ namespace volumeReconstruction{
                                                                    floatVector &implicitFunctionNodalValues );
 
             std::string _elementType = "Hex8";
+            floatType _isosurfaceCutoff = 0.5;
 
     };
 }

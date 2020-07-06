@@ -54,6 +54,8 @@ int test_dualContouring_constructor( std::ofstream &results ){
 int test_dualContouring_loadPoints( std::ofstream &results ){
     /*!
      * Test for loading the points into the object
+     *
+     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 1, 2, 3, 4, 5, 6 };
@@ -106,6 +108,8 @@ int test_dualContouring_loadPoints( std::ofstream &results ){
 int test_dualContouring_loadFunction( std::ofstream &results ){
     /*!
      * Test for loading the function into the object
+     *
+     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 1, 2, 3, 4, 5, 6 };
@@ -161,6 +165,110 @@ int test_dualContouring_loadFunction( std::ofstream &results ){
     }
 
     results << "test_dualContouring_loadFunction & True\n";
+    return 0;
+}
+
+int test_dualContouring_getFunctionValue( std::ofstream &results ){
+    /*!
+     * Test for getting a particular value of the function
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    floatVector points = { 1, 2, 3, 4, 5, 6 };
+
+    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    volumeReconstruction::dualContouring dc( yf );
+
+    if ( dc.getError ( ) ){
+
+        dc.getError( )->print( );
+
+        results << "test_dualContouring_getFunctionValue & False\n";
+        return 1;
+
+    }
+
+    errorOut error = dc.loadPoints( &points );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_dualContouring_getFunctionValue & False\n";
+        return 1;
+
+    }
+
+    floatVector function = { -1, 10 };
+
+    error = dc.loadFunction( &function );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_dualContouring_getFunctionValue & False\n";
+        return 1;
+
+    }
+
+    floatType result = 0;
+    error = dc.getFunctionValue( 0, result );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_dualContouring_getFunctionValue & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( function [ 0 ], result ) ){
+
+        results << "test_dualContouring_getFunctionValue (test 1) & False\n";
+        return 1;
+
+    }
+
+    volumeReconstruction::dualContouring dc2( yf );
+
+    if ( dc2.getError ( ) ){
+
+        dc2.getError( )->print( );
+
+        results << "test_dualContouring_getFunctionValue & False\n";
+        return 1;
+
+    }
+
+    error = dc2.loadPoints( &points );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_dualContouring_getFunctionValue & False\n";
+        return 1;
+
+    }
+
+    result = 0;
+    error = dc2.getFunctionValue( 0, result );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_dualContouring_getFunctionValue & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( 1., result ) ){
+
+        results << "test_dualContouring_getFunctionValue (test 2) & False\n";
+        return 1;
+
+    }
+
+    results << "test_dualContouring_getFunctionValue & True\n";
     return 0;
 }
 
@@ -572,6 +680,7 @@ int main(){
     test_dualContouring_constructor( results );
     test_dualContouring_loadPoints( results );
     test_dualContouring_loadFunction( results );
+    test_dualContouring_getFunctionValue( results );
     test_dualContouring_evaluate( results );
 
     test_KDNode_constructor( results );
