@@ -763,6 +763,36 @@ namespace volumeReconstruction{
 
         }
 
+        if ( _config[ "interpolation" ][ "exterior_relative_delta" ] ){
+
+            if ( _config[ "interpolation" ][ "exterior_relative_delta" ].IsScalar( ) ){
+
+                _exteriorRelativeDelta = _config[ "interpolation" ][ "exterior_relative_delta" ].as< floatType >( );
+
+            }
+            else{
+
+                return new errorNode( "initialize", "Exterior relative delta must be a floating point number" );
+
+            }
+
+        }
+        else{
+            
+            _config[ "interpolation" ][ "exterior_relative_delta" ] = _exteriorRelativeDelta;
+
+        }
+
+        error = setGridSpacing( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "initialize", "Error in setting the grid spacing" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
     }
 
@@ -778,6 +808,47 @@ namespace volumeReconstruction{
             errorOut result = new errorNode( "evaluate", "Error in base class evaluate" );
             result->addNext( error );
             return result;
+        }
+
+        return NULL;
+    }
+
+    errorOut dualContouring::setGridSpacing( ){
+        /*!
+         * Set the spacing for the background grid
+         */
+
+        //The change in spacing
+        floatType delta;
+
+        //Set the grid locations
+        _gridLocations.resize( _dim ); //Resize the grid to the dimension
+
+        //Get the bounds
+        const floatVector *upperBounds = getUpperBounds( );
+        const floatVector *lowerBounds = getLowerBounds( );
+
+        for ( unsigned int i = 0; i < _dim; i++ ){
+
+            //With the domain being split into n discretizations it requires n + 1 nodes
+            //We also add two additional nodes on the outside of the grid to provide
+            //a hard boundary. These nodes are located very close to the outside
+            _gridLocations[ i ].resize( _domainDiscretization[ i ] + 3 );
+
+            //Set the displacement of the nodes
+            delta = ( ( *upperBounds )[ i ] - ( *lowerBounds )[ i ] ) / _domainDiscretization[ i ];
+
+            for ( unsigned int j = 0; j < _domainDiscretization[ i ] + 1; j++ ){
+
+                _gridLocations[ i ][ j + 1 ] = ( *lowerBounds )[ i ] + j * delta;
+
+            }
+
+            _gridLocations[ i ][ 0 ] = ( *lowerBounds )[ i ]
+                                     - ( _exteriorRelativeDelta * delta + _absoluteTolerance );
+            _gridLocations[ i ][ _domainDiscretization[ i ] + 2 ] = ( *upperBounds )[ i ]
+                                                                  + ( _exteriorRelativeDelta * delta + _absoluteTolerance );
+
         }
 
         return NULL;

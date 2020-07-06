@@ -155,11 +155,17 @@ namespace volumeReconstruction{
 
             errorOut initialize( );
 
+            errorOut setGridSpacing( );
+
             errorOut interpolateFunctionToBackgroundGrid( );
 
         private:
 
             uIntVector _domainDiscretization;
+            floatMatrix _gridLocations;
+            floatType _exteriorRelativeDelta = 1e-3;
+
+            floatType _absoluteTolerance = 1e-9;
 
     };
 }
