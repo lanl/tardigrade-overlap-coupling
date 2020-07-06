@@ -169,10 +169,14 @@ namespace volumeReconstruction{
 
             floatType _absoluteTolerance = 1e-9;
             errorOut processBackgroundGridElementImplicitFunction( const uIntVector &indices,
-                                                                   floatVector &implicitFunctionNodalValues );
+                                                                   floatVector &implicitFunctionNodalValues,
+                                                                   uIntVector &pointCounts );
+
+            errorOut projectImplicitFunctionToBackgroundGrid( );
 
             std::string _elementType = "Hex8";
             floatType _isosurfaceCutoff = 0.5;
+            floatVector _implicitFunctionValues;
 
     };
 }

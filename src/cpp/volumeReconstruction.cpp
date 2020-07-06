@@ -844,6 +844,16 @@ namespace volumeReconstruction{
 
         }
 
+        error = projectImplicitFunctionToBackgroundGrid( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "initialize", "Error in the projection of the implicit function to the background grid" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
     }
 
@@ -906,19 +916,127 @@ namespace volumeReconstruction{
 
     }
 
+    errorOut dualContouring::projectImplicitFunctionToBackgroundGrid( ){
+        /*!
+         * Interpolate the implicit function to the background grid.
+         *
+         * The way this is done, is not by computing the nodal averages but by computing
+         * the shape-function weighted value of the implicit function at the nodes. Nodal
+         * averages will come into play for the volume and surface integrals.
+         */
+
+        if ( _dim != 3 ){ //This must be 3d
+
+            return new errorNode( "projectImplicitFunctionToBackgroundGrid",
+                                  "A dimension of 3 is required for this routine" );
+
+        }
+
+        //Resize the implicit function values
+        _implicitFunctionValues.resize( _gridLocations[ 0 ].size( ) *
+                                        _gridLocations[ 1 ].size( ) *
+                                        _gridLocations[ 2 ].size( ) );
+
+        uIntVector gridPointCounts( _gridLocations[ 0 ].size( ) *
+                                    _gridLocations[ 1 ].size( ) *
+                                    _gridLocations[ 2 ].size( ) );
+
+        //Loop over the elements
+
+        errorOut error;
+        uIntVector elementIndices;
+        floatVector elementNodalContributions;
+        uIntVector pointCounts;
+
+        unsigned int ngx = _gridLocations[ 0 ].size( );
+        unsigned int ngy = _gridLocations[ 1 ].size( );
+        unsigned int ngz = _gridLocations[ 2 ].size( );
+
+        for ( unsigned int i = 1; i < ngx - 2; i++ ){
+
+            for ( unsigned int j = 1; j < ngy - 2; j++ ){
+
+                for ( unsigned int k = 1; k < ngz - 2; k++ ){
+
+                    //Get the element contribution to the nodal values of the implicit function
+                    elementIndices = { i, j, k };
+                    error = processBackgroundGridElementImplicitFunction( elementIndices, elementNodalContributions, pointCounts );
+                    
+                    if ( error ){
+
+                        errorOut result = new errorNode( "projectImplicitFunctionToBackgroundGrid",
+                                                         "Error in processing the projection of the implicit function to the nodes for the element with the lower cornrer of indices i, j, k: "
+                                                       + std::to_string( i ) + ", "
+                                                       + std::to_string( j ) + ", "
+                                                       + std::to_string( k ) );
+
+                        result->addNext( error );
+                        return result;
+
+                    }
+
+                    //Add those values to the grid
+                    _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j + 0 ) + ( k + 0 ) ] += elementNodalContributions[ 0 ];
+                    _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j + 0 ) + ( k + 0 ) ] += elementNodalContributions[ 1 ];
+                    _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j + 1 ) + ( k + 0 ) ] += elementNodalContributions[ 2 ];
+                    _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j + 1 ) + ( k + 0 ) ] += elementNodalContributions[ 3 ];
+                    _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j + 0 ) + ( k + 1 ) ] += elementNodalContributions[ 4 ];
+                    _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j + 0 ) + ( k + 1 ) ] += elementNodalContributions[ 5 ];
+                    _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j + 1 ) + ( k + 1 ) ] += elementNodalContributions[ 6 ];
+                    _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j + 1 ) + ( k + 1 ) ] += elementNodalContributions[ 7 ];
+
+                    //Add the point counts
+                    gridPointCounts[ ngy * ngz * ( i + 0 ) + ngz * ( j + 0 ) + ( k + 0 ) ] += pointCounts[ 0 ];
+                    gridPointCounts[ ngy * ngz * ( i + 1 ) + ngz * ( j + 0 ) + ( k + 0 ) ] += pointCounts[ 1 ];
+                    gridPointCounts[ ngy * ngz * ( i + 1 ) + ngz * ( j + 1 ) + ( k + 0 ) ] += pointCounts[ 2 ];
+                    gridPointCounts[ ngy * ngz * ( i + 0 ) + ngz * ( j + 1 ) + ( k + 0 ) ] += pointCounts[ 3 ];
+                    gridPointCounts[ ngy * ngz * ( i + 0 ) + ngz * ( j + 0 ) + ( k + 1 ) ] += pointCounts[ 4 ];
+                    gridPointCounts[ ngy * ngz * ( i + 1 ) + ngz * ( j + 0 ) + ( k + 1 ) ] += pointCounts[ 5 ];
+                    gridPointCounts[ ngy * ngz * ( i + 1 ) + ngz * ( j + 1 ) + ( k + 1 ) ] += pointCounts[ 6 ];
+                    gridPointCounts[ ngy * ngz * ( i + 0 ) + ngz * ( j + 1 ) + ( k + 1 ) ] += pointCounts[ 7 ];
+
+                }
+
+            }
+
+        }
+
+        for ( unsigned int i = 1; i < ngx - 1; i++ ){
+
+            for ( unsigned int j = 1; j < ngy - 1; j++ ){
+
+                for ( unsigned int k = 1; k < ngz - 1; k++ ){
+
+                    if ( gridPointCounts[ ngy * ngz * i + ngz * j + k ] > 0 ){
+
+                        _implicitFunctionValues[ ngy * ngz * i + ngz * j + k + 0 ] /=
+                            gridPointCounts[ ngy * ngz * i + ngz * j + k ];
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+    }
+
     errorOut dualContouring::processBackgroundGridElementImplicitFunction( const uIntVector &indices,
-                                                                           floatVector &implicitFunctionNodalValues ){
+                                                                           floatVector &implicitFunctionNodalValues,
+                                                                           uIntVector  &pointCounts ){
         /*!
          * Project the values of the implicit function of the points contained within an element of
-         * the background grid to the background grid's nodes. This projection is done via
-         *
-         * v^n = \sum_{ m = 1 }^{ N^{internalNodes} } N^n( x^m ) v^m
-         *
-         * where v^n is the value of the isosurface weighted by the shape-function value at node n
+         * the background grid to the background grid's nodes. This projection is done by adding the
+         * contribution of the points to the nearest grid node. The resulting implicit function at the 
+         * nodes is the average of all of the points contributing to a individual grid
          *
          * :param const uIntVector &indices: The indices of the lower-left corner of the hex element.
          *     The nodes of the element are the indices provided plus the nodes defined at  i + 1, 
          *     j + 1, k + 1 and the other combinations.
+         * :param floatVector &implicitFunctionNodalValues: The nodal values of the implicit function.
+         * :param uIntVector &pointCounts: The number of points contributing to each node.
          */
 
         if ( _dim != 3 ){
@@ -931,7 +1049,7 @@ namespace volumeReconstruction{
         floatVector ubCoordinates( _dim, 0 );
         for ( auto index = indices.begin( ); index != indices.end( ); index++ ){
 
-            if ( _gridLocations.size( ) <= *index + 1 ){
+            if ( _gridLocations[ index - indices.begin( ) ].size( ) <= *index + 1 ){
 
                 return new errorNode( "processBackgroundGridElementIsosurface",
                                       "An index of " + std::to_string( *index )
@@ -982,45 +1100,43 @@ namespace volumeReconstruction{
             elib::build_element_from_string( _elementType, {}, nodes, qrule->second );
 
         //Compute the local coordinates of the nodes and their shapefunctions and project the 
-        floatVector globalCoordinates, localCoordinates, elementShapeFunctions;
+        floatVector globalCoordinates, localCoordinates, nodesSupported( nodes.size( ), 0 );
+        pointCounts = uIntVector( nodes.size( ), 0 );
 
         //Initialize the implicit function's values at the nodes
-        implicitFunctionNodalValues = floatVector( nodes.size( ), 0 ); 
+        implicitFunctionNodalValues = floatVector( nodes.size( ), 0 );
         floatType fxn;
+
+        floatVector distances( nodes.size( ) );
+        floatVector p;
+
+        floatType minDistance;
 
         for ( auto pI = pointIndices.begin( ); pI != pointIndices.end( ); pI++ ){
 
-            //Get the global coordinates of the point
-            globalCoordinates = floatVector( getPoints( )->begin( ) + *pI,
-                                             getPoints( )->begin( ) + *pI + _dim );
+            //Get the current point's location
+            p = floatVector( getPoints( )->begin( ) + *pI, getPoints( )->begin( ) + *pI + _dim );
 
-            //Compute the shape local coordinates
-            errorOut error = element->compute_local_coordinates( globalCoordinates, localCoordinates );
+            //Compute the distances of the point to the nodes
+            for ( auto node = nodes.begin( ); node != nodes.end( ); node++ ){
 
-            if ( error ){
-
-                errorOut result = new errorNode( "processBackgroundGridElementIsosurface",
-                                                 "Error in computing the local coordinates of the point beginning at index "
-                                                + std::to_string( *pI ) + " of the points vector" );
-                result->addNext( error );
-                return result;
+                distances[ node - nodes.begin( ) ] = vectorTools::l2norm( p - *node );
 
             }
 
-            //Compute the shapefunction values
-            error = element->get_shape_functions( localCoordinates, elementShapeFunctions );
+            //Get the minimum distance
+            minDistance = *std::min_element( distances.begin( ), distances.end( ) );
 
-            if ( error ){
+            //Determine which values are equal to the smallest value
+            for ( auto d = distances.begin( ); d != distances.end( ); d++ ){
 
-                errorOut result = new errorNode( "processBackgroundGridElementIsosurface",
-                                                 "Error in the computation of the shape functions" );
-                result->addNext( error );
-                return result;
+                nodesSupported[ d - distances.begin( ) ] = ( floatType )( vectorTools::fuzzyEquals( *d, minDistance ) );
+                pointCounts[ d - distances.begin( ) ] += nodesSupported[ d - distances.begin( ) ];
 
             }
 
             //Get the implicit function value
-            error = getFunctionValue( *pI / _dim, fxn );
+            errorOut error = getFunctionValue( *pI / _dim, fxn );
 
             if ( error ){
 
@@ -1032,7 +1148,7 @@ namespace volumeReconstruction{
             }
 
             //Project the implicit function to the nodes
-            implicitFunctionNodalValues += ( fxn - _isosurfaceCutoff ) * elementShapeFunctions;
+            implicitFunctionNodalValues += fxn * nodesSupported;
 
         }
 
