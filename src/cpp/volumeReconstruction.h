@@ -99,6 +99,7 @@ namespace volumeReconstruction{
             //Interface functions
             const floatVector *getPoints( );
             const floatVector *getFunction( );
+            errorOut getFunctionValue( const unsigned int i, const floatType *value );
 
             const floatVector *getLowerBounds( );
             const floatVector *getUpperBounds( );
@@ -167,7 +168,8 @@ namespace volumeReconstruction{
             floatType _exteriorRelativeDelta = 1e-3;
 
             floatType _absoluteTolerance = 1e-9;
-            errorOut processBackgroundGridElementIsosurface( const uIntVector &indices );
+            errorOut processBackgroundGridElementImplicitFunction( const uIntVector &indices,
+                                                                   floatVector &implicitFunctionNodalValues );
 
             std::string _elementType = "Hex8";
 

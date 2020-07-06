@@ -665,6 +665,37 @@ namespace volumeReconstruction{
         return _functionValues;
     }
 
+    errorOut volumeReconstructionBase::getFunctionValue( const unsigned int i, const floatType *value ){
+        /*!
+         * Get the function value at the provided index. This is the index of the function-value vector
+         * corresponding to a given point not the index in the points vector.
+         *
+         * :param const unsigned int i: The index of the point
+         * :param const floatType *value: A pointer to the value of the function
+         */
+
+        if ( i > _nPoints ){
+            
+            return new errorNode( "getFunctionValue",
+                                  "The index " + std::to_string( i ) + " is outside of the number of points" );
+
+        }
+
+        if ( !_functionValues ){
+
+            value = &_functionValue;
+
+        }
+        else{
+
+            value = _functionValues->data( ) + i;
+
+        }
+
+        return NULL;
+
+    }
+
     const floatVector *volumeReconstructionBase::getLowerBounds( ){
         /*!
          * Get the lower bounds of the domain
@@ -855,7 +886,8 @@ namespace volumeReconstruction{
 
     }
 
-    errorOut dualContouring::processBackgroundGridElementIsosurface( const uIntVector &indices ){
+    errorOut dualContouring::processBackgroundGridElementImplicitFunction( const uIntVector &indices,
+                                                                           floatVector &implicitFunctionNodalValues ){
         /*!
          * Project the values of the implicit function of the points contained within an element of
          * the background grid to the background grid's nodes. This projection is done via
@@ -928,6 +960,61 @@ namespace volumeReconstruction{
 
         std::unique_ptr< elib::Element > element =
             elib::build_element_from_string( _elementType, {}, nodes, qrule->second );
+
+        //Compute the local coordinates of the nodes and their shapefunctions and project the 
+        floatVector globalCoordinates, localCoordinates, elementShapeFunctions;
+
+        //Initialize the implicit function's values at the nodes
+        implicitFunctionNodalValues = floatVector( nodes.size( ), 0 ); 
+        floatType *fxn = NULL;
+
+        for ( auto pI = pointIndices.begin( ); pI != pointIndices.end( ); pI++ ){
+
+            //Get the global coordinates of the point
+            globalCoordinates = floatVector( getPoints( )->begin( ) + *pI,
+                                             getPoints( )->begin( ) + *pI + _dim );
+
+            //Compute the shape local coordinates
+            errorOut error = element->compute_local_coordinates( globalCoordinates, localCoordinates );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "processBackgroundGridElementIsosurface",
+                                                 "Error in computing the local coordinates of the point beginning at index "
+                                                + std::to_string( *pI ) + " of the points vector" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Compute the shapefunction values
+            error = element->get_shape_functions( localCoordinates, elementShapeFunctions );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "processBackgroundGridElementIsosurface",
+                                                 "Error in the computation of the shape functions" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Get the implicit function value
+            error = getFunctionValue( *pI / _dim, fxn );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "processBackgroundGridElementIsosurface",
+                                                 "Error in getting the function value" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Project the implicit function to the nodes
+            implicitFunctionNodalValues += ( *fxn ) * elementShapeFunctions;
+
+        }
 
         return NULL;
 
