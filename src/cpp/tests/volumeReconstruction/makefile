@@ -21,7 +21,9 @@ HEADER=../../volumeReconstruction.h
 
 ERROROBJECT=error_tools.o
 
-OBJECTS = $(OBJECT) $(TESTOBJECT) $(ERROROBJECT)
+ELEMENTOBJECT=element.o
+
+OBJECTS = $(OBJECT) $(TESTOBJECT) $(ERROROBJECT) $(ELEMENTOBJECT)
 
 #Set the mode due to the method variable
 DBG =
@@ -47,6 +49,9 @@ $(OBJECT): $(SOURCE) $(HEADER) $(ERRORHEADER)
 
 $(ERROROBJECT): $(ERRORSOURCE) $(ERRORHEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=c++11
+
+$(ELEMENTOBJECT): $(ELEMENTSOURCE) $(ELEMENTHEADER)
+	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
 
 clean:
 	rm -f $(EXECUTABLE)

@@ -852,6 +852,85 @@ namespace volumeReconstruction{
         }
 
         return NULL;
+
+    }
+
+    errorOut dualContouring::processBackgroundGridElementIsosurface( const uIntVector &indices ){
+        /*!
+         * Project the values of the implicit function of the points contained within an element of
+         * the background grid to the background grid's nodes. This projection is done via
+         *
+         * v^n = \sum_{ m = 1 }^{ N^{internalNodes} } N^n( x^m ) v^m
+         *
+         * where v^n is the value of the isosurface weighted by the shape-function value at node n
+         *
+         * :param const uIntVector &indices: The indices of the lower-left corner of the hex element.
+         *     The nodes of the element are the indices provided plus the nodes defined at  i + 1, 
+         *     j + 1, k + 1 and the other combinations.
+         */
+
+        if ( _dim != 3 ){
+            return new errorNode( "processBackgroundGridElementIsosurface",
+                                  "A dimension of 3 is required for this routine" );
+        }
+
+        //Compute the location of the nodes
+        floatVector lbCoordinates( _dim, 0 );
+        floatVector ubCoordinates( _dim, 0 );
+        for ( auto index = indices.begin( ); index != indices.end( ); index++ ){
+
+            if ( _gridLocations.size( ) <= *index + 1 ){
+
+                return new errorNode( "processBackgroundGridElementIsosurface",
+                                      "An index of " + std::to_string( *index )
+                                      + " and / or that index plus one is outside the bounds of the defined grid locations" );
+                    
+            }
+            
+            lbCoordinates[ index - indices.begin( ) ] = _gridLocations[ index - indices.begin( ) ][ *index ];
+            ubCoordinates[ index - indices.begin( ) ] = _gridLocations[ index - indices.begin( ) ][ *index + 1 ];
+
+        }
+
+        //Determine the points which are contained within this element
+        uIntVector pointIndices;
+        floatVector domainUpperBounds = *getUpperBounds( );
+        floatVector domainLowerBounds = *getLowerBounds( );
+
+        _tree.getPointsInRange( ubCoordinates, lbCoordinates, pointIndices, &domainUpperBounds, &domainLowerBounds );
+
+        //If there are no points contained within this element, return
+        if ( indices.size( ) == 0 ){
+
+            return NULL;
+
+        }
+
+        //Determine the element's nodes
+        floatMatrix nodes = { { lbCoordinates[ 0 ], lbCoordinates[ 1 ], lbCoordinates[ 2 ] },
+                              { ubCoordinates[ 0 ], lbCoordinates[ 1 ], lbCoordinates[ 2 ] },
+                              { ubCoordinates[ 0 ], ubCoordinates[ 1 ], lbCoordinates[ 2 ] },
+                              { lbCoordinates[ 0 ], ubCoordinates[ 1 ], lbCoordinates[ 2 ] },
+                              { lbCoordinates[ 0 ], lbCoordinates[ 1 ], ubCoordinates[ 2 ] },
+                              { ubCoordinates[ 0 ], lbCoordinates[ 1 ], ubCoordinates[ 2 ] },
+                              { ubCoordinates[ 0 ], ubCoordinates[ 1 ], ubCoordinates[ 2 ] },
+                              { lbCoordinates[ 0 ], ubCoordinates[ 1 ], ubCoordinates[ 2 ] } };
+
+        //Get the element
+        auto qrule = elib::default_qrules.find( _elementType );
+        if ( qrule == elib::default_qrules.end( ) ){
+
+            return new errorNode( "processBackgroundGridElementIsosurface",
+                                  "The default quadruature rule for the background grid element ( " + _elementType
+                                 +" ) was not found" );
+
+        }
+
+        std::unique_ptr< elib::Element > element =
+            elib::build_element_from_string( _elementType, {}, nodes, qrule->second );
+
+        return NULL;
+
     }
 
     errorOut interpolateFunctionToBackgroundGrid( );

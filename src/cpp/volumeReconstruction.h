@@ -12,6 +12,7 @@
 #include<error_tools.h>
 #include<yaml-cpp/yaml.h>
 #include<unordered_map>
+#include<element.h>
 
 namespace volumeReconstruction{
 
@@ -166,6 +167,9 @@ namespace volumeReconstruction{
             floatType _exteriorRelativeDelta = 1e-3;
 
             floatType _absoluteTolerance = 1e-9;
+            errorOut processBackgroundGridElementIsosurface( const uIntVector &indices );
+
+            std::string _elementType = "Hex8";
 
     };
 }
