@@ -961,7 +961,7 @@ namespace volumeReconstruction{
                     //Get the element contribution to the nodal values of the implicit function
                     elementIndices = { i, j, k };
                     error = processBackgroundGridElementImplicitFunction( elementIndices, elementNodalContributions, pointCounts );
-                    
+
                     if ( error ){
 
                         errorOut result = new errorNode( "projectImplicitFunctionToBackgroundGrid",
@@ -1009,7 +1009,7 @@ namespace volumeReconstruction{
 
                     if ( gridPointCounts[ ngy * ngz * i + ngz * j + k ] > 0 ){
 
-                        _implicitFunctionValues[ ngy * ngz * i + ngz * j + k + 0 ] /=
+                        _implicitFunctionValues[ ngy * ngz * i + ngz * j + k ] /=
                             gridPointCounts[ ngy * ngz * i + ngz * j + k ];
 
                     }
