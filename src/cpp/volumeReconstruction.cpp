@@ -752,85 +752,13 @@ namespace volumeReconstruction{
 
         }
 
-        if ( !_config[ "interpolation" ][ "discretization_count" ] ){
+        error = processConfigurationFile( );
 
-            _config[ "interpolation" ][ "discretization_count" ] = std::max( ( unsigned int )( std::pow( ( floatType )_nPoints, 1. / 3. ) ),
-                                                                                                         ( unsigned int )1 );
+        if ( error ){
 
-        }
-
-        if ( _config[ "interpolation" ][ "discretization_count" ].IsScalar( ) ){
-
-            unsigned int v = _config[ "interpolation" ][ "discretization_count" ].as< unsigned int >( );
-            _domainDiscretization = { v, v, v };
-
-        }
-        else if ( _config[ "interpolation" ][ "discretization_count" ].IsSequence( ) ){
-
-            _domainDiscretization.resize( _config[ "interpolation" ][ "discretization_count" ].size( ) );
-
-            if ( _domainDiscretization.size( ) != _dim ){
-
-                return new errorNode( "initialize",
-                                      "The number of discretization indices ( " + std::to_string( _domainDiscretization.size( ) ) 
-                                      + " ) is not the same as the dimension ( " + std::to_string( _dim ) + " )" );
-
-            }
-
-            unsigned int i = 0;
-            for ( auto it  = _config[ "interpolation" ][ "discretization_count" ].begin( );
-                       it != _config[ "interpolation" ][ "discretization_count" ].end( );
-                       it++ ){
-
-                _domainDiscretization[ i ] = it->as< unsigned int>( );
-
-                i++;
-            }
-
-        }
-        else{
-            
-            return new errorNode( "initialize", "The type of 'discretization_count' must be a scalar or sequence" );
-
-        }
-
-        if ( _config[ "interpolation" ][ "exterior_relative_delta" ] ){
-
-            if ( _config[ "interpolation" ][ "exterior_relative_delta" ].IsScalar( ) ){
-
-                _exteriorRelativeDelta = _config[ "interpolation" ][ "exterior_relative_delta" ].as< floatType >( );
-
-            }
-            else{
-
-                return new errorNode( "initialize", "Exterior relative delta must be a floating point number" );
-
-            }
-
-        }
-        else{
-            
-            _config[ "interpolation" ][ "exterior_relative_delta" ] = _exteriorRelativeDelta;
-
-        }
-
-        if ( _config[ "interpolation" ][ "isosurface_cutoff" ] ){
-
-            if ( _config[ "interpolation" ][ "isosurface_cutoff" ].IsScalar( ) ){
-
-                _isosurfaceCutoff = _config[ "interpolation" ][ "isosurface_cutoff" ].as< floatType >( );
-
-            }
-            else{
-
-                return new errorNode( "initialize", "'isosurface_cutoff' must be a floating point number" );
-
-            }
-
-        }
-        else{
-
-            _config[ "interpolation" ][ "isosurface_cutoff" ] = _isosurfaceCutoff;
+            errorOut result = new errorNode( "initialize", "Error in processing the configuraiton file" );
+            result->addNext( error );
+            return result;
 
         }
 
@@ -851,6 +779,126 @@ namespace volumeReconstruction{
             errorOut result = new errorNode( "initialize", "Error in the projection of the implicit function to the background grid" );
             result->addNext( error );
             return result;
+
+        }
+
+        error = initializeInternalAndBoundaryCells( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "initialize", "Error when initializing the interior and boundary cells of the background grid" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+    }
+
+    errorOut dualContouring::processConfigurationFile( ){
+        /*!
+         * Process the configuration file reading options and setting defaults.
+         */
+
+        if ( !_config[ "interpolation" ][ "discretization_count" ] ){
+
+            _config[ "interpolation" ][ "discretization_count" ] = std::max( ( unsigned int )( std::pow( ( floatType )_nPoints, 1. / 3. ) ),
+                                                                                                         ( unsigned int )1 );
+
+        }
+
+        if ( _config[ "interpolation" ][ "discretization_count" ].IsScalar( ) ){
+
+            unsigned int v = _config[ "interpolation" ][ "discretization_count" ].as< unsigned int >( );
+            _domainDiscretization = { v, v, v };
+
+        }
+        else if ( _config[ "interpolation" ][ "discretization_count" ].IsSequence( ) ){
+
+            _domainDiscretization.resize( _config[ "interpolation" ][ "discretization_count" ].size( ) );
+
+            if ( _domainDiscretization.size( ) != _dim ){
+
+                return new errorNode( "processConfigFile",
+                                      "The number of discretization indices ( " + std::to_string( _domainDiscretization.size( ) ) 
+                                      + " ) is not the same as the dimension ( " + std::to_string( _dim ) + " )" );
+
+            }
+
+            unsigned int i = 0;
+            for ( auto it  = _config[ "interpolation" ][ "discretization_count" ].begin( );
+                       it != _config[ "interpolation" ][ "discretization_count" ].end( );
+                       it++ ){
+
+                _domainDiscretization[ i ] = it->as< unsigned int>( );
+
+                i++;
+            }
+
+        }
+        else{
+            
+            return new errorNode( "processConfigFile", "The type of 'discretization_count' must be a scalar or sequence" );
+
+        }
+
+        if ( _config[ "interpolation" ][ "exterior_relative_delta" ] ){
+
+            if ( _config[ "interpolation" ][ "exterior_relative_delta" ].IsScalar( ) ){
+
+                _exteriorRelativeDelta = _config[ "interpolation" ][ "exterior_relative_delta" ].as< floatType >( );
+
+            }
+            else{
+
+                return new errorNode( "processConfigFile", "Exterior relative delta must be a floating point number" );
+
+            }
+
+        }
+        else{
+            
+            _config[ "interpolation" ][ "exterior_relative_delta" ] = _exteriorRelativeDelta;
+
+        }
+
+        if ( _config[ "interpolation" ][ "isosurface_cutoff" ] ){
+
+            if ( _config[ "interpolation" ][ "isosurface_cutoff" ].IsScalar( ) ){
+
+                _isosurfaceCutoff = _config[ "interpolation" ][ "isosurface_cutoff" ].as< floatType >( );
+
+            }
+            else{
+
+                return new errorNode( "processConfigFile", "'isosurface_cutoff' must be a floating point number" );
+
+            }
+
+        }
+        else{
+
+            _config[ "interpolation" ][ "isosurface_cutoff" ] = _isosurfaceCutoff;
+
+        }
+
+        if ( _config[ "interpolation" ][ "absolute_tolerance" ] ){
+
+            if ( _config[ "interpolation" ][ "absolute_tolerance" ].IsScalar( ) ){
+
+                _absoluteTolerance = _config[ "interpolation" ][ "absolute_tolerance" ].as< floatType >( );
+
+            }
+            else{
+
+                return new errorNode( "processConfigFile", "'absolute_tolerance' must be a floating point number" );
+
+            }
+
+        }
+        else{
+
+            _config[ "interpolation" ][ "absolute_tolerance" ] = _absoluteTolerance;
 
         }
 
@@ -1154,6 +1202,206 @@ namespace volumeReconstruction{
 
         return NULL;
 
+    }
+
+    errorOut dualContouring::initializeInternalAndBoundaryCells( ){
+        /*!
+         * Initialize the cells of the background grid which are internal and on the boundary
+         */
+
+        errorOut error = findInternalAndBoundaryCells( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "initializeInternalAndBoundaryCells",
+                                             "Error when finding the internal and boundary cells" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut dualContouring::findInternalAndBoundaryCells( ){
+        /*!
+         * Find the cells which are internal and on the boundary
+         */
+
+        if ( _dim != 3 ){
+            
+            return new errorNode( "findInternalAndBoundaryCells", "This function requires that the dimension is 3D" );
+
+        }
+
+        unsigned int ngx = _gridLocations[ 0 ].size( );
+        unsigned int ngy = _gridLocations[ 1 ].size( );
+        unsigned int ngz = _gridLocations[ 2 ].size( );
+
+        //Resize the internal cells vector
+        _internalCells.reserve( ( ngx - 1 ) * ( ngy - 1 ) * ( ngz - 1 ) );
+        _boundaryCells.reserve( ( ngx - 1 ) * ( ngy - 1 ) * ( ngz - 1 ) );
+
+        floatVector cellValues;
+
+        for ( unsigned int i = 0; i < ( ngx - 1 ); i++ ){
+
+            for ( unsigned int j = 0; j < ( ngy - 1 ); j++ ){
+
+                for ( unsigned int k = 0; k < ( ngz - 1 ); k++ ){
+
+                    //Get the values of the implicit function
+                    cellValues = { _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 0 ) + ( k + 0 ) ],
+                                   _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 0 ) + ( k + 1 ) ],
+                                   _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 1 ) + ( k + 0 ) ],
+                                   _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 1 ) + ( k + 1 ) ],
+                                   _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 0 ) + ( k + 0 ) ],
+                                   _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 0 ) + ( k + 1 ) ],
+                                   _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 1 ) + ( k + 0 ) ],
+                                   _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 1 ) + ( k + 1 ) ] };
+
+                    if ( std::any_of( cellValues.begin( ), cellValues.end( ),
+                                      []( floatType v ){ return v > 0; } ) ){
+
+                        //The cell contributes to the overall volume of the domain
+                        _internalCells.push_back( ngy * ngz * i + ngz * j + k );
+
+                        if ( std::any_of( cellValues.begin( ), cellValues.end( ),
+                                          []( floatType v ){ return v <= 0; } ) ){
+
+                            //The cell is on the surface of the body
+                            _boundaryCells.push_back( ngy * ngz * i + ngz * j + k );
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+    }
+
+    errorOut dualContouring::internalPointResidual( const floatVector &X, const floatMatrix &floatArgs,
+                                                    const intMatrix &intArgs,
+                                                    floatVector &residual, floatMatrix &jacobian,
+                                                    floatMatrix &floatOuts, intMatrix &intOuts ){
+        /*!
+         * The residual equation for the computation of the internal point for a boundary cell
+         *
+         * :param floatVector &X: The solution vector. Ordered as [ x, s, t, lambda_ub, lambda_lb ]
+         * :param floatVector &floatArgs: The floating point arguments. Ordered as
+         *     [ [ x_ub ], [ x_lb] , [ p1 ], [ p2 ], ... , [ n1 ], [ n2 ], ... ]
+         * :param intVector &intArgs: The integer arguments
+         *     [ [ nPoints ] ]
+         * :param floatVector &residual: The residual vector
+         * :param floatMatrix &jacobian: The jacobian matrix
+         * :param floatMatrix &floatOuts: Not used
+         * :param intMatrix &intOuts: Not used 
+         */
+
+        if ( X.size ( ) != 5 * _dim ){
+
+            return new errorNode( "internalPointResidual", "The 'X' vector must have a length of 5 times the dimension" );
+
+        }
+
+        if ( intArgs.size( ) != 1 ){
+
+            return new errorNode( "internalPointResidual", "The intArgs matrix must have one element" );
+
+            if ( intArgs[ 0 ].size( ) != 1 ){
+
+                return new errorNode( "internalPointResidual", "The first value of intArgs must have a length of 1" );
+
+            }
+
+        }
+
+        unsigned int nPoints = intArgs[ 0 ][ 0 ];
+
+        if ( floatArgs.size( ) != ( 2 + 2 * nPoints ) ){
+
+            return new errorNode( "internalPointResidual",
+                                  "The floatArgs matrix must have " + std::to_string( 2 + 2 * nPoints ) + " elements" );
+
+        }
+        
+        //Extract the values from X
+        floatVector x( X.begin( ), X.begin( ) + _dim );
+        floatVector s( X.begin( ) + _dim, X.begin( ) + 2 * _dim );
+        floatVector t( X.begin( ) + 2 * _dim, X.begin( ) + 3 * _dim );
+        floatVector lub( X.begin( ) + 3 * _dim, X.begin( ) + 4 * _dim );
+        floatVector llb( X.begin( ) + 4 * _dim, X.begin( ) + 5 * _dim );
+
+        //Extract the values from floatArgs
+        floatVector xub = floatArgs[ 0 ];
+        floatVector xlb = floatArgs[ 1 ];
+
+        floatMatrix points( floatArgs.begin( ) + 2, floatArgs.begin( ) + 2 + nPoints );
+        floatMatrix normals( floatArgs.begin( ) + 2 + nPoints, floatArgs.begin( ) + 2 + 2 * nPoints );
+
+        //Form the residual vector and the Jacobian
+        residual = floatVector( 5 * _dim, 0 );
+        jacobian = floatMatrix( 5 * _dim, floatVector( 5 * _dim, 0 ) );
+
+        for ( unsigned int i = 0; i < nPoints; i++ ){
+
+            //Add the contribution to the first residual
+            floatType nxmp = vectorTools::dot( normals[ i ], x - points[ i ] );
+
+            for ( unsigned int _i = 0; _i < _dim; _i++ ){
+
+                residual[ _i ] += nxmp * normals[ i ][ _i ];
+
+                for ( unsigned int _j = 0; _j < _dim; _j++ ){
+
+                    jacobian[ _i ][ _j ] += normals[ i ][ _i ] * normals[ i ][ _j ];
+
+                }
+
+            }
+
+        }
+
+        for ( unsigned int i = 0; i < _dim; i++ ){
+
+            //Add the terms to the residual
+            residual[            i ] +=  lub[ i ] - llb[ i ];
+            residual[     _dim + i ]  =  2 * lub[ i ] * s[ i ];
+            residual[ 2 * _dim + i ]  = -2 * llb[ i ] * t[ i ];
+            residual[ 3 * _dim + i ]  = xub[ i ] - x[ i ] - s[ i ] * s[ i ];
+            residual[ 4 * _dim + i ]  = x[ i ] - xlb[ i ] - t[ i ] * t[ i ];
+
+            //Assemble the Jacobian
+            
+            //Remaining jacobians of the residual of the first term
+            jacobian[ i ][ 3 * _dim + i ] =  1.;
+            jacobian[ i ][ 4 * _dim + i ] = -1.;
+
+            //Remaining jacobians of the residual of the second term
+            jacobian[ _dim + i ][     _dim + i ] = 2 * lub[ i ];
+            jacobian[ _dim + i ][ 3 * _dim + i ] = 2 * s[ i ];
+
+            //Remaining jacobians of the residual of the third term
+            jacobian[ 2 * _dim + i ][ 2 * _dim + i ] = -2 * llb[ i ];
+            jacobian[ 2 * _dim + i ][ 4 * _dim + i ] = -2 * t[ i ];
+
+            //Remaining jacobians of the residual of the fourth term
+            jacobian[ 3 * _dim + i ][        i ] = -1;
+            jacobian[ 3 * _dim + i ][ _dim + i ] = -2 * s[ i ];
+
+            //Remaining jacobians of the residual of the fifth term
+            jacobian[ 3 * _dim + i ][        i ]     =  1;
+            jacobian[ 3 * _dim + i ][ 2 * _dim + i ] = -2 * t[ i ];
+
+        }
+
+        return NULL;
     }
 
     errorOut interpolateFunctionToBackgroundGrid( );

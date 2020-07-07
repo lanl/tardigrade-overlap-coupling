@@ -21,6 +21,9 @@ namespace volumeReconstruction{
     typedef double floatType; //!Define the float values type.
     typedef std::vector< floatType > floatVector; //! Define a vector of floats
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
+    typedef int intType; //!Define the int values type.
+    typedef std::vector< intType > intVector; //! Define a vector of ints
+    typedef std::vector< std::vector< intType > > intMatrix; //!Define a matrix of ints
     typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
     typedef std::vector< std::string > stringVector; //!Define a vector of strings
     typedef std::unordered_map< unsigned int, unsigned int > DOFMap;
@@ -168,17 +171,34 @@ namespace volumeReconstruction{
             floatType _exteriorRelativeDelta = 1e-3;
 
             floatType _absoluteTolerance = 1e-9;
+
+            errorOut processConfigurationFile( );
+
             errorOut processBackgroundGridElementImplicitFunction( const uIntVector &indices,
                                                                    floatVector &implicitFunctionNodalValues,
                                                                    uIntVector &pointCounts );
 
             errorOut projectImplicitFunctionToBackgroundGrid( );
 
+            errorOut initializeInternalAndBoundaryCells( );
+
+            errorOut findInternalAndBoundaryCells( );
+
+            errorOut internalPointResidual( const floatVector &X, const floatMatrix &floatArgs, const intMatrix &intArgs,
+                                            floatVector &residual, floatMatrix &jacobian,
+                                            floatMatrix &floatOuts, intMatrix &intOuts );
+
+            errorOut solveBoundLeastSquares( );
+
             std::string _elementType = "Hex8";
             floatType _isosurfaceCutoff = 0.5;
             floatVector _implicitFunctionValues;
 
+            uIntVector _internalCells;
+            uIntVector _boundaryCells;
+
     };
+
 }
 
 #endif
