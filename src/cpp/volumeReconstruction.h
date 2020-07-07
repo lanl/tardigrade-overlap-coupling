@@ -177,6 +177,8 @@ namespace volumeReconstruction{
             errorOut processBackgroundGridElementImplicitFunction( const uIntVector &indices,
                                                                    floatVector &implicitFunctionNodalValues,
                                                                    uIntVector &pointCounts );
+            
+            errorOut getGridElement( const uIntVector &indices, std::unique_ptr< elib::Element > &element );
 
             errorOut projectImplicitFunctionToBackgroundGrid( );
 
@@ -184,9 +186,7 @@ namespace volumeReconstruction{
 
             errorOut findInternalAndBoundaryCells( );
 
-            errorOut internalPointResidual( const floatVector &X, const floatMatrix &floatArgs, const intMatrix &intArgs,
-                                            floatVector &residual, floatMatrix &jacobian,
-                                            floatMatrix &floatOuts, intMatrix &intOuts );
+            errorOut computeBoundaryPoints( );
 
             errorOut solveBoundLeastSquares( );
 
@@ -197,7 +197,13 @@ namespace volumeReconstruction{
             uIntVector _internalCells;
             uIntVector _boundaryCells;
 
+            floatVector _boundaryPoints;
+
     };
+
+    errorOut dualContouringInternalPointResidual( const floatVector &X, const floatMatrix &floatArgs, const intMatrix &intArgs,
+                                                  floatVector &residual, floatMatrix &jacobian,
+                                                  floatMatrix &floatOuts, intMatrix &intOuts );
 
 }
 

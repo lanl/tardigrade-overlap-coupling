@@ -21,9 +21,11 @@ HEADER=../../volumeReconstruction.h
 
 ERROROBJECT=error_tools.o
 
+SOLVEROBJECT=solver_tools.o
+
 ELEMENTOBJECT=element.o
 
-OBJECTS = $(OBJECT) $(TESTOBJECT) $(ERROROBJECT) $(ELEMENTOBJECT)
+OBJECTS = $(OBJECT) $(TESTOBJECT) $(ERROROBJECT) $(ELEMENTOBJECT) $(SOLVEROBJECT)
 
 #Set the mode due to the method variable
 DBG =
@@ -46,6 +48,9 @@ $(TESTOBJECT): $(TESTSOURCE) $(HEADER)
 
 $(OBJECT): $(SOURCE) $(HEADER) $(ERRORHEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=c++11 -lXdmf -lXdmfCore -lXdmfUtils
+
+$(SOLVEROBJECT): $(SOLVERSOURCE) $(SOLVERHEADER)
+	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=c++11
 
 $(ERROROBJECT): $(ERRORSOURCE) $(ERRORHEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=c++11

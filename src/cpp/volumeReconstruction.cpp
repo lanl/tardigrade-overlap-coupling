@@ -5,6 +5,7 @@
 =============================================================================*/
 
 #include<volumeReconstruction.h>
+#include<solver_tools.h>
 
 namespace volumeReconstruction{
 
@@ -1071,24 +1072,16 @@ namespace volumeReconstruction{
         return NULL;
     }
 
-    errorOut dualContouring::processBackgroundGridElementImplicitFunction( const uIntVector &indices,
-                                                                           floatVector &implicitFunctionNodalValues,
-                                                                           uIntVector  &pointCounts ){
+    errorOut dualContouring::getGridElement( const uIntVector &indices, std::unique_ptr< elib::Element > &element ){
         /*!
-         * Project the values of the implicit function of the points contained within an element of
-         * the background grid to the background grid's nodes. This projection is done by adding the
-         * contribution of the points to the nearest grid node. The resulting implicit function at the 
-         * nodes is the average of all of the points contributing to a individual grid
+         * Get an element from the grid at the given lower left hand corner nodal indices
          *
-         * :param const uIntVector &indices: The indices of the lower-left corner of the hex element.
-         *     The nodes of the element are the indices provided plus the nodes defined at  i + 1, 
-         *     j + 1, k + 1 and the other combinations.
-         * :param floatVector &implicitFunctionNodalValues: The nodal values of the implicit function.
-         * :param uIntVector &pointCounts: The number of points contributing to each node.
+         * :param const uIntVector &indices: The indices of the lower-left hand corner of the element
+         * :param std::unique_ptr< elib::Element > &element: The pointer to the finite element representation
          */
 
         if ( _dim != 3 ){
-            return new errorNode( "processBackgroundGridElementIsosurface",
+            return new errorNode( "getGridElement",
                                   "A dimension of 3 is required for this routine" );
         }
 
@@ -1099,7 +1092,7 @@ namespace volumeReconstruction{
 
             if ( _gridLocations[ index - indices.begin( ) ].size( ) <= *index + 1 ){
 
-                return new errorNode( "processBackgroundGridElementIsosurface",
+                return new errorNode( "getGridElement",
                                       "An index of " + std::to_string( *index )
                                       + " and / or that index plus one is outside the bounds of the defined grid locations" );
                     
@@ -1107,20 +1100,6 @@ namespace volumeReconstruction{
             
             lbCoordinates[ index - indices.begin( ) ] = _gridLocations[ index - indices.begin( ) ][ *index ];
             ubCoordinates[ index - indices.begin( ) ] = _gridLocations[ index - indices.begin( ) ][ *index + 1 ];
-
-        }
-
-        //Determine the points which are contained within this element
-        uIntVector pointIndices;
-        floatVector domainUpperBounds = *getUpperBounds( );
-        floatVector domainLowerBounds = *getLowerBounds( );
-
-        _tree.getPointsInRange( ubCoordinates, lbCoordinates, pointIndices, &domainUpperBounds, &domainLowerBounds );
-
-        //If there are no points contained within this element, return
-        if ( indices.size( ) == 0 ){
-
-            return NULL;
 
         }
 
@@ -1138,24 +1117,70 @@ namespace volumeReconstruction{
         auto qrule = elib::default_qrules.find( _elementType );
         if ( qrule == elib::default_qrules.end( ) ){
 
-            return new errorNode( "processBackgroundGridElementIsosurface",
+            return new errorNode( "getGridElement",
                                   "The default quadruature rule for the background grid element ( " + _elementType
                                  +" ) was not found" );
 
         }
 
-        std::unique_ptr< elib::Element > element =
-            elib::build_element_from_string( _elementType, {}, nodes, qrule->second );
+        element = elib::build_element_from_string( _elementType, {}, nodes, qrule->second );
+
+        return NULL;
+
+    }
+
+    errorOut dualContouring::processBackgroundGridElementImplicitFunction( const uIntVector &indices,
+                                                                           floatVector &implicitFunctionNodalValues,
+                                                                           uIntVector  &pointCounts ){
+        /*!
+         * Project the values of the implicit function of the points contained within an element of
+         * the background grid to the background grid's nodes. This projection is done by adding the
+         * contribution of the points to the nearest grid node. The resulting implicit function at the 
+         * nodes is the average of all of the points contributing to a individual grid
+         *
+         * :param const uIntVector &indices: The indices of the lower-left corner of the hex element.
+         *     The nodes of the element are the indices provided plus the nodes defined at  i + 1, 
+         *     j + 1, k + 1 and the other combinations.
+         * :param floatVector &implicitFunctionNodalValues: The nodal values of the implicit function.
+         * :param uIntVector &pointCounts: The number of points contributing to each node.
+         */
+
+        std::unique_ptr< elib::Element > element;
+        errorOut error = getGridElement( indices, element );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processBackgroundGridelementImplicitFunction",
+                                             "Error in getting the element of the current grid indices" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Determine the points which are contained within this element
+        uIntVector pointIndices;
+        floatVector domainUpperBounds = *getUpperBounds( );
+        floatVector domainLowerBounds = *getLowerBounds( );
+
+        _tree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], pointIndices,
+                                &domainUpperBounds, &domainLowerBounds );
+
+        //If there are no points contained within this element, return
+        if ( indices.size( ) == 0 ){
+
+            return NULL;
+
+        }
 
         //Compute the local coordinates of the nodes and their shapefunctions and project the 
-        floatVector globalCoordinates, localCoordinates, nodesSupported( nodes.size( ), 0 );
-        pointCounts = uIntVector( nodes.size( ), 0 );
+        floatVector globalCoordinates, localCoordinates, nodesSupported( element->nodes.size( ), 0 );
+        pointCounts = uIntVector( element->nodes.size( ), 0 );
 
         //Initialize the implicit function's values at the nodes
-        implicitFunctionNodalValues = floatVector( nodes.size( ), 0 );
+        implicitFunctionNodalValues = floatVector( element->nodes.size( ), 0 );
         floatType fxn;
 
-        floatVector distances( nodes.size( ) );
+        floatVector distances( element->nodes.size( ) );
         floatVector p;
 
         floatType minDistance;
@@ -1166,9 +1191,9 @@ namespace volumeReconstruction{
             p = floatVector( getPoints( )->begin( ) + *pI, getPoints( )->begin( ) + *pI + _dim );
 
             //Compute the distances of the point to the nodes
-            for ( auto node = nodes.begin( ); node != nodes.end( ); node++ ){
+            for ( auto node = element->nodes.begin( ); node != element->nodes.end( ); node++ ){
 
-                distances[ node - nodes.begin( ) ] = vectorTools::l2norm( p - *node );
+                distances[ node - element->nodes.begin( ) ] = vectorTools::l2norm( p - *node );
 
             }
 
@@ -1220,6 +1245,17 @@ namespace volumeReconstruction{
 
         }
 
+        error = computeBoundaryPoints( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeBoundaryPoints",
+                                             "Error in the computation of the boundary points" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
 
     }
@@ -1240,6 +1276,9 @@ namespace volumeReconstruction{
         unsigned int ngz = _gridLocations[ 2 ].size( );
 
         //Resize the internal cells vector
+        _internalCells.clear( );
+        _boundaryCells.clear( );
+
         _internalCells.reserve( ( ngx - 1 ) * ( ngy - 1 ) * ( ngz - 1 ) );
         _boundaryCells.reserve( ( ngx - 1 ) * ( ngy - 1 ) * ( ngz - 1 ) );
 
@@ -1286,12 +1325,58 @@ namespace volumeReconstruction{
         return NULL;
     }
 
-    errorOut dualContouring::internalPointResidual( const floatVector &X, const floatMatrix &floatArgs,
-                                                    const intMatrix &intArgs,
-                                                    floatVector &residual, floatMatrix &jacobian,
-                                                    floatMatrix &floatOuts, intMatrix &intOuts ){
+    errorOut dualContouring::computeBoundaryPoints( ){
+        /*!
+         * Compute the points which define the boundary
+         */
+
+        if ( _dim != 3 ){
+
+            return new errorNode( "computeBoundaryPoints", "This function requires that the dimension is 3D" );
+
+        }
+
+        unsigned int ngx = _gridLocations[ 0 ].size( );
+        unsigned int ngy = _gridLocations[ 1 ].size( );
+        unsigned int ngz = _gridLocations[ 2 ].size( );
+
+        //Resize the boundary point vector
+        _boundaryPoints.clear( );
+
+        _boundaryPoints.reserve( _dim * _boundaryCells.size( ) );
+
+        //Loop over the boundary cells
+        unsigned int i, j, k;
+        floatVector cellValues;
+
+        for ( auto bc = _boundaryCells.begin( ); bc != _boundaryCells.end( ); bc++ ){
+
+             i = *bc / ( ngy * ngz );
+             j = ( *bc - ( ngy * ngz * i ) ) / ngz;
+             k = *bc - ngy * ngz * i - ngz * j;
+             std::cout << "cellID, i, j, k: " << *bc << ", " << i << ", " << j << ", " << k << "\n";
+
+             cellValues = { _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 0 ) + ( k + 0 ) ],
+                            _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 0 ) + ( k + 1 ) ],
+                            _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 1 ) + ( k + 0 ) ],
+                            _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 1 ) + ( k + 1 ) ],
+                            _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 0 ) + ( k + 0 ) ],
+                            _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 0 ) + ( k + 1 ) ],
+                            _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 1 ) + ( k + 0 ) ],
+                            _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 1 ) + ( k + 1 ) ] };
+        }
+
+
+        return NULL;
+    }
+
+    errorOut dualContouringInternalPointResidual( const floatVector &X, const floatMatrix &floatArgs,
+                                                  const intMatrix &intArgs,
+                                                  floatVector &residual, floatMatrix &jacobian,
+                                                  floatMatrix &floatOuts, intMatrix &intOuts ){
         /*!
          * The residual equation for the computation of the internal point for a boundary cell
+         * in the dual contouring method.
          *
          * :param floatVector &X: The solution vector. Ordered as [ x, s, t, lambda_ub, lambda_lb ]
          * :param floatVector &floatArgs: The floating point arguments. Ordered as
@@ -1304,25 +1389,27 @@ namespace volumeReconstruction{
          * :param intMatrix &intOuts: Not used 
          */
 
-        if ( X.size ( ) != 5 * _dim ){
-
-            return new errorNode( "internalPointResidual", "The 'X' vector must have a length of 5 times the dimension" );
-
-        }
-
         if ( intArgs.size( ) != 1 ){
 
             return new errorNode( "internalPointResidual", "The intArgs matrix must have one element" );
 
-            if ( intArgs[ 0 ].size( ) != 1 ){
+        }
 
-                return new errorNode( "internalPointResidual", "The first value of intArgs must have a length of 1" );
-
-            }
+        if ( intArgs[ 0 ].size( ) != 2 ){
+                
+            return new errorNode( "internalPointResidual", "The first value of intArgs must have a length of 2" );
 
         }
 
-        unsigned int nPoints = intArgs[ 0 ][ 0 ];
+
+        unsigned int dim = intArgs[ 0 ][ 0 ];
+        unsigned int nPoints = intArgs[ 0 ][ 1 ];
+
+        if ( X.size ( ) != 5 * dim ){
+
+            return new errorNode( "internalPointResidual", "The 'X' vector must have a length of 5 times the dimension" );
+
+        }
 
         if ( floatArgs.size( ) != ( 2 + 2 * nPoints ) ){
 
@@ -1332,11 +1419,11 @@ namespace volumeReconstruction{
         }
         
         //Extract the values from X
-        floatVector x( X.begin( ), X.begin( ) + _dim );
-        floatVector s( X.begin( ) + _dim, X.begin( ) + 2 * _dim );
-        floatVector t( X.begin( ) + 2 * _dim, X.begin( ) + 3 * _dim );
-        floatVector lub( X.begin( ) + 3 * _dim, X.begin( ) + 4 * _dim );
-        floatVector llb( X.begin( ) + 4 * _dim, X.begin( ) + 5 * _dim );
+        floatVector x( X.begin( ), X.begin( ) + dim );
+        floatVector s( X.begin( ) + dim, X.begin( ) + 2 * dim );
+        floatVector t( X.begin( ) + 2 * dim, X.begin( ) + 3 * dim );
+        floatVector lub( X.begin( ) + 3 * dim, X.begin( ) + 4 * dim );
+        floatVector llb( X.begin( ) + 4 * dim, X.begin( ) + 5 * dim );
 
         //Extract the values from floatArgs
         floatVector xub = floatArgs[ 0 ];
@@ -1346,19 +1433,19 @@ namespace volumeReconstruction{
         floatMatrix normals( floatArgs.begin( ) + 2 + nPoints, floatArgs.begin( ) + 2 + 2 * nPoints );
 
         //Form the residual vector and the Jacobian
-        residual = floatVector( 5 * _dim, 0 );
-        jacobian = floatMatrix( 5 * _dim, floatVector( 5 * _dim, 0 ) );
+        residual = floatVector( 5 * dim, 0 );
+        jacobian = floatMatrix( 5 * dim, floatVector( 5 * dim, 0 ) );
 
         for ( unsigned int i = 0; i < nPoints; i++ ){
 
             //Add the contribution to the first residual
             floatType nxmp = vectorTools::dot( normals[ i ], x - points[ i ] );
 
-            for ( unsigned int _i = 0; _i < _dim; _i++ ){
+            for ( unsigned int _i = 0; _i < dim; _i++ ){
 
                 residual[ _i ] += nxmp * normals[ i ][ _i ];
 
-                for ( unsigned int _j = 0; _j < _dim; _j++ ){
+                for ( unsigned int _j = 0; _j < dim; _j++ ){
 
                     jacobian[ _i ][ _j ] += normals[ i ][ _i ] * normals[ i ][ _j ];
 
@@ -1368,36 +1455,36 @@ namespace volumeReconstruction{
 
         }
 
-        for ( unsigned int i = 0; i < _dim; i++ ){
+        for ( unsigned int i = 0; i < dim; i++ ){
 
             //Add the terms to the residual
             residual[            i ] +=  lub[ i ] - llb[ i ];
-            residual[     _dim + i ]  =  2 * lub[ i ] * s[ i ];
-            residual[ 2 * _dim + i ]  = -2 * llb[ i ] * t[ i ];
-            residual[ 3 * _dim + i ]  = xub[ i ] - x[ i ] - s[ i ] * s[ i ];
-            residual[ 4 * _dim + i ]  = x[ i ] - xlb[ i ] - t[ i ] * t[ i ];
+            residual[     dim + i ]  =  2 * lub[ i ] * s[ i ];
+            residual[ 2 * dim + i ]  = -2 * llb[ i ] * t[ i ];
+            residual[ 3 * dim + i ]  = xub[ i ] - x[ i ] - s[ i ] * s[ i ];
+            residual[ 4 * dim + i ]  = x[ i ] - xlb[ i ] - t[ i ] * t[ i ];
 
             //Assemble the Jacobian
             
             //Remaining jacobians of the residual of the first term
-            jacobian[ i ][ 3 * _dim + i ] =  1.;
-            jacobian[ i ][ 4 * _dim + i ] = -1.;
+            jacobian[ i ][ 3 * dim + i ] =  1.;
+            jacobian[ i ][ 4 * dim + i ] = -1.;
 
             //Remaining jacobians of the residual of the second term
-            jacobian[ _dim + i ][     _dim + i ] = 2 * lub[ i ];
-            jacobian[ _dim + i ][ 3 * _dim + i ] = 2 * s[ i ];
+            jacobian[ dim + i ][     dim + i ] = 2 * lub[ i ];
+            jacobian[ dim + i ][ 3 * dim + i ] = 2 * s[ i ];
 
             //Remaining jacobians of the residual of the third term
-            jacobian[ 2 * _dim + i ][ 2 * _dim + i ] = -2 * llb[ i ];
-            jacobian[ 2 * _dim + i ][ 4 * _dim + i ] = -2 * t[ i ];
+            jacobian[ 2 * dim + i ][ 2 * dim + i ] = -2 * llb[ i ];
+            jacobian[ 2 * dim + i ][ 4 * dim + i ] = -2 * t[ i ];
 
             //Remaining jacobians of the residual of the fourth term
-            jacobian[ 3 * _dim + i ][        i ] = -1;
-            jacobian[ 3 * _dim + i ][ _dim + i ] = -2 * s[ i ];
+            jacobian[ 3 * dim + i ][        i ] = -1;
+            jacobian[ 3 * dim + i ][ dim + i ] = -2 * s[ i ];
 
             //Remaining jacobians of the residual of the fifth term
-            jacobian[ 3 * _dim + i ][        i ]     =  1;
-            jacobian[ 3 * _dim + i ][ 2 * _dim + i ] = -2 * t[ i ];
+            jacobian[ 4 * dim + i ][        i ]     =  1;
+            jacobian[ 4 * dim + i ][ 2 * dim + i ] = -2 * t[ i ];
 
         }
 

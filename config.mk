@@ -58,6 +58,12 @@ DATAFILEINTERFACEHEADER = $(ROOTDIR)/overlap_coupling/src/cpp/dataFileInterface.
 ELEMENTSOURCE = $(ROOTDIR)/overlap_coupling/src/cpp/element.cpp
 ELEMENTHEADER = $(ROOTDIR)/overlap_coupling/src/cpp/element.h
 
+# Add the location of solver_tools to the include and library
+SOLVERSOURCE = $(ROOTDIR)/solver_tools/src/cpp/solver_tools.cpp
+SOLVERHEADER = $(ROOTDIR)/solver_tools/src/cpp/solver_tools.h
+INC+=-I$(ROOTDIR)/solver_tools/src/cpp
+LIB+=-L$(ROOTDIR)/solver_tools/src/cpp
+
 # Add the location of the YAML headers and library
 INC+= -I$(ROOTDIR)/yaml-cpp/include
 LIB+= -L$(ROOTDIR)/yaml-cpp/build/
