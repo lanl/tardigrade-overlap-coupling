@@ -172,10 +172,14 @@ namespace volumeReconstruction{
 
             floatType _absoluteTolerance = 1e-9;
 
+            unsigned int _minApproximationCount = 5;
+            bool _useMaterialPointsForNormals = false;
+
             errorOut processConfigurationFile( );
 
             errorOut processBackgroundGridElementImplicitFunction( const uIntVector &indices,
                                                                    floatVector &implicitFunctionNodalValues,
+                                                                   uIntVector &globalNodeIds,
                                                                    uIntVector &pointCounts );
             
             errorOut getGridElement( const uIntVector &indices, std::unique_ptr< elib::Element > &element );
@@ -196,6 +200,10 @@ namespace volumeReconstruction{
 
             uIntVector _internalCells;
             uIntVector _boundaryCells;
+
+            std::unordered_map< unsigned int, uIntVector > _boundaryEdges_x;
+            std::unordered_map< unsigned int, uIntVector > _boundaryEdges_y;
+            std::unordered_map< unsigned int, uIntVector > _boundaryEdges_z;
 
             floatVector _boundaryPoints;
 

@@ -995,6 +995,7 @@ namespace volumeReconstruction{
         errorOut error;
         uIntVector elementIndices;
         floatVector elementNodalContributions;
+        uIntVector globalNodeIds;
         uIntVector pointCounts;
 
         unsigned int ngx = _gridLocations[ 0 ].size( );
@@ -1009,7 +1010,8 @@ namespace volumeReconstruction{
 
                     //Get the element contribution to the nodal values of the implicit function
                     elementIndices = { i, j, k };
-                    error = processBackgroundGridElementImplicitFunction( elementIndices, elementNodalContributions, pointCounts );
+                    error = processBackgroundGridElementImplicitFunction( elementIndices, elementNodalContributions,
+                                                                          globalNodeIds, pointCounts );
 
                     if ( error ){
 
@@ -1024,25 +1026,15 @@ namespace volumeReconstruction{
 
                     }
 
-                    //Add those values to the grid
-                    _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j + 0 ) + ( k + 0 ) ] += elementNodalContributions[ 0 ];
-                    _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j + 0 ) + ( k + 0 ) ] += elementNodalContributions[ 1 ];
-                    _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j + 1 ) + ( k + 0 ) ] += elementNodalContributions[ 2 ];
-                    _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j + 1 ) + ( k + 0 ) ] += elementNodalContributions[ 3 ];
-                    _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j + 0 ) + ( k + 1 ) ] += elementNodalContributions[ 4 ];
-                    _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j + 0 ) + ( k + 1 ) ] += elementNodalContributions[ 5 ];
-                    _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j + 1 ) + ( k + 1 ) ] += elementNodalContributions[ 6 ];
-                    _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j + 1 ) + ( k + 1 ) ] += elementNodalContributions[ 7 ];
+                    for ( unsigned int i = 0; i < globalNodeIds.size( ); i++ ){
 
-                    //Add the point counts
-                    gridPointCounts[ ngy * ngz * ( i + 0 ) + ngz * ( j + 0 ) + ( k + 0 ) ] += pointCounts[ 0 ];
-                    gridPointCounts[ ngy * ngz * ( i + 1 ) + ngz * ( j + 0 ) + ( k + 0 ) ] += pointCounts[ 1 ];
-                    gridPointCounts[ ngy * ngz * ( i + 1 ) + ngz * ( j + 1 ) + ( k + 0 ) ] += pointCounts[ 2 ];
-                    gridPointCounts[ ngy * ngz * ( i + 0 ) + ngz * ( j + 1 ) + ( k + 0 ) ] += pointCounts[ 3 ];
-                    gridPointCounts[ ngy * ngz * ( i + 0 ) + ngz * ( j + 0 ) + ( k + 1 ) ] += pointCounts[ 4 ];
-                    gridPointCounts[ ngy * ngz * ( i + 1 ) + ngz * ( j + 0 ) + ( k + 1 ) ] += pointCounts[ 5 ];
-                    gridPointCounts[ ngy * ngz * ( i + 1 ) + ngz * ( j + 1 ) + ( k + 1 ) ] += pointCounts[ 6 ];
-                    gridPointCounts[ ngy * ngz * ( i + 0 ) + ngz * ( j + 1 ) + ( k + 1 ) ] += pointCounts[ 7 ];
+                        //Add those values to the grid
+                        _implicitFunctionValues[ globalNodeIds[ i ] ] += elementNodalContributions[ i ];
+    
+                        //Add the point counts
+                        gridPointCounts[ globalNodeIds[ i ] ] += pointCounts[ i ];
+
+                    }
 
                 }
 
@@ -1069,6 +1061,8 @@ namespace volumeReconstruction{
 
         }
 
+        _implicitFunctionValues -= _isosurfaceCutoff;
+
         return NULL;
     }
 
@@ -1084,6 +1078,9 @@ namespace volumeReconstruction{
             return new errorNode( "getGridElement",
                                   "A dimension of 3 is required for this routine" );
         }
+
+        unsigned int ngy = _gridLocations[ 1 ].size( );
+        unsigned int ngz = _gridLocations[ 2 ].size( );
 
         //Compute the location of the nodes
         floatVector lbCoordinates( _dim, 0 );
@@ -1113,6 +1110,19 @@ namespace volumeReconstruction{
                               { ubCoordinates[ 0 ], ubCoordinates[ 1 ], ubCoordinates[ 2 ] },
                               { lbCoordinates[ 0 ], ubCoordinates[ 1 ], ubCoordinates[ 2 ] } };
 
+        //Set the element's global node numbers
+        uIntVector global_node_ids=
+            {
+                ngy * ngz * ( indices[ 0 ] + 0 ) + ngz * ( indices[ 1 ] + 0 ) + ( indices[ 2 ] + 0 ),
+                ngy * ngz * ( indices[ 0 ] + 1 ) + ngz * ( indices[ 1 ] + 0 ) + ( indices[ 2 ] + 0 ),
+                ngy * ngz * ( indices[ 0 ] + 1 ) + ngz * ( indices[ 1 ] + 1 ) + ( indices[ 2 ] + 0 ),
+                ngy * ngz * ( indices[ 0 ] + 0 ) + ngz * ( indices[ 1 ] + 1 ) + ( indices[ 2 ] + 0 ),
+                ngy * ngz * ( indices[ 0 ] + 0 ) + ngz * ( indices[ 1 ] + 0 ) + ( indices[ 2 ] + 1 ),
+                ngy * ngz * ( indices[ 0 ] + 1 ) + ngz * ( indices[ 1 ] + 0 ) + ( indices[ 2 ] + 1 ),
+                ngy * ngz * ( indices[ 0 ] + 1 ) + ngz * ( indices[ 1 ] + 1 ) + ( indices[ 2 ] + 1 ),
+                ngy * ngz * ( indices[ 0 ] + 0 ) + ngz * ( indices[ 1 ] + 1 ) + ( indices[ 2 ] + 1 )
+            };
+
         //Get the element
         auto qrule = elib::default_qrules.find( _elementType );
         if ( qrule == elib::default_qrules.end( ) ){
@@ -1123,7 +1133,7 @@ namespace volumeReconstruction{
 
         }
 
-        element = elib::build_element_from_string( _elementType, {}, nodes, qrule->second );
+        element = elib::build_element_from_string( _elementType, global_node_ids, nodes, qrule->second );
 
         return NULL;
 
@@ -1131,6 +1141,7 @@ namespace volumeReconstruction{
 
     errorOut dualContouring::processBackgroundGridElementImplicitFunction( const uIntVector &indices,
                                                                            floatVector &implicitFunctionNodalValues,
+                                                                           uIntVector  &globalNodeIDs,
                                                                            uIntVector  &pointCounts ){
         /*!
          * Project the values of the implicit function of the points contained within an element of
@@ -1142,6 +1153,7 @@ namespace volumeReconstruction{
          *     The nodes of the element are the indices provided plus the nodes defined at  i + 1, 
          *     j + 1, k + 1 and the other combinations.
          * :param floatVector &implicitFunctionNodalValues: The nodal values of the implicit function.
+         * :param uIntVector &globalNodeIds: The global node ids corresponding to the nodal values
          * :param uIntVector &pointCounts: The number of points contributing to each node.
          */
 
@@ -1150,7 +1162,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "processBackgroundGridelementImplicitFunction",
+            errorOut result = new errorNode( "processBackgroundGridElementImplicitFunction",
                                              "Error in getting the element of the current grid indices" );
             result->addNext( error );
             return result;
@@ -1213,7 +1225,7 @@ namespace volumeReconstruction{
 
             if ( error ){
 
-                errorOut result = new errorNode( "processBackgroundGridElementIsosurface",
+                errorOut result = new errorNode( "processBackgroundGridElementImplicitFunction",
                                                  "Error in getting the function value" );
                 result->addNext( error );
                 return result;
@@ -1224,6 +1236,9 @@ namespace volumeReconstruction{
             implicitFunctionNodalValues += fxn * nodesSupported;
 
         }
+
+        //Set the global node ids
+        globalNodeIDs = element->global_node_ids;
 
         return NULL;
 
@@ -1344,28 +1359,415 @@ namespace volumeReconstruction{
         _boundaryPoints.clear( );
 
         _boundaryPoints.reserve( _dim * _boundaryCells.size( ) );
+        std::cout << "_boundaryPoints.size( ): " << _dim * _boundaryCells.size( ) << "\n";
 
         //Loop over the boundary cells
         unsigned int i, j, k;
+        unsigned int ri1, rj1, rk1;
+        unsigned int ri2, rj2, rk2;
+        unsigned int ri, rj, rk;
         floatVector cellValues;
+        errorOut error;
+        std::unique_ptr< elib::Element > element;
+        std::vector< bool > edgeTransition;
+
+        uIntVector globalNodeIds;
+
+        uIntVector edgeNodes =
+            {
+                0, 1, 3, 2, 4, 5, 7, 6, //x local node numbers
+                1, 2, 0, 3, 5, 6, 4, 7, //y local node numbers
+                0, 4, 1, 5, 2, 6, 3, 7  //z local node numbers
+            };
+
+        //Reserve the number of potential intersected edges
+        _boundaryEdges_x.clear( );
+        _boundaryEdges_x.reserve( 8 * _boundaryCells.size( ) ); //This is a worst case scenario
+
+        _boundaryEdges_y.clear( );        
+        _boundaryEdges_y.reserve( 8 * _boundaryCells.size( ) ); //This is a worst case scenario
+
+        _boundaryEdges_z.clear( );        
+        _boundaryEdges_z.reserve( 8 * _boundaryCells.size( ) ); //This is a worst case scenario
+
+        floatMatrix points, normals;
+        floatType m, b;
+
+        floatVector rootNode;
+
+        uIntVector supportingPoints;
+        floatVector intersectionPoint( _dim, 0 );
+        floatVector localIntersectionPoint;
+        floatVector gradient;
+
+        intMatrix intArgs;
+        intMatrix intOuts;
+
+        floatMatrix floatArgs;
+        floatMatrix floatOuts;
+
+        //Initialize the residual equation
+        solverTools::stdFncNLFJ func;
+        func = static_cast<solverTools::NonLinearFunctionWithJacobian>(dualContouringInternalPointResidual);
+
+        floatVector X0, X;
+
+        floatVector boundaryPoint;
+
+        unsigned int edgeID;
+        uIntVector edgeCells;
 
         for ( auto bc = _boundaryCells.begin( ); bc != _boundaryCells.end( ); bc++ ){
 
-             i = *bc / ( ngy * ngz );
-             j = ( *bc - ( ngy * ngz * i ) ) / ngz;
-             k = *bc - ngy * ngz * i - ngz * j;
-             std::cout << "cellID, i, j, k: " << *bc << ", " << i << ", " << j << ", " << k << "\n";
+            //Determine the lower-left hand corner index
+            i = *bc / ( ngy * ngz );
+            j = ( *bc - ( ngy * ngz * i ) ) / ngz;
+            k = *bc - ngy * ngz * i - ngz * j;
 
-             cellValues = { _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 0 ) + ( k + 0 ) ],
-                            _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 0 ) + ( k + 1 ) ],
-                            _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 1 ) + ( k + 0 ) ],
-                            _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 1 ) + ( k + 1 ) ],
-                            _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 0 ) + ( k + 0 ) ],
-                            _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 0 ) + ( k + 1 ) ],
-                            _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 1 ) + ( k + 0 ) ],
-                            _implicitFunctionValues[ ngy * ngz * ( i + 1 ) + ngz * ( j  + 1 ) + ( k + 1 ) ] };
+            //Determine the grid element
+            error = getGridElement( { i, j, k }, element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeBoundaryPoints",
+                                                 "Error in construction of the grid element" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Extract the implicit function values
+            cellValues =
+                {
+                    _implicitFunctionValues[ element->global_node_ids[ 0 ] ],
+                    _implicitFunctionValues[ element->global_node_ids[ 1 ] ],
+                    _implicitFunctionValues[ element->global_node_ids[ 2 ] ],
+                    _implicitFunctionValues[ element->global_node_ids[ 3 ] ],
+                    _implicitFunctionValues[ element->global_node_ids[ 4 ] ],
+                    _implicitFunctionValues[ element->global_node_ids[ 5 ] ],
+                    _implicitFunctionValues[ element->global_node_ids[ 6 ] ],
+                    _implicitFunctionValues[ element->global_node_ids[ 7 ] ]
+                };
+
+            //Determine the edges where transitions occur
+            edgeTransition =
+                {
+                    //Edges oriented along the x axis
+                    std::signbit( cellValues[ 0 ] ) != std::signbit( cellValues[ 1 ] ),
+                    std::signbit( cellValues[ 2 ] ) != std::signbit( cellValues[ 3 ] ),
+                    std::signbit( cellValues[ 4 ] ) != std::signbit( cellValues[ 5 ] ),
+                    std::signbit( cellValues[ 6 ] ) != std::signbit( cellValues[ 7 ] ),
+                    //Edges oriented along the y axis
+                    std::signbit( cellValues[ 1 ] ) != std::signbit( cellValues[ 2 ] ),
+                    std::signbit( cellValues[ 3 ] ) != std::signbit( cellValues[ 0 ] ),
+                    std::signbit( cellValues[ 5 ] ) != std::signbit( cellValues[ 6 ] ),
+                    std::signbit( cellValues[ 7 ] ) != std::signbit( cellValues[ 4 ] ),
+                    //Edges oriented along the z axis
+                    std::signbit( cellValues[ 0 ] ) != std::signbit( cellValues[ 4 ] ),
+                    std::signbit( cellValues[ 1 ] ) != std::signbit( cellValues[ 5 ] ),
+                    std::signbit( cellValues[ 2 ] ) != std::signbit( cellValues[ 6 ] ),
+                    std::signbit( cellValues[ 3 ] ) != std::signbit( cellValues[ 7 ] )
+                };
+
+            points.clear( );
+            points.reserve( _dim * edgeTransition.size( ) );
+            normals.clear( );
+            normals.reserve( _dim * edgeTransition.size( ) );
+
+            for ( auto eT = edgeTransition.begin( ); eT != edgeTransition.end( ); eT++ ){
+
+                //Check if this edge was intersected
+                if ( !( *eT ) ){
+                    continue;
+                }
+
+                //Get the intersection points of the transition edges
+
+                unsigned int i2 = edgeNodes[ 2 * ( eT - edgeTransition.begin( ) ) + 1 ];
+                unsigned int i1 = edgeNodes[ 2 * ( eT - edgeTransition.begin( ) ) + 0 ];
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    if ( ( element->reference_nodes[ i2 ][ i ] - element->reference_nodes[ i1 ][ i ] ) < _absoluteTolerance ){
+
+                        intersectionPoint[ i ] = element->reference_nodes[ i2 ][ i ];
+
+                    }
+                    else{
+
+                        m = ( cellValues[ i2 ] - cellValues[ i1 ] ) / ( element->reference_nodes[ i2 ][ i ] - element->reference_nodes[ i1 ][ i ] );
+                        b = cellValues[ i1 ] - m * element->reference_nodes[ i1 ][ i ];
+
+                        intersectionPoint[ i ] = -b / m;
+
+                    }
+
+                }
+
+                points.push_back( intersectionPoint );
+
+                //Get the global node ids of the nodes on the edges
+                ri1 = element->global_node_ids[ i1 ] / ( ngy * ngz );
+                rj1 = ( element->global_node_ids[ i1 ] - ( ngy * ngz * ri1 ) ) / ngz;
+                rk1 = element->global_node_ids[ i1 ] - ngy * ngz * ri1 - ngz * rj1;
+
+                ri2 = element->global_node_ids[ i2 ] / ( ngy * ngz );
+                rj2 = ( element->global_node_ids[ i2 ] - ( ngy * ngz * ri2 ) ) / ngz;
+                rk2 = element->global_node_ids[ i2 ] - ngy * ngz * ri2 - ngz * rj2;
+
+                //Approximate the normal at the transition point
+                if ( cellValues[ i2 ] > cellValues[ i1 ] ){
+
+                    rootNode = element->reference_nodes[ i2 ];
+                    ri = ri2;
+                    rj = rj2;
+                    rk = rk2;
+
+                }
+                else{
+
+                    rootNode = element->reference_nodes[ i1 ];
+                    ri = ri1;
+                    rj = rj1;
+                    rk = rk1;
+
+                }
+
+                //Find the points which contribute to the root node
+                floatVector upperBounds =
+                    {
+                        0.5 * ( _gridLocations[ 0 ][ ri + 1 ] - rootNode[ 0 ] ) + rootNode[ 0 ],
+                        0.5 * ( _gridLocations[ 1 ][ rj + 1 ] - rootNode[ 1 ] ) + rootNode[ 1 ],
+                        0.5 * ( _gridLocations[ 2 ][ rk + 1 ] - rootNode[ 2 ] ) + rootNode[ 2 ]
+                    };
+
+                floatVector lowerBounds =
+                    {
+                        0.5 * ( _gridLocations[ 0 ][ ri - 1 ] - rootNode[ 0 ] ) + rootNode[ 0 ],
+                        0.5 * ( _gridLocations[ 1 ][ rj - 1 ] - rootNode[ 1 ] ) + rootNode[ 1 ],
+                        0.5 * ( _gridLocations[ 2 ][ rk - 1 ] - rootNode[ 2 ] ) + rootNode[ 2 ]
+                    };
+
+                //Find the points that contribute to this root node
+                floatVector domainUpperBounds = *getUpperBounds( );
+                floatVector domainLowerBounds = *getLowerBounds( );
+                supportingPoints.clear( );
+                _tree.getPointsInRange( upperBounds, lowerBounds, supportingPoints, &domainUpperBounds, &domainLowerBounds );
+
+                //Determine the normal at the intersection point
+                if ( ( supportingPoints.size( ) >= _minApproximationCount ) && ( _useMaterialPointsForNormals ) ){
+
+                    return new errorNode( "computeBoundaryPoints", "Using the material points for normals has not been implemented yet" );
+
+                }
+                else{
+
+                    //Use the gradient of the shape function to compute the normal
+                   
+                    //Compute the local coordinates
+                    error = element->compute_local_coordinates( intersectionPoint, localIntersectionPoint );
+
+                    if ( error ){
+
+                        errorOut result = new errorNode( "computeBoundaryPoints", "Error in computation of the local coordinates of the intersection point" );
+                        result->addNext( error );
+                        return result;
+
+                    }
+
+                    //Compute the global gradient
+                    error = element->get_global_gradient( cellValues, localIntersectionPoint, gradient );
+
+                    //Compute the normal vector
+                    gradient /= vectorTools::l2norm( gradient );
+
+                    normals.push_back( gradient );
+
+                }
+
+                //Store the transition edge
+                unsigned int edgeIndex = eT - edgeTransition.begin( );
+                edgeID = ngy * ngz * ri1 + ngz * rj1 + rk1;
+
+                if ( edgeIndex < 4 ){ //x edge
+
+                    edgeCells =
+                        {
+                            ngy * ngz * ri1 + ngz * ( rj1 - 0 ) + ( rk1 - 0 ),
+                            ngy * ngz * ri1 + ngz * ( rj1 - 1 ) + ( rk1 - 0 ),
+                            ngy * ngz * ri1 + ngz * ( rj1 - 1 ) + ( rk1 - 1 ),
+                            ngy * ngz * ri1 + ngz * ( rj1 - 0 ) + ( rk1 - 1 )
+                        };
+
+                    if ( _boundaryEdges_x.find( edgeID ) == _boundaryEdges_x.end( ) ){
+
+                            _boundaryEdges_x.emplace( edgeID, edgeCells );
+
+                    }
+
+                }
+                else if ( edgeIndex < 8 ){ //y edge
+
+                    edgeCells =
+                        {
+                            ngy * ngz * ( ri1 - 0 ) + ngz * rj1 + ( rk1 - 0 ),
+                            ngy * ngz * ( ri1 - 1 ) + ngz * rj1 + ( rk1 - 0 ),
+                            ngy * ngz * ( ri1 - 1 ) + ngz * rj1 + ( rk1 - 1 ),
+                            ngy * ngz * ( ri1 - 0 ) + ngz * rj1 + ( rk1 - 1 )
+                        };
+
+                    if ( _boundaryEdges_y.find( edgeID ) == _boundaryEdges_y.end( ) ){
+
+                            _boundaryEdges_y.emplace( edgeID, edgeCells );
+
+                    }
+
+                }
+                else{ //z edge
+
+                    edgeCells =
+                        {
+                            ngy * ngz * ( ri1 - 0 ) + ngz * ( rj1 - 0 ) + rk1,
+                            ngy * ngz * ( ri1 - 1 ) + ngz * ( rj1 - 0 ) + rk1,
+                            ngy * ngz * ( ri1 - 1 ) + ngz * ( rj1 - 1 ) + rk1,
+                            ngy * ngz * ( ri1 - 0 ) + ngz * ( rj1 - 1 ) + rk1
+                        };
+
+                    if ( _boundaryEdges_z.find( edgeID ) == _boundaryEdges_z.end( ) ){
+
+                            _boundaryEdges_z.emplace( edgeID, edgeCells );
+
+                    }
+
+                }
+
+            }
+
+            //Solve for the boundary point
+            bool converged;
+            bool fatalError;
+
+            //Assemble the floating point argments matrix
+            floatArgs.resize( 2 + 2 * points.size( ), floatVector( _dim, 0 ) );
+            floatArgs[ 0 ] = element->bounding_box[ 1 ];
+            floatArgs[ 1 ] = element->bounding_box[ 0 ];
+
+            for ( unsigned int i = 0; i < points.size( ); i++ ){
+
+                floatArgs[ 2 + i ] = points[ i ];
+                floatArgs[ 2 + points.size( ) + i ] = normals[ i ];
+
+            }
+
+            //Assemble the integer arguments matrix
+            intArgs = { { ( int )_dim, ( int )points.size( ) } }; 
+
+            //Assemble the initial iterate
+            X0.resize( 5 * _dim );
+            X.resize( 5 * _dim );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                X0[            i ] = 0.5 * ( element->bounding_box[ 0 ][ i ] + element->bounding_box[ 1 ][ i ] ); //x
+                X0[     _dim + i ] = floatArgs[ 0 ][ i ] - X0[ i ]; //s
+                X0[ 2 * _dim + i ] = X0[ i ] - floatArgs[ 1 ][ i ]; //t
+                X0[ 3 * _dim + i ] = 0.5;
+                X0[ 4 * _dim + i ] = 0.5;
+
+            }
+            
+            error = solverTools::newtonRaphson(func, X0, X, converged, fatalError, floatOuts, intOuts, floatArgs, intArgs );
+
+            if ( fatalError ){
+
+                errorOut result = new errorNode( "computeBoundaryPoints",
+                                                 "Fatal error in Newton-Raphson solve" );
+                result->addNext( error );
+                return result;
+
+            
+            }
+            if ( !converged ){
+
+                boundaryPoint = floatVector( X0.begin( ), X0.begin( ) + _dim );
+
+            }
+            else{
+                
+                boundaryPoint = floatVector( X.begin( ), X.begin( ) + _dim );
+
+            }
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+                _boundaryPoints.push_back( boundaryPoint[ i ] );
+            }
+
+            //Store the transition edge
+
         }
 
+        std::cout << "boundary points\n";
+        std::cout << "{ " << _boundaryCells[ 0 ] << ": [";
+        for ( unsigned int i = 0;  i < _boundaryPoints.size( ); i++ ){
+
+            std::cout << _boundaryPoints[ i ] << ", ";
+
+            if ( ( ( i + 1 ) % 3 ) == 0 ){
+                std::cout << "]\n";
+
+                if ( ( i + 1 ) / _dim < _boundaryCells.size( ) ){
+                    std::cout << _boundaryCells[ ( i + 1 ) / _dim ] << ": [";
+                }
+            }
+
+        }
+        std::cout << "}\n";
+
+        std::cout << "boundaryEdges_x\n";
+        std::cout << "{\n";
+        for ( auto it = _boundaryEdges_x.begin( ); it != _boundaryEdges_x.end( ); it++ ){
+
+            std::cout << it->first << ": " << "[ ";
+            for ( auto it2 = it->second.begin( ); it2 != it->second.end( ); it2++ ){
+
+                std::cout << *it2 << ", ";
+
+            }
+            std::cout << "]\n";
+
+        }
+        std::cout << "}\n";
+
+        std::cout << "boundaryEdges_y\n";
+        std::cout << "{\n";
+        for ( auto it = _boundaryEdges_y.begin( ); it != _boundaryEdges_y.end( ); it++ ){
+
+            std::cout << it->first << ": " << "[ ";
+            for ( auto it2 = it->second.begin( ); it2 != it->second.end( ); it2++ ){
+
+                std::cout << *it2 << ", ";
+
+            }
+            std::cout << "]\n";
+
+        }
+        std::cout << "}\n";
+
+        std::cout << "boundaryEdges_z\n";
+        std::cout << "{\n";
+        for ( auto it = _boundaryEdges_z.begin( ); it != _boundaryEdges_z.end( ); it++ ){
+
+            std::cout << it->first << ": " << "[ ";
+            for ( auto it2 = it->second.begin( ); it2 != it->second.end( ); it2++ ){
+
+                std::cout << *it2 << ", ";
+
+            }
+            std::cout << "]\n";
+
+        }
+        std::cout << "}\n";
+
+        assert( 1 == 0 );
 
         return NULL;
     }
@@ -1382,7 +1784,7 @@ namespace volumeReconstruction{
          * :param floatVector &floatArgs: The floating point arguments. Ordered as
          *     [ [ x_ub ], [ x_lb] , [ p1 ], [ p2 ], ... , [ n1 ], [ n2 ], ... ]
          * :param intVector &intArgs: The integer arguments
-         *     [ [ nPoints ] ]
+         *     [ [ dim, nPoints ] ]
          * :param floatVector &residual: The residual vector
          * :param floatMatrix &jacobian: The jacobian matrix
          * :param floatMatrix &floatOuts: Not used
