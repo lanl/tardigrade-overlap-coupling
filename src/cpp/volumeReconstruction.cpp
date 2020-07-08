@@ -1351,7 +1351,6 @@ namespace volumeReconstruction{
 
         }
 
-        unsigned int ngx = _gridLocations[ 0 ].size( );
         unsigned int ngy = _gridLocations[ 1 ].size( );
         unsigned int ngz = _gridLocations[ 2 ].size( );
 
@@ -1359,7 +1358,6 @@ namespace volumeReconstruction{
         _boundaryPoints.clear( );
 
         _boundaryPoints.reserve( _dim * _boundaryCells.size( ) );
-        std::cout << "_boundaryPoints.size( ): " << _dim * _boundaryCells.size( ) << "\n";
 
         //Loop over the boundary cells
         unsigned int i, j, k;
@@ -1701,73 +1699,7 @@ namespace volumeReconstruction{
                 _boundaryPoints.push_back( boundaryPoint[ i ] );
             }
 
-            //Store the transition edge
-
         }
-
-        std::cout << "boundary points\n";
-        std::cout << "{ " << _boundaryCells[ 0 ] << ": [";
-        for ( unsigned int i = 0;  i < _boundaryPoints.size( ); i++ ){
-
-            std::cout << _boundaryPoints[ i ] << ", ";
-
-            if ( ( ( i + 1 ) % 3 ) == 0 ){
-                std::cout << "]\n";
-
-                if ( ( i + 1 ) / _dim < _boundaryCells.size( ) ){
-                    std::cout << _boundaryCells[ ( i + 1 ) / _dim ] << ": [";
-                }
-            }
-
-        }
-        std::cout << "}\n";
-
-        std::cout << "boundaryEdges_x\n";
-        std::cout << "{\n";
-        for ( auto it = _boundaryEdges_x.begin( ); it != _boundaryEdges_x.end( ); it++ ){
-
-            std::cout << it->first << ": " << "[ ";
-            for ( auto it2 = it->second.begin( ); it2 != it->second.end( ); it2++ ){
-
-                std::cout << *it2 << ", ";
-
-            }
-            std::cout << "]\n";
-
-        }
-        std::cout << "}\n";
-
-        std::cout << "boundaryEdges_y\n";
-        std::cout << "{\n";
-        for ( auto it = _boundaryEdges_y.begin( ); it != _boundaryEdges_y.end( ); it++ ){
-
-            std::cout << it->first << ": " << "[ ";
-            for ( auto it2 = it->second.begin( ); it2 != it->second.end( ); it2++ ){
-
-                std::cout << *it2 << ", ";
-
-            }
-            std::cout << "]\n";
-
-        }
-        std::cout << "}\n";
-
-        std::cout << "boundaryEdges_z\n";
-        std::cout << "{\n";
-        for ( auto it = _boundaryEdges_z.begin( ); it != _boundaryEdges_z.end( ); it++ ){
-
-            std::cout << it->first << ": " << "[ ";
-            for ( auto it2 = it->second.begin( ); it2 != it->second.end( ); it2++ ){
-
-                std::cout << *it2 << ", ";
-
-            }
-            std::cout << "]\n";
-
-        }
-        std::cout << "}\n";
-
-        assert( 1 == 0 );
 
         return NULL;
     }
