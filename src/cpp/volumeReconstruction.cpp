@@ -1988,5 +1988,7 @@ namespace volumeReconstruction{
         return NULL;
     }
 
+    errorOut intersectPolygons( const floatVector &cliping, const floatVector &subject, floatVector &result );
+
     errorOut interpolateFunctionToBackgroundGrid( );
 }

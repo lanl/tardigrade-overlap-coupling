@@ -219,6 +219,8 @@ namespace volumeReconstruction{
                                                   floatVector &residual, floatMatrix &jacobian,
                                                   floatMatrix &floatOuts, intMatrix &intOuts );
 
+    errorOut intersectPolygons( const floatVector &cliping, const floatVector &subject, floatVector &result );
+
 }
 
 #endif

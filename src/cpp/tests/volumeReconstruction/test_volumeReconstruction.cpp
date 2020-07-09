@@ -14,6 +14,7 @@ typedef volumeReconstruction::errorOut errorOut; //!Redefinition for a pointer t
 typedef volumeReconstruction::floatType floatType; //!Define the float values type.
 typedef volumeReconstruction::floatVector floatVector; //! Define a vector of floats
 typedef volumeReconstruction::floatMatrix floatMatrix; //!Define a matrix of floats
+typedef volumeReconstruction::intMatrix intMatrix; //!Define a matrix of ints
 typedef volumeReconstruction::uIntVector uIntVector; //!Define a vector of unsigned ints
 
 int test_dualContouring_constructor( std::ofstream &results ){
@@ -713,6 +714,124 @@ int test_dualContouring_evaluate( std::ofstream &results ){
     return 0;
 }
 
+int test_dualContouringInternalPointResidual( std::ofstream &results ){
+    /*!
+     * Test the dual contouring internal point residual
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    floatVector X =
+        { 
+            0.85131874, 0.6459241 , 0.40004273, 0.32050015, 0.28067341,
+            0.03255095, 0.84674781, 0.74372308, 0.21725097, 0.15472211,
+            0.50591758, 0.11292911, 0.53883793, 0.28100951, 0.27188129
+        };
+
+    floatMatrix floatArgs =
+        {
+            { 0.73032719,  1.35644613,  0.95486593 },
+            { 0.23311812, -0.34546654, -0.33838301 },
+            { 0.13504783,  0.5675009 ,  0.01237095 },
+            { 0.902437  ,  0.40287295,  0.21996613 },
+            { 0.2710092 ,  0.93281803,  0.96473859 },
+            { 0.95151858,  0.77561579,  0.17862172 },
+            { 0.71134891,  0.12861138,  0.42750324 },
+            { 0.13878509,  0.47367194,  0.65040988 }
+        };
+
+    intMatrix intArgs =
+        {
+            { 3, 3 },
+        };
+
+    floatVector residualAnswer =
+        {
+            
+            0.38062917,  0.66346403, -0.25813946,  0.09917692,  0.28399522,
+            0.0073519 , -0.91251968, -0.41798652, -0.11813294, -0.22371189,
+            0.63174447,  0.55376364, -0.09878124,  0.43826662,  0.69122776
+        };
+
+    floatVector jacobianAnswerVec =
+        {
+             1.43066618,  0.895239  ,  0.56433305,  0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  1.        ,
+             0.        ,  0.        , -1.        , -0.        , -0.        ,
+             0.895239  ,  0.84248584,  0.50160452,  0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             1.        ,  0.        , -0.        , -1.        , -0.        ,
+             0.56433305,  0.50160452,  0.63769775,  0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        ,  1.        , -0.        , -0.        , -1.        ,
+             0.        ,  0.        ,  0.        ,  0.30944423,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.64100031,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  1.01183516,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.56134682,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.22585822,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        ,  0.06510191,  0.        ,  0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        , -1.07767587, -0.        , -0.        ,  0.        ,
+             0.        ,  0.        , -1.69349563, -0.        , -0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        , -0.        , -0.56201902, -0.        ,  0.        ,
+             0.        ,  0.        , -0.        , -1.48744617, -0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        , -0.        , -0.        , -0.54376258,  0.        ,
+             0.        ,  0.        , -0.        , -0.        , -0.43450193,
+            -1.        , -0.        , -0.        , -0.64100031, -0.        ,
+            -0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            -0.        , -1.        , -0.        , -0.        , -0.56134682,
+            -0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+            -0.        , -0.        , -1.        , -0.        , -0.        ,
+            -0.06510191,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             1.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        , -1.69349563, -0.        , -0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        ,  1.        ,  0.        ,  0.        ,  0.        ,
+             0.        , -0.        , -1.48744617, -0.        ,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
+             0.        ,  0.        ,  1.        ,  0.        ,  0.        ,
+             0.        , -0.        , -0.        , -0.43450193,  0.        ,
+             0.        ,  0.        ,  0.        ,  0.        ,  0.
+        };
+
+    floatVector residualResult;
+    floatMatrix jacobian;
+    floatMatrix floatOuts;
+    intMatrix   intOuts;
+
+    errorOut error = volumeReconstruction::dualContouringInternalPointResidual( X, floatArgs, intArgs, residualResult, jacobian,
+                                                                                floatOuts, intOuts );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_dualContouringInternalPointResidual & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( residualResult, residualAnswer ) ){
+        results << "test_dualContouringInternalPointResidual (test 1) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( vectorTools::appendVectors( jacobian ), jacobianAnswerVec ) ){
+        results << "test_dualContouringInternalPointResidual (test 2) & False\n";
+        return 1;
+    }
+
+    results << "test_dualContouringInternalPointResidual & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -730,6 +849,7 @@ int main(){
     test_dualContouring_loadFunction( results );
     test_dualContouring_getFunctionValue( results );
     test_dualContouring_evaluate( results );
+    test_dualContouringInternalPointResidual( results );
 
     test_KDNode_constructor( results );
     test_KDNode_getIndex( results );
