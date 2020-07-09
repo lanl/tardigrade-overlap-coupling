@@ -7,6 +7,18 @@
 #include<volumeReconstruction.h>
 #include<solver_tools.h>
 
+#include "Xdmf.hpp"
+
+#include "XdmfDomain.hpp"
+#include "XdmfInformation.hpp"
+#include "XdmfReader.hpp"
+#include "XdmfWriter.hpp"
+#include "XdmfHDF5Writer.hpp"
+#include "XdmfGeometry.hpp"
+#include "XdmfUnstructuredGrid.hpp"
+#include "XdmfGridCollection.hpp"
+#include "XdmfGridCollectionType.hpp"
+
 namespace volumeReconstruction{
 
     KDNode::KDNode( ){
@@ -737,6 +749,16 @@ namespace volumeReconstruction{
         }
     }
 
+    dualContouring::~dualContouring( ){
+        /*!
+         * The destructor of the dual contouring model
+         */
+
+        if ( _writeOutput ){
+            writeToXDMF( );
+        }
+    }
+
     errorOut dualContouring::initialize( ){
         /*!
          * Initialization for the dualContouring method
@@ -900,6 +922,23 @@ namespace volumeReconstruction{
         else{
 
             _config[ "interpolation" ][ "absolute_tolerance" ] = _absoluteTolerance;
+
+        }
+
+        if ( _config[ "write_xdmf_output" ] ){
+            
+            _writeOutput = true;
+
+            if ( _config[ "write_xdmf_output" ].IsScalar( ) ){
+
+                _outputFilename = _config[ "write_xdmf_output" ].as< std::string >( );
+
+            }
+            else{
+
+                _config[ "write_xdmf_output" ] = _outputFilename;
+
+            }
 
         }
 
@@ -1821,6 +1860,130 @@ namespace volumeReconstruction{
             jacobian[ 4 * dim + i ][ 2 * dim + i ] = -2 * t[ i ];
 
         }
+
+        return NULL;
+    }
+
+    errorOut dualContouring::writeToXDMF( ){
+        /*!
+         * write the data to an XDMF file
+         */
+
+        //Build the XDMF file
+        shared_ptr< XdmfDomain > _domain = XdmfDomain::New( );
+        shared_ptr< XdmfInformation > domainInfo
+            = XdmfInformation::New( "Domain", "Primary data structure from a volume reconstruction object" );
+
+        _domain->insert( domainInfo );
+
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _outputFilename + ".h5", true );
+        heavyWriter->setReleaseData( true );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _outputFilename + ".xdmf", heavyWriter );
+
+        //Initialize the grid collection
+        shared_ptr< XdmfGridCollection > _gridCollection = XdmfGridCollection::New( );
+        _gridCollection->setType( XdmfGridCollectionType::Spatial( ) );
+        shared_ptr< XdmfInformation > _gridCollectionInfo = XdmfInformation::New( "Grid Collection", "The collection of grids used in the formation of the reconstructed domain" );
+        _gridCollection->insert( _gridCollectionInfo );
+        _domain->insert( _gridCollection );
+
+        //Write the source points out
+        
+        shared_ptr< XdmfUnstructuredGrid > _sourceNodeGrid = XdmfUnstructuredGrid::New( );
+        _sourceNodeGrid->setName( "Source Node Grid" );
+
+        //Set the source node geometry
+        shared_ptr< XdmfGeometry > _sourceNodeGeometry = XdmfGeometry::New( );
+        _sourceNodeGeometry->setType( XdmfGeometryType::XYZ( ) );
+        _sourceNodeGeometry->setName( "Source Node Coordinates" );
+        _sourceNodeGeometry->insert( 0, getPoints( )->data( ), 3 * _nPoints, 1, 1 );
+        shared_ptr< XdmfInformation > _sourceNodeGeometryInfo = XdmfInformation::New( "Source Node Coordinates", "The coordinates of the source nodes ( i.e. the points to be reconstructed ) in x1, y1, z1, x2, ... format" );
+        _sourceNodeGrid->setGeometry( _sourceNodeGeometry );
+
+        //Set the source node topology
+        shared_ptr< XdmfTopology > _sourceNodeTopology = XdmfTopology::New( );
+        _sourceNodeTopology->setType( XdmfTopologyType::Polyvertex( ) );
+        _sourceNodeTopology->setName( "Source Node Topology" );
+        uIntVector sourceNodeIds( getPoints( )->size( ) );
+        for ( unsigned int i = 0; i < _nPoints; i++ ){
+            sourceNodeIds[ i ] = i;
+        } 
+        _sourceNodeTopology->insert( 0, sourceNodeIds.data( ), _nPoints, 1, 1 );
+        _sourceNodeGrid->setTopology( _sourceNodeTopology );
+
+        //Group the IDs into a set
+        shared_ptr< XdmfSet > _sourceNodeSet = XdmfSet::New( );
+        _sourceNodeSet->setType( XdmfSetType::Node( ) );
+        _sourceNodeSet->setName( "Source Nodes" );
+        _sourceNodeSet->insert( 0, sourceNodeIds.data( ), _nPoints, 1, 1 );
+        _sourceNodeGrid->insert( _sourceNodeSet );
+
+        _gridCollection->insert( _sourceNodeGrid );
+
+        //Write the boundary points out
+
+        shared_ptr< XdmfUnstructuredGrid > _boundaryPointGrid = XdmfUnstructuredGrid::New ( );
+        _boundaryPointGrid->setName( "Boundary Point Grid" );
+
+        //Set the boundary surface geometry
+        shared_ptr< XdmfGeometry > _boundaryPointGeometry = XdmfGeometry::New( );
+        _boundaryPointGeometry->setType( XdmfGeometryType::XYZ( ) );
+        _boundaryPointGeometry->setName( "Boundary Surface Coordinates" );
+        _boundaryPointGeometry->insert( 0, _boundaryPoints.data( ), _boundaryPoints.size( ), 1, 1 );
+        shared_ptr< XdmfInformation > _boundaryPointsInfo = XdmfInformation::New( "Boundary Surface Coordinates", "The coordinates of the boundary points ( i.e. the points which are joined together to form the mesh ) in x1, y1, z1, x2, ... format" );
+        _boundaryPointGeometry->insert( _boundaryPointsInfo );
+        _boundaryPointGrid->setGeometry( _boundaryPointGeometry );
+
+        //Set the map from the boundary ID to the XDMF ID
+        std::unordered_map< unsigned int, unsigned int > boundaryIDToXDMFID;
+        boundaryIDToXDMFID.reserve( _boundaryCells.size( ) );
+
+        for ( auto it = _boundaryCells.begin( ); it != _boundaryCells.end( ); it++ ){
+
+            boundaryIDToXDMFID.emplace( *it, it - _boundaryCells.begin( ) );
+
+        }
+
+        //Set the boundary surface topology
+        shared_ptr< XdmfTopology > _boundaryPointTopology = XdmfTopology::New( );
+        _boundaryPointTopology->setType( XdmfTopologyType::Quadrilateral( ) );
+
+        uIntVector _boundaryPointConnectivity;
+        _boundaryPointConnectivity.reserve( 4 * ( _boundaryEdges_x.size( ) + _boundaryEdges_y.size( ) + _boundaryEdges_z.size( ) ) );
+
+        for ( auto it = _boundaryEdges_x.begin( ); it != _boundaryEdges_x.end( ); it++ ){
+
+            for ( unsigned int i = 0; i < it->second.size( ); i++ ){
+                _boundaryPointConnectivity.push_back( boundaryIDToXDMFID[ it->second[ i ] ] );
+            }
+
+        }
+
+        for ( auto it = _boundaryEdges_y.begin( ); it != _boundaryEdges_y.end( ); it++ ){
+
+            for ( unsigned int i = 0; i < it->second.size( ); i++ ){
+                _boundaryPointConnectivity.push_back( boundaryIDToXDMFID[ it->second[ i ] ] );
+            }
+
+        }
+
+        for ( auto it = _boundaryEdges_z.begin( ); it != _boundaryEdges_z.end( ); it++ ){
+
+            for ( unsigned int i = 0; i < it->second.size( ); i++ ){
+                _boundaryPointConnectivity.push_back( boundaryIDToXDMFID[ it->second[ i ] ] );
+            }
+
+        }
+
+        _boundaryPointTopology->insert( 0, _boundaryPointConnectivity.data( ), _boundaryPointConnectivity.size( ), 1, 1 );
+        shared_ptr< XdmfInformation > _boundaryPointTopologyInfo = XdmfInformation::New( "Boundary Surface Connectivity", "The connectivity of the boundary points" );
+        _boundaryPointTopology->insert( _boundaryPointTopologyInfo );
+        _boundaryPointGrid->setTopology( _boundaryPointTopology );
+
+        _gridCollection->insert( _boundaryPointGrid );
+
+        //Write the output file
+        _domain->accept( writer );
 
         return NULL;
     }

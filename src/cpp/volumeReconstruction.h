@@ -153,6 +153,7 @@ namespace volumeReconstruction{
             //Constructors
             dualContouring( );
             dualContouring( const YAML::Node &configuration );
+            ~dualContouring( );
 
             errorOut evaluate( );
 
@@ -174,6 +175,9 @@ namespace volumeReconstruction{
 
             unsigned int _minApproximationCount = 5;
             bool _useMaterialPointsForNormals = false;
+
+            bool _writeOutput = false;
+            std::string _outputFilename = "output";
 
             errorOut processConfigurationFile( );
 
@@ -206,6 +210,8 @@ namespace volumeReconstruction{
             std::unordered_map< unsigned int, uIntVector > _boundaryEdges_z;
 
             floatVector _boundaryPoints;
+
+            errorOut writeToXDMF( );
 
     };
 

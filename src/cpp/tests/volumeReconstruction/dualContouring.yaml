@@ -2,4 +2,5 @@ type: dual_contouring
 interpolation: #Configuration for the interpolation of the points to the background grid
         function_type: constant #Other options are "from_vector"
         discretization_count: 2
-write_config: #Write the configuration file to disk 
+write_config: #Write the configuration file to disk
+write_xdmf_output: dual_contouring_output
