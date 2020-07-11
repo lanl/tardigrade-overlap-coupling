@@ -581,7 +581,8 @@ namespace volumeReconstruction{
 
     errorOut volumeReconstructionBase::evaluate( ){
         /*!
-         * Base function which evaluates the volume reconstruction.
+         * Base function which evaluates the volume reconstruction and prepares the domain
+         * to use the other virtual functions
          *
          * A child class should call the base class' evaluate function to ensure that
          * the general information is computed.
@@ -596,6 +597,62 @@ namespace volumeReconstruction{
         }
 
         return NULL;
+    }
+
+    errorOut volumeReconstructionBase::performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                                 floatVector &integratedValue ){
+        /*!
+         * Integrate a quantity known at the points over the volume returning the value for the domain.
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object and the second index is the value of the 
+         *     function to be integrated.
+         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param floatVector &integratedValue: The final value of the integral
+         */
+
+        return new errorNode( "performVolumeIntegration", "Volume integration not implemented" );
+    }
+
+    errorOut volumeReconstructionBase::performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints,
+                                                                                 const unsigned int valueSize,
+                                                                                 const floatVector &origin,
+                                                                                 floatVector &integratedvolume ){
+        /*!
+         * Integrate a quantity known at the points which has been dyaded with the relative position returning the
+         * value for the domain.
+         *
+         * $V_ij dv = \int_{\mathcal{D}} v_i \left( x_i - o_i \right) dv
+         *
+         * where $o_i$ is the origin
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object and the second index is the value of the 
+         *     function to be integrated.
+         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const floatVector &origin: The coordinates of the origin.
+         * :param floatVector &integratedValue: The final value of the integral
+         */
+
+        return new errorNode( "performRelativePositionVolumeIntegration", "Relative position volume integration not implemented" );
+    }
+
+    errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                                  floatVector &integratedValue ){
+        /*!
+         * Integrate a quantity known at the point over the surface return the value for the domain.
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object and the second index is the value of the 
+         *     function to be integrated.
+         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param floatVector &integratedValue: The final value of the integral
+         */
+
+        return new errorNode( "performSurfaceIntegration", "Surface integration not implemented" );
     }
 
     errorOut volumeReconstructionBase::setInterpolationConfiguration( ){
@@ -1454,6 +1511,8 @@ namespace volumeReconstruction{
         unsigned int edgeID;
         uIntVector edgeCells;
 
+        bool flipDirection;
+
         for ( auto bc = _boundaryCells.begin( ); bc != _boundaryCells.end( ); bc++ ){
 
             //Determine the lower-left hand corner index
@@ -1560,6 +1619,8 @@ namespace volumeReconstruction{
                     rj = rj2;
                     rk = rk2;
 
+                    flipDirection = false;
+
                 }
                 else{
 
@@ -1567,6 +1628,8 @@ namespace volumeReconstruction{
                     ri = ri1;
                     rj = rj1;
                     rk = rk1;
+
+                    flipDirection = true;
 
                 }
 
@@ -1636,6 +1699,12 @@ namespace volumeReconstruction{
                             ngy * ngz * ri1 + ngz * ( rj1 - 0 ) + ( rk1 - 1 )
                         };
 
+                    //Check the direction of the normal and determine if the ordering
+                    //needs to be flipped
+                    if ( flipDirection ){
+                        edgeCells = { edgeCells[ 3 ], edgeCells[ 2 ], edgeCells[ 1 ], edgeCells[ 0 ] };
+                    }
+
                     if ( _boundaryEdges_x.find( edgeID ) == _boundaryEdges_x.end( ) ){
 
                             _boundaryEdges_x.emplace( edgeID, edgeCells );
@@ -1653,6 +1722,12 @@ namespace volumeReconstruction{
                             ngy * ngz * ( ri1 - 0 ) + ngz * rj1 + ( rk1 - 1 )
                         };
 
+                    //Check the direction of the normal and determine if the ordering
+                    //needs to be flipped
+                    if ( flipDirection ){
+                        edgeCells = { edgeCells[ 3 ], edgeCells[ 2 ], edgeCells[ 1 ], edgeCells[ 0 ] };
+                    }
+
                     if ( _boundaryEdges_y.find( edgeID ) == _boundaryEdges_y.end( ) ){
 
                             _boundaryEdges_y.emplace( edgeID, edgeCells );
@@ -1669,6 +1744,11 @@ namespace volumeReconstruction{
                             ngy * ngz * ( ri1 - 1 ) + ngz * ( rj1 - 1 ) + rk1,
                             ngy * ngz * ( ri1 - 0 ) + ngz * ( rj1 - 1 ) + rk1
                         };
+                    //Check the direction of the normal and determine if the ordering
+                    //needs to be flipped
+                    if ( flipDirection ){
+                        edgeCells = { edgeCells[ 3 ], edgeCells[ 2 ], edgeCells[ 1 ], edgeCells[ 0 ] };
+                    }
 
                     if ( _boundaryEdges_z.find( edgeID ) == _boundaryEdges_z.end( ) ){
 
@@ -1987,8 +2067,6 @@ namespace volumeReconstruction{
 
         return NULL;
     }
-
-    errorOut intersectPolygons( const floatVector &cliping, const floatVector &subject, floatVector &result );
 
     errorOut interpolateFunctionToBackgroundGrid( );
 }

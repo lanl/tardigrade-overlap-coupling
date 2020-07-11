@@ -97,7 +97,6 @@ namespace volumeReconstruction{
             //Main functions
             errorOut loadPoints( const floatVector *points );
             errorOut loadFunction( const floatVector *function );
-            virtual errorOut evaluate( );
 
             //Interface functions
             const floatVector *getPoints( );
@@ -106,6 +105,17 @@ namespace volumeReconstruction{
 
             const floatVector *getLowerBounds( );
             const floatVector *getUpperBounds( );
+
+            //Required overloads
+            virtual errorOut evaluate( );
+            virtual errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                       floatVector &integratedVolume );
+
+            virtual errorOut performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                                       const floatVector &origin, floatVector &integratedVolume );
+
+            virtual errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                        floatVector &integratedValue );
 
         protected:
 
@@ -218,9 +228,6 @@ namespace volumeReconstruction{
     errorOut dualContouringInternalPointResidual( const floatVector &X, const floatMatrix &floatArgs, const intMatrix &intArgs,
                                                   floatVector &residual, floatMatrix &jacobian,
                                                   floatMatrix &floatOuts, intMatrix &intOuts );
-
-    errorOut intersectPolygons( const floatVector &cliping, const floatVector &subject, floatVector &result );
-
 }
 
 #endif
