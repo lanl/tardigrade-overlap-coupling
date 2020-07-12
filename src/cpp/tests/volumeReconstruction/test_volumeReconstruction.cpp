@@ -923,11 +923,19 @@ int test_dualContouring_performVolumeIntegration( std::ofstream &results ){
         return 1;
     }
 
-    floatVector functionValues( points.size( ) / 3, 1 );
-    floatVector integratedVolumeResult;
-    floatVector integratedVolumeAnswer = { 7.66331 };
+    floatVector functionValues( points.size( ) );
+    for ( unsigned int i = 0; i < points.size( ); i+=3 ){
 
-    error = dc.performVolumeIntegration( functionValues, 1, integratedVolumeResult );
+        functionValues[ i + 0 ] = 1;
+        functionValues[ i + 1 ] = 2;
+        functionValues[ i + 2 ] = 3;
+
+    }
+
+    floatVector integratedVolumeResult;
+    floatVector integratedVolumeAnswer = { 7.66331, 15.32662, 22.98993 };
+
+    error = dc.performVolumeIntegration( functionValues, 3, integratedVolumeResult );
 
     if ( error ){
         error->print( );
@@ -936,7 +944,9 @@ int test_dualContouring_performVolumeIntegration( std::ofstream &results ){
     }
 
     if ( !vectorTools::fuzzyEquals( integratedVolumeResult, integratedVolumeAnswer ) ){
-        results << "test_dualContouring_performVolumeIntegration (test 1 ) & False\n";
+        vectorTools::print( integratedVolumeResult );
+        vectorTools::print( integratedVolumeResult - integratedVolumeAnswer );
+        results << "test_dualContouring_performVolumeIntegration (test 1) & False\n";
         return 1;
     }
 
