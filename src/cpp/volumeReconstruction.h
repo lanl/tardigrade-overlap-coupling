@@ -220,6 +220,12 @@ namespace volumeReconstruction{
             std::unordered_map< unsigned int, uIntVector > _boundaryEdges_z;
 
             floatVector _boundaryPoints;
+            DOFMap _boundaryPointIDToIndex;
+
+            std::unordered_map< unsigned int, floatType > _boundaryPointAreas; 
+            std::unordered_map< unsigned int, floatVector > _boundaryPointNormals;
+            errorOut computeBoundaryPointNormalsAndAreas( );
+            errorOut processBoundaryEdges( const std::unordered_map< unsigned int, uIntVector > &boundaryEdges );
 
             errorOut writeToXDMF( );
 

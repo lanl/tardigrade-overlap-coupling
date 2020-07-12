@@ -872,6 +872,16 @@ namespace volumeReconstruction{
 
         }
 
+        error = computeBoundaryPointNormalsAndAreas( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "initialize", "Error when computing the boundary point normals and areas" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
     }
 
@@ -1454,6 +1464,7 @@ namespace volumeReconstruction{
         _boundaryPoints.clear( );
 
         _boundaryPoints.reserve( _dim * _boundaryCells.size( ) );
+        _boundaryPointIDToIndex.reserve( _boundaryCells.size( ) );
 
         //Loop over the boundary cells
         unsigned int i, j, k;
@@ -1693,10 +1704,10 @@ namespace volumeReconstruction{
 
                     edgeCells =
                         {
-                            ngy * ngz * ri1 + ngz * ( rj1 - 0 ) + ( rk1 - 0 ),
-                            ngy * ngz * ri1 + ngz * ( rj1 - 1 ) + ( rk1 - 0 ),
+                            ngy * ngz * ri1 + ngz * ( rj1 - 0 ) + ( rk1 - 1 ),
                             ngy * ngz * ri1 + ngz * ( rj1 - 1 ) + ( rk1 - 1 ),
-                            ngy * ngz * ri1 + ngz * ( rj1 - 0 ) + ( rk1 - 1 )
+                            ngy * ngz * ri1 + ngz * ( rj1 - 1 ) + ( rk1 - 0 ),
+                            ngy * ngz * ri1 + ngz * ( rj1 - 0 ) + ( rk1 - 0 )
                         };
 
                     //Check the direction of the normal and determine if the ordering
@@ -1739,10 +1750,10 @@ namespace volumeReconstruction{
 
                     edgeCells =
                         {
-                            ngy * ngz * ( ri1 - 0 ) + ngz * ( rj1 - 0 ) + rk1,
-                            ngy * ngz * ( ri1 - 1 ) + ngz * ( rj1 - 0 ) + rk1,
+                            ngy * ngz * ( ri1 - 0 ) + ngz * ( rj1 - 1 ) + rk1,
                             ngy * ngz * ( ri1 - 1 ) + ngz * ( rj1 - 1 ) + rk1,
-                            ngy * ngz * ( ri1 - 0 ) + ngz * ( rj1 - 1 ) + rk1
+                            ngy * ngz * ( ri1 - 1 ) + ngz * ( rj1 - 0 ) + rk1,
+                            ngy * ngz * ( ri1 - 0 ) + ngz * ( rj1 - 0 ) + rk1
                         };
                     //Check the direction of the normal and determine if the ordering
                     //needs to be flipped
@@ -1815,8 +1826,12 @@ namespace volumeReconstruction{
             }
 
             for ( unsigned int i = 0; i < _dim; i++ ){
+
                 _boundaryPoints.push_back( boundaryPoint[ i ] );
+
             }
+
+            _boundaryPointIDToIndex.emplace( *bc, bc - _boundaryCells.begin( ) );
 
         }
 
@@ -2015,14 +2030,6 @@ namespace volumeReconstruction{
         _boundaryPointGrid->setGeometry( _boundaryPointGeometry );
 
         //Set the map from the boundary ID to the XDMF ID
-        std::unordered_map< unsigned int, unsigned int > boundaryIDToXDMFID;
-        boundaryIDToXDMFID.reserve( _boundaryCells.size( ) );
-
-        for ( auto it = _boundaryCells.begin( ); it != _boundaryCells.end( ); it++ ){
-
-            boundaryIDToXDMFID.emplace( *it, it - _boundaryCells.begin( ) );
-
-        }
 
         //Set the boundary surface topology
         shared_ptr< XdmfTopology > _boundaryPointTopology = XdmfTopology::New( );
@@ -2034,7 +2041,7 @@ namespace volumeReconstruction{
         for ( auto it = _boundaryEdges_x.begin( ); it != _boundaryEdges_x.end( ); it++ ){
 
             for ( unsigned int i = 0; i < it->second.size( ); i++ ){
-                _boundaryPointConnectivity.push_back( boundaryIDToXDMFID[ it->second[ i ] ] );
+                _boundaryPointConnectivity.push_back( _boundaryPointIDToIndex[ it->second[ i ] ] );
             }
 
         }
@@ -2042,7 +2049,7 @@ namespace volumeReconstruction{
         for ( auto it = _boundaryEdges_y.begin( ); it != _boundaryEdges_y.end( ); it++ ){
 
             for ( unsigned int i = 0; i < it->second.size( ); i++ ){
-                _boundaryPointConnectivity.push_back( boundaryIDToXDMFID[ it->second[ i ] ] );
+                _boundaryPointConnectivity.push_back( _boundaryPointIDToIndex[ it->second[ i ] ] );
             }
 
         }
@@ -2050,7 +2057,7 @@ namespace volumeReconstruction{
         for ( auto it = _boundaryEdges_z.begin( ); it != _boundaryEdges_z.end( ); it++ ){
 
             for ( unsigned int i = 0; i < it->second.size( ); i++ ){
-                _boundaryPointConnectivity.push_back( boundaryIDToXDMFID[ it->second[ i ] ] );
+                _boundaryPointConnectivity.push_back( _boundaryPointIDToIndex[ it->second[ i ] ] );
             }
 
         }
@@ -2060,6 +2067,34 @@ namespace volumeReconstruction{
         _boundaryPointTopology->insert( _boundaryPointTopologyInfo );
         _boundaryPointGrid->setTopology( _boundaryPointTopology );
 
+        //Export the normals of the boundary cells
+        shared_ptr< XdmfAttribute > _boundaryPointNormalsPtr = XdmfAttribute::New( );
+        _boundaryPointNormalsPtr->setType( XdmfAttributeType::Vector( ) );
+        _boundaryPointNormalsPtr->setCenter( XdmfAttributeCenter::Node( ) );
+        _boundaryPointNormalsPtr->setName( "Boundary Point Normal" );
+
+        floatVector _boundaryPointNormalVector;
+        _boundaryPointNormalVector.reserve( _dim * _boundaryPointNormals.size( ) );
+
+        for ( auto it = _boundaryPointNormals.begin( ); it != _boundaryPointNormals.end( ); it++ ){
+
+            for ( unsigned int i = 0; i < it->second.size( ); i++ ){
+
+                _boundaryPointNormalVector.push_back( it->second[ i ] );
+
+            }
+
+        }
+
+        _boundaryPointNormalsPtr->insert( 0, _boundaryPointNormalVector.data( ), _boundaryPointNormalVector.size( ), 1, 1 );
+
+        shared_ptr< XdmfInformation > _boundaryPointNormalInformation
+            = XdmfInformation::New( "Boundary Point Normal", "The average normals at the boundary points" );
+
+        _boundaryPointNormalsPtr->insert( _boundaryPointNormalInformation );
+
+        _boundaryPointGrid->insert( _boundaryPointNormalsPtr );
+
         _gridCollection->insert( _boundaryPointGrid );
 
         //Write the output file
@@ -2068,5 +2103,188 @@ namespace volumeReconstruction{
         return NULL;
     }
 
-    errorOut interpolateFunctionToBackgroundGrid( );
+    errorOut dualContouring::computeBoundaryPointNormalsAndAreas( ){
+        /*!
+         * Compute the normals and surface areas at the boundary points
+         */
+
+        if ( _dim != 3 ){
+            return new errorNode( "computeBoundaryPointNormals", "This function requires the dimension is 3" );
+        }
+
+        _boundaryPointAreas.reserve( _boundaryPoints.size( ) / 3 );
+        _boundaryPointNormals.reserve( _boundaryPoints.size( ) );
+
+        //Loop through the edges
+
+        errorOut error = processBoundaryEdges( _boundaryEdges_x );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeBoundaryPointNormalsAndAreas",
+                                             "Error in processing the x boundary edges" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = processBoundaryEdges( _boundaryEdges_y );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeBoundaryPointNormalsAndAreas",
+                                             "Error in processing the y boundary edges" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = processBoundaryEdges( _boundaryEdges_z );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeBoundaryPointNormalsAndAreas",
+                                             "Error in processing the z boundary edges" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Normalize the vectors
+        for ( auto it = _boundaryPointAreas.begin( ); it != _boundaryPointAreas.end( ); it++ ){
+
+            _boundaryPointNormals[ it->first ] /= it->second;
+
+        }
+
+        return NULL;
+    }
+
+
+    errorOut dualContouring::processBoundaryEdges( const std::unordered_map< unsigned int, uIntVector > &boundaryEdges ){
+        /*!
+         * Process the boundary edges contributions to the normal and surface area vectors
+         *
+         * :param const std::unordered_map< unsigned int, uIntVector > &boundaryEdges: The boundary edges
+         */
+
+        //Loop through the edges
+        floatVector n, p1, p2, p3, p4;
+        floatType a;
+
+        for ( auto edge = boundaryEdges.begin( ); edge != boundaryEdges.end( ); edge++ ){
+
+            //Get the points
+            auto index = _boundaryPointIDToIndex.find( edge->second[ 0 ] );
+            if ( index == _boundaryPointIDToIndex.end( ) ){
+
+                return new errorNode( "processBoundaryEdges", "Edge boundary point ID " + std::to_string( edge->second[ 0 ] )
+                                      + " not found in boundary point ID to index map." );
+
+            }
+            p1 = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
+                              _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
+
+            index = _boundaryPointIDToIndex.find( edge->second[ 1 ] );
+            if ( index == _boundaryPointIDToIndex.end( ) ){
+
+                return new errorNode( "processBoundaryEdges", "Edge boundary point ID " + std::to_string( edge->second[ 1 ] )
+                                      + " not found in boundary point ID to index map." );
+
+            }
+            p2 = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
+                              _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
+
+            index = _boundaryPointIDToIndex.find( edge->second[ 2 ] );
+            if ( index == _boundaryPointIDToIndex.end( ) ){
+
+                return new errorNode( "processBoundaryEdges", "Edge boundary point ID " + std::to_string( edge->second[ 2 ] )
+                                      + " not found in boundary point ID to index map." );
+
+            }
+            p3 = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
+                              _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
+
+            index = _boundaryPointIDToIndex.find( edge->second[ 3 ] );
+            if ( index == _boundaryPointIDToIndex.end( ) ){
+
+                return new errorNode( "processBoundaryEdges", "Edge boundary point ID " + std::to_string( edge->second[ 3 ] )
+                                      + " not found in boundary point ID to index map." );
+
+            }
+            p4 = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
+                              _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
+
+            //Compute the first triangle's normal and area
+            n = 0.5 * vectorTools::cross( p2 - p1, p4 - p1 );
+            a = vectorTools::l2norm( n );
+
+            //Add those contributions to the vector
+            if ( _boundaryPointAreas.find( edge->second[ 0 ] ) == _boundaryPointAreas.end( ) ){
+
+                _boundaryPointAreas.emplace( edge->second[ 0 ], a );
+                _boundaryPointNormals.emplace( edge->second[ 0 ], n );
+
+            }
+            else{
+
+                _boundaryPointAreas[ edge->second[ 0 ] ] += a;
+                _boundaryPointNormals[ edge->second[ 0 ] ] += n;
+
+            }
+
+            if ( _boundaryPointAreas.find( edge->second[ 1 ] ) == _boundaryPointAreas.end( ) ){
+
+                _boundaryPointAreas.emplace( edge->second[ 1 ], a );
+                _boundaryPointNormals.emplace( edge->second[ 1 ], n );
+
+            }
+            else{
+
+                _boundaryPointAreas[ edge->second[ 1 ] ] += a;
+                _boundaryPointNormals[ edge->second[ 1 ] ] += n;
+
+            }
+
+            if ( _boundaryPointAreas.find( edge->second[ 3 ] ) == _boundaryPointAreas.end( ) ){
+
+                _boundaryPointAreas.emplace( edge->second[ 3 ], a );
+                _boundaryPointNormals.emplace( edge->second[ 3 ], n );
+
+            }
+            else{
+
+                _boundaryPointAreas[ edge->second[ 3 ] ] += a;
+                _boundaryPointNormals[ edge->second[ 3 ] ] += n;
+
+            }
+
+            //Compute the second triangle's normal and area
+            n = 0.5 * vectorTools::cross( p4 - p3, p2 - p3 );
+            a = vectorTools::l2norm( n );
+
+            //Add those contributions to the vector
+            _boundaryPointAreas[ edge->second[ 1 ] ] += a;
+            _boundaryPointNormals[ edge->second[ 1 ] ] += n;
+
+            if ( _boundaryPointAreas.find( edge->second[ 2 ] ) == _boundaryPointAreas.end( ) ){
+
+                _boundaryPointAreas.emplace( edge->second[ 2 ], a );
+                _boundaryPointNormals.emplace( edge->second[ 2 ], n );
+
+            }
+            else{
+
+                _boundaryPointAreas[ edge->second[ 2 ] ] += a;
+                _boundaryPointNormals[ edge->second[ 2 ] ] += n;
+
+            }
+
+            _boundaryPointAreas[ edge->second[ 3 ] ] += a;
+            _boundaryPointNormals[ edge->second[ 3 ] ] += n;
+
+        }
+
+        return NULL;
+    } 
 }
