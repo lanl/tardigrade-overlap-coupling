@@ -596,6 +596,8 @@ namespace volumeReconstruction{
             return result;
         }
 
+        setEvaluated( true );
+
         return NULL;
     }
 
@@ -780,6 +782,28 @@ namespace volumeReconstruction{
          */
 
         return &_upperBounds;
+    }
+
+    const bool volumeReconstructionBase::getEvaluated( ){
+        /*!
+         * Get whether the volume reconstruction has been evaluated
+         */
+
+        return _isEvaluated;
+    }
+
+    void volumeReconstructionBase::setEvaluated( const bool isEvaluated ){
+        /*!
+         * Set whether the volume construction has been evaluated
+         * This should be used in child classes' error handling
+         * since the parent class will set this boolean to true 
+         * upon successful evaluation but an error may occur in
+         * the child class' evaluate function
+         */
+
+        _isEvaluated = isEvaluated;
+
+        return;
     }
 
     /*=========================================================================
@@ -1026,6 +1050,7 @@ namespace volumeReconstruction{
             return result;
         }
 
+        setEvaluated( true );
         return NULL;
     }
 
@@ -2286,5 +2311,269 @@ namespace volumeReconstruction{
         }
 
         return NULL;
-    } 
+    }
+
+    errorOut dualContouring::interpolateFunctionToBackgroundGrid( const floatVector &functionValuesAtPoints,
+                                                                  const unsigned int &functionDim,
+                                                                  std::unordered_map< unsigned int, floatVector > &functionAtGrid
+                                                                ){ 
+        /*!
+         * Interpolate a function defined at the data points to the given element in the background grid.
+         * 
+         * :param const floatVector &functionValuesAtPoints: The value of the function at the data points
+         * :param const unsigned int &functionDim: The dimensionality of the function e.g. a function defined by four scalar values
+         *     would have a dimensionality of four.
+         * :param std::unordered_map< unsigned int, floatVector > &functionAtGrid: The value of the function
+         *     projected to the nodes in the background grid
+         */
+
+        //Error handling
+        if ( _points->size( ) / _dim != functionValuesAtPoints.size( ) / functionDim ){
+            return new errorNode( "interpolateFunctionToBackgroundGrid",
+                                  "The points vector and the function values at points vector are not of compatible sizes" );
+        }
+
+        //Reserve memory for the function at the grid. This will be a worst case.
+        functionAtGrid.clear( );
+        functionAtGrid.reserve( 8 * functionDim * _internalCells.size( ) );
+
+        std::unordered_map< unsigned int, floatType > weights;
+        weights.reserve( 8 * _internalCells.size( ) );
+
+        //Get the number of values in the different directions
+        unsigned int ngy = _gridLocations[ 1 ].size( );
+        unsigned int ngz = _gridLocations[ 2 ].size( );
+
+        unsigned int i, j, k;
+        uIntVector indices;
+        uIntVector internalPoints;
+
+        std::unique_ptr< elib::Element > element;
+
+        floatVector pointPosition;
+        floatVector localCoordinates;
+        floatVector shapeFunctions;
+        floatVector functionValue;
+
+        errorOut error;
+
+        floatVector upperBounds;
+        floatVector lowerBounds;
+
+        for ( auto cell = _internalCells.begin( ); cell != _internalCells.end( ); cell++ ){
+
+            //Get the bottom corner node IDs from the cell id
+            i = *cell / ( ngy * ngz );
+            j = ( *cell - ngy * ngz * i ) / ngz;
+            k = (*cell - ngy * ngz * i - ngz * j );
+
+            indices = { i, j, k };
+
+            //Get the element associated with this cell
+            error = getGridElement( indices, element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "interpolateFunctionToBackgroundGrid",
+                                                 "Error in getting the grid element" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Add the global node ids to the map if required
+            for ( auto nID = element->global_node_ids.begin( ); nID  != element->global_node_ids.end( ); nID++ ){
+
+                if ( weights.find( *nID ) == weights.end( ) ){
+
+                    functionAtGrid.emplace( *nID, floatVector( functionDim, 0 ) );
+                    weights.emplace( *nID, 0 );
+
+                }
+
+            }
+
+            upperBounds = *getUpperBounds( );
+            lowerBounds = *getLowerBounds( );
+
+            //Find the points inside of this element
+            internalPoints.clear( );
+            _tree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], internalPoints,
+                                    &upperBounds, &lowerBounds );
+
+            //Loop over the points adding their contributions to the function at the current grid points
+            
+            for ( auto p = internalPoints.begin( ); p != internalPoints.end( ); p++ ){
+
+                //Get the function value at the current point
+                functionValue = floatVector( functionValuesAtPoints.begin( ) + ( *p / _dim  + 0 ) * functionDim,
+                                             functionValuesAtPoints.begin( ) + ( *p / _dim  + 1 ) * functionDim );
+
+                pointPosition = floatVector( _points->begin( ) + *p,
+                                             _points->begin( ) + *p + _dim );
+
+                //Get the local coordinates of the point
+                error = element->compute_local_coordinates( pointPosition, localCoordinates );
+
+                if ( error ){
+                    
+                    errorOut result = new errorNode( "interpolateFunctionToBackgroundGrid",
+                                                     "Error in the computation of the local coordinates" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                //Get the shape function values at the point
+                error = element->get_shape_functions( localCoordinates, shapeFunctions );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "interpolateFunctionToBackgroundGrid",
+                                                     "Error in the computation of the shape functions" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                //Comptute the contribution of the nodes to the background grid
+                
+                for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+
+                    functionAtGrid[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ] * functionValue;
+                    weights[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ];
+
+                }
+
+            }
+
+        }
+
+        //Normalize the weights by the shape function values
+        for ( auto node = functionAtGrid.begin( ); node != functionAtGrid.end( ); node++ ){
+
+            if ( weights[ node->first ] > _absoluteTolerance ){
+                functionAtGrid[ node->first ] = node->second / weights[ node->first ];
+            }
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut dualContouring::performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                       floatVector &integratedValue ){
+        /*!
+         * Integrate a quantity known at the points over the volume returning the value for the domain.
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object and the second index is the value of the 
+         *     function to be integrated.
+         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param floatVector &integratedValue: The final value of the integral
+         */
+
+        errorOut error;
+
+        //Check if the domain has been constructed yet
+        if ( !getEvaluated( ) ){
+            error = evaluate( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "performVolumeIntegration",
+                                                 "Error encountered during the reconstruction of the volume" );
+                result->addNext( error );
+                return result;
+
+            }
+        }
+
+        //Interpolate the function to the background grid
+        std::unordered_map< unsigned int, floatVector > functionAtGrid;
+        error = interpolateFunctionToBackgroundGrid( valuesAtPoints, valueSize, functionAtGrid );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "performVolumeIntegration",
+                                             "Error encountered during the interpolation of the function to the background grid" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Perform the volume integration
+        integratedValue = floatVector( valueSize, 0. );
+        floatMatrix jacobian;
+        floatType Jxw;
+        floatVector qptValue;
+
+        //Get the number of values in the different directions
+        unsigned int ngy = _gridLocations[ 1 ].size( );
+        unsigned int ngz = _gridLocations[ 2 ].size( );
+        unsigned int i, j, k;
+        uIntVector indices;
+
+        std::unique_ptr< elib::Element > element;
+
+        floatMatrix nodalFunctionValues;
+
+        for ( auto cell = _internalCells.begin( ); cell != _internalCells.end( ); cell++ ){
+
+            //Get the bottom corner node IDs from the cell id
+            i = *cell / ( ngy * ngz );
+            j = ( *cell - ngy * ngz * i ) / ngz;
+            k = (*cell - ngy * ngz * i - ngz * j );
+
+            indices = { i, j, k };
+
+            //Get the element associated with this cell
+            error = getGridElement( indices, element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "interpolateFunctionToBackgroundGrid",
+                                                 "Error in getting the grid element" );
+                result->addNext( error );
+                return result;
+
+            }
+            
+            //Extract the function at the nodes
+            nodalFunctionValues = floatMatrix( element->global_node_ids.size( ), floatVector( valueSize ) );
+            for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+
+                if ( functionAtGrid.find( *nID ) == functionAtGrid.end( ) ){
+
+                    return new errorNode( "interpolateFunctionToBackgroundGrid",
+                                          "Node with global ID " + std::to_string( *nID )
+                                        + " not found in the grid node to function map" );
+
+                }
+
+                //Get the value of the function at the nodal values
+                nodalFunctionValues[ nID - element->global_node_ids.begin( ) ]
+                    = functionAtGrid[ *nID ];
+
+            }
+
+            //Perform the integration
+            for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+                element->interpolate( nodalFunctionValues, qpt->first, qptValue );
+                element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
+
+                Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
+                integratedValue += qptValue * Jxw;
+
+            }
+
+        }
+
+        return NULL;
+
+    }
+
 }

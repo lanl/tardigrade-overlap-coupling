@@ -127,6 +127,9 @@ namespace volumeReconstruction{
 
             virtual errorOut initialize( );
 
+            void setEvaluated( const bool isEvaluated );
+            const bool getEvaluated( );
+
             //Protected attributes
             YAML::Node _config;
             errorOut _error;
@@ -139,6 +142,8 @@ namespace volumeReconstruction{
             unsigned int _nPoints;
 
         private:
+
+            bool _isEvaluated = false;
 
             std::shared_ptr< volumeReconstructionBase > create( const std::string &type );
             floatVector _upperBounds;
@@ -167,13 +172,17 @@ namespace volumeReconstruction{
 
             errorOut evaluate( );
 
+            errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                               floatVector &integratedValue );
+
         protected:
 
             errorOut initialize( );
 
             errorOut setGridSpacing( );
 
-            errorOut interpolateFunctionToBackgroundGrid( );
+            errorOut interpolateFunctionToBackgroundGrid( const floatVector &functionValuesAtPoints, const unsigned int &functionDim,
+                                                          std::unordered_map< unsigned int, floatVector > &functionAtGrid );
 
         private:
 
