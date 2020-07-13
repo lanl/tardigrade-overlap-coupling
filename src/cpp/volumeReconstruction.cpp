@@ -2240,73 +2240,41 @@ namespace volumeReconstruction{
             p4 = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
                               _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
 
+            //Add the points to the area and normal vectors if required
+            for ( unsigned int i = 0; i < edge->second.size( ); i++ ){
+
+                if ( _boundaryPointAreas.find( edge->second[ i ] ) == _boundaryPointAreas.end( ) ){
+    
+                    _boundaryPointAreas.emplace( edge->second[ i ], 0. );
+                    _boundaryPointNormals.emplace( edge->second[ i ], floatVector( _dim, 0. ) );
+    
+                }
+
+            }
+
             //Compute the first triangle's normal and area
-            n = 0.5 * vectorTools::cross( p2 - p1, p4 - p1 );
-            a = vectorTools::l2norm( n );
+            n = vectorTools::cross( p2 - p1, p4 - p1 );
+            a = 0.5 * vectorTools::l2norm( n );
+            n /= ( 2 * a );
 
-            //Add those contributions to the vector
-            if ( _boundaryPointAreas.find( edge->second[ 0 ] ) == _boundaryPointAreas.end( ) ){
+            for ( unsigned int i = 0; i < edge->second.size( ); i++ ){
 
-                _boundaryPointAreas.emplace( edge->second[ 0 ], a );
-                _boundaryPointNormals.emplace( edge->second[ 0 ], n );
-
-            }
-            else{
-
-                _boundaryPointAreas[ edge->second[ 0 ] ] += a;
-                _boundaryPointNormals[ edge->second[ 0 ] ] += n;
-
-            }
-
-            if ( _boundaryPointAreas.find( edge->second[ 1 ] ) == _boundaryPointAreas.end( ) ){
-
-                _boundaryPointAreas.emplace( edge->second[ 1 ], a );
-                _boundaryPointNormals.emplace( edge->second[ 1 ], n );
-
-            }
-            else{
-
-                _boundaryPointAreas[ edge->second[ 1 ] ] += a;
-                _boundaryPointNormals[ edge->second[ 1 ] ] += n;
-
-            }
-
-            if ( _boundaryPointAreas.find( edge->second[ 3 ] ) == _boundaryPointAreas.end( ) ){
-
-                _boundaryPointAreas.emplace( edge->second[ 3 ], a );
-                _boundaryPointNormals.emplace( edge->second[ 3 ], n );
-
-            }
-            else{
-
-                _boundaryPointAreas[ edge->second[ 3 ] ] += a;
-                _boundaryPointNormals[ edge->second[ 3 ] ] += n;
+                _boundaryPointAreas[ edge->second[ i ] ] += 0.25 * a;
+                _boundaryPointNormals[ edge->second[ i ] ] += 0.25 * a * n;
 
             }
 
             //Compute the second triangle's normal and area
-            n = 0.5 * vectorTools::cross( p4 - p3, p2 - p3 );
-            a = vectorTools::l2norm( n );
+            n = vectorTools::cross( p4 - p3, p2 - p3 );
+            a = 0.5 * vectorTools::l2norm( n );
+            n /= ( 2 * a );
 
-            //Add those contributions to the vector
-            _boundaryPointAreas[ edge->second[ 1 ] ] += a;
-            _boundaryPointNormals[ edge->second[ 1 ] ] += n;
+            for ( unsigned int i = 0; i < edge->second.size( ); i++ ){
 
-            if ( _boundaryPointAreas.find( edge->second[ 2 ] ) == _boundaryPointAreas.end( ) ){
-
-                _boundaryPointAreas.emplace( edge->second[ 2 ], a );
-                _boundaryPointNormals.emplace( edge->second[ 2 ], n );
+                _boundaryPointAreas[ edge->second[ i ] ] += 0.25 * a;
+                _boundaryPointNormals[ edge->second[ i ] ] += 0.25 * a * n;
 
             }
-            else{
-
-                _boundaryPointAreas[ edge->second[ 2 ] ] += a;
-                _boundaryPointNormals[ edge->second[ 2 ] ] += n;
-
-            }
-
-            _boundaryPointAreas[ edge->second[ 3 ] ] += a;
-            _boundaryPointNormals[ edge->second[ 3 ] ] += n;
 
         }
 
