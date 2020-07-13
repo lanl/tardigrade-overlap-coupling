@@ -109,10 +109,10 @@ namespace volumeReconstruction{
             //Required overloads
             virtual errorOut evaluate( );
             virtual errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
-                                                       floatVector &integratedVolume );
+                                                       floatVector &integratedValue );
 
             virtual errorOut performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
-                                                                       const floatVector &origin, floatVector &integratedVolume );
+                                                                       const floatVector &origin, floatVector &integratedValue );
 
             virtual errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
                                                         floatVector &integratedValue );
@@ -174,6 +174,9 @@ namespace volumeReconstruction{
 
             errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
                                                floatVector &integratedValue );
+
+            errorOut performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                               const floatVector &origin, floatVector &integratedValue );
 
         protected:
 
