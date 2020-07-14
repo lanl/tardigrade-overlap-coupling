@@ -606,6 +606,11 @@ namespace volumeReconstruction{
         /*!
          * Integrate a quantity known at the points over the volume returning the value for the domain.
          *
+         * TODO: Consider replacing this error out with a default routine that assumes that the volume
+         *       reconstruction generates a list of volumes associated with each point and uses those
+         *       volumes to compute the overall volume. Leaving this as a virtual function enables the
+         *       user to overload it if required.
+         *
          * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
          *     provided to the volume reconstruction object and the second index is the value of the 
@@ -638,7 +643,64 @@ namespace volumeReconstruction{
          * :param floatVector &integratedValue: The final value of the integral
          */
 
-        return new errorNode( "performRelativePositionVolumeIntegration", "Relative position volume integration not implemented" );
+        //Error handling
+        if ( ( valuesAtPoints.size( ) / valueSize ) != ( getPoints( )->size( ) / _dim ) ){
+
+            return new errorNode( "performRelativePositionVolumeIntegration",
+                                  "The values at points vector is not consistent with the points vector in terms of size" );
+
+        }
+
+        //Compute the dyad at the points
+        floatMatrix dyad;
+        floatVector dyadVector;
+        floatVector integrand;
+        integrand.reserve( _dim * valuesAtPoints.size( ) );
+        floatVector pointValue;
+        floatVector pointPosition;
+
+        unsigned int index; 
+
+        for ( auto point = getPoints( )->begin( ); point != getPoints( )->end( ); point+=_dim ){
+
+            //Set the index
+            index = point - getPoints( )->begin( );
+
+            //Extract the function value at the point
+            pointValue = floatVector( valuesAtPoints.begin( ) + ( index / _dim ) * valueSize,
+                                      valuesAtPoints.begin( ) + ( index / _dim + 1 ) * valueSize );
+
+            //Extract the point position
+            pointPosition = floatVector( point, point + _dim );
+
+            //Compute the dyadic product
+            dyad = vectorTools::dyadic( pointValue, pointPosition - origin );
+
+            //Flatten the dyadic product
+            dyadVector = vectorTools::appendVectors( dyad );
+
+            //Insert the values of the dyadic vector
+            for ( auto v = dyadVector.begin( ); v != dyadVector.end( ); v++ ){
+
+                integrand.push_back( *v );
+
+            }
+
+        }
+
+        //Perform the integration
+        errorOut error = performVolumeIntegration( integrand, _dim * valueSize, integratedValue );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "performRelativePositionVolumeIntegration",
+                                             "Error in performing the volume integration" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
     }
 
     errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
@@ -2557,85 +2619,6 @@ namespace volumeReconstruction{
 
         return NULL;
 
-    }
-
-    errorOut dualContouring::performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
-                                                                       const floatVector &origin, floatVector &integratedValue ){
-        /*!
-         * Integrate a quantity known at the points which has been dyaded with the relative position returning the
-         * value for the domain.
-         *
-         * $V_ij = \int_{\mathcal{D}} v_i \left( x_j' - o_j \right) dv
-         *
-         * where $o_j$ is the origin and x_j' is the position of the point in the volume
-         *
-         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
-         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
-         *     provided to the volume reconstruction object and the second index is the value of the 
-         *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
-         * :param const floatVector &origin: The coordinates of the origin.
-         * :param floatVector &integratedValue: The final value of the integral
-         */
-
-        //Error handling
-        if ( ( valuesAtPoints.size( ) / valueSize ) != ( getPoints( )->size( ) / _dim ) ){
-
-            return new errorNode( "performRelativePositionVolumeIntegration",
-                                  "The values at points vector is not consistent with the points vector in terms of size" );
-
-        }
-
-        //Compute the dyad at the points
-        floatMatrix dyad;
-        floatVector dyadVector;
-        floatVector integrand;
-        integrand.reserve( _dim * valuesAtPoints.size( ) );
-        floatVector pointValue;
-        floatVector pointPosition;
-
-        unsigned int index; 
-
-        for ( auto point = getPoints( )->begin( ); point != getPoints( )->end( ); point+=_dim ){
-
-            //Set the index
-            index = point - getPoints( )->begin( );
-
-            //Extract the function value at the point
-            pointValue = floatVector( valuesAtPoints.begin( ) + ( index / _dim ) * valueSize,
-                                      valuesAtPoints.begin( ) + ( index / _dim + 1 ) * valueSize );
-
-            //Extract the point position
-            pointPosition = floatVector( point, point + _dim );
-
-            //Compute the dyadic product
-            dyad = vectorTools::dyadic( pointValue, pointPosition - origin );
-
-            //Flatten the dyadic product
-            dyadVector = vectorTools::appendVectors( dyad );
-
-            //Insert the values of the dyadic vector
-            for ( auto v = dyadVector.begin( ); v != dyadVector.end( ); v++ ){
-
-                integrand.push_back( *v );
-
-            }
-
-        }
-
-        //Perform the integration
-        errorOut error = performVolumeIntegration( integrand, _dim * valueSize, integratedValue );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "performRelativePositionVolumeIntegration",
-                                             "Error in performing the volume integration" );
-            result->addNext( error );
-            return result;
-
-        }
-
-        return NULL;
     }
 
 }

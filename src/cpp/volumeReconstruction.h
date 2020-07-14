@@ -175,8 +175,8 @@ namespace volumeReconstruction{
             errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
                                                floatVector &integratedValue );
 
-            errorOut performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
-                                                               const floatVector &origin, floatVector &integratedValue );
+//            errorOut performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+//                                                               const floatVector &origin, floatVector &integratedValue );
 
         protected:
 
