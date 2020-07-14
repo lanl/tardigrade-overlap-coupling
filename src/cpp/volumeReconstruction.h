@@ -141,6 +141,8 @@ namespace volumeReconstruction{
             const floatVector *_functionValues = NULL;
             unsigned int _nPoints;
 
+            
+
         private:
 
             bool _isEvaluated = false;
@@ -175,8 +177,8 @@ namespace volumeReconstruction{
             errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
                                                floatVector &integratedValue );
 
-//            errorOut performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
-//                                                               const floatVector &origin, floatVector &integratedValue );
+            errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                floatVector &integratedValue );
 
         protected:
 

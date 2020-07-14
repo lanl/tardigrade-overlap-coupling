@@ -1604,6 +1604,7 @@ namespace volumeReconstruction{
 
         floatVector X0, X;
 
+        floatVector localBoundaryPoint;
         floatVector boundaryPoint;
 
         unsigned int edgeID;
@@ -1698,7 +1699,19 @@ namespace volumeReconstruction{
 
                 }
 
-                points.push_back( intersectionPoint );
+                //Compute the local coordinates of the intersection point
+                error = element->compute_local_coordinates( intersectionPoint, localIntersectionPoint );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "computeBoundaryPoints", "Error in computation of the local coordinates of the intersection point" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                //Put the local coordinates of the point into the points vector
+                points.push_back( localIntersectionPoint );
 
                 //Get the global node ids of the nodes on the edges
                 ri1 = element->global_node_ids[ i1 ] / ( ngy * ngz );
@@ -1762,17 +1775,6 @@ namespace volumeReconstruction{
 
                     //Use the gradient of the shape function to compute the normal
                    
-                    //Compute the local coordinates
-                    error = element->compute_local_coordinates( intersectionPoint, localIntersectionPoint );
-
-                    if ( error ){
-
-                        errorOut result = new errorNode( "computeBoundaryPoints", "Error in computation of the local coordinates of the intersection point" );
-                        result->addNext( error );
-                        return result;
-
-                    }
-
                     //Compute the global gradient
                     error = element->get_global_gradient( cellValues, localIntersectionPoint, gradient );
 
@@ -1861,11 +1863,12 @@ namespace volumeReconstruction{
             //Solve for the boundary point
             bool converged;
             bool fatalError;
+            bool singularJ;
 
             //Assemble the floating point argments matrix
             floatArgs.resize( 2 + 2 * points.size( ), floatVector( _dim, 0 ) );
-            floatArgs[ 0 ] = element->bounding_box[ 1 ];
-            floatArgs[ 1 ] = element->bounding_box[ 0 ];
+            floatArgs[ 0 ] = {  1,  1,  1 };//element->bounding_box[ 1 ];
+            floatArgs[ 1 ] = { -1, -1, -1 };//element->bounding_box[ 0 ];
 
             for ( unsigned int i = 0; i < points.size( ); i++ ){
 
@@ -1882,15 +1885,16 @@ namespace volumeReconstruction{
             X.resize( 5 * _dim );
             for ( unsigned int i = 0; i < _dim; i++ ){
 
-                X0[            i ] = 0.5 * ( element->bounding_box[ 0 ][ i ] + element->bounding_box[ 1 ][ i ] ); //x
+//                X0[            i ] = 0.5 * ( element->bounding_box[ 0 ][ i ] + element->bounding_box[ 1 ][ i ] ); //x
+                X0[            i ] = 0.0;
                 X0[     _dim + i ] = floatArgs[ 0 ][ i ] - X0[ i ]; //s
                 X0[ 2 * _dim + i ] = X0[ i ] - floatArgs[ 1 ][ i ]; //t
                 X0[ 3 * _dim + i ] = 0.5;
                 X0[ 4 * _dim + i ] = 0.5;
 
             }
-            
-            error = solverTools::newtonRaphson(func, X0, X, converged, fatalError, floatOuts, intOuts, floatArgs, intArgs );
+
+            error = solverTools::newtonRaphson(func, X0, X, converged, singularJ, fatalError, floatOuts, intOuts, floatArgs, intArgs );
 
             if ( fatalError ){
 
@@ -1903,12 +1907,14 @@ namespace volumeReconstruction{
             }
             if ( !converged ){
 
-                boundaryPoint = floatVector( X0.begin( ), X0.begin( ) + _dim );
+                localBoundaryPoint = floatVector( X0.begin( ), X0.begin( ) + _dim );
+                element->interpolate( element->reference_nodes, localBoundaryPoint, boundaryPoint );
 
             }
             else{
                 
-                boundaryPoint = floatVector( X.begin( ), X.begin( ) + _dim );
+                localBoundaryPoint = floatVector( X.begin( ), X.begin( ) + _dim );
+                element->interpolate( element->reference_nodes, localBoundaryPoint, boundaryPoint );
 
             }
 
@@ -1998,7 +2004,8 @@ namespace volumeReconstruction{
 
             for ( unsigned int _i = 0; _i < dim; _i++ ){
 
-                residual[ _i ] += nxmp * normals[ i ][ _i ];
+                residual[ _i ] += nxmp * normals[ i ][ _i ] + x[ _i ];
+                jacobian[ _i ][ _i ] += 1;
 
                 for ( unsigned int _j = 0; _j < dim; _j++ ){
 
@@ -2619,6 +2626,164 @@ namespace volumeReconstruction{
 
         return NULL;
 
+    }
+
+    errorOut dualContouring::performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                        floatVector &integratedValue ){
+        /*!
+         * Integrate a quantity known at the point over the surface return the value for the domain.
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object and the second index is the value of the 
+         *     function to be integrated.
+         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param floatVector &integratedValue: The final value of the integral
+         */
+
+        errorOut error;
+
+        //Check if the domain has been constructed yet
+        if ( !getEvaluated( ) ){
+            error = evaluate( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "performSurfaceIntegration",
+                                                 "Error encountered during the reconstruction of the volume" );
+                result->addNext( error );
+                return result;
+
+            }
+        }
+
+        //Interpolate the function to the background grid
+        std::unordered_map< unsigned int, floatVector > functionAtGrid;
+        error = interpolateFunctionToBackgroundGrid( valuesAtPoints, valueSize, functionAtGrid );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "performSurfaceIntegration",
+                                             "Error encountered during the interpolation of the function to the background grid" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Perform the surface integration
+        floatVector boundaryPoint;
+        floatVector localBoundaryPoint;
+        floatVector valueAtBoundaryPoint;
+
+        unsigned int ngy = _gridLocations[ 1 ].size( );
+        unsigned int ngz = _gridLocations[ 2 ].size( );
+        unsigned int i, j, k;
+        uIntVector indices;
+
+        std::unique_ptr< elib::Element > element;
+
+        integratedValue = floatVector( valueSize, 0 );
+
+        floatMatrix nodalFunctionValues;
+
+        floatType surfaceArea = 0;
+
+        for ( auto cell = _boundaryCells.begin( ); cell != _boundaryCells.end( ); cell++ ){
+
+            //Get the bottom corner node IDs from the cell id
+            i = *cell / ( ngy * ngz );
+            j = ( *cell - ngy * ngz * i ) / ngz;
+            k = (*cell - ngy * ngz * i - ngz * j );
+
+            indices = { i, j, k };
+
+            //Get the element associated with this cell
+            error = getGridElement( indices, element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "performSurfaceIntegration",
+                                                 "Error in getting the grid element" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Get the boundary point associated with this cell
+            auto index = _boundaryPointIDToIndex.find( *cell );
+            if ( index == _boundaryPointIDToIndex.end( ) ){
+
+                return new errorNode( "performSurfaceIntegration",
+                                      "The boundary cell is not found in the boundary point ID to index map" );
+
+            }
+
+            boundaryPoint = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
+                                         _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
+
+            //Compute the local coordinates of the point
+            error = element->compute_local_coordinates( boundaryPoint, localBoundaryPoint );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "performVolumeIntegration",
+                                                 "Error in the computation of the local coordinates" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Extract the function at the nodes
+            nodalFunctionValues = floatMatrix( element->global_node_ids.size( ), floatVector( valueSize ) );
+            for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+
+                if ( functionAtGrid.find( *nID ) == functionAtGrid.end( ) ){
+
+                    return new errorNode( "performSurfaceIntegration",
+                                          "Node with global ID " + std::to_string( *nID )
+                                        + " not found in the grid node to function map" );
+
+                }
+
+                nodalFunctionValues[ nID - element->global_node_ids.begin( ) ]
+                    = functionAtGrid[ *nID ];
+
+            }
+
+            //Interpolate the function to the boundary point
+            std::cout << "nodalFunctionValues:\n";
+            vectorTools::print( nodalFunctionValues );
+            std::cout << "localBoundaryPoint:\n";
+            vectorTools::print( localBoundaryPoint );
+            error = element->interpolate( nodalFunctionValues, localBoundaryPoint, valueAtBoundaryPoint );
+            std::cout << "valueAtBoundaryPoint:\n";
+            vectorTools::print( valueAtBoundaryPoint );
+            assert( 1 == 0 );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "performSurfaceIntegration",
+                                                 "Error in interpolation of the nodal function to the boundary point" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            if ( _boundaryPointAreas.find( *cell ) == _boundaryPointAreas.end( ) ){
+
+                return new errorNode( "performSurfaceIntegration",
+                                      "The current boundary point is not found in the boundary point areas map" );
+
+            }
+
+            integratedValue += valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
+            surfaceArea += _boundaryPointAreas[ *cell ];
+
+        }
+
+        std::cout << "surfaceArea: " << surfaceArea << "\n";
+
+        return NULL;
     }
 
 }
