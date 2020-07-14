@@ -706,7 +706,7 @@ namespace volumeReconstruction{
     errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
                                                                   floatVector &integratedValue ){
         /*!
-         * Integrate a quantity known at the point over the surface return the value for the domain.
+         * Integrate a quantity known at the point over the surface and return the value for the domain.
          *
          * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
@@ -717,6 +717,25 @@ namespace volumeReconstruction{
          */
 
         return new errorNode( "performSurfaceIntegration", "Surface integration not implemented" );
+    }
+
+    errorOut volumeReconstructionBase::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                                      floatVector &integratedValue ){
+        /*!
+         * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
+         *
+         * \int_{\partial\mathcal{B}} n_i v_ij da \approx \sum_{p = 1}^N n_i^p v_ij^p da^p
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_111, v_112, v_113, ..., v_121, v_122, v_123, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object, the second index is the first index of the v matirx and the
+         *     third index is the second index of the value matrix
+         *     function to be integrated.
+         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param floatVector &integratedValue: The final value of the integral
+         */
+
+        return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
 
     errorOut volumeReconstructionBase::setInterpolationConfiguration( ){
@@ -2650,6 +2669,60 @@ namespace volumeReconstruction{
          * :param floatVector &integratedValue: The final value of the integral
          */
 
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, integratedValue, false );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "performSurfaceIntegration",
+                                             "Error in the computation of the surface integral" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+    }
+
+    errorOut dualContouring::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                            floatVector &integratedValue ){
+        /*!
+         * Integrate the flux of a quantity known at the point over the surface return the value for the domain.
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object and the second index is the value of the 
+         *     function to be integrated.
+         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param floatVector &integratedValue: The final value of the integral
+         */
+
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, integratedValue, true );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "performSurfaceIntegration",
+                                             "Error in the computation of the surface integral" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+    }
+
+    errorOut dualContouring::performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                            floatVector &integratedValue, bool computeFlux ){
+        /*!
+         * Integrate a quantity known at the point over the surface return the value for the domain.
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object and the second index is the value of the 
+         *     function to be integrated.
+         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param floatVector &integratedValue: The final value of the integral
+         */
+
         errorOut error;
 
         //Check if the domain has been constructed yet
@@ -2691,7 +2764,16 @@ namespace volumeReconstruction{
 
         std::unique_ptr< elib::Element > element;
 
-        integratedValue = floatVector( valueSize, 0 );
+        if ( computeFlux ){
+
+            integratedValue = floatVector( valueSize / _dim, 0 );
+
+        }
+        else{
+
+            integratedValue = floatVector( valueSize, 0 );
+
+        }
 
         floatMatrix nodalFunctionValues;
 
@@ -2853,6 +2935,14 @@ namespace volumeReconstruction{
                                                  "Error in interpolation of the nodal function to the boundary point" );
                 result->addNext( error );
                 return result;
+
+            }
+
+            //Compute the flux of the value if required
+            if ( computeFlux ){
+
+                valueAtBoundaryPoint = vectorTools::matrixMultiply( _boundaryPointNormals[ *cell ], valueAtBoundaryPoint,
+                                                                    1, _dim, _dim, valueSize / _dim );
 
             }
 
