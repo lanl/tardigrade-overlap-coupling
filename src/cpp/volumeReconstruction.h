@@ -228,6 +228,7 @@ namespace volumeReconstruction{
 
             uIntVector _internalCells;
             uIntVector _boundaryCells;
+            std::vector< bool > _cellContainsPoint;
 
             std::unordered_map< unsigned int, uIntVector > _boundaryEdges_x;
             std::unordered_map< unsigned int, uIntVector > _boundaryEdges_y;

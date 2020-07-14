@@ -1195,6 +1195,8 @@ namespace volumeReconstruction{
         unsigned int ngy = _gridLocations[ 1 ].size( );
         unsigned int ngz = _gridLocations[ 2 ].size( );
 
+        _cellContainsPoint = std::vector< bool >( ( ngx - 1 ) * ( ngy - 1 ) * ( ngz - 1 ), false );
+
         for ( unsigned int i = 1; i < ngx - 2; i++ ){
 
             for ( unsigned int j = 1; j < ngy - 2; j++ ){
@@ -1218,6 +1220,10 @@ namespace volumeReconstruction{
                         return result;
 
                     }
+
+                    _cellContainsPoint[ ngy * ngz * i + ngz * j + k ] =
+                        std::any_of( pointCounts.begin( ), pointCounts.end( ),
+                                     []( unsigned int pC ){ return pC > 0; } );
 
                     for ( unsigned int i = 0; i < globalNodeIds.size( ); i++ ){
 
@@ -2490,7 +2496,9 @@ namespace volumeReconstruction{
         for ( auto node = functionAtGrid.begin( ); node != functionAtGrid.end( ); node++ ){
 
             if ( weights[ node->first ] > _absoluteTolerance ){
+
                 functionAtGrid[ node->first ] = node->second / weights[ node->first ];
+
             }
 
         }
@@ -2516,6 +2524,7 @@ namespace volumeReconstruction{
 
         //Check if the domain has been constructed yet
         if ( !getEvaluated( ) ){
+
             error = evaluate( );
 
             if ( error ){
@@ -2526,6 +2535,7 @@ namespace volumeReconstruction{
                 return result;
 
             }
+
         }
 
         //Interpolate the function to the background grid
@@ -2593,18 +2603,17 @@ namespace volumeReconstruction{
 
                 //Get the value of the function at the nodal values multiplied by whether the node is
                 //within the domain or not
-                
-                error = getFunctionValue( *nID / _dim, fVal );
 
-                if ( error ){
+                if ( *nID > _implicitFunctionValues.size( ) ){
 
-                    errorOut result = new errorNode( "performVolumeIntegration",
-                                                     "Error in getting the implicit function value at the current node "
-                                                    + std::to_string( *nID ) );
-                    result->addNext( error );
-                    return result;
+                    return new errorNode( "performVolumeIntegration",
+                                          "The nodal ID is too large for the implicit function values vector\n nID: "
+                                          + std::to_string( *nID ) );
 
                 }
+
+                
+                fVal = _implicitFunctionValues[ *nID ];
 
                 nodalFunctionValues[ nID - element->global_node_ids.begin( ) ]
                     = ( floatType )( fVal > 0 ) * functionAtGrid[ *nID ];
@@ -2686,8 +2695,6 @@ namespace volumeReconstruction{
 
         floatMatrix nodalFunctionValues;
 
-        floatType surfaceArea = 0;
-
         for ( auto cell = _boundaryCells.begin( ); cell != _boundaryCells.end( ); cell++ ){
 
             //Get the bottom corner node IDs from the cell id
@@ -2726,7 +2733,7 @@ namespace volumeReconstruction{
 
             if ( error ){
 
-                errorOut result = new errorNode( "performVolumeIntegration",
+                errorOut result = new errorNode( "performSurfaceIntegration",
                                                  "Error in the computation of the local coordinates" );
                 result->addNext( error );
                 return result;
@@ -2746,19 +2753,99 @@ namespace volumeReconstruction{
                 }
 
                 nodalFunctionValues[ nID - element->global_node_ids.begin( ) ]
-                    = functionAtGrid[ *nID ];
+                    = ( floatType )( _implicitFunctionValues[ *nID ] > 0 ) * functionAtGrid[ *nID ];
+
+            }
+
+            //Process the nodes which are ouside of the volume
+
+            //Compute the values of the function at the quadrature points
+            floatMatrix qptValue( element->qrule.size( ) );
+            floatVector shapeFunctionQpt;
+            floatVector shapeFunctionSum( element->global_node_ids.size( ), 0 );
+
+            for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+                //Compute the value of the function at the quadrature points
+                error = element->interpolate( nodalFunctionValues, qpt->first, qptValue[ qpt - element->qrule.begin( ) ] );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "performSurfaceIntegration",
+                                                     "Error in the interpolation at the quadrature points" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                //Compute the values of the shape functions at the quadrature point
+
+            }
+
+            //Get whether the element's nodes are inside of the reconstructed volume
+            floatVector nodalImplicitFunction( element->reference_nodes.size( ), 0 );
+            for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+
+                 nodalImplicitFunction[ nID - element->global_node_ids.begin( ) ]
+                     = ( floatType )( _implicitFunctionValues[ *nID ] > 0 );
+
+            }
+
+            //Interpolate the influence of the function definition at the quadrature points and
+            //increase the magnitude of the quadrature point values accordingly
+
+            floatType qptInteriorInfluence;
+            for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+                //Compute the influence of the exterior nodes at the quadrature point
+                error = element->interpolate( nodalImplicitFunction, qpt->first, qptInteriorInfluence );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "performSurfaceIntegration",
+                                                     "Error in the interpolation of the interior node influence points" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                //Normalize the quadrature point value of the function by the interior point influence
+                qptValue[ qpt - element->qrule.begin( ) ] /= qptInteriorInfluence;
+
+                //Compute the shape-function values at the quadrature points
+                element->get_shape_functions( qpt->first, shapeFunctionQpt );
+
+                //Project the qpt function values back to the nodes
+                for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+
+                    if ( _implicitFunctionValues[ *nID ] < 0 ){
+
+                        nodalFunctionValues[ nID - element->global_node_ids.begin( ) ]
+                            += shapeFunctionQpt[ nID - element->global_node_ids.begin( ) ]
+                             * qptValue[ qpt - element->qrule.begin( ) ];
+
+                    }
+
+                }
+
+                shapeFunctionSum += shapeFunctionQpt;
+
+            }
+
+            //Normalize the nodal function values by the sum of the shape function values
+            for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+
+                if ( _implicitFunctionValues[ *nID ] < 0 ){
+
+                    nodalFunctionValues[ nID - element->global_node_ids.begin( ) ]
+                        /= shapeFunctionSum[ nID - element->global_node_ids.begin( ) ];
+
+                }
 
             }
 
             //Interpolate the function to the boundary point
-            std::cout << "nodalFunctionValues:\n";
-            vectorTools::print( nodalFunctionValues );
-            std::cout << "localBoundaryPoint:\n";
-            vectorTools::print( localBoundaryPoint );
             error = element->interpolate( nodalFunctionValues, localBoundaryPoint, valueAtBoundaryPoint );
-            std::cout << "valueAtBoundaryPoint:\n";
-            vectorTools::print( valueAtBoundaryPoint );
-            assert( 1 == 0 );
 
             if ( error ){
 
@@ -2777,11 +2864,8 @@ namespace volumeReconstruction{
             }
 
             integratedValue += valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
-            surfaceArea += _boundaryPointAreas[ *cell ];
 
         }
-
-        std::cout << "surfaceArea: " << surfaceArea << "\n";
 
         return NULL;
     }
