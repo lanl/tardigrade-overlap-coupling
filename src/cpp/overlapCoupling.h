@@ -10,6 +10,7 @@
 #include<DOFProjection.h>
 #include<inputFileProcessor.h>
 #include<element.h>
+#include<volumeReconstruction.h>
 
 namespace overlapCoupling{
 
@@ -161,7 +162,19 @@ namespace overlapCoupling{
                                                                                   const uIntVector &macroNodes );
             errorOut projectDegreesOfFreedom( );
 
-            errorOut homogenizeMicroScale( );
+            errorOut homogenizeMicroScale( const unsigned int &microIncrement );
+
+            errorOut reconstructDomain( const unsigned int &microIncrement, const std::string &microDomainName,
+                                        floatVector &microNodePositions,
+                                        std::unique_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
+
+            errorOut computeDomainVolumeAverages( const std::string &macroCellName, const std::string &microDomainName,
+                                                  std::unique_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
+
+            errorOut computeDomainSurfaceAverages( const std::string &macroCellName, const std::string &microDomainName,
+                                                   std::unique_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
+
+            errorOut computeHomogenizedStresses( const std::string &macroCellName );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;
