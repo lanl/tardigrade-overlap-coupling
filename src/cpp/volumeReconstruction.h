@@ -125,6 +125,8 @@ namespace volumeReconstruction{
                                                                     const floatVector &origin,
                                                                     floatVector &integratedValue );
 
+            const YAML::Node exportConfiguration( );
+
         protected:
 
             unsigned int _dim = 3; //The dimension is hard coded to 3

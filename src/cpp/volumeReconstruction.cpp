@@ -3020,4 +3020,13 @@ namespace volumeReconstruction{
         return NULL;
     }
 
+    const YAML::Node volumeReconstructionBase::exportConfiguration( ){
+        /*!
+         * Export the configuration
+         */
+
+        return _config;
+
+    }
+
 }

@@ -1458,6 +1458,45 @@ int test_dualContouring_performRelativePositionSurfaceFluxIntegration( std::ofst
     
 }
 
+int test_dualContouring_exportConfiguration( std::ofstream &results ){
+    /*!
+     * Test the export of the configuration file
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    volumeReconstruction::dualContouring dc( yf );
+
+    if ( dc.getError( ) ){
+        
+        dc.getError( )->print( );
+
+        results << "test_dualContouring_exportConfiguration & False\n";
+        return 1;
+    
+    }
+
+    YAML::Node config = dc.exportConfiguration( );
+
+    if ( !config[ "type" ] ){
+
+        results << "test_dualContouring_exportConfiguration (test 1) & False\n";
+        return 1;
+
+    }
+    else if ( config[ "type" ].as< std::string >( ).compare( "dual_contouring" ) != 0 ){
+
+        results << "test_dualContouring_exportConfiguration (test 2) & False\n";
+        return 1;
+
+    }
+
+    results << "test_dualContouring_exportConfiguration & True\n";
+    return 0;
+    
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -1481,6 +1520,7 @@ int main(){
     test_dualContouring_performSurfaceIntegration( results );
     test_dualContouring_performSurfaceFluxIntegration( results );
     test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
+    test_dualContouring_exportConfiguration( results );
 
     test_KDNode_constructor( results );
     test_KDNode_getIndex( results );
