@@ -120,6 +120,11 @@ namespace volumeReconstruction{
             virtual errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
                                                             floatVector &integratedValue );
 
+            errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
+                                                                    const unsigned int valueSize,
+                                                                    const floatVector &origin,
+                                                                    floatVector &integratedValue );
+
         protected:
 
             unsigned int _dim = 3; //The dimension is hard coded to 3
@@ -186,6 +191,9 @@ namespace volumeReconstruction{
             errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
                                                     floatVector &integratedValue );
 
+            errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                                    const floatVector &origin, floatVector &integratedValue );
+
         protected:
 
             errorOut initialize( );
@@ -196,7 +204,8 @@ namespace volumeReconstruction{
                                                           std::unordered_map< unsigned int, floatVector > &functionAtGrid );
 
             errorOut performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const unsigned int valueSize,
-                                                    floatVector &integratedValue, bool computeFlux );
+                                                    const floatVector &origin, floatVector &integratedValue,
+                                                    bool computeFlux, bool dyadWithOrigin );
 
         private:
 

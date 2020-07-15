@@ -2669,7 +2669,8 @@ namespace volumeReconstruction{
          * :param floatVector &integratedValue: The final value of the integral
          */
 
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, integratedValue, false );
+        floatVector origin;
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, false );
 
         if ( error ){
 
@@ -2696,7 +2697,8 @@ namespace volumeReconstruction{
          * :param floatVector &integratedValue: The final value of the integral
          */
 
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, integratedValue, true );
+        floatVector origin;
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false );
 
         if ( error ){
 
@@ -2710,17 +2712,56 @@ namespace volumeReconstruction{
         return NULL;
     }
 
-    errorOut dualContouring::performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const unsigned int valueSize,
-                                                            floatVector &integratedValue, bool computeFlux ){
+    errorOut dualContouring::performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
+                                                                            const unsigned int valueSize,
+                                                                            const floatVector &origin,
+                                                                            floatVector &integratedValue ){
         /*!
-         * Integrate a quantity known at the point over the surface return the value for the domain.
+         * $\int_{\partial\mathcal{B}} n_i v_ij ( x_k' - o_k ) da \approx \sum_{p = 1}^N n_i^p v_ij^p ( x_k' - o_k ) da^p$
+         *
+         * where $x_k'$ is the position of the point on the surface, $o_k$ is the origin, and $n_i$ is the normal at the point.
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_111, v_112, v_113, ..., v_121, v_122, v_123, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object, the second index is the first index of the v matirx and the
+         *     third index is the second index of the value matrix
+         *     function to be integrated.
+         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const floatVector &origin: The origin that the relative position vector is computed in relation to.
+         * :param floatVector &integratedValue: The final value of the integral
+         */
+
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, true );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "performRelativePositionSurfaceFluxIntegration",
+                                             "Error in computation of the integral of the dyadic product between a flux and the relative position vector" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+    }
+                    
+
+    errorOut dualContouring::performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const unsigned int valueSize,
+                                                            const floatVector &origin, floatVector &integratedValue,
+                                                            bool computeFlux, bool dyadWithOrigin ){
+        /*!
+         * Integrate a quantity known at the points over the surface return the value for the domain.
          *
          * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
          *     provided to the volume reconstruction object and the second index is the value of the 
          *     function to be integrated.
          * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const floatVector &origin: The origin.
          * :param floatVector &integratedValue: The final value of the integral
+         * :param bool computeFlux: The flag indicating if the flux needs to be computed of the values at the surface.
+         * :param bool dyadWithOrigin: The flag indicating if the dyadic product between the values on the surface
+         *     ( post flux calculation ) needs to be computed.
          */
 
         errorOut error;
@@ -2772,6 +2813,19 @@ namespace volumeReconstruction{
         else{
 
             integratedValue = floatVector( valueSize, 0 );
+
+        }
+
+        if ( dyadWithOrigin ){
+
+            if ( origin.size( ) != _dim ){
+
+                return new errorNode( "performSurfaceIntegration",
+                                      "The origin must be of dimension: " + std::to_string( _dim ) );
+
+            }
+
+            integratedValue = floatVector( integratedValue.size( ) * _dim, 0 );
 
         }
 
@@ -2943,6 +2997,12 @@ namespace volumeReconstruction{
 
                 valueAtBoundaryPoint = vectorTools::matrixMultiply( _boundaryPointNormals[ *cell ], valueAtBoundaryPoint,
                                                                     1, _dim, _dim, valueSize / _dim );
+
+            }
+
+            if ( dyadWithOrigin ){
+
+                valueAtBoundaryPoint = vectorTools::appendVectors( vectorTools::dyadic( valueAtBoundaryPoint, boundaryPoint - origin ) );
 
             }
 
