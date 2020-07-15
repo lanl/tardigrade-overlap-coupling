@@ -1706,10 +1706,68 @@ namespace overlapCoupling{
 
     }
 
-    errorOut homogenizeMicroScale( ){
+    errorOut overlapCoupling::homogenizeMicroScale( ){
         /*!
          * Homogenize the micro-scale properties to the macro scale.
          */
+
+        //Loop through the free macro-scale cells
+        unsigned int microDomainStartIndex = 0;
+        for ( auto macroCell  = _inputProcessor.getFreeMacroDomainNames( )->begin( );
+                   macroCell != _inputProcessor.getFreeMacroDomainNames( )->end( );
+                   macroCell++ ){
+
+            //Set the macro index
+            unsigned int macroIndex = macroCell - _inputProcessor.getFreeMacroDomainNames( )->begin( );
+
+            //Get the number of micro domain in this macro cell
+            unsigned int nCellMicroDomains = ( *_inputProcessor.getFreeMacroCellMicroDomainCounts( ) )[ macroIndex ];
+
+            for ( auto microDomain  = _inputProcessor.getGhostMicroDomainNames( )->begin( ) + microDomainStartIndex;
+                       microDomain != _inputProcessor.getGhostMicroDomainNames( )->begin( ) + microDomainStartIndex + nCellMicroDomains;
+                       microDomain++ ){
+
+                //Compute the volume averages
+                
+                //Compute the surface averages
+                
+                //Compute the approximate stresses
+                
+            }
+
+            //Increment the start index of the micro domain
+            microDomainStartIndex += nCellMicroDomains;
+
+        }
+
+        //Loop through the ghost macro-scale cells
+        microDomainStartIndex = 0;
+        for ( auto macroCell  = _inputProcessor.getGhostMacroDomainNames( )->begin( );
+                   macroCell != _inputProcessor.getGhostMacroDomainNames( )->end( );
+                   macroCell++ ){
+
+            //Set the macro index
+            unsigned int macroIndex = macroCell - _inputProcessor.getGhostMacroDomainNames( )->begin( );
+
+            //Get the number of micro domain in this macro cell
+            unsigned int nCellMicroDomains = ( *_inputProcessor.getGhostMacroCellMicroDomainCounts( ) )[ macroIndex ];
+
+            for ( auto microDomain  = _inputProcessor.getFreeMicroDomainNames( )->begin( ) + microDomainStartIndex;
+                       microDomain != _inputProcessor.getFreeMicroDomainNames( )->begin( ) + microDomainStartIndex + nCellMicroDomains;
+                       microDomain++ ){
+
+                //Compute the volume averages
+                
+                //Compute the surface averages
+                
+                //Compute the approximate stresses
+                
+            }
+
+            //Increment the start index of the micro domain
+            microDomainStartIndex += nCellMicroDomains;
+
+        }
 
         return NULL;
     }
