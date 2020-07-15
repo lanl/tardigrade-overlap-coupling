@@ -1921,7 +1921,7 @@ namespace overlapCoupling{
     }
 
     errorOut overlapCoupling::computeDomainVolumeAverages( const std::string &macroCellName, const std::string &microDomainName,
-                                                           volumeReconstruction::volumeReconstructionBase &reconstructedVolume ){
+                                                           std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
         /*!
          * Compute the required volume averages over the micro-domain.
          *
@@ -1936,7 +1936,7 @@ namespace overlapCoupling{
     }
 
     errorOut overlapCoupling::computeDomainSurfaceAverages(  const std::string &macroCellName, const std::string &microDomainName,
-                                                             volumeReconstruction::volumeReconstructionBase &reconstructedVolume ){
+                                                             std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
         /*!
          * Compute the required surface averages over the micro-domain.
          *
