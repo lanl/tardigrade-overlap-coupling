@@ -1731,9 +1731,9 @@ namespace overlapCoupling{
                 
                 //Compute the surface averages
                 
-                //Compute the approximate stresses
-                
             }
+
+            //Compute the approximate stresses
 
             //Increment the start index of the micro domain
             microDomainStartIndex += nCellMicroDomains;
@@ -1760,9 +1760,9 @@ namespace overlapCoupling{
                 
                 //Compute the surface averages
                 
-                //Compute the approximate stresses
-                
             }
+
+            //Compute the approximate stresses
 
             //Increment the start index of the micro domain
             microDomainStartIndex += nCellMicroDomains;
