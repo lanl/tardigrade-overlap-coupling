@@ -64,6 +64,10 @@ SOLVERHEADER = $(ROOTDIR)/solver_tools/src/cpp/solver_tools.h
 INC+=-I$(ROOTDIR)/solver_tools/src/cpp
 LIB+=-L$(ROOTDIR)/solver_tools/src/cpp
 
+# Add the location of the source and header files for volumeReconstruction
+VOLUMERECONSTRUCTIONSOURCE = $(ROOTDIR)/overlap_coupling/src/cpp/volumeReconstruction.cpp
+VOLUMERECONSTRUCTIONHEADER = $(ROOTDIR)/overlap_coupling/src/cpp/volumeReconstruction.h
+
 # Add the location of the YAML headers and library
 INC+= -I$(ROOTDIR)/yaml-cpp/include
 LIB+= -L$(ROOTDIR)/yaml-cpp/build/
