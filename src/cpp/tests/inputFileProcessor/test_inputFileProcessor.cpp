@@ -816,6 +816,40 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
 }
 
+int test_getVolumeReconstructionConfig( std::ofstream &results ){
+    /*!
+     * Test getting the volume reconstruction configuration from the configuration file
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getVolumeReconstructionConfig & False\n";
+        return 1;
+    }
+
+    YAML::Node couplingInitialization = reader.getVolumeReconstructionConfig( );
+
+    if ( !couplingInitialization ){
+        results << "test_getVolumeReconstructionConfig (test 1) & False\n";
+        return 1;
+    }
+
+    std::string typeAnswer = "dual_contouring";
+    if ( couplingInitialization[ "type" ].as<std::string>( ).compare( typeAnswer ) ){
+        results << "test_getVolumeReconstructionConfig (test 2) & False\n";
+        return 1;
+    }
+
+    results << "test_getVolumeReconstructionConfig & True\n";
+    return 0;
+
+}
+
 int test_getFreeMacroDomainNames( std::ofstream &results ){
     /*!
      * Test getting the free macro volume sets from the configuration file
@@ -918,6 +952,7 @@ int main(){
     test_getGhostMacroDomainNames( results );
     test_getNonOverlappedMicroSurfaceNames( results );
     test_getCouplingInitialization( results );
+    test_getVolumeReconstructionConfig( results );
 
     //Close the results file
     results.close();

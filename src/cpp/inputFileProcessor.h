@@ -110,6 +110,8 @@ namespace inputFileProcessor{
 
             const YAML::Node getCouplingInitialization( );
 
+            const YAML::Node getVolumeReconstructionConfig( );
+
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
 
@@ -138,6 +140,8 @@ namespace inputFileProcessor{
                                                         stringVector &microSurfaceNodesets );
 
             errorOut checkCouplingInitialization( );
+
+            errorOut checkVolumeReconstructionInitialization( );
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );

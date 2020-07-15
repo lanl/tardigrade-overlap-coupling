@@ -72,6 +72,14 @@ namespace inputFileProcessor{
             return;
         }
 
+        //Check the volume reconstruction initialization
+        error = checkVolumeReconstructionInitialization( );
+        if ( error ){
+            _error = new errorNode( "initialize", "Error in the volume reconstruction initialization" );
+            _error->addNext( error );
+            return;
+        }
+
         return;
 
     }
@@ -1683,6 +1691,28 @@ namespace inputFileProcessor{
         v.erase( std::remove_if( v.begin( ), v.end( ), pred ), v.end( ) );
 
         return NULL;
+    }
+
+    errorOut inputFileProcessor::checkVolumeReconstructionInitialization( ){
+        /*!
+         * Check the initialization of the volume reconstruction
+         */
+
+        if ( !_config[ "volume_reconstruction" ] ){
+
+            _config[ "volume_reconstruction" ][ "type" ] = "dual_contouring";
+
+        }
+
+        return NULL;
+    }
+
+    const YAML::Node inputFileProcessor::getVolumeReconstructionConfig( ){
+        /*!
+         * Return the volume reconstruction configuration
+         */
+
+        return _config[ "volume_reconstruction" ];
     }
 
     const floatVector* inputFileProcessor::getMicroDisplacements( ){
