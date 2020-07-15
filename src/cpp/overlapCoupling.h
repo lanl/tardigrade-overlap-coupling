@@ -166,13 +166,13 @@ namespace overlapCoupling{
 
             errorOut reconstructDomain( const unsigned int &microIncrement, const std::string &microDomainName,
                                         floatVector &microNodePositions,
-                                        std::unique_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
+                                        std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
             errorOut computeDomainVolumeAverages( const std::string &macroCellName, const std::string &microDomainName,
-                                                  std::unique_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
+                                                  std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
             errorOut computeDomainSurfaceAverages( const std::string &macroCellName, const std::string &microDomainName,
-                                                   std::unique_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
+                                                   std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
             errorOut computeHomogenizedStresses( const std::string &macroCellName );
                                                                    

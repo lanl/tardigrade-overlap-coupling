@@ -1741,7 +1741,7 @@ namespace overlapCoupling{
                        microDomain++ ){
 
                 floatVector microNodePositions;
-                std::unique_ptr< volumeReconstruction::volumeReconstructionBase > reconstructedVolume;
+                std::shared_ptr< volumeReconstruction::volumeReconstructionBase > reconstructedVolume;
 
                 //Reconstruct the micro-domain's volume
                 error = reconstructDomain( microIncrement, *microDomain, microNodePositions, reconstructedVolume );
@@ -1815,7 +1815,7 @@ namespace overlapCoupling{
                        microDomain++ ){
 
                 floatVector microNodePositions;
-                std::unique_ptr< volumeReconstruction::volumeReconstructionBase > reconstructedVolume;
+                std::shared_ptr< volumeReconstruction::volumeReconstructionBase > reconstructedVolume;
 
                 //Compute the volume averages
                 error = computeDomainVolumeAverages( *macroCell, *microDomain, reconstructedVolume );
@@ -1836,7 +1836,7 @@ namespace overlapCoupling{
 
     errorOut overlapCoupling::reconstructDomain( const unsigned int &microIncrement, const std::string &microDomainName,
                                                  floatVector &microNodePositions,
-                                                 std::unique_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
+                                                 std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
         /*!
          * Reconstruct the micro-domain's volume to perform volume and surface integrals over that
          * domain.
@@ -1844,7 +1844,7 @@ namespace overlapCoupling{
          * :param const unsigned int &microIncrement: The increment at which to extract the micro-positions
          * :param const std::string &microDomainName: The name of the micro-domain to be re-constructed.
          * :param floatVector &microNodePositions: The positions of the micro nodes for the current domain
-         * :param volumeReconstruction::volumeReconstructionBase &reconstructedVolume: The reconstructed
+         * :param std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume: The reconstructed
          *     volume ready for additional processing.
          */
 
@@ -1883,7 +1883,17 @@ namespace overlapCoupling{
         }
 
         reconstructedVolume
-            = volumeReconstruction::getVolumeReconstruction( _config[ "microscale_definition" ][ "volume_reconstruction" ] );
+            = volumeReconstruction::volumeReconstructionBase( _inputProcessor.getVolumeReconstructionConfig( ) ).create( );
+
+        if ( reconstructedVolume->getError( ) ){
+
+            errorOut result = new errorNode( "reconstructDomain",
+                                             "Error in creating the volume reconstruction object for " + microDomainName );
+
+            result->addNext( reconstructedVolume->getError( ) );
+            return result;
+
+        }
 
         error = reconstructedVolume->loadPoints( &microNodePositions );
 
