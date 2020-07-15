@@ -160,6 +160,8 @@ namespace overlapCoupling{
                                                                                   const std::string &domainName,
                                                                                   const uIntVector &macroNodes );
             errorOut projectDegreesOfFreedom( );
+
+            errorOut homogenizeMicroScale( );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;

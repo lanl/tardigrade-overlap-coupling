@@ -73,29 +73,48 @@ namespace overlapCoupling{
 
         //Initialize the input processor
         errorOut error = _inputProcessor.initializeIncrement( microIncrement, macroIncrement );
+
         if ( error ){
+
             errorOut result = new errorNode( "processIncrement", "Error in initialization of the input processor" );
             result->addNext( error );
             return result;
+
         }
 
         //Compute the centers of mass of the free and ghost domains
         error = computeIncrementCentersOfMass( microIncrement, macroIncrement,
                                                _freeMicroDomainMasses, _ghostMicroDomainMasses,
                                                _freeMicroDomainCentersOfMass, _ghostMicroDomainCentersOfMass );
+
         if ( error ){
+
             errorOut result = new errorNode( "processIncrement", "Error in computation of the domain centers of mass" );
             result->addNext( error );
             return result;
+
         }
 
         //Project the degrees of freedom
         error = projectDegreesOfFreedom( );
 
         if ( error ){
+
             errorOut result = new errorNode( "processIncrement", "Error in the projection of the ghost degrees of freedom" );
             result->addNext( error );
             return result;
+
+        }
+
+        //Homogenize the material properties at the micro-scale to the macro-scale
+        error = homogenizeMicroScale( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processIncrement", "Error in the homogenization of the micro-scale to the macro-scale" );
+            result->addNext( error );
+            return result;
+
         }
 
         return NULL;
@@ -1685,6 +1704,14 @@ namespace overlapCoupling{
 
         return NULL;
 
+    }
+
+    errorOut homogenizeMicroScale( ){
+        /*!
+         * Homogenize the micro-scale properties to the macro scale.
+         */
+
+        return NULL;
     }
 
     const floatVector* overlapCoupling::getReferenceFreeMicroDomainMasses( ){
