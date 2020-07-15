@@ -3,5 +3,6 @@ interpolation: #Configuration for the interpolation of the points to the backgro
         function_type: constant #Other options are "from_vector"
         discretization_count: 2
         isosurface_cutoff: 0.5
+baseOutputFilename: dual_contouring_output
 write_config: #Write the configuration file to disk
-write_xdmf_output: dual_contouring_output
+write_xdmf_output:

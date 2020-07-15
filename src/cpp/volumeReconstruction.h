@@ -127,6 +127,10 @@ namespace volumeReconstruction{
 
             const YAML::Node exportConfiguration( );
 
+            virtual errorOut writeToXDMF( );
+
+            errorOut setXDMFOutputFilename( std::string );
+
         protected:
 
             unsigned int _dim = 3; //The dimension is hard coded to 3
@@ -221,7 +225,7 @@ namespace volumeReconstruction{
             bool _useMaterialPointsForNormals = false;
 
             bool _writeOutput = false;
-            std::string _outputFilename = "output";
+            std::string _XDMFOutputFilename = "output";
 
             errorOut processConfigurationFile( );
 

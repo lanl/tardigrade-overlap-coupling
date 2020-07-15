@@ -453,8 +453,11 @@ namespace volumeReconstruction{
          */
 
         if ( _config[ "write_config" ] ){
-            if ( !_config[ "write_config" ].IsScalar( ) ){
+            if ( !_config[ "baseOutputFilename" ].IsScalar( ) ){
                 _config[ "write_config" ] = "defaultOutput.yaml";
+            }
+            else{
+                _config[ "write_config" ] = _config[ "baseOutputFilename" ].as< std::string >( ) + ".yaml";
             }
 
             std::ofstream yamlOut( _config[ "write_config" ].as< std::string >( ) + ".as_evaluated" );
@@ -736,6 +739,14 @@ namespace volumeReconstruction{
          */
 
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
+    }
+
+    errorOut volumeReconstructionBase::writeToXDMF( ){
+        /*!
+         * Write the volume-reconstruction data to an XDMF file for review
+         */
+
+        return new errorNode( "writeToXDMF", "Not implemented" );
     }
 
     errorOut volumeReconstructionBase::setInterpolationConfiguration( ){
@@ -1101,14 +1112,15 @@ namespace volumeReconstruction{
             
             _writeOutput = true;
 
-            if ( _config[ "write_xdmf_output" ].IsScalar( ) ){
+            if ( _config[ "baseOutputFilename" ].IsScalar( ) ){
 
-                _outputFilename = _config[ "write_xdmf_output" ].as< std::string >( );
+                _config[ "write_xdmf_output" ] = _config[ "baseOutputFilename" ].as< std::string >( );
+                _XDMFOutputFilename = _config[ "baseOutputFilename" ].as< std::string >( );
 
             }
             else{
 
-                _config[ "write_xdmf_output" ] = _outputFilename;
+                _config[ "write_xdmf_output" ] = _XDMFOutputFilename;
 
             }
 
@@ -2090,9 +2102,9 @@ namespace volumeReconstruction{
 
         _domain->insert( domainInfo );
 
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _outputFilename + ".h5", true );
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _XDMFOutputFilename + ".h5", true );
         heavyWriter->setReleaseData( true );
-        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _outputFilename + ".xdmf", heavyWriter );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _XDMFOutputFilename + ".xdmf", heavyWriter );
 
         //Initialize the grid collection
         shared_ptr< XdmfGridCollection > _gridCollection = XdmfGridCollection::New( );

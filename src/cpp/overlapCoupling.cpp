@@ -1882,6 +1882,10 @@ namespace overlapCoupling{
  
         }
 
+        //Pass the base name of the output file to the volume reconstruction configuration to be used if output has been requested
+        _inputProcessor.setVolumeReconstructionConfigOutputBaseName( microDomainName + "_" + std::to_string( microIncrement ) );
+
+        //Get the volume reconstruction object
         reconstructedVolume
             = volumeReconstruction::volumeReconstructionBase( _inputProcessor.getVolumeReconstructionConfig( ) ).create( );
 
@@ -1895,6 +1899,7 @@ namespace overlapCoupling{
 
         }
 
+        //Load the micro points
         error = reconstructedVolume->loadPoints( &microNodePositions );
 
         if ( error ){
@@ -1906,6 +1911,7 @@ namespace overlapCoupling{
 
         }
 
+        //Reconstruct the volume
         error = reconstructedVolume->evaluate( );
 
         if ( error ){
