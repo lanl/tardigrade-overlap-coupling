@@ -125,6 +125,8 @@ namespace dataFileInterface{
          * :param unsigned int &numIncrements: The number of increments
          */
 
+        ( void ) numIncrements;
+
         return new errorNode( "getNumIncrements", "The getNumIncrements function is not defined" ); 
     }
 
@@ -135,6 +137,9 @@ namespace dataFileInterface{
          * :param const unsigned int increment: The increment at which to get the nodes
          * :param unsigned int &numIncrements: The number of increments
          */
+
+        ( void ) increment;
+        ( void ) numNodes;
 
         return new errorNode( "getNumIncrements", "The getNumNodes function is not defined" ); 
     }
@@ -148,6 +153,9 @@ namespace dataFileInterface{
          *     in row-major format [ node, coordinates ]
          */
 
+        ( void ) increment;
+        ( void ) nodalPositions;
+
         return new errorNode( "readMesh", "The readMesh function is not defined" );
     }
 
@@ -159,6 +167,10 @@ namespace dataFileInterface{
          * :param const std::string domainName: The name of the domain to be extracted.
          * :param uIntVector &domainNodes: The nodes located in the domain.
          */
+
+        ( void ) increment;
+        ( void ) domainName;
+        ( void ) domainNodes;
 
         return new errorNode( "getDomainNodes", "The getDomainNodes function is not defined" );
     }
@@ -173,6 +185,10 @@ namespace dataFileInterface{
          * :param unsigned int numDomainNodes: The number of nodes in the domain
          */
 
+        ( void ) increment;
+        ( void ) domainName;
+        ( void ) numDomainNodes;
+
         return new errorNode( "getDomainNodes", "The getNumDomainNodes function is not defined" );
     }
 
@@ -183,6 +199,9 @@ namespace dataFileInterface{
          * :param const unsigned int increment: The increment at which to get the sets
          * :param std::vector< std::string > &setNames: The names of the sets
          */
+
+        ( void ) increment;
+        ( void ) setNames;
 
         return new errorNode( "getSetNames", "The getSetNames function is not defined" );
     }
@@ -200,6 +219,11 @@ namespace dataFileInterface{
          *
          */
 
+        ( void ) increment;
+        ( void ) dataName;
+        ( void ) dataCenter;
+        ( void ) data;
+
         return new errorNode( "getSolutionData", "The getSolutionData function is not defined" );
     }
 
@@ -215,6 +239,12 @@ namespace dataFileInterface{
          * :param uIntVector &connectivityCellIndices: The indicices at which a new cell is defined in the connectivity vector.
          * :param unsigned int &cellCounts: The number of cells present.
          */
+
+        ( void ) increment;
+        ( void ) nodePositions;
+        ( void ) connectivity;
+        ( void ) connectivityCellIndices;
+        ( void ) cellCounts;
 
         return new errorNode( "getMeshData", "The getMeshData function is not defined" );
     }
@@ -232,7 +262,7 @@ namespace dataFileInterface{
         //Set the connectivity cell index vector size
         connectivityCellIndices = uIntVector( nCells, 0 );
 
-        unsigned int index;
+        long int index;
         unsigned int index_connectivity = 0;
         unsigned int cellDataCount;
 
@@ -340,8 +370,9 @@ namespace dataFileInterface{
          */
 
         //Initialize Readmode if required
-        if ( _mode.compare( "read" ) );
-        _initializeReadMode( );
+        if ( _mode.compare( "read" ) == 0 ){
+            _initializeReadMode( );
+        }
         if ( _error ){
             return;
         }
