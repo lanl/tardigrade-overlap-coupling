@@ -832,7 +832,7 @@ int test_getVolumeReconstructionConfig( std::ofstream &results ){
         return 1;
     }
 
-    YAML::Node couplingInitialization = reader.getVolumeReconstructionConfig( );
+    const YAML::Node couplingInitialization = reader.getVolumeReconstructionConfig( );
 
     if ( !couplingInitialization ){
         results << "test_getVolumeReconstructionConfig (test 1) & False\n";
