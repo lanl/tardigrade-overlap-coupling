@@ -42,7 +42,7 @@ namespace overlapCoupling{
 
             errorOut setConfigurationFilename( const std::string &configurationFilename );
 
-            const errorOut getConstructorError( );
+            errorOut getConstructorError( );
 
             errorOut initializeCoupling( );
 
@@ -165,7 +165,7 @@ namespace overlapCoupling{
             errorOut homogenizeMicroScale( const unsigned int &microIncrement );
 
             errorOut reconstructDomain( const unsigned int &microIncrement, const std::string &microDomainName,
-                                        floatVector &microNodePositions,
+                                        floatVector *microNodePositions,
                                         std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
             errorOut computeDomainVolumeAverages( const std::string &macroCellName, const std::string &microDomainName,
