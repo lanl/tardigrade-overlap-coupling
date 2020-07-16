@@ -1024,8 +1024,8 @@ namespace volumeReconstruction{
 
         if ( !_config[ "interpolation" ][ "discretization_count" ] ){
 
-            _config[ "interpolation" ][ "discretization_count" ] = std::max( ( uIntType )( std::pow( ( floatType )_nPoints, 1. / 3. ) ),
-                                                                                                         ( uIntType )1 );
+            _config[ "interpolation" ][ "discretization_count" ]
+                = std::max( ( uIntType )( std::pow( ( floatType )_nPoints, 1. / 3. ) / _minPointsPerCell ), ( uIntType )1 );
 
         }
 
@@ -1824,7 +1824,7 @@ namespace volumeReconstruction{
                 _tree.getPointsInRange( upperBounds, lowerBounds, supportingPoints, &domainUpperBounds, &domainLowerBounds );
 
                 //Determine the normal at the intersection point
-                if ( ( supportingPoints.size( ) >= _minApproximationCount ) && ( _useMaterialPointsForNormals ) ){
+                if ( ( supportingPoints.size( ) >= _minNormalApproximationCount ) && ( _useMaterialPointsForNormals ) ){
 
                     return new errorNode( "computeBoundaryPoints", "Using the material points for normals has not been implemented yet" );
 

@@ -220,7 +220,8 @@ namespace volumeReconstruction{
 
             floatType _absoluteTolerance = 1e-9;
 
-            uIntType _minApproximationCount = 5;
+            uIntType _minPointsPerCell = 2;
+            uIntType _minNormalApproximationCount = 5;
             bool _useMaterialPointsForNormals = false;
 
             bool _writeOutput = false;
@@ -251,7 +252,6 @@ namespace volumeReconstruction{
 
             uIntVector _internalCells;
             uIntVector _boundaryCells;
-//            std::vector< bool > _cellContainsPoint;
 
             std::unordered_map< uIntType, uIntVector > _boundaryEdges_x;
             std::unordered_map< uIntType, uIntVector > _boundaryEdges_y;
