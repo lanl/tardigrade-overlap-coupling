@@ -89,8 +89,6 @@ namespace inputFileProcessor{
          * The destructor
          */
 
-        std::cout << "inputFileProcessor::~inputFileProcessor\n";
-
         //Write the configuration filename out
         if ( !(_configFilename.compare( "" ) == 0 ) ){
             std::ofstream yamlOut( _configFilename + ".as_evaluated" );
