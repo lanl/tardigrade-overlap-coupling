@@ -1758,29 +1758,29 @@ namespace overlapCoupling{
 
                 }
 
-//                //Compute the volume averages
-//                error = computeDomainVolumeAverages( *macroCell, *microDomain, reconstructedVolume );
-//
-//                if ( error ){
-//
-//                    errorOut result = new errorNode( "computeDomainVolumeAverages",
-//                                                     "Error in the computation of the volume averages of the microscale domain" );
-//                    result->addNext( error );
-//                    return result;
-//
-//                }
-//                
-//                //Compute the surface averages
-//                error = computeDomainSurfaceAverages( *macroCell, *microDomain, reconstructedVolume );
-//
-//                if ( error ){
-//
-//                    errorOut result = new errorNode( "homogenizeMicroScale",
-//                                                     "Error in the computation of the surface averages of the microscale domain" );
-//                    result->addNext( error );
-//                    return result;
-//
-//                }
+                //Compute the volume averages
+                error = computeDomainVolumeAverages( *macroCell, *microDomain, reconstructedVolume );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "computeDomainVolumeAverages",
+                                                     "Error in the computation of the volume averages of the microscale domain" );
+                    result->addNext( error );
+                    return result;
+
+                }
+                
+                //Compute the surface averages
+                error = computeDomainSurfaceAverages( *macroCell, *microDomain, reconstructedVolume );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "homogenizeMicroScale",
+                                                     "Error in the computation of the surface averages of the microscale domain" );
+                    result->addNext( error );
+                    return result;
+
+                }
                 
             }
 
