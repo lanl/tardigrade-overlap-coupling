@@ -1726,15 +1726,16 @@ namespace overlapCoupling{
         unsigned int microDomainStartIndex = 0;
         errorOut error = NULL;
 
+        uIntVector microDomainNodeIds;
         floatVector microNodePositions;
         std::shared_ptr< volumeReconstruction::volumeReconstructionBase > reconstructedVolume;
 
-        for ( auto macroCell  = _inputProcessor.getFreeMacroDomainNames( )->begin( );
-                   macroCell != _inputProcessor.getFreeMacroDomainNames( )->end( );
+        for ( auto macroCell  = _inputProcessor.getFreeMacroCellIds( )->begin( );
+                   macroCell != _inputProcessor.getFreeMacroCellIds( )->end( );
                    macroCell++ ){
 
             //Set the macro index
-            unsigned int macroIndex = macroCell - _inputProcessor.getFreeMacroDomainNames( )->begin( );
+            unsigned int macroIndex = macroCell - _inputProcessor.getFreeMacroCellIds( )->begin( );
 
             //Get the number of micro domain in this macro cell
             unsigned int nCellMicroDomains = ( *_inputProcessor.getFreeMacroCellMicroDomainCounts( ) )[ macroIndex ];
@@ -1747,7 +1748,7 @@ namespace overlapCoupling{
                 reconstructedVolume.reset( );
 
                 //Reconstruct the micro-domain's volume
-                error = reconstructDomain( microIncrement, *microDomain, &microNodePositions, reconstructedVolume );
+                error = reconstructDomain( microIncrement, *microDomain, microDomainNodeIds, microNodePositions, reconstructedVolume );
 
                 if ( error ){
 
@@ -1759,7 +1760,7 @@ namespace overlapCoupling{
                 }
 
                 //Compute the volume averages
-                error = computeDomainVolumeAverages( *macroCell, *microDomain, reconstructedVolume );
+                error = computeDomainVolumeAverages( *macroCell, *microDomain, microDomainNodeIds, reconstructedVolume );
 
                 if ( error ){
 
@@ -1784,17 +1785,17 @@ namespace overlapCoupling{
                 
             }
 
-//            //Compute the approximate stresses
-//            error = computeHomogenizedStresses( *macroCell );
-//
-//            if ( error ){
-//
-//                errorOut result = new errorNode( "homogenizeMicroScale",
-//                                                 "Error in the computation of the homogenized stresses" );
-//                result->addNext( error );
-//                return result;
-//
-//            }
+            //Compute the approximate stresses
+            error = computeHomogenizedStresses( *macroCell );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "homogenizeMicroScale",
+                                                 "Error in the computation of the homogenized stresses" );
+                result->addNext( error );
+                return result;
+
+            }
 
             //Increment the start index of the micro domain
             microDomainStartIndex += nCellMicroDomains;
@@ -1838,7 +1839,7 @@ namespace overlapCoupling{
     }
 
     errorOut overlapCoupling::reconstructDomain( const unsigned int &microIncrement, const std::string &microDomainName,
-                                                 floatVector *microNodePositions,
+                                                 uIntVector &microDomainNodes, floatVector &microNodePositions,
                                                  std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
         /*!
          * Reconstruct the micro-domain's volume to perform volume and surface integrals over that
@@ -1846,13 +1847,13 @@ namespace overlapCoupling{
          *
          * :param const unsigned int &microIncrement: The increment at which to extract the micro-positions
          * :param const std::string &microDomainName: The name of the micro-domain to be re-constructed.
-         * :param floatVector *microNodePositions: The positions of the micro nodes for the current domain
+         * :param uIntVector &microDomainNodes: The nodes associated with the micro domain
+         * :param floatVector &microNodePositions: The positions of the micro nodes for the current domain
          * :param std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume: The reconstructed
          *     volume ready for additional processing.
          */
 
         //Get the domain node ids
-        uIntVector microDomainNodes;
         errorOut error = _inputProcessor._microscale->getDomainNodes( microIncrement, microDomainName, microDomainNodes );
 
         if ( error ){
@@ -1865,8 +1866,8 @@ namespace overlapCoupling{
         }
 
         //Get the micro-node positions
-        microNodePositions->clear( );
-        microNodePositions->resize( _dim * microDomainNodes.size( ) );
+        microNodePositions.clear( );
+        microNodePositions.resize( _dim * microDomainNodes.size( ) );
  
         unsigned int index;
         const floatVector *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
@@ -1878,8 +1879,8 @@ namespace overlapCoupling{
 
             for ( unsigned int i = 0; i < _dim; i++ ){
 
-                ( *microNodePositions )[ _dim * index + i ] = ( *microReferencePositions )[ _dim * ( *it ) + i ]
-                                                            + ( *microDisplacements )[ _dim * ( *it ) + i ];
+                microNodePositions[ _dim * index + i ] = ( *microReferencePositions )[ _dim * ( *it ) + i ]
+                                                       + ( *microDisplacements )[ _dim * ( *it ) + i ];
 
             }
  
@@ -1904,7 +1905,7 @@ namespace overlapCoupling{
         }
 
         //Load the micro points
-        error = reconstructedVolume->loadPoints( microNodePositions );
+        error = reconstructedVolume->loadPoints( &microNodePositions );
 
         if ( error ){
 
@@ -1931,53 +1932,102 @@ namespace overlapCoupling{
 
     }
 
-    errorOut overlapCoupling::computeDomainVolumeAverages( const std::string &macroCellName, const std::string &microDomainName,
+    errorOut overlapCoupling::computeDomainVolumeAverages( const uIntType &macroCellID, const std::string &microDomainName,
+                                                           const uIntVector &microDomainNodeIDs,
                                                            std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
         /*!
          * Compute the required volume averages over the micro-domain.
          *
-         * :param const std::string &macroCellName: The name of the macro-cell associated with the micro domain.
+         * :param const uIntType &macroCellID: The ID number of the macro-cell associated with the micro domain.
          * :param const std::string &microDomainName: The name of the micro-domain to have the volume averages
          *     computed over.
+         * :param const uIntVector &microDomainNodeIDs: The micro domain's node ids
          * :param volumeReconstruction::volumeReconstructionBase &reconstructedVolume: The reconstructed volume
          *     ready to have volume integrals computed over.
          */
 
-        ( void ) macroCellName;
+        ( void ) macroCellID;
         ( void ) microDomainName;
-        ( void ) reconstructedVolume;
 
-        return new errorNode( "computeDomainVolumeAverages", "Error: Not implemented" );
+        //Assemble the averaging vector at the nodes for non-volume weighted averaging quantities
+        unsigned int dataCountAtPoint = 1  //Volume calculation
+                                      + 1; //Density
+        floatVector dataAtMicroPoints( dataCountAtPoint * microDomainNodeIDs.size( ), 0 );
+
+        const floatVector *microDensities = _inputProcessor.getMicroDensities( );
+
+        unsigned int index = 0;
+
+        for ( auto node = microDomainNodeIDs.begin( ); node != microDomainNodeIDs.end( ); node++, index++ ){
+
+            dataAtMicroPoints[ dataCountAtPoint * index + 0 ] = 1.;                           //Integrate the volume of the domain
+            dataAtMicroPoints[ dataCountAtPoint * index + 1 ] = ( *microDensities )[ *node ]; //Integrate the density of the domain
+
+        }
+
+        //Compute the initial volume averages
+        floatVector integratedValues;
+        errorOut error = reconstructedVolume->performVolumeIntegration( dataAtMicroPoints, dataCountAtPoint, integratedValues );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeDomainVolumeAverages",
+                                             "Error in computing the initial volume averages" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        if ( homogenizedVolumes.find( macroCellID ) == homogenizedVolumes.end( ) ){
+
+            //Save the values
+            floatVector tmp = { integratedValues[ 0 ] };
+            homogenizedVolumes.emplace( macroCellID, tmp ); //Save the volume
+
+            tmp = { integratedValues[ 1 ] / integratedValues[ 0 ] };
+            homogenizedDensities.emplace( macroCellID, tmp ); //Save the density
+
+        }
+        else{
+
+            homogenizedVolumes[ macroCellID ].push_back( integratedValues[ 0 ] ); //Save the volume
+
+            homogenizedDensities[ macroCellID ].push_back( integratedValues[ 1 ] / integratedValues[ 0 ] ); //Save the density
+
+        }
+
+        return NULL;
+
     }
 
-    errorOut overlapCoupling::computeDomainSurfaceAverages(  const std::string &macroCellName, const std::string &microDomainName,
+    errorOut overlapCoupling::computeDomainSurfaceAverages(  const uIntType &macroCellID, const std::string &microDomainName,
                                                              std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
         /*!
          * Compute the required surface averages over the micro-domain.
          *
-         * :param const std::string &macroCellName: The name of the macro-cell associated with the micro domain.
+         * :param const uIntType &macroCellID: The ID of the macro-cell associated with the micro domain.
          * :param const std::string &microDomainName: The name of the micro-domain to have the volume averages
          *     computed over.
          * :param volumeReconstruction::volumeReconstructionBase &reconstructedVolume: The reconstructed volume
          *     ready to have surface integrals computed over.
          */
 
-        ( void ) macroCellName;
+        ( void ) macroCellID;
         ( void ) microDomainName;
         ( void ) reconstructedVolume;
 
         return new errorNode( "computeDomainSurfaceAverages", "Error: Not implemented" );
     }
 
-    errorOut overlapCoupling::computeHomogenizedStresses( const std::string &macroCellName ){
+    errorOut overlapCoupling::computeHomogenizedStresses( const uIntType &macroCellID ){
         /*!
          * Compute the homogenized stresses for the macro cell
          *
-         * :param const std::string &macroCellName: The name of the macro cell to have the 
+         * :param const uIntType &macroCellID: The ID of the macro cell to have the 
          *     homogenized stresses computed at the quadrature points.
          */
 
-        ( void ) macroCellName;
+        ( void ) macroCellID;
 
         return new errorNode( "computeHomogenizedStresses", "Error: Not implemented" );
     }

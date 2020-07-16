@@ -23,6 +23,7 @@ namespace overlapCoupling{
     typedef inputFileProcessor::floatType floatType;
     typedef inputFileProcessor::floatVector floatVector;
     typedef inputFileProcessor::floatMatrix floatMatrix;
+    typedef inputFileProcessor::uIntType uIntType;
     typedef inputFileProcessor::uIntVector uIntVector;
     typedef inputFileProcessor::stringVector stringVector;
     typedef inputFileProcessor::DOFMap DOFMap;
@@ -165,16 +166,17 @@ namespace overlapCoupling{
             errorOut homogenizeMicroScale( const unsigned int &microIncrement );
 
             errorOut reconstructDomain( const unsigned int &microIncrement, const std::string &microDomainName,
-                                        floatVector *microNodePositions,
+                                        uIntVector &microDomainNodeIds, floatVector &microNodePositions,
                                         std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
-            errorOut computeDomainVolumeAverages( const std::string &macroCellName, const std::string &microDomainName,
+            errorOut computeDomainVolumeAverages( const uIntType &macroCellName, const std::string &microDomainName,
+                                                  const uIntVector &microDomainNodeIDs,
                                                   std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
-            errorOut computeDomainSurfaceAverages( const std::string &macroCellName, const std::string &microDomainName,
+            errorOut computeDomainSurfaceAverages( const uIntType &macroCellName, const std::string &microDomainName,
                                                    std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
-            errorOut computeHomogenizedStresses( const std::string &macroCellName );
+            errorOut computeHomogenizedStresses( const uIntType &macroCellName );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;
@@ -190,6 +192,10 @@ namespace overlapCoupling{
             SparseMatrix _DP_BQhatD;
             SparseMatrix _DP_BDhatQ;
             SparseMatrix _DP_BDhatD;
+
+            //The homogenized values
+            std::unordered_map< uIntType, floatVector > homogenizedVolumes;
+            std::unordered_map< uIntType, floatVector > homogenizedDensities;
 
     };
 
