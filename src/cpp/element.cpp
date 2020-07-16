@@ -10,11 +10,11 @@
 
 namespace elib{
     
-    Element::Element(const std::vector< unsigned int > &_global_node_ids, const vecOfvec &_nodes, const quadrature_rule &_qrule){
+    Element::Element(const std::vector< uitype > &_global_node_ids, const vecOfvec &_nodes, const quadrature_rule &_qrule){
         /*!
          * The constructor for the element
          * 
-         * :param std::vector< unsigned int > global_node_ids: The global id numbers of the element's nodes
+         * :param std::vector< uitype > global_node_ids: The global id numbers of the element's nodes
          * :param const vecOfvec &nodes: The global coordinates of the nodes
          * :param const quadrature_rule &qrule: The quadrature rule of the element
          */
@@ -29,8 +29,8 @@ namespace elib{
 //        bounding_box[0] = nodes[0];
 //        bounding_box[1] = nodes[0];
 //
-//        for (unsigned int n=0; n<nodes.size(); n++){
-//            for (unsigned int i=0; i<nodes[n].size(); i++){
+//        for (uitype n=0; n<nodes.size(); n++){
+//            for (uitype i=0; i<nodes[n].size(); i++){
 //                bounding_box[0][i] = std::min(bounding_box[0][i], nodes[n][i]);
 //                bounding_box[1][i] = std::max(bounding_box[1][i], nodes[n][i]);
 //            }
@@ -56,7 +56,7 @@ namespace elib{
         }
 
         value = 0;
-        for (unsigned int n=0; n<nodes.size(); n++){
+        for (uitype n=0; n<nodes.size(); n++){
             value += shape_functions[n]*nodal_values[n];
         }
         return NULL;
@@ -81,12 +81,12 @@ namespace elib{
         }
 
         value.resize(nodal_values[0].size());
-        for (unsigned int i=0; i<value.size(); i++){
+        for (uitype i=0; i<value.size(); i++){
             value[i] = 0;
         }
 
-        for (unsigned int n=0; n<nodes.size(); n++){
-            for (unsigned int v=0; v<nodal_values[n].size(); v++){
+        for (uitype n=0; n<nodes.size(); n++){
+            for (uitype v=0; v<nodal_values[n].size(); v++){
                 value[v] += shape_functions[n]*nodal_values[n][v];
             }
         }
@@ -113,8 +113,8 @@ namespace elib{
 
 	value = vec(local_grad_shape_functions[0].size(), 0);
 
-	for (unsigned int n=0; n<nodes.size(); n++){
-            for (unsigned int i=0; i<local_grad_shape_functions[n].size(); i++){
+	for (uitype n=0; n<nodes.size(); n++){
+            for (uitype i=0; i<local_grad_shape_functions[n].size(); i++){
                 value[i] += nodal_values[n]*local_grad_shape_functions[n][i];
             }
 	}
@@ -140,16 +140,16 @@ namespace elib{
         }
 
         value.resize(nodal_values[0].size());
-        for (unsigned int v=0; v<value.size(); v++){
+        for (uitype v=0; v<value.size(); v++){
             value[v].resize(local_node_coordinates[0].size());
-            for (unsigned int w=0; w<value[v].size(); w++){
+            for (uitype w=0; w<value[v].size(); w++){
                 value[v][w] = 0.;
             }
         }
 
-        for (unsigned int n=0; n<nodes.size(); n++){
-            for (unsigned int i=0; i<nodal_values[n].size(); i++){
-                for (unsigned int j=0; j<local_grad_shape_functions[n].size(); j++){
+        for (uitype n=0; n<nodes.size(); n++){
+            for (uitype i=0; i<nodal_values[n].size(); i++){
+                for (uitype j=0; j<local_grad_shape_functions[n].size(); j++){
                     value[i][j] += nodal_values[n][i]*local_grad_shape_functions[n][j];
                 }
             }
@@ -193,9 +193,9 @@ namespace elib{
         }
 
         value.resize(dxidx[0].size());
-        for (unsigned int i=0; i<local_gradient.size(); i++){
+        for (uitype i=0; i<local_gradient.size(); i++){
             value[i] = 0;
-            for (unsigned int j=0; j<dxidx.size(); j++){
+            for (uitype j=0; j<dxidx.size(); j++){
                     value[i] += local_gradient[j]*dxidx[j][i];
             }
         }
@@ -238,16 +238,16 @@ namespace elib{
         }
 
         value.resize(nodal_values[0].size());
-        for (unsigned int v=0; v<value.size(); v++){
+        for (uitype v=0; v<value.size(); v++){
             value[v].resize(coords[0].size());
-            for (unsigned int w=0; w<value[v].size(); w++){
+            for (uitype w=0; w<value[v].size(); w++){
                 value[v][w] = 0.;
             }
         }
 
-        for (unsigned int i=0; i<local_gradient.size(); i++){
-            for (unsigned int k=0; k<dxidx.size(); k++){
-                for (unsigned int j=0; j<dxidx[k].size(); j++){
+        for (uitype i=0; i<local_gradient.size(); i++){
+            for (uitype k=0; k<dxidx.size(); k++){
+                for (uitype j=0; j<dxidx[k].size(); j++){
                     value[i][j] += local_gradient[i][k]*dxidx[k][j];
                 }
             }
@@ -305,10 +305,10 @@ namespace elib{
         }
 
         dNdx.resize(nodes.size());
-        for (unsigned int n=0; n<nodes.size(); n++){
+        for (uitype n=0; n<nodes.size(); n++){
             dNdx[n] = std::vector< double >(nodes[n].size(), 0);
-            for (unsigned int i=0; i<nodes[n].size(); i++){
-                for (unsigned int j=0; j<dxidx.size(); j++){
+            for (uitype i=0; i<nodes[n].size(); i++){
+                for (uitype j=0; j<dxidx.size(); j++){
                     dNdx[n][i] += dNdxi[n][j]*dxidx[j][i];
                 }
             }
@@ -371,7 +371,7 @@ namespace elib{
         double sum_inv_distance = 0;
 
         //Compute the distances from the point to the nodes
-        unsigned int index=0;
+        uitype index=0;
         for (auto node = nodes.begin(); node != nodes.end(); node++){
 
             //Make sure the current node and global point have the same global dimension
@@ -380,7 +380,7 @@ namespace elib{
             }
 
             //Compute the distance
-            for (unsigned int i=0; i<(*node).size(); i++){
+            for (uitype i=0; i<(*node).size(); i++){
                 distance[index] += pow((*node)[i] - global_coordinates[i], 2);
             }
             distance[index] = std::sqrt(distance[index]);
@@ -415,7 +415,7 @@ namespace elib{
             }
 
             //Compute the weighted distance
-            for (unsigned int i=0; i<(*node).size(); i++){
+            for (uitype i=0; i<(*node).size(); i++){
                 local_coordinates[i] += (*node)[i]*(1/distance[index])/sum_inv_distance;
             }
 
@@ -426,7 +426,7 @@ namespace elib{
     }
 
     errorOut Element::compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
-                                                double tolr, double tola, unsigned int maxiter, unsigned int maxls){
+                                                double tolr, double tola, uitype maxiter, uitype maxls){
         /*!
          * Compute the local coordinates given the global coordinates. Does this via Newton iteration.
          * 
@@ -460,7 +460,7 @@ namespace elib{
         vec R(global_coordinates.size(), 0);
         double R0, Rp, Rnorm;
         R0 = 0;
-        for (unsigned int i=0; i<x.size(); i++){
+        for (uitype i=0; i<x.size(); i++){
             R[i] = global_coordinates[i] - x[i];
             R0 += pow(R[i], 2);
         }
@@ -470,8 +470,8 @@ namespace elib{
         double tol = tolr*R0 + tola;
 
         //Begin the Newton iteration
-        unsigned int niter = 0;
-        unsigned int nls = 0;
+        uitype niter = 0;
+        uitype nls = 0;
         double lambda = 1.;
         vec dxi;
         vecOfvec J;
@@ -487,11 +487,11 @@ namespace elib{
             vecOfvec Jest(R.size(), vec(R.size(), 0));
             double eps = 1e-6;
             vec delta(xi.size(), 0);
-            for (unsigned int i=0; i<xi.size(); i++){
+            for (uitype i=0; i<xi.size(); i++){
                 delta = xi;
                 delta[i] = xi[i]*(1 + eps);
                 interpolate(nodes, delta, x);
-                for (unsigned int j=0; j<x.size(); j++){
+                for (uitype j=0; j<x.size(); j++){
                     Jest[j][i] = ((global_coordinates[j] - x[j]) - R[j])/(xi[i]*eps);
                 }
                 
@@ -508,7 +508,7 @@ namespace elib{
                 return result;
             }
 
-            for (unsigned int i=0; i<xi.size(); i++){
+            for (uitype i=0; i<xi.size(); i++){
                 xi[i] += dxi[i];
             }
             error = interpolate(nodes, xi, x);
@@ -519,7 +519,7 @@ namespace elib{
             }
 
             Rnorm = 0;
-            for (unsigned int i=0; i<x.size(); i++){
+            for (uitype i=0; i<x.size(); i++){
                R[i] = global_coordinates[i] - x[i]; 
                Rnorm += pow(R[i], 2);
             }
@@ -550,7 +550,7 @@ namespace elib{
 
                 lambda *= 0.5;
 
-                for (unsigned int i=0; i<x.size(); i++){
+                for (uitype i=0; i<x.size(); i++){
                     xi[i] -= dxi[i];
                     dxi[i] *= lambda;
                     xi[i] += dxi[i];
@@ -564,7 +564,7 @@ namespace elib{
                 }
 
                 Rnorm = 0;
-                for (unsigned int i=0; i<x.size(); i++){
+                for (uitype i=0; i<x.size(); i++){
                    R[i] = global_coordinates[i] - x[i];
                    Rnorm += pow(R[i], 2);
                 }
@@ -606,7 +606,7 @@ namespace elib{
          * :param const vec &x: The point in global coordinates.
          */
 
-        for (unsigned int i=0; i<bounding_box[0].size(); i++){
+        for (uitype i=0; i<bounding_box[0].size(); i++){
             if ((bounding_box[0][i]>x[i]) || bounding_box[1][i]<x[i]){
                 return false;
             } 
@@ -635,11 +635,11 @@ namespace elib{
         return local_point_inside(xi);
     }
 
-    int Element::update_node_position(const unsigned int n, const vec &displacement, const bool bounding_box_update){
+    int Element::update_node_position(const uitype n, const vec &displacement, const bool bounding_box_update){
         /*!
          * Update the nodal position of node n in the element
          * 
-         * :param const unsigned int n: The local node number
+         * :param const uitype n: The local node number
          * :param const elib::vec &displacement: The displacement of the node from the reference state
          * :param const bool bounding_box_update: Boolean to indicate if the bounding box update should be calculated.
          */
@@ -649,7 +649,7 @@ namespace elib{
             std::cerr << "       the nodal displacement has a dimension of " << displacement.size() << ".\n";
             return 1;
         }
-        for (unsigned int i=0; i<reference_nodes[n].size(); i++){
+        for (uitype i=0; i<reference_nodes[n].size(); i++){
             nodes[n][i] = reference_nodes[n][i] + displacement[i];
         }
 
@@ -671,7 +671,7 @@ namespace elib{
             std::cerr << "Error: " << displacements.size() << " nodal displacements provided to an element which has " << reference_nodes.size() << "nodes.\n";
             return 1;
         }
-        for (unsigned int n=0; n<nodes.size(); n++){
+        for (uitype n=0; n<nodes.size(); n++){
             int uenp_result = update_node_position(n, displacements[n], false);
             if (uenp_result > 0){
                 return uenp_result;
@@ -691,8 +691,8 @@ namespace elib{
         bounding_box[0] = nodes[0];
         bounding_box[1] = nodes[0];
 
-        for (unsigned int n=1; n<nodes.size(); n++){
-            for (unsigned int i=0; i<nodes[n].size(); i++){
+        for (uitype n=1; n<nodes.size(); n++){
+            for (uitype i=0; i<nodes[n].size(); i++){
                 bounding_box[0][i] = std::min(bounding_box[0][i], nodes[n][i]);
                 bounding_box[1][i] = std::max(bounding_box[1][i], nodes[n][i]);
             }
@@ -700,7 +700,7 @@ namespace elib{
         return 0;
     }
 
-    const std::vector< unsigned int >* Element::get_global_node_ids(){
+    const std::vector< uitype >* Element::get_global_node_ids(){
         /*!
          * Return a constant pointer to the global node ids
          */
@@ -717,7 +717,7 @@ namespace elib{
 
         result.resize(local_node_coordinates.size());
 
-        for (unsigned int n=0; n<local_node_coordinates.size(); n++){
+        for (uitype n=0; n<local_node_coordinates.size(); n++){
             result[n] = 0.125*(1 + local_node_coordinates[n][0]*local_coordinates[0])*
                               (1 + local_node_coordinates[n][1]*local_coordinates[1])*
                               (1 + local_node_coordinates[n][2]*local_coordinates[2]);
@@ -734,7 +734,7 @@ namespace elib{
          */
 
         result.resize(local_node_coordinates.size());
-        for (unsigned int n=0; n<local_node_coordinates.size(); n++){
+        for (uitype n=0; n<local_node_coordinates.size(); n++){
             result[n] = {0.125*local_node_coordinates[n][0]*(1 + local_node_coordinates[n][1]*local_coordinates[1])*(1 + local_node_coordinates[n][2]*local_coordinates[2]),
                          0.125*(1 + local_node_coordinates[n][0]*local_coordinates[0])*local_node_coordinates[n][1]*(1 + local_node_coordinates[n][2]*local_coordinates[2]),
                          0.125*(1 + local_node_coordinates[n][0]*local_coordinates[0])*(1 + local_node_coordinates[n][1]*local_coordinates[1])*local_node_coordinates[n][2]};
@@ -751,7 +751,7 @@ namespace elib{
          * :param double tol: The tolerance
          */
 
-        for (unsigned int i=0; i<local_coordinates.size(); i++){
+        for (uitype i=0; i<local_coordinates.size(); i++){
             if ((abs(local_coordinates[i]) - 1)>tol){
                 return false;
             }
@@ -772,8 +772,8 @@ namespace elib{
 
         //Transfer the values to an Eigen matrix.
         Eigen::MatrixXd _A(A.size(), A[0].size());
-        for (unsigned int i=0; i<A.size(); i++){
-            for (unsigned int j=0; j<A.size(); j++){
+        for (uitype i=0; i<A.size(); i++){
+            for (uitype j=0; j<A.size(); j++){
                 _A(i, j) = A[i][j];
             }
         }
@@ -783,9 +783,9 @@ namespace elib{
 
         //Transfer the values
         Ainv.resize(A.size());
-        for (unsigned int i=0; i<_Ainv.rows(); i++){
+        for (uitype i=0; i<( uitype )_Ainv.rows(); i++){
             Ainv[i].resize(_Ainv.cols());
-            for (unsigned int j=0; j<_Ainv.cols(); j++){
+            for (uitype j=0; j<( uitype )_Ainv.cols(); j++){
                 Ainv[i][j] = _Ainv(i, j);
             }
         }
@@ -805,8 +805,8 @@ namespace elib{
 
         //Transfer the values of A to an Eigen matrix.
         Eigen::MatrixXd _A(A.size(), A[0].size());
-        for (unsigned int i=0; i<A.size(); i++){
-            for (unsigned int j=0; j<A.size(); j++){
+        for (uitype i=0; i<A.size(); i++){
+            for (uitype j=0; j<A.size(); j++){
                 _A(i, j) = A[i][j];
             }
         }
@@ -841,7 +841,7 @@ namespace elib{
         * Print the vector to the terminal
         */
 
-        for (unsigned int i=0; i<a.size(); i++){
+        for (uitype i=0; i<a.size(); i++){
             std::cout << a[i] << " ";
         }
         std::cout << "\n";
@@ -852,7 +852,7 @@ namespace elib{
         * Print the vector to the terminal
         */
 
-        for (unsigned int i=0; i<a.size(); i++){
+        for (uitype i=0; i<a.size(); i++){
             std::cout << a[i] << " ";
         }
         std::cout << "\n";
@@ -863,7 +863,7 @@ namespace elib{
         Print the matrix to the terminal
         */
 
-        for (unsigned int i=0; i<A.size(); i++){
+        for (uitype i=0; i<A.size(); i++){
             print(A[i]);
         }
     }
@@ -873,7 +873,7 @@ namespace elib{
         * Print the matrix to the terminal
         */
 
-        for (unsigned int i=0; i<A.size(); i++){
+        for (uitype i=0; i<A.size(); i++){
             print(A[i]);
         }
     }
@@ -884,8 +884,8 @@ namespace elib{
         * Print the quadrature rule to the terminal.
         */
 
-        for (unsigned int i=0; i<qrule.size(); i++){
-            for (unsigned int j=0; j<qrule[i].first.size(); j++){
+        for (uitype i=0; i<qrule.size(); i++){
+            for (uitype j=0; j<qrule[i].first.size(); j++){
                 std::cout << qrule[i].first[j] << " ";
             }
             std::cout << "(" << qrule[i].second << ")\n";
@@ -911,7 +911,7 @@ namespace elib{
 	print(element.bounding_box);
     }
 
-    std::unique_ptr<Element> build_element_from_string(const std::string &eltype, const std::vector< unsigned int > &global_node_ids, 
+    std::unique_ptr<Element> build_element_from_string(const std::string &eltype, const std::vector< uitype > &global_node_ids, 
                                                        const vecOfvec &nodes, const quadrature_rule &qrule){
 	    /*
 	     * Build an element from the element name, the nodes, and the quadrature rule
@@ -919,7 +919,7 @@ namespace elib{
 	     * TODO: Make the list of elements automatically populate.
 	     *
 	     * :param std::string &eltype: The name of the element
-             * :param std::vector< unsigned int > &global_node_ids: The id numbers of the global nodes
+             * :param std::vector< uitype > &global_node_ids: The id numbers of the global nodes
 	     * :param const vecOfvec &nodes: The element's nodes
 	     * :param const quadrature_rule &qrule: The quadrature rule of the element
              */
@@ -944,20 +944,20 @@ namespace elib{
          d += A[0][2]*(A[1][0]*A[2][1] - A[1][1]*A[2][0]);
     }
 
-    errorOut getPolyhedralCellEquivalentElementType( const unsigned int &index0, const uivec &connectivity,
-                                                     unsigned int &XDMFCellType, std::string &elementName,
-                                                     unsigned int &deltaIndex ){
+    errorOut getPolyhedralCellEquivalentElementType( const uitype &index0, const uivec &connectivity,
+                                                     uitype &XDMFCellType, std::string &elementName,
+                                                     uitype &deltaIndex ){
         /*!
          * Get the equivalent element for a polyhedral cell in XDMF format
          *
-         * :param const unsigned int index0: The first index to start at in connectivity
+         * :param const uitype index0: The first index to start at in connectivity
          * :param const uIntVector connectivity: The cell definition in XDMF format.
-         * :param unsigned int &XDMFCellType: The element type as defined in the XDMF standard.
+         * :param uitype &XDMFCellType: The element type as defined in the XDMF standard.
          * :param std::string &elementName: The name of the cell.
-         * :param unsigned int &deltaIndex: The change in index to go to the next cell
+         * :param uitype &deltaIndex: The change in index to go to the next cell
          */
 
-        unsigned int nFaces;
+        uitype nFaces;
         uivec nNodesOnFace;
         uivec nodeIndexArrays;
 
@@ -966,19 +966,19 @@ namespace elib{
 
     }
 
-    errorOut getPolyhedralCellEquivalentElementType( const unsigned int &index0, const uivec &connectivity,
-                                                     unsigned int &XDMFCellType, std::string &elementName,
-                                                     unsigned int &deltaIndex,
-                                                     unsigned int &nFaces, uivec &nNodesOnFace, uivec &nodeIndexArrays ){
+    errorOut getPolyhedralCellEquivalentElementType( const uitype &index0, const uivec &connectivity,
+                                                     uitype &XDMFCellType, std::string &elementName,
+                                                     uitype &deltaIndex,
+                                                     uitype &nFaces, uivec &nNodesOnFace, uivec &nodeIndexArrays ){
         /*!
          * Get the equivalent element for a polyhedral cell in XDMF format
          *
-         * :param const unsigned int index0: The first index to start at in connectivity
+         * :param const uitype index0: The first index to start at in connectivity
          * :param const uIntVector connectivity: The cell definition in XDMF format.
-         * :param unsigned int &XDMFCellType: The element type as defined in the XDMF standard.
+         * :param uitype &XDMFCellType: The element type as defined in the XDMF standard.
          * :param std::string &elementName: The name of the cell.
-         * :param unsigned int &deltaIndex: The change in index to go to the next cell
-         * :param unsigned int &nFaces: The number of faces in the element
+         * :param uitype &deltaIndex: The change in index to go to the next cell
+         * :param uitype &nFaces: The number of faces in the element
          * :param uivec &nNodesOnFace: The number of nodes on each face
          * :param uivec &nodeIndexArrays: Indices of the nodes on each face in, "face major," organization.
          *     i.e. [ face_1_node_1, face_1_node_2, ... ]
@@ -994,10 +994,10 @@ namespace elib{
         nNodesOnFace = uivec( nFaces, 0 );
 
         //Get the number of nodes on each face
-        unsigned int indx = index0 + 2;
-        unsigned int nCount = 0;
+        uitype indx = index0 + 2;
+        uitype nCount = 0;
 
-        for ( unsigned int n = 0; n < nFaces; n++ ){
+        for ( uitype n = 0; n < nFaces; n++ ){
 
             nNodesOnFace[ n ] = connectivity[ indx ];
 
@@ -1009,11 +1009,11 @@ namespace elib{
         //Extract the nodes on each face
         nodeIndexArrays = uivec( nCount );
         indx = index0 + 2;
-        unsigned int i = 0;
+        uitype i = 0;
 
-        for ( unsigned int n = 0; n < nFaces; n++ ){
+        for ( uitype n = 0; n < nFaces; n++ ){
 
-            for ( unsigned int m = 1; m < nNodesOnFace[ n ] + 1; m++ ){
+            for ( uitype m = 1; m < nNodesOnFace[ n ] + 1; m++ ){
 
                 if ( connectivity.size( ) <= indx + m ){
                     return new errorNode( "getPolyhedralCellEquivalentElementType",

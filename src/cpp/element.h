@@ -23,29 +23,30 @@ namespace elib{
     typedef errorTools::Node errorNode;
     typedef errorNode* errorOut;
 
-    typedef std::vector< unsigned int > uivec;
+    typedef unsigned int uitype;
+    typedef std::vector< uitype > uivec;
     typedef std::vector< double > vec;
     typedef std::vector< uivec > vecOfuivec;
     typedef std::vector< vec > vecOfvec;
     typedef std::vector<std::pair< vec, double> > quadrature_rule;
 
     //Map of currently implemented elements to the number of faces and the number of nodes on each face
-    const std::map< std::string, std::pair< unsigned int, std::vector< unsigned int > > > elementRegistry =
+    const std::map< std::string, std::pair< uitype, std::vector< uitype > > > elementRegistry =
         {
             { "Hex8", { 6, { 4, 4, 4, 4, 4, 4 } } },
         };
 
-    const std::map< std::string, unsigned int > elementNameToXDMFType =
+    const std::map< std::string, uitype > elementNameToXDMFType =
         {
             { "Hex8", 9 },
         };
 
-    const std::map< unsigned int, std::string > XDMFTypeToElementName =
+    const std::map< uitype, std::string > XDMFTypeToElementName =
         {
             { 9, "Hex8" },
         };
 
-    const std::map< unsigned int, unsigned int > XDMFTypeToNodeCount =
+    const std::map< uitype, uitype > XDMFTypeToNodeCount =
         {
             {  1,  1 }, //Polyvertex
             {  2,  0 }, //Polyline ( special case )
@@ -66,7 +67,7 @@ namespace elib{
 
         public:
             std::string name; //!The name of the element
-            std::vector< unsigned int > global_node_ids; //!The global id numbers of the nodes
+            std::vector< uitype > global_node_ids; //!The global id numbers of the nodes
             vecOfvec nodes; //!The global coordinates of the nodes
             vecOfvec reference_nodes; //!The global reference coordinates of the nodes
             quadrature_rule qrule; //!The quadrature rule of the element
@@ -74,7 +75,7 @@ namespace elib{
             vecOfvec bounding_box; //!The bounding box of the element
 
             Element(){}
-            Element(const std::vector< unsigned int > &global_node_ids, const vecOfvec &nodes, const quadrature_rule &qrule);
+            Element(const std::vector< uitype > &global_node_ids, const vecOfvec &nodes, const quadrature_rule &qrule);
 	    virtual ~Element() = default;
 
             errorOut interpolate(const vec &nodal_values, const vec &local_coordinates,
@@ -110,7 +111,7 @@ namespace elib{
                                                 double tolr=1e-9, double tola=1e-9);
 
             errorOut compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
-                                               double tolr=1e-9, double tola=1e-9, unsigned int maxiter=20, unsigned int maxls=5);
+                                               double tolr=1e-9, double tola=1e-9, uitype maxiter=20, uitype maxls=5);
 
             virtual errorOut get_shape_functions(const vec &local_coordinates, vec &result) = 0;
 //            {
@@ -132,13 +133,13 @@ namespace elib{
 
             bool contains_point(const vec &x);
 
-            int update_node_position(const unsigned int n, const vec &displacement, const bool bounding_box_update=true);
+            int update_node_position(const uitype n, const vec &displacement, const bool bounding_box_update=true);
 
             int update_node_positions(const vecOfvec &displacements);
 
             int update_bounding_box();
 
-            const std::vector< unsigned int > *get_global_node_ids();
+            const std::vector< uitype > *get_global_node_ids();
     };
 
     const double sqrt3 = std::sqrt( 3. );
@@ -158,7 +159,7 @@ namespace elib{
 
         public:
 
-            Hex8(const std::vector< unsigned int > &global_node_ids, 
+            Hex8(const std::vector< uitype > &global_node_ids, 
                  const vecOfvec &nodes, const quadrature_rule &qrule) : Element(global_node_ids, nodes, qrule){
                 name = "Hex8";
                 local_node_coordinates = {{-1, -1, -1},
@@ -188,18 +189,18 @@ namespace elib{
     void print(const quadrature_rule &qrule);
     void print(const Element &element);
 
-    std::unique_ptr<Element> build_element_from_string(const std::string &elname, const std::vector< unsigned int > &global_node_is, 
+    std::unique_ptr<Element> build_element_from_string(const std::string &elname, const std::vector< uitype > &global_node_is, 
                                                        const vecOfvec &nodes, const quadrature_rule &qrule);
     void determinant_3x3(const vecOfvec &A, double &d);
 
-    errorOut getPolyhedralCellEquivalentElementType( const unsigned int &index0, const uivec &connectivity,
-                                                     unsigned int &XDMFCellType, std::string &elementName,
-                                                     unsigned int &deltaIndex );
+    errorOut getPolyhedralCellEquivalentElementType( const uitype &index0, const uivec &connectivity,
+                                                     uitype &XDMFCellType, std::string &elementName,
+                                                     uitype &deltaIndex );
 
-    errorOut getPolyhedralCellEquivalentElementType( const unsigned int &index0, const uivec &connectivity,
-                                                     unsigned int &XDMFCellType, std::string &elementName,
-                                                     unsigned int &deltaIndex,
-                                                     unsigned int &nFaces, uivec &nNodesOnFace, uivec &nodeIndexArrays );
+    errorOut getPolyhedralCellEquivalentElementType( const uitype &index0, const uivec &connectivity,
+                                                     uitype &XDMFCellType, std::string &elementName,
+                                                     uitype &deltaIndex,
+                                                     uitype &nFaces, uivec &nNodesOnFace, uivec &nodeIndexArrays );
 
     const std::map< std::string, quadrature_rule > default_qrules =
         {
