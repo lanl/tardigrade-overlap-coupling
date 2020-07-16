@@ -190,10 +190,6 @@ namespace volumeReconstruction{
         //Assemble the current point
         floatVector median( _points->begin( ) + _index,
                             _points->begin( ) + _index + dim );
-//        std::cout << "     _depth: " << _depth;
-//        std::cout << "     _points->size( ): " << _points->size( );
-//        std::cout << "     _index: " << _index;
-//        std::cout << "     _index + dim: " << _index + dim << "\n";
 
         floatVector upperDelta, lowerDelta;
 
@@ -461,8 +457,6 @@ namespace volumeReconstruction{
          * The base volumeReconstruction destructor
          */
 
-        std::cout << "volumeReconstructionBase::~volumeReconstructionBase\n";
-
         if ( _config[ "write_config" ] ){
             if ( !_config[ "baseOutputFilename" ].IsScalar( ) ){
                 _config[ "write_config" ] = "defaultOutput.yaml";
@@ -574,7 +568,6 @@ namespace volumeReconstruction{
          * Base initialization
          */
 
-        std::cout << "setting interpolation configuration\n";
         errorOut error = setInterpolationConfiguration( );
 
         if ( error ){
@@ -583,7 +576,6 @@ namespace volumeReconstruction{
             return result;
         }
 
-        std::cout << "computing geometry information\n";
         error = computeGeometryInformation( );
 
         if ( error ){
@@ -592,7 +584,6 @@ namespace volumeReconstruction{
             return result;
         }
 
-        std::cout << "exiting base initialize\n";
         return NULL;
     }
 
@@ -605,7 +596,6 @@ namespace volumeReconstruction{
          * the general information is computed.
          */
 
-        std::cout << "entering base initialize\n";
         errorOut error = initialize( );
 
         if ( error ){
@@ -614,9 +604,7 @@ namespace volumeReconstruction{
             return result;
         }
 
-        std::cout << "setting evaluated\n";
         setEvaluated( true );
-        std::cout << "exiting base evaluate\n";
 
         return NULL;
     }
@@ -976,7 +964,6 @@ namespace volumeReconstruction{
 
         }
 
-        std::cout << "process configuration file\n";
         error = processConfigurationFile( );
 
         if ( error ){
@@ -987,7 +974,6 @@ namespace volumeReconstruction{
 
         }
 
-        std::cout << "set grid spacing\n";
         error = setGridSpacing( );
 
         if ( error ){
@@ -998,9 +984,7 @@ namespace volumeReconstruction{
 
         }
 
-        std::cout << "project implicit function to background grid\n";
         error = projectImplicitFunctionToBackgroundGrid( );
-//        return new errorNode( "initialize", "derp" );
 
         if ( error ){
 
@@ -1010,7 +994,6 @@ namespace volumeReconstruction{
 
         }
 
-        std::cout << "initialize internal and boundary cells\n";
         error = initializeInternalAndBoundaryCells( );
 
         if ( error ){
@@ -1021,7 +1004,6 @@ namespace volumeReconstruction{
 
         }
 
-        std::cout << "compute boundary point normals and areas\n";
         error = computeBoundaryPointNormalsAndAreas( );
 
         if ( error ){
@@ -1260,9 +1242,6 @@ namespace volumeReconstruction{
         uIntType ngy = _gridLocations[ 1 ].size( );
         uIntType ngz = _gridLocations[ 2 ].size( );
 
-//        _cellContainsPoint = std::vector< bool >( ( ngx - 1 ) * ( ngy - 1 ) * ( ngz - 1 ), false );
-
-        std::cout << "begin loop\n";
         for ( uIntType i = 1; i < ngx - 2; i++ ){
 
             for ( uIntType j = 1; j < ngy - 2; j++ ){
@@ -1271,7 +1250,6 @@ namespace volumeReconstruction{
 
                     //Get the element contribution to the nodal values of the implicit function
                     elementIndices = { i, j, k };
-                    std::cout << "process element: " << i << ", " << j << ", " << k << "\n";
                     error = processBackgroundGridElementImplicitFunction( elementIndices, elementNodalContributions,
                                                                           globalNodeIds, pointCounts );
 
@@ -1287,18 +1265,6 @@ namespace volumeReconstruction{
                         return result;
 
                     }
-
-//                    if ( _cellContainsPoint.size( ) <= ( ( ngy - 1 ) * ( ngz - 1 ) * i + ( ngz - 1 ) * j + k ) ){
-//
-//                        std::cout << _cellContainsPoint.size( ) << "\n";
-//                        std::cout << ngy * ngz * i + ngz * j + k << "\n";
-//                        assert( 1 == -23 );
-//
-//                    }
-//
-//                    _cellContainsPoint[ ( ngy - 1 ) * ( ngz - 1 ) * i + ( ngz - 1 ) * j + k ] =
-//                        std::any_of( pointCounts.begin( ), pointCounts.end( ),
-//                                     []( uIntType pC ){ return pC > 0; } );
 
                     for ( uIntType i = 0; i < globalNodeIds.size( ); i++ ){
 
@@ -1365,9 +1331,6 @@ namespace volumeReconstruction{
         floatVector lbCoordinates( _dim, 0 );
         floatVector ubCoordinates( _dim, 0 );
         for ( auto index = indices.begin( ); index != indices.end( ); index++ ){
-//            std::cout << "    index - indices.begin( ): " << index - indices.begin( ) << "\n";
-//            std::cout << "      *index: " << *index << "\n";
-//            std::cout << "       _gridLocations[ index - indices.begin( ) ].size( ): " << _gridLocations[ index - indices.begin( ) ].size( ) << "\n";
 
             if ( _gridLocations[ index - indices.begin( ) ].size( ) <= *index + 1 ){
 
@@ -1381,8 +1344,6 @@ namespace volumeReconstruction{
             ubCoordinates[ index - indices.begin( ) ] = _gridLocations[ index - indices.begin( ) ][ *index + 1 ];
 
         }
-//        std::cout << "lb: "; vectorTools::print( lbCoordinates );
-//        std::cout << "ub: "; vectorTools::print( ubCoordinates );
 
         //Determine the element's nodes
         floatMatrix nodes( 8, floatVector( _dim, 0 ) );
@@ -1444,9 +1405,7 @@ namespace volumeReconstruction{
          */
 
         std::unique_ptr< elib::Element > element;
-        std::cout << "  getGridElement\n";
         errorOut error = getGridElement( indices, element );
-        std::cout << "  exit getGridElement\n";
 
         if ( error ){
 
@@ -1462,7 +1421,6 @@ namespace volumeReconstruction{
         floatVector domainUpperBounds = *getUpperBounds( );
         floatVector domainLowerBounds = *getLowerBounds( );
 
-        std::cout << "  get points in range\n";
         _tree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], pointIndices,
                                 &domainUpperBounds, &domainLowerBounds );
 
@@ -1486,7 +1444,6 @@ namespace volumeReconstruction{
 
         floatType minDistance;
 
-        std::cout << "  loop over the points\n";
         for ( auto pI = pointIndices.begin( ); pI != pointIndices.end( ); pI++ ){
 
             //Get the current point's location
