@@ -30,8 +30,18 @@
 
 namespace dataFileInterface{
 
+    //Typedefs
+    typedef errorTools::Node errorNode; //!Redefinition for the error node
+    typedef errorNode* errorOut; //!Redefinition for a pointer to the error node
+    typedef double floatType; //!Define the float values type.
+    typedef std::vector< floatType > floatVector; //! Define a vector of floats
+    typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
+    typedef unsigned int uIntType;
+    typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
+
     //XDMF Cell Node Counts
-    const std::map< unsigned int, unsigned int > cellNodeCount =
+
+    const std::map< uIntType, uIntType > cellNodeCount =
             {
                 {  1,  1 }, //Polyvertex
                 {  2,  0 }, //Polyline ( special case )
@@ -44,15 +54,6 @@ namespace dataFileInterface{
                 {  9,  8 }, //Hexahedron
                 { 16,  0 }, //Polyhedron ( special case )
             };
-
-
-    //Typedefs
-    typedef errorTools::Node errorNode; //!Redefinition for the error node
-    typedef errorNode* errorOut; //!Redefinition for a pointer to the error node
-    typedef double floatType; //!Define the float values type.
-    typedef std::vector< floatType > floatVector; //! Define a vector of floats
-    typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
-    typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
 
 //    //Define the make_shared function
 //    template<typename T, typename... Args>
@@ -88,19 +89,19 @@ namespace dataFileInterface{
             std::shared_ptr<dataFileBase> create( const std::string &type );
 
             //File read interface functions
-            virtual errorOut getNumIncrements( unsigned int &numIncrements ); //Required overload
-            virtual errorOut getNumNodes( const unsigned int increment, unsigned int &numNodes ); //Required overload
-            virtual errorOut readMesh( const unsigned int increment, floatVector &nodalPositions ); //Required overload
-            virtual errorOut getDomainNodes( const unsigned int increment, const std::string domainName,
+            virtual errorOut getNumIncrements( uIntType &numIncrements ); //Required overload
+            virtual errorOut getNumNodes( const uIntType increment, uIntType &numNodes ); //Required overload
+            virtual errorOut readMesh( const uIntType increment, floatVector &nodalPositions ); //Required overload
+            virtual errorOut getDomainNodes( const uIntType increment, const std::string domainName,
                                              uIntVector &domainNodes ); //Required overload
-            virtual errorOut getNumDomainNodes( const unsigned int increment, const std::string domainName,
-                                                unsigned int &numDomainNodes ); //Required overload
-            virtual errorOut getSetNames( const unsigned int increment, std::vector< std::string > &setNames ); //Required overload
-            virtual errorOut getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
+            virtual errorOut getNumDomainNodes( const uIntType increment, const std::string domainName,
+                                                uIntType &numDomainNodes ); //Required overload
+            virtual errorOut getSetNames( const uIntType increment, std::vector< std::string > &setNames ); //Required overload
+            virtual errorOut getSolutionData( const uIntType increment, const std::string &dataName, const std::string &dataType,
                                               floatVector &data ); //Required overload
-            virtual errorOut getMeshData( const unsigned int increment,
+            virtual errorOut getMeshData( const uIntType increment,
                                           floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
-                                          unsigned int &cellCounts ); //Required overload
+                                          uIntType &cellCounts ); //Required overload
 
             errorOut _error;
             std::string _filename;
@@ -110,7 +111,7 @@ namespace dataFileInterface{
 
             YAML::Node _config;
 
-            errorOut connectivityToCellIndices( const unsigned int &nCells, const uIntVector &connectivity,
+            errorOut connectivityToCellIndices( const uIntType &nCells, const uIntVector &connectivity,
                                                 uIntVector &connectivityCellIndices );
     };
 
@@ -129,19 +130,19 @@ namespace dataFileInterface{
             XDMFDataFile( const YAML::Node &configuration );
 
             //Overloads
-            errorOut getNumIncrements( unsigned int &numIncrements );
-            errorOut getNumNodes( const unsigned int increment, unsigned int &numNodes );
-            errorOut readMesh( const unsigned int increment, floatVector &nodalPositions );
-            errorOut getDomainNodes( const unsigned int increment, const std::string domainName,
+            errorOut getNumIncrements( uIntType &numIncrements );
+            errorOut getNumNodes( const uIntType increment, uIntType &numNodes );
+            errorOut readMesh( const uIntType increment, floatVector &nodalPositions );
+            errorOut getDomainNodes( const uIntType increment, const std::string domainName,
                                      uIntVector &domainNodes );
-            errorOut getNumDomainNodes( const unsigned int increment, const std::string domainName,
-                                        unsigned int &numDomainNodes );
-            errorOut getSetNames( const unsigned int increment, std::vector< std::string > &setNames );
-            errorOut getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataType,
+            errorOut getNumDomainNodes( const uIntType increment, const std::string domainName,
+                                        uIntType &numDomainNodes );
+            errorOut getSetNames( const uIntType increment, std::vector< std::string > &setNames );
+            errorOut getSolutionData( const uIntType increment, const std::string &dataName, const std::string &dataType,
                                       floatVector &data );
-            errorOut getMeshData( const unsigned int increment,
+            errorOut getMeshData( const uIntType increment,
                                   floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
-                                  unsigned int &cellCounts );
+                                  uIntType &cellCounts );
 
         private:
             //Interface Attributes
@@ -152,10 +153,10 @@ namespace dataFileInterface{
             //Functions
             void _initializeReadMode( );
 
-            errorOut getXDMFGridCollection( const unsigned int gridCollectionNum,
+            errorOut getXDMFGridCollection( const uIntType gridCollectionNum,
                                             shared_ptr< XdmfGridCollection > &_gridHolder );
 
-            errorOut getUnstructuredGrid( const unsigned int increment,
+            errorOut getUnstructuredGrid( const uIntType increment,
                                           shared_ptr< XdmfUnstructuredGrid > &unstructuredGrid );
     };
 }

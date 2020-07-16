@@ -118,11 +118,11 @@ namespace dataFileInterface{
 
     //Virtual functions to be overloaded
     
-    errorOut dataFileBase::getNumIncrements( unsigned int &numIncrements ){
+    errorOut dataFileBase::getNumIncrements( uIntType &numIncrements ){
         /*!
          * Get the number of increments from the datafile.
          *
-         * :param unsigned int &numIncrements: The number of increments
+         * :param uIntType &numIncrements: The number of increments
          */
 
         ( void ) numIncrements;
@@ -130,12 +130,12 @@ namespace dataFileInterface{
         return new errorNode( "getNumIncrements", "The getNumIncrements function is not defined" ); 
     }
 
-    errorOut dataFileBase::getNumNodes( const unsigned int increment, unsigned int &numNodes ){
+    errorOut dataFileBase::getNumNodes( const uIntType increment, uIntType &numNodes ){
         /*!
          * Get the number of nodes from the datafile.
          *
-         * :param const unsigned int increment: The increment at which to get the nodes
-         * :param unsigned int &numIncrements: The number of increments
+         * :param const uIntType increment: The increment at which to get the nodes
+         * :param uIntType &numIncrements: The number of increments
          */
 
         ( void ) increment;
@@ -144,11 +144,11 @@ namespace dataFileInterface{
         return new errorNode( "getNumIncrements", "The getNumNodes function is not defined" ); 
     }
 
-    errorOut dataFileBase::readMesh( const unsigned int increment, floatVector &nodalPositions ){
+    errorOut dataFileBase::readMesh( const uIntType increment, floatVector &nodalPositions ){
         /*!
          * Read a mesh from the datafile.
          *
-         * :param const unsigned int increment: The increment at which to get the mesh
+         * :param const uIntType increment: The increment at which to get the mesh
          * :param floatVector &nodalPositions: The positions of the nodes in the mesh organized
          *     in row-major format [ node, coordinates ]
          */
@@ -159,11 +159,11 @@ namespace dataFileInterface{
         return new errorNode( "readMesh", "The readMesh function is not defined" );
     }
 
-    errorOut dataFileBase::getDomainNodes( const unsigned int increment, const std::string domainName, uIntVector &domainNodes ){
+    errorOut dataFileBase::getDomainNodes( const uIntType increment, const std::string domainName, uIntVector &domainNodes ){
         /*!
          * Get the nodes in the provided domain.
          *
-         * :param const unsigned int increment: The increment at which to get the domain values
+         * :param const uIntType increment: The increment at which to get the domain values
          * :param const std::string domainName: The name of the domain to be extracted.
          * :param uIntVector &domainNodes: The nodes located in the domain.
          */
@@ -175,14 +175,14 @@ namespace dataFileInterface{
         return new errorNode( "getDomainNodes", "The getDomainNodes function is not defined" );
     }
 
-    errorOut dataFileBase::getNumDomainNodes( const unsigned int increment, const std::string domainName,
-                                              unsigned int &numDomainNodes ){
+    errorOut dataFileBase::getNumDomainNodes( const uIntType increment, const std::string domainName,
+                                              uIntType &numDomainNodes ){
         /*!
          * Get the number of nodes in the provided domain.
          *
-         * :param const unsigned int increment: The increment at which to get the domain's node count
+         * :param const uIntType increment: The increment at which to get the domain's node count
          * :param const std::string domainName: The name of the domain to be interrogated.
-         * :param unsigned int numDomainNodes: The number of nodes in the domain
+         * :param uIntType numDomainNodes: The number of nodes in the domain
          */
 
         ( void ) increment;
@@ -192,11 +192,11 @@ namespace dataFileInterface{
         return new errorNode( "getDomainNodes", "The getNumDomainNodes function is not defined" );
     }
 
-    errorOut dataFileBase::getSetNames( const unsigned int increment, std::vector< std::string > &setNames ){
+    errorOut dataFileBase::getSetNames( const uIntType increment, std::vector< std::string > &setNames ){
         /*!
          * Get the set names from the provided domain at the current increment
          *
-         * :param const unsigned int increment: The increment at which to get the sets
+         * :param const uIntType increment: The increment at which to get the sets
          * :param std::vector< std::string > &setNames: The names of the sets
          */
 
@@ -206,13 +206,13 @@ namespace dataFileInterface{
         return new errorNode( "getSetNames", "The getSetNames function is not defined" );
     }
 
-    errorOut dataFileBase::getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataCenter,
+    errorOut dataFileBase::getSolutionData( const uIntType increment, const std::string &dataName, const std::string &dataCenter,
                                         floatVector &data ){
         /*!
          * Get the values of the mesh data named dataName. This should work for
          * nodal values as well as cell values.
          *
-         * :param const unsigned int increment: The increment at which to get the data
+         * :param const uIntType increment: The increment at which to get the data
          * :param const std::string &dataName: The name of the data
          * :param const std::string &dataCenter: The type of the data. This will either be "Node" or "Cell"
          * :param floatVector &data: The output data vector
@@ -227,17 +227,17 @@ namespace dataFileInterface{
         return new errorNode( "getSolutionData", "The getSolutionData function is not defined" );
     }
 
-    errorOut dataFileBase::getMeshData( const unsigned int increment,
+    errorOut dataFileBase::getMeshData( const uIntType increment,
                                         floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
-                                        unsigned int &cellCounts) {
+                                        uIntType &cellCounts) {
         /*!
          * Get the mesh data from the datafile.
          *
-         * :param const unsigned int increment: The increment at which to get the data
+         * :param const uIntType increment: The increment at which to get the data
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
          * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
          * :param uIntVector &connectivityCellIndices: The indicices at which a new cell is defined in the connectivity vector.
-         * :param unsigned int &cellCounts: The number of cells present.
+         * :param uIntType &cellCounts: The number of cells present.
          */
 
         ( void ) increment;
@@ -249,12 +249,12 @@ namespace dataFileInterface{
         return new errorNode( "getMeshData", "The getMeshData function is not defined" );
     }
 
-    errorOut dataFileBase::connectivityToCellIndices( const unsigned int &nCells, const uIntVector &connectivity,
+    errorOut dataFileBase::connectivityToCellIndices( const uIntType &nCells, const uIntVector &connectivity,
                                                       uIntVector &connectivityCellIndices ){
         /*!
          * Compute the connectivity to cell indices
          *
-         * :param const unsigned int &nCells: The number of cells
+         * :param const uIntType &nCells: The number of cells
          * :param const uIntVector &connectivity: The connectivity vector
          * :param uIntVector &connectivityCellIndices: The indices in the connectivity vector at which the cells are defined.
          */
@@ -262,12 +262,12 @@ namespace dataFileInterface{
         //Set the connectivity cell index vector size
         connectivityCellIndices = uIntVector( nCells, 0 );
 
-        long int index;
-        unsigned int index_connectivity = 0;
-        unsigned int cellDataCount;
+        unsigned int index;
+        uIntType index_connectivity = 0;
+        uIntType cellDataCount;
 
-        unsigned int elementType;
-        unsigned int nFaces;
+        uIntType elementType;
+        uIntType nFaces;
 
         for ( auto it = connectivityCellIndices.begin( ) + 1; it != connectivityCellIndices.end( ); it++ ){
 
@@ -304,7 +304,7 @@ namespace dataFileInterface{
                 cellDataCount = 1;
                 nFaces = connectivity[ index_connectivity + cellDataCount ];
 
-                for ( unsigned int n = 0; n < nFaces; n++ ){
+                for ( uIntType n = 0; n < nFaces; n++ ){
 
                     cellDataCount += 1; //Move to the new face
 
@@ -399,16 +399,16 @@ namespace dataFileInterface{
         }
     }
 
-    errorOut XDMFDataFile::getNumIncrements( unsigned int &numIncrements ){
+    errorOut XDMFDataFile::getNumIncrements( uIntType &numIncrements ){
         /*!
          * Get the number of increments from the XDMF datafile
          *
          * Currently only considers unstructured grids
          *
-         * :param unsigned int &numIncrements: The number of increments
+         * :param uIntType &numIncrements: The number of increments
          */
 
-        unsigned int nGridCollections = _domain->getNumberGridCollections( );
+        uIntType nGridCollections = _domain->getNumberGridCollections( );
         //Print warning message if the number of root-level grid collections is greater than 1
         if ( nGridCollections > 1 ){
                 std::cerr << "WARNING: The number of root-level grid collections is greater than 1. Only the first one will be used.\n";
@@ -428,15 +428,15 @@ namespace dataFileInterface{
         return NULL;
     }
 
-    errorOut XDMFDataFile::getXDMFGridCollection( const unsigned int gridCollectionNum, shared_ptr< XdmfGridCollection > &gridHolder ){
+    errorOut XDMFDataFile::getXDMFGridCollection( const uIntType gridCollectionNum, shared_ptr< XdmfGridCollection > &gridHolder ){
         /*!
          * Get a grid collection from the XDMF datafile
          *
-         * :param const unsigned int gridCollectionNum: The number of the grid collection to retrieve.
+         * :param const uIntType gridCollectionNum: The number of the grid collection to retrieve.
          * :param shared_ptr< XdmfGridCollection > &gridHolder: The returned grid collection.
          */
 
-        unsigned int nGridCollections = _domain->getNumberGridCollections( );
+        uIntType nGridCollections = _domain->getNumberGridCollections( );
 
         //Return an error if no grid collections are defined
         if ( nGridCollections <= gridCollectionNum ){
@@ -449,16 +449,16 @@ namespace dataFileInterface{
         return NULL;
     }
 
-    errorOut XDMFDataFile::getUnstructuredGrid( const unsigned int increment, shared_ptr< XdmfUnstructuredGrid > &unstructuredGrid ){
+    errorOut XDMFDataFile::getUnstructuredGrid( const uIntType increment, shared_ptr< XdmfUnstructuredGrid > &unstructuredGrid ){
         /*!
          * Read an unstructured grid from the datafile
          *
-         * :param const unsigned int increment: The increment of the unstructured grid to extract
+         * :param const uIntType increment: The increment of the unstructured grid to extract
          * :param shared_ptr< XdmfUnstructuredGrid > &unstructuredGrid: The pointer to the unstructured grid
          */
 
         //Check the number of grid collections defined on the root level. It should be 1.
-        unsigned int numIncrements;
+        uIntType numIncrements;
         errorOut error = XDMFDataFile::getNumIncrements( numIncrements );
 
         if ( error ){
@@ -478,7 +478,7 @@ namespace dataFileInterface{
         }
 
         //Get the data for the unstructured grids
-        unsigned int nUnstructuredGrids = gridHolder->getNumberUnstructuredGrids( );
+        uIntType nUnstructuredGrids = gridHolder->getNumberUnstructuredGrids( );
         if ( nUnstructuredGrids == 0 ){
             return new errorNode( "readMesh", "There are no unstructured grids defined in the output file" );
         }
@@ -493,13 +493,13 @@ namespace dataFileInterface{
         return NULL;
     }
 
-    errorOut XDMFDataFile::readMesh( const unsigned int increment, floatVector &nodalPositions ){
+    errorOut XDMFDataFile::readMesh( const uIntType increment, floatVector &nodalPositions ){
         /*!
          * Read the mesh from the XDMF datafile
          *
          * Only unstructured grids are currently considered
          *
-         * :param const unsigned int increment: The increment at which to get the mesh
+         * :param const uIntType increment: The increment at which to get the mesh
          * :param floatVector &nodalPositions: The positions of the nodes in the mesh organized
          *     in row-major format [ node, coordinates ]
          */
@@ -527,7 +527,7 @@ namespace dataFileInterface{
 
 //        //Get the set names
 //        std::cout << "the number of sets: " << grid->getNumberSets( ) << "\n";
-//        for ( unsigned int s = 0; s < grid->getNumberSets( ); s++ ){
+//        for ( uIntType s = 0; s < grid->getNumberSets( ); s++ ){
 //            auto set = grid->getSet( s );
 //            set->read( );
 //            std::cout << "  name: " << set->getName( ) << "\n";
@@ -545,12 +545,12 @@ namespace dataFileInterface{
         return NULL;
     }
 
-    errorOut XDMFDataFile::getNumNodes( const unsigned int increment, unsigned int &numNodes ){
+    errorOut XDMFDataFile::getNumNodes( const uIntType increment, uIntType &numNodes ){
         /*!
          * Get the number of nodes in the datafile
          *
-         * :param const unsigned int increment: The increment at which to get the nodes
-         * :param unsigned int &numNodes: The number of nodes
+         * :param const uIntType increment: The increment at which to get the nodes
+         * :param uIntType &numNodes: The number of nodes
          */
 
         shared_ptr< XdmfUnstructuredGrid > grid;
@@ -572,11 +572,11 @@ namespace dataFileInterface{
         
     }
 
-    errorOut XDMFDataFile::getDomainNodes( const unsigned int increment, const std::string domainName, uIntVector &domainNodes ){
+    errorOut XDMFDataFile::getDomainNodes( const uIntType increment, const std::string domainName, uIntVector &domainNodes ){
         /*!
          * Get the nodes in the given domain
          *
-         * :param const unsigned int increment: The time increment at which to get the domain's nodes
+         * :param const uIntType increment: The time increment at which to get the domain's nodes
          * :param const std::string domainName: The name of the domain
          * :param uIntVector &domainNodes: The nodes located in the domain
          */
@@ -618,14 +618,14 @@ namespace dataFileInterface{
         return NULL;
     }
 
-    errorOut XDMFDataFile::getNumDomainNodes( const unsigned int increment, const std::string domainName,
-                                              unsigned int &numDomainNodes ){
+    errorOut XDMFDataFile::getNumDomainNodes( const uIntType increment, const std::string domainName,
+                                              uIntType &numDomainNodes ){
         /*!
          * Get the number of nodes in the provided domain.
          *
-         * :param const unsigned int increment: The increment at which to get the domain's node count
+         * :param const uIntType increment: The increment at which to get the domain's node count
          * :param const std::string domainName: The name of the domain to be interrogated.
-         * :param unsigned int numDomainNodes: The number of nodes in the domain
+         * :param uIntType numDomainNodes: The number of nodes in the domain
          */
 
         //Get the grid
@@ -649,11 +649,11 @@ namespace dataFileInterface{
 
     }
 
-    errorOut XDMFDataFile::getSetNames( const unsigned int increment, std::vector< std::string > &setNames ){
+    errorOut XDMFDataFile::getSetNames( const uIntType increment, std::vector< std::string > &setNames ){
         /*!
          * Get the set names from the provided domain at the current increment
          *
-         * :param const unsigned int increment: The increment at which to get the sets
+         * :param const uIntType increment: The increment at which to get the sets
          * :param std::vector< std::string > &setNames: The names of the sets
          */
 
@@ -669,7 +669,7 @@ namespace dataFileInterface{
         //Get the sets from the grid
         setNames = std::vector< std::string >( grid->getNumberSets( ) );
 
-        for ( unsigned int i = 0; i < setNames.size(); i++ ){
+        for ( uIntType i = 0; i < setNames.size(); i++ ){
 
             setNames[ i ] = grid->getSet( i )->getName( );
 
@@ -678,13 +678,13 @@ namespace dataFileInterface{
         return NULL;
     }
 
-    errorOut XDMFDataFile::getSolutionData( const unsigned int increment, const std::string &dataName, const std::string &dataCenter,
+    errorOut XDMFDataFile::getSolutionData( const uIntType increment, const std::string &dataName, const std::string &dataCenter,
                                             floatVector &data ){
         /*!
          * Get the values of the solution data named dataName. This should work for
          * nodal values as well as cell values.
          *
-         * :param const unsigned int increment: The increment at which to get the data
+         * :param const uIntType increment: The increment at which to get the data
          * :param const std::string &dataName: The name of the data
          * :param const std::string &dataCenter: The type of the data. This will either be "Node" or "Cell"
          * :param floatVector &data: The output data vector
@@ -722,7 +722,7 @@ namespace dataFileInterface{
 
         //Find the attribute name and type that matches up with the requested values
         shared_ptr< XdmfAttribute > attribute;
-        for ( unsigned int a = 0; a < grid->getNumberAttributes( ); a++ ){
+        for ( uIntType a = 0; a < grid->getNumberAttributes( ); a++ ){
 
             //Get the current attribute
             attribute = grid->getAttribute( a );
@@ -746,18 +746,18 @@ namespace dataFileInterface{
 
     }
 
-    errorOut XDMFDataFile::getMeshData( const unsigned int increment,
+    errorOut XDMFDataFile::getMeshData( const uIntType increment,
                                         floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
-                                        unsigned int &cellCounts ){
+                                        uIntType &cellCounts ){
         /*!
          * Get the mesh data from the datafile.
          *
-         * :param const unsigned int increment: The increment at which to get the data
+         * :param const uIntType increment: The increment at which to get the data
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
          * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
          *     Note the order that the elements appear in the vector are assumed to be their cell Ids starting at zero
          * :param uIntVector &connectivityCellIndices: The indicices at which a new cell is defined in the connectivity vector.
-         * :param unsigned int &cellCounts: The number of cells present.
+         * :param uIntType &cellCounts: The number of cells present.
          */
 
         //Get the grid
