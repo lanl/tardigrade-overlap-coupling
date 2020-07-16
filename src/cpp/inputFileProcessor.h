@@ -23,9 +23,10 @@ namespace inputFileProcessor{
     typedef double floatType; //!Define the float values type.
     typedef std::vector< floatType > floatVector; //! Define a vector of floats
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
-    typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
+    typedef unsigned int uIntType; //!Define the unsigned ints
+    typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
     typedef std::vector< std::string > stringVector; //!Define a vector of strings
-    typedef std::unordered_map< unsigned int, unsigned int > DOFMap;
+    typedef std::unordered_map< uIntType, uIntType > DOFMap;
 
     class dataFileReaderBase;
 
@@ -65,7 +66,7 @@ namespace inputFileProcessor{
 
             //Functions
             errorOut setConfigurationFilename( const std::string &configurationFilename );
-            const errorOut getError( ){ return _error; }
+            errorOut getError( ){ return _error; }
 
             const floatVector* getMicroDensities( );
             const floatVector* getMicroVolumes( );
@@ -106,11 +107,11 @@ namespace inputFileProcessor{
 
             const DOFMap *getMacroGlobalToLocalDOFMap( ); 
 
-            const bool computeMicroShapeFunctions( );
+            bool computeMicroShapeFunctions( );
 
             const YAML::Node getCouplingInitialization( );
 
-            const YAML::Node getVolumeReconstructionConfig( );
+            YAML::Node getVolumeReconstructionConfig( );
 
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
@@ -129,7 +130,7 @@ namespace inputFileProcessor{
             errorOut openConfigurationFile( );
             errorOut openConfigurationFile( const std::string &configurationFilename );
             errorOut setMicroNodeWeights( const unsigned int increment );
-            errorOut setSurfaceSets( const unsigned int microIncrement, const unsigned int macroIncrement );
+            errorOut setSurfaceSets( const unsigned int microIncrement );
             errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
                                                      uIntVector &macroCellIds,
                                                      uIntVector &macroCellMicroDomainCounts,
@@ -164,11 +165,12 @@ namespace inputFileProcessor{
 
             //Private Attributes
             bool _increment_initialized = false;
-            unsigned int _current_macroIncrement;
-            unsigned int _current_microIncrement;
+            unsigned int _current_macroIncrement = 0;
+            unsigned int _current_microIncrement = 0;
             errorOut _error;
             std::string _configFilename = "";
             YAML::Node _config;
+            YAML::Node _volumeReconstructionConfig;
 
             floatVector _microDomainWeights;
             floatVector _microDensities;

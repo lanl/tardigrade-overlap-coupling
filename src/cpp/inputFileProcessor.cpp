@@ -89,6 +89,8 @@ namespace inputFileProcessor{
          * The destructor
          */
 
+        std::cout << "inputFileProcessor::~inputFileProcessor\n";
+
         //Write the configuration filename out
         if ( !(_configFilename.compare( "" ) == 0 ) ){
             std::ofstream yamlOut( _configFilename + ".as_evaluated" );
@@ -363,13 +365,11 @@ namespace inputFileProcessor{
         return NULL;
     }
 
-    errorOut inputFileProcessor::setSurfaceSets( const unsigned int microIncrement,
-                                                 const unsigned int macroIncrement ){
+    errorOut inputFileProcessor::setSurfaceSets( const unsigned int microIncrement ){
         /*!
          * Set the surface sets
          *
          * :param const unsigned int microIncrement: The increment to extract the micro surface sets
-         * :param const unsigned int macroIncrement: The increment to extract the macro surface sets
          */
 
         //Extract the set names from the microscale simulation
@@ -402,9 +402,9 @@ namespace inputFileProcessor{
             return NULL;
         }
 
-        errorOut error;
+        errorOut error = NULL;
         //Collect the sets
-        error = setSurfaceSets( microIncrement, macroIncrement );
+        error = setSurfaceSets( microIncrement );
 
         //Set the weights of the micro-nodes
         error = setMicroNodeWeights( microIncrement );
@@ -893,7 +893,7 @@ namespace inputFileProcessor{
          */
 
         //Variable definitions
-        unsigned int indx;
+        long unsigned int indx = 0;
 
         floatVector disp;
 
@@ -925,8 +925,6 @@ namespace inputFileProcessor{
         else{
 
             for ( auto it = displacementKeys.begin( ); it != displacementKeys.end( ); it++ ){
-
-                indx = it - displacementKeys.begin( ); //Set the index
 
                 if ( !_config[ "microscale_definition" ][ "displacement_variable_names" ][ *it ] ){
 
@@ -963,6 +961,8 @@ namespace inputFileProcessor{
 
                 }
 
+                indx++;
+
             }
 
         }
@@ -979,7 +979,7 @@ namespace inputFileProcessor{
          */
 
         //Variable definitions
-        unsigned int indx;
+        long unsigned int indx = 0;
 
         floatVector disp;
 
@@ -1011,8 +1011,6 @@ namespace inputFileProcessor{
         else{
 
             for ( auto it = displacementKeys.begin( ); it != displacementKeys.end( ); it++ ){
-
-                indx = it - displacementKeys.begin( ); //Set the index
 
                 if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ] ){
 
@@ -1049,6 +1047,8 @@ namespace inputFileProcessor{
 
                 }
 
+                indx++;
+
             }
 
         }
@@ -1065,7 +1065,7 @@ namespace inputFileProcessor{
          */
 
         //Variable definitions
-        unsigned int indx;
+        long unsigned int indx = 0;
 
         floatVector disp;
 
@@ -1101,8 +1101,6 @@ namespace inputFileProcessor{
 
             for ( auto it = displacementKeys.begin( ); it != displacementKeys.end( ); it++ ){
 
-                indx = it - displacementKeys.begin( ); //Set the index
-
                 if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ] ){
 
                     return new errorNode( "extractMacroDispDOFVector", "'" + *it + " is not defined in 'displacement_variable_names'");
@@ -1137,6 +1135,8 @@ namespace inputFileProcessor{
                     }
 
                 }
+
+                indx++;
 
             }
 
@@ -1321,7 +1321,7 @@ namespace inputFileProcessor{
         uniqueIds.reserve( approximateSize );
 
         uIntVector nodes;
-        errorOut error;
+        errorOut error = NULL;
 
         for ( auto domain =  domainNames.begin( );
                    domain != domainNames.end( );
@@ -1704,15 +1704,17 @@ namespace inputFileProcessor{
 
         }
 
+        _volumeReconstructionConfig = _config[ "volume_reconstruction" ];
+
         return NULL;
     }
 
-    const YAML::Node inputFileProcessor::getVolumeReconstructionConfig( ){
+    YAML::Node inputFileProcessor::getVolumeReconstructionConfig( ){
         /*!
          * Return the volume reconstruction configuration
          */
 
-        return _config[ "volume_reconstruction" ];
+        return _volumeReconstructionConfig;
     }
 
     const floatVector* inputFileProcessor::getMicroDisplacements( ){
@@ -1807,7 +1809,7 @@ namespace inputFileProcessor{
         return &_ghost_macro_cell_micro_domain_counts;
     }
 
-    const bool inputFileProcessor::computeMicroShapeFunctions( ){
+    bool inputFileProcessor::computeMicroShapeFunctions( ){
         /*!
          * Return whether the micro-shape functions should be computed
          */
