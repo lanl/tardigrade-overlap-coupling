@@ -30,11 +30,11 @@ all: $(EXECUTABLES)
 test_vector_tools: $(OBJECTS)
 	$(CXX) $(LOCAL_CFLAGS) $(INC) $(LIB) $(DBG) $^ -o $@ $(CFLAGS) -lstdc++ -std=gnu++11
 
-test_vector_tools.o: test_vector_tools.cpp ../../vector_tools.h ../../vector_tools.cpp
+test_vector_tools.o: test_vector_tools.cpp $(VECTORHEADER) $(VECTORSOURCE)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
 
 clean:
 	rm -f $(EXECUTABLES)
-	rm $(OBJECTS)
+	rm -f $(OBJECTS)
 
 .PHONY: all clean
