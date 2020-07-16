@@ -11,10 +11,10 @@
 ICC_EXIST:=$(shell which icc)
 ifdef ICC_EXIST
     CXX=icc
-    CFLAGS=-std=c++11 -Wall -Wextra -Wconversion -ansi -pedantic -O3 -I. -fmax-errors=5 -lyaml-cpp
+    CFLAGS=-std=c++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
 else
     CXX=g++
-    CFLAGS=-std=gnu++11 -Wall -Wextra -Wconversion -ansi -pedantic -O3 -I. -fmax-errors=5 -lyaml-cpp
+    CFLAGS=-std=gnu++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
 endif
 
 # Location of the Eigen library
