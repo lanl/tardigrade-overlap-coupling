@@ -15,6 +15,7 @@ typedef volumeReconstruction::floatType floatType; //!Define the float values ty
 typedef volumeReconstruction::floatVector floatVector; //! Define a vector of floats
 typedef volumeReconstruction::floatMatrix floatMatrix; //!Define a matrix of floats
 typedef volumeReconstruction::intMatrix intMatrix; //!Define a matrix of ints
+typedef volumeReconstruction::uIntType uIntType; //!Define the unsigned int type
 typedef volumeReconstruction::uIntVector uIntVector; //!Define a vector of unsigned ints
 
 int test_dualContouring_constructor( std::ofstream &results ){
@@ -581,9 +582,16 @@ int test_KDNode_getPointsInRange( std::ofstream &results ){
 
     tree3.getPointsInRange( upperBound, lowerBound, result );
 
-    if ( !vectorTools::fuzzyEquals( result, answer ) ){
-        results << "test_KDNode_getPointsInRange (test 3) & False\n";
-        return 1;
+    for ( auto a = answer.begin( ); a != answer.end( ); a++ ){
+
+        if ( !std::any_of( result.begin( ), result.end( ),
+                           [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) ){
+            vectorTools::print( result );
+            vectorTools::print( answer );
+            results << "test_KDNode_getPointsInRange (test 3) & False\n";
+            return 1;
+        }
+
     }
 
     results << "test_KDNode_getPointsInRange & True\n";

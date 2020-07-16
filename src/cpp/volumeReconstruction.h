@@ -24,9 +24,10 @@ namespace volumeReconstruction{
     typedef int intType; //!Define the int values type.
     typedef std::vector< intType > intVector; //! Define a vector of ints
     typedef std::vector< std::vector< intType > > intMatrix; //!Define a matrix of ints
-    typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
+    typedef elib::uitype uIntType;
+    typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
     typedef std::vector< std::string > stringVector; //!Define a vector of strings
-    typedef std::unordered_map< unsigned int, unsigned int > DOFMap;
+    typedef std::unordered_map< uIntType, uIntType > DOFMap;
 
     //All new volume reconstructors must be defined both in the registry enum 
     //and in the map to allow them to be accessed by strings. They must also 
@@ -46,26 +47,26 @@ namespace volumeReconstruction{
             //Constructor
             KDNode( );
             KDNode( const floatVector *points, const uIntVector &ownedIndices,
-                    const unsigned int &depth, const unsigned int &dim );
+                    const uIntType &depth, const uIntType &dim );
 
-            const unsigned int* getIndex( );
+            const uIntType* getIndex( );
 
-            floatType getMinimumValueDimension( const unsigned int &d );
+            floatType getMinimumValueDimension( const uIntType &d );
 
-            floatType getMaximumValueDimension( const unsigned int &d );
+            floatType getMaximumValueDimension( const uIntType &d );
 
             void getPointsInRange( const floatVector &upperBounds, const floatVector &lowerBounds,
                                    uIntVector &indices,
                                    floatVector *domainUpperBounds = NULL,
                                    floatVector *domainLowerBounds = NULL);
 
-            void printData( const unsigned int &dim );
+            void printData( const uIntType &dim );
 
         private:
             const floatVector *_points;
-            unsigned int _index;
-            unsigned int _depth;
-            unsigned int _axis;
+            uIntType _index;
+            uIntType _depth;
+            uIntType _axis;
 
             std::unique_ptr< KDNode > left_child = NULL;
             std::unique_ptr< KDNode > right_child = NULL;
@@ -101,27 +102,27 @@ namespace volumeReconstruction{
             //Interface functions
             const floatVector *getPoints( );
             const floatVector *getFunction( );
-            errorOut getFunctionValue( const unsigned int i, floatType &value );
+            errorOut getFunctionValue( const uIntType i, floatType &value );
 
             const floatVector *getLowerBounds( );
             const floatVector *getUpperBounds( );
 
             //Required overloads
             virtual errorOut evaluate( );
-            virtual errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+            virtual errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                        floatVector &integratedValue );
 
-            virtual errorOut performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+            virtual errorOut performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                        const floatVector &origin, floatVector &integratedValue );
 
-            virtual errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+            virtual errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                         floatVector &integratedValue );
 
-            virtual errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+            virtual errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             floatVector &integratedValue );
 
             errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
-                                                                    const unsigned int valueSize,
+                                                                    const uIntType valueSize,
                                                                     const floatVector &origin,
                                                                     floatVector &integratedValue );
 
@@ -129,20 +130,18 @@ namespace volumeReconstruction{
 
             virtual errorOut writeToXDMF( );
 
-            errorOut setXDMFOutputFilename( std::string );
-
         protected:
 
-            unsigned int _dim = 3; //The dimension is hard coded to 3
-                                   //It will be attempted to make the
-                                   //code as general as possible but
-                                   //only 3D will be explicitly 
-                                   //implemented
+            uIntType _dim = 3; //The dimension is hard coded to 3
+                               //It will be attempted to make the
+                               //code as general as possible but
+                               //only 3D will be explicitly 
+                               //implemented
 
             virtual errorOut initialize( );
 
             void setEvaluated( const bool isEvaluated );
-            const bool getEvaluated( );
+            bool getEvaluated( );
 
             //Protected attributes
             YAML::Node _config;
@@ -153,7 +152,7 @@ namespace volumeReconstruction{
             KDNode _tree;
             floatType _functionValue = 1;
             const floatVector *_functionValues = NULL;
-            unsigned int _nPoints;
+            uIntType _nPoints;
 
             
 
@@ -188,16 +187,16 @@ namespace volumeReconstruction{
 
             errorOut evaluate( );
 
-            errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+            errorOut performVolumeIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                floatVector &integratedValue );
 
-            errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+            errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                 floatVector &integratedValue );
 
-            errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+            errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                     floatVector &integratedValue );
 
-            errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+            errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                     const floatVector &origin, floatVector &integratedValue );
 
         protected:
@@ -206,10 +205,10 @@ namespace volumeReconstruction{
 
             errorOut setGridSpacing( );
 
-            errorOut interpolateFunctionToBackgroundGrid( const floatVector &functionValuesAtPoints, const unsigned int &functionDim,
-                                                          std::unordered_map< unsigned int, floatVector > &functionAtGrid );
+            errorOut interpolateFunctionToBackgroundGrid( const floatVector &functionValuesAtPoints, const uIntType &functionDim,
+                                                          std::unordered_map< uIntType, floatVector > &functionAtGrid );
 
-            errorOut performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const unsigned int valueSize,
+            errorOut performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                     const floatVector &origin, floatVector &integratedValue,
                                                     bool computeFlux, bool dyadWithOrigin );
 
@@ -221,7 +220,7 @@ namespace volumeReconstruction{
 
             floatType _absoluteTolerance = 1e-9;
 
-            unsigned int _minApproximationCount = 5;
+            uIntType _minApproximationCount = 5;
             bool _useMaterialPointsForNormals = false;
 
             bool _writeOutput = false;
@@ -252,19 +251,19 @@ namespace volumeReconstruction{
 
             uIntVector _internalCells;
             uIntVector _boundaryCells;
-            std::vector< bool > _cellContainsPoint;
+//            std::vector< bool > _cellContainsPoint;
 
-            std::unordered_map< unsigned int, uIntVector > _boundaryEdges_x;
-            std::unordered_map< unsigned int, uIntVector > _boundaryEdges_y;
-            std::unordered_map< unsigned int, uIntVector > _boundaryEdges_z;
+            std::unordered_map< uIntType, uIntVector > _boundaryEdges_x;
+            std::unordered_map< uIntType, uIntVector > _boundaryEdges_y;
+            std::unordered_map< uIntType, uIntVector > _boundaryEdges_z;
 
             floatVector _boundaryPoints;
             DOFMap _boundaryPointIDToIndex;
 
-            std::unordered_map< unsigned int, floatType > _boundaryPointAreas; 
-            std::unordered_map< unsigned int, floatVector > _boundaryPointNormals;
+            std::unordered_map< uIntType, floatType > _boundaryPointAreas; 
+            std::unordered_map< uIntType, floatVector > _boundaryPointNormals;
             errorOut computeBoundaryPointNormalsAndAreas( );
-            errorOut processBoundaryEdges( const std::unordered_map< unsigned int, uIntVector > &boundaryEdges );
+            errorOut processBoundaryEdges( const std::unordered_map< uIntType, uIntVector > &boundaryEdges );
 
             errorOut writeToXDMF( );
 

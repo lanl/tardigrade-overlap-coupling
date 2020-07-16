@@ -30,7 +30,7 @@ namespace volumeReconstruction{
     }
 
     KDNode::KDNode( const floatVector *points, const uIntVector &ownedIndices,
-                    const unsigned int &depth, const unsigned int &dim ){
+                    const uIntType &depth, const uIntType &dim ){
 
         /*!
          * The constructor for the KD tree
@@ -39,8 +39,8 @@ namespace volumeReconstruction{
          * :param const uIntVector &ownedIndices: The indices of the points which this
          *     node is dividing. These are indices to the first values of the 
          *     points in the 'points' vector.
-         * :param const unsigned int &depth: The depth of the current node
-         * :param const unsigned int &dim: The dimension of the points
+         * :param const uIntType &depth: The depth of the current node
+         * :param const uIntType &dim: The dimension of the points
          */
 
         //Set the points
@@ -52,6 +52,7 @@ namespace volumeReconstruction{
         //Determine if this is the last node in the chain
         if ( ownedIndices.size( ) == 1 ){
             _index = ownedIndices[ 0 ];
+            _axis = 0;
             return;
         }
 
@@ -65,7 +66,7 @@ namespace volumeReconstruction{
         for ( auto index = ownedIndices.begin( ) + 1; index != ownedIndices.end( ); index++ ){
 
             //Compare the current point against the bounds
-            for ( unsigned int i = 0; i < dim; i++ ){
+            for ( uIntType i = 0; i < dim; i++ ){
                 if ( ( *_points )[ *index + i ] > upperBound[ i ] ){
                     upperBound[ i ] = ( *_points )[ *index + i ];
                 }
@@ -82,19 +83,23 @@ namespace volumeReconstruction{
         _axis = 0;
         floatType deltaMax = delta[ _axis ];
 
+        uIntType a = 0;
+
         for ( auto v = delta.begin( ) + 1; v != delta.end( ); v++ ){
 
             if ( deltaMax < *v ){
 
-                _axis = v - delta.begin( );
+                _axis = a;
                 deltaMax = *v;
 
-            }            
+            }
+
+            a++;
 
         }
 
         //Accumulate the dimension indicated by axis
-        typedef std::pair< const unsigned int*, const floatType* > valueMap;
+        typedef std::pair< const uIntType*, const floatType* > valueMap;
         
         std::vector< valueMap > values;
         values.reserve( _points->size( ) / dim );
@@ -151,7 +156,7 @@ namespace volumeReconstruction{
         return;
     }
 
-    const unsigned int* KDNode::getIndex( ){
+    const uIntType* KDNode::getIndex( ){
         /*!
          * Get the index associated with this KD node
          */
@@ -177,7 +182,7 @@ namespace volumeReconstruction{
          */
 
         //Get the dimension
-        unsigned int dim = upperBounds.size( );
+        uIntType dim = upperBounds.size( );
 
         floatVector _domainUpperBounds;
         floatVector _domainLowerBounds;
@@ -185,6 +190,10 @@ namespace volumeReconstruction{
         //Assemble the current point
         floatVector median( _points->begin( ) + _index,
                             _points->begin( ) + _index + dim );
+//        std::cout << "     _depth: " << _depth;
+//        std::cout << "     _points->size( ): " << _points->size( );
+//        std::cout << "     _index: " << _index;
+//        std::cout << "     _index + dim: " << _index + dim << "\n";
 
         floatVector upperDelta, lowerDelta;
 
@@ -193,7 +202,7 @@ namespace volumeReconstruction{
             _domainUpperBounds = floatVector( dim );
             _domainLowerBounds = floatVector( dim );
 
-            for ( unsigned int i = 0; i < dim; i++ ){
+            for ( uIntType i = 0; i < dim; i++ ){
 
                 _domainUpperBounds[ i ] = getMaximumValueDimension( i );
                 _domainLowerBounds[ i ] = getMinimumValueDimension( i );
@@ -249,11 +258,11 @@ namespace volumeReconstruction{
 
     }
 
-    floatType KDNode::getMinimumValueDimension( const unsigned int &d ){
+    floatType KDNode::getMinimumValueDimension( const uIntType &d ){
         /*!
          * Get the minimum value of a given dimension in the tree
          *
-         * :param const unsigned int &d: The dimension ( starting at zero ) of each point to search
+         * :param const uIntType &d: The dimension ( starting at zero ) of each point to search
          */
 
         floatType currentValue = ( *_points )[ _index + d ];
@@ -305,11 +314,11 @@ namespace volumeReconstruction{
 
     }
 
-    floatType KDNode::getMaximumValueDimension( const unsigned int &d ){
+    floatType KDNode::getMaximumValueDimension( const uIntType &d ){
         /*!
          * Get the maximum value of a given dimension in the tree
          *
-         * :param const unsigned int &d: The dimension ( starting at zero ) of each point to search
+         * :param const uIntType &d: The dimension ( starting at zero ) of each point to search
          */
 
 
@@ -361,7 +370,7 @@ namespace volumeReconstruction{
 
     }
 
-    void KDNode::printData( const unsigned int &dim ){
+    void KDNode::printData( const uIntType &dim ){
         /*!
          * Print the data associated with this node to the terminal
          */
@@ -452,6 +461,8 @@ namespace volumeReconstruction{
          * The base volumeReconstruction destructor
          */
 
+        std::cout << "volumeReconstructionBase::~volumeReconstructionBase\n";
+
         if ( _config[ "write_config" ] ){
             if ( !_config[ "baseOutputFilename" ].IsScalar( ) ){
                 _config[ "write_config" ] = "defaultOutput.yaml";
@@ -530,7 +541,7 @@ namespace volumeReconstruction{
 
         uIntVector ownedIndices;
         ownedIndices.reserve( _nPoints );
-        for ( unsigned int i = 0; i < _dim * _nPoints; i+=3 ){
+        for ( uIntType i = 0; i < _dim * _nPoints; i+=3 ){
             ownedIndices.push_back( i );
         }
 
@@ -563,6 +574,7 @@ namespace volumeReconstruction{
          * Base initialization
          */
 
+        std::cout << "setting interpolation configuration\n";
         errorOut error = setInterpolationConfiguration( );
 
         if ( error ){
@@ -571,6 +583,7 @@ namespace volumeReconstruction{
             return result;
         }
 
+        std::cout << "computing geometry information\n";
         error = computeGeometryInformation( );
 
         if ( error ){
@@ -579,6 +592,7 @@ namespace volumeReconstruction{
             return result;
         }
 
+        std::cout << "exiting base initialize\n";
         return NULL;
     }
 
@@ -591,6 +605,7 @@ namespace volumeReconstruction{
          * the general information is computed.
          */
 
+        std::cout << "entering base initialize\n";
         errorOut error = initialize( );
 
         if ( error ){
@@ -599,12 +614,14 @@ namespace volumeReconstruction{
             return result;
         }
 
+        std::cout << "setting evaluated\n";
         setEvaluated( true );
+        std::cout << "exiting base evaluate\n";
 
         return NULL;
     }
 
-    errorOut volumeReconstructionBase::performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+    errorOut volumeReconstructionBase::performVolumeIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                  floatVector &integratedValue ){
         /*!
          * Integrate a quantity known at the points over the volume returning the value for the domain.
@@ -618,15 +635,19 @@ namespace volumeReconstruction{
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
          *     provided to the volume reconstruction object and the second index is the value of the 
          *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
          */
+
+        ( void ) valuesAtPoints;
+        ( void ) valueSize;
+        ( void ) integratedValue;
 
         return new errorNode( "performVolumeIntegration", "Volume integration not implemented" );
     }
 
     errorOut volumeReconstructionBase::performRelativePositionVolumeIntegration( const floatVector &valuesAtPoints,
-                                                                                 const unsigned int valueSize,
+                                                                                 const uIntType valueSize,
                                                                                  const floatVector &origin,
                                                                                  floatVector &integratedValue ){
         /*!
@@ -641,7 +662,7 @@ namespace volumeReconstruction{
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
          *     provided to the volume reconstruction object and the second index is the value of the 
          *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param const floatVector &origin: The coordinates of the origin.
          * :param floatVector &integratedValue: The final value of the integral
          */
@@ -662,12 +683,9 @@ namespace volumeReconstruction{
         floatVector pointValue;
         floatVector pointPosition;
 
-        unsigned int index; 
+        uIntType index = 0;
 
         for ( auto point = getPoints( )->begin( ); point != getPoints( )->end( ); point+=_dim ){
-
-            //Set the index
-            index = point - getPoints( )->begin( );
 
             //Extract the function value at the point
             pointValue = floatVector( valuesAtPoints.begin( ) + ( index / _dim ) * valueSize,
@@ -689,6 +707,8 @@ namespace volumeReconstruction{
 
             }
 
+            index++;
+
         }
 
         //Perform the integration
@@ -706,7 +726,7 @@ namespace volumeReconstruction{
         return NULL;
     }
 
-    errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+    errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                   floatVector &integratedValue ){
         /*!
          * Integrate a quantity known at the point over the surface and return the value for the domain.
@@ -715,14 +735,18 @@ namespace volumeReconstruction{
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
          *     provided to the volume reconstruction object and the second index is the value of the 
          *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
          */
+
+        ( void ) valuesAtPoints;
+        ( void ) valueSize;
+        ( void ) integratedValue;
 
         return new errorNode( "performSurfaceIntegration", "Surface integration not implemented" );
     }
 
-    errorOut volumeReconstructionBase::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+    errorOut volumeReconstructionBase::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                       floatVector &integratedValue ){
         /*!
          * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
@@ -734,9 +758,13 @@ namespace volumeReconstruction{
          *     provided to the volume reconstruction object, the second index is the first index of the v matirx and the
          *     third index is the second index of the value matrix
          *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
          */
+
+        ( void ) valuesAtPoints;
+        ( void ) valueSize;
+        ( void ) integratedValue;
 
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
@@ -803,7 +831,7 @@ namespace volumeReconstruction{
         _upperBounds.resize( _dim );
         _lowerBounds.resize( _dim );
 
-        for ( unsigned int i = 0; i < _dim; i++ ){
+        for ( uIntType i = 0; i < _dim; i++ ){
 
             _upperBounds[ i ] = _tree.getMaximumValueDimension( i );
             _lowerBounds[ i ] = _tree.getMinimumValueDimension( i );
@@ -829,12 +857,12 @@ namespace volumeReconstruction{
         return _functionValues;
     }
 
-    errorOut volumeReconstructionBase::getFunctionValue( const unsigned int i, floatType &value ){
+    errorOut volumeReconstructionBase::getFunctionValue( const uIntType i, floatType &value ){
         /*!
          * Get the function value at the provided index. This is the index of the function-value vector
          * corresponding to a given point not the index in the points vector.
          *
-         * :param const unsigned int i: The index of the point
+         * :param const uIntType i: The index of the point
          * :param floatType &value: The value of the function
          */
 
@@ -876,7 +904,7 @@ namespace volumeReconstruction{
         return &_upperBounds;
     }
 
-    const bool volumeReconstructionBase::getEvaluated( ){
+    bool volumeReconstructionBase::getEvaluated( ){
         /*!
          * Get whether the volume reconstruction has been evaluated
          */
@@ -948,6 +976,7 @@ namespace volumeReconstruction{
 
         }
 
+        std::cout << "process configuration file\n";
         error = processConfigurationFile( );
 
         if ( error ){
@@ -958,6 +987,7 @@ namespace volumeReconstruction{
 
         }
 
+        std::cout << "set grid spacing\n";
         error = setGridSpacing( );
 
         if ( error ){
@@ -968,7 +998,9 @@ namespace volumeReconstruction{
 
         }
 
+        std::cout << "project implicit function to background grid\n";
         error = projectImplicitFunctionToBackgroundGrid( );
+//        return new errorNode( "initialize", "derp" );
 
         if ( error ){
 
@@ -978,6 +1010,7 @@ namespace volumeReconstruction{
 
         }
 
+        std::cout << "initialize internal and boundary cells\n";
         error = initializeInternalAndBoundaryCells( );
 
         if ( error ){
@@ -988,6 +1021,7 @@ namespace volumeReconstruction{
 
         }
 
+        std::cout << "compute boundary point normals and areas\n";
         error = computeBoundaryPointNormalsAndAreas( );
 
         if ( error ){
@@ -1008,14 +1042,14 @@ namespace volumeReconstruction{
 
         if ( !_config[ "interpolation" ][ "discretization_count" ] ){
 
-            _config[ "interpolation" ][ "discretization_count" ] = std::max( ( unsigned int )( std::pow( ( floatType )_nPoints, 1. / 3. ) ),
-                                                                                                         ( unsigned int )1 );
+            _config[ "interpolation" ][ "discretization_count" ] = std::max( ( uIntType )( std::pow( ( floatType )_nPoints, 1. / 3. ) ),
+                                                                                                         ( uIntType )1 );
 
         }
 
         if ( _config[ "interpolation" ][ "discretization_count" ].IsScalar( ) ){
 
-            unsigned int v = _config[ "interpolation" ][ "discretization_count" ].as< unsigned int >( );
+            uIntType v = _config[ "interpolation" ][ "discretization_count" ].as< uIntType >( );
             _domainDiscretization = { v, v, v };
 
         }
@@ -1031,12 +1065,12 @@ namespace volumeReconstruction{
 
             }
 
-            unsigned int i = 0;
+            uIntType i = 0;
             for ( auto it  = _config[ "interpolation" ][ "discretization_count" ].begin( );
                        it != _config[ "interpolation" ][ "discretization_count" ].end( );
                        it++ ){
 
-                _domainDiscretization[ i ] = it->as< unsigned int>( );
+                _domainDiscretization[ i ] = it->as< uIntType>( );
 
                 i++;
             }
@@ -1162,7 +1196,7 @@ namespace volumeReconstruction{
         const floatVector *upperBounds = getUpperBounds( );
         const floatVector *lowerBounds = getLowerBounds( );
 
-        for ( unsigned int i = 0; i < _dim; i++ ){
+        for ( uIntType i = 0; i < _dim; i++ ){
 
             //With the domain being split into n discretizations it requires n + 1 nodes
             //We also add two additional nodes on the outside of the grid to provide
@@ -1170,11 +1204,11 @@ namespace volumeReconstruction{
             _gridLocations[ i ].resize( _domainDiscretization[ i ] + 3 );
 
             //Set the displacement of the nodes
-            delta = ( ( *upperBounds )[ i ] - ( *lowerBounds )[ i ] ) / _domainDiscretization[ i ];
+            delta = ( ( *upperBounds )[ i ] - ( *lowerBounds )[ i ] ) / ( ( floatType )_domainDiscretization[ i ] );
 
-            for ( unsigned int j = 0; j < _domainDiscretization[ i ] + 1; j++ ){
+            for ( uIntType j = 0; j < _domainDiscretization[ i ] + 1; j++ ){
 
-                _gridLocations[ i ][ j + 1 ] = ( *lowerBounds )[ i ] + j * delta;
+                _gridLocations[ i ][ j + 1 ] = ( *lowerBounds )[ i ] + ( ( floatType )j ) * delta;
 
             }
 
@@ -1222,20 +1256,22 @@ namespace volumeReconstruction{
         uIntVector globalNodeIds;
         uIntVector pointCounts;
 
-        unsigned int ngx = _gridLocations[ 0 ].size( );
-        unsigned int ngy = _gridLocations[ 1 ].size( );
-        unsigned int ngz = _gridLocations[ 2 ].size( );
+        uIntType ngx = _gridLocations[ 0 ].size( );
+        uIntType ngy = _gridLocations[ 1 ].size( );
+        uIntType ngz = _gridLocations[ 2 ].size( );
 
-        _cellContainsPoint = std::vector< bool >( ( ngx - 1 ) * ( ngy - 1 ) * ( ngz - 1 ), false );
+//        _cellContainsPoint = std::vector< bool >( ( ngx - 1 ) * ( ngy - 1 ) * ( ngz - 1 ), false );
 
-        for ( unsigned int i = 1; i < ngx - 2; i++ ){
+        std::cout << "begin loop\n";
+        for ( uIntType i = 1; i < ngx - 2; i++ ){
 
-            for ( unsigned int j = 1; j < ngy - 2; j++ ){
+            for ( uIntType j = 1; j < ngy - 2; j++ ){
 
-                for ( unsigned int k = 1; k < ngz - 2; k++ ){
+                for ( uIntType k = 1; k < ngz - 2; k++ ){
 
                     //Get the element contribution to the nodal values of the implicit function
                     elementIndices = { i, j, k };
+                    std::cout << "process element: " << i << ", " << j << ", " << k << "\n";
                     error = processBackgroundGridElementImplicitFunction( elementIndices, elementNodalContributions,
                                                                           globalNodeIds, pointCounts );
 
@@ -1252,11 +1288,19 @@ namespace volumeReconstruction{
 
                     }
 
-                    _cellContainsPoint[ ngy * ngz * i + ngz * j + k ] =
-                        std::any_of( pointCounts.begin( ), pointCounts.end( ),
-                                     []( unsigned int pC ){ return pC > 0; } );
+//                    if ( _cellContainsPoint.size( ) <= ( ( ngy - 1 ) * ( ngz - 1 ) * i + ( ngz - 1 ) * j + k ) ){
+//
+//                        std::cout << _cellContainsPoint.size( ) << "\n";
+//                        std::cout << ngy * ngz * i + ngz * j + k << "\n";
+//                        assert( 1 == -23 );
+//
+//                    }
+//
+//                    _cellContainsPoint[ ( ngy - 1 ) * ( ngz - 1 ) * i + ( ngz - 1 ) * j + k ] =
+//                        std::any_of( pointCounts.begin( ), pointCounts.end( ),
+//                                     []( uIntType pC ){ return pC > 0; } );
 
-                    for ( unsigned int i = 0; i < globalNodeIds.size( ); i++ ){
+                    for ( uIntType i = 0; i < globalNodeIds.size( ); i++ ){
 
                         //Add those values to the grid
                         _implicitFunctionValues[ globalNodeIds[ i ] ] += elementNodalContributions[ i ];
@@ -1272,16 +1316,16 @@ namespace volumeReconstruction{
 
         }
 
-        for ( unsigned int i = 1; i < ngx - 1; i++ ){
+        for ( uIntType i = 1; i < ngx - 1; i++ ){
 
-            for ( unsigned int j = 1; j < ngy - 1; j++ ){
+            for ( uIntType j = 1; j < ngy - 1; j++ ){
 
-                for ( unsigned int k = 1; k < ngz - 1; k++ ){
+                for ( uIntType k = 1; k < ngz - 1; k++ ){
 
                     if ( gridPointCounts[ ngy * ngz * i + ngz * j + k ] > 0 ){
 
                         _implicitFunctionValues[ ngy * ngz * i + ngz * j + k ] /=
-                            gridPointCounts[ ngy * ngz * i + ngz * j + k ];
+                            ( floatType )gridPointCounts[ ngy * ngz * i + ngz * j + k ];
 
                     }
 
@@ -1309,13 +1353,21 @@ namespace volumeReconstruction{
                                   "A dimension of 3 is required for this routine" );
         }
 
-        unsigned int ngy = _gridLocations[ 1 ].size( );
-        unsigned int ngz = _gridLocations[ 2 ].size( );
+        if ( indices.size( ) != _dim ){
+            return new errorNode( "getGridElement",
+                                  "The indices must have the same number of values as the dimension" );
+        }
+
+        uIntType ngy = _gridLocations[ 1 ].size( );
+        uIntType ngz = _gridLocations[ 2 ].size( );
 
         //Compute the location of the nodes
         floatVector lbCoordinates( _dim, 0 );
         floatVector ubCoordinates( _dim, 0 );
         for ( auto index = indices.begin( ); index != indices.end( ); index++ ){
+//            std::cout << "    index - indices.begin( ): " << index - indices.begin( ) << "\n";
+//            std::cout << "      *index: " << *index << "\n";
+//            std::cout << "       _gridLocations[ index - indices.begin( ) ].size( ): " << _gridLocations[ index - indices.begin( ) ].size( ) << "\n";
 
             if ( _gridLocations[ index - indices.begin( ) ].size( ) <= *index + 1 ){
 
@@ -1329,19 +1381,23 @@ namespace volumeReconstruction{
             ubCoordinates[ index - indices.begin( ) ] = _gridLocations[ index - indices.begin( ) ][ *index + 1 ];
 
         }
+//        std::cout << "lb: "; vectorTools::print( lbCoordinates );
+//        std::cout << "ub: "; vectorTools::print( ubCoordinates );
 
         //Determine the element's nodes
-        floatMatrix nodes = { { lbCoordinates[ 0 ], lbCoordinates[ 1 ], lbCoordinates[ 2 ] },
-                              { ubCoordinates[ 0 ], lbCoordinates[ 1 ], lbCoordinates[ 2 ] },
-                              { ubCoordinates[ 0 ], ubCoordinates[ 1 ], lbCoordinates[ 2 ] },
-                              { lbCoordinates[ 0 ], ubCoordinates[ 1 ], lbCoordinates[ 2 ] },
-                              { lbCoordinates[ 0 ], lbCoordinates[ 1 ], ubCoordinates[ 2 ] },
-                              { ubCoordinates[ 0 ], lbCoordinates[ 1 ], ubCoordinates[ 2 ] },
-                              { ubCoordinates[ 0 ], ubCoordinates[ 1 ], ubCoordinates[ 2 ] },
-                              { lbCoordinates[ 0 ], ubCoordinates[ 1 ], ubCoordinates[ 2 ] } };
+        floatMatrix nodes( 8, floatVector( _dim, 0 ) );
+        nodes = { { lbCoordinates[ 0 ], lbCoordinates[ 1 ], lbCoordinates[ 2 ] },
+                  { ubCoordinates[ 0 ], lbCoordinates[ 1 ], lbCoordinates[ 2 ] },
+                  { ubCoordinates[ 0 ], ubCoordinates[ 1 ], lbCoordinates[ 2 ] },
+                  { lbCoordinates[ 0 ], ubCoordinates[ 1 ], lbCoordinates[ 2 ] },
+                  { lbCoordinates[ 0 ], lbCoordinates[ 1 ], ubCoordinates[ 2 ] },
+                  { ubCoordinates[ 0 ], lbCoordinates[ 1 ], ubCoordinates[ 2 ] },
+                  { ubCoordinates[ 0 ], ubCoordinates[ 1 ], ubCoordinates[ 2 ] },
+                  { lbCoordinates[ 0 ], ubCoordinates[ 1 ], ubCoordinates[ 2 ] } };
 
         //Set the element's global node numbers
-        uIntVector global_node_ids=
+        uIntVector global_node_ids( 8, 0 );
+        global_node_ids=
             {
                 ngy * ngz * ( indices[ 0 ] + 0 ) + ngz * ( indices[ 1 ] + 0 ) + ( indices[ 2 ] + 0 ),
                 ngy * ngz * ( indices[ 0 ] + 1 ) + ngz * ( indices[ 1 ] + 0 ) + ( indices[ 2 ] + 0 ),
@@ -1388,7 +1444,9 @@ namespace volumeReconstruction{
          */
 
         std::unique_ptr< elib::Element > element;
+        std::cout << "  getGridElement\n";
         errorOut error = getGridElement( indices, element );
+        std::cout << "  exit getGridElement\n";
 
         if ( error ){
 
@@ -1404,6 +1462,7 @@ namespace volumeReconstruction{
         floatVector domainUpperBounds = *getUpperBounds( );
         floatVector domainLowerBounds = *getLowerBounds( );
 
+        std::cout << "  get points in range\n";
         _tree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], pointIndices,
                                 &domainUpperBounds, &domainLowerBounds );
 
@@ -1427,6 +1486,7 @@ namespace volumeReconstruction{
 
         floatType minDistance;
 
+        std::cout << "  loop over the points\n";
         for ( auto pI = pointIndices.begin( ); pI != pointIndices.end( ); pI++ ){
 
             //Get the current point's location
@@ -1443,10 +1503,13 @@ namespace volumeReconstruction{
             minDistance = *std::min_element( distances.begin( ), distances.end( ) );
 
             //Determine which values are equal to the smallest value
+            uIntType dIndex = 0;
             for ( auto d = distances.begin( ); d != distances.end( ); d++ ){
 
-                nodesSupported[ d - distances.begin( ) ] = ( floatType )( vectorTools::fuzzyEquals( *d, minDistance ) );
-                pointCounts[ d - distances.begin( ) ] += nodesSupported[ d - distances.begin( ) ];
+                nodesSupported[ dIndex ] = ( floatType )( vectorTools::fuzzyEquals( *d, minDistance ) );
+                pointCounts[ dIndex ] += ( uIntType )nodesSupported[ dIndex ];
+
+                dIndex++;
 
             }
 
@@ -1516,9 +1579,9 @@ namespace volumeReconstruction{
 
         }
 
-        unsigned int ngx = _gridLocations[ 0 ].size( );
-        unsigned int ngy = _gridLocations[ 1 ].size( );
-        unsigned int ngz = _gridLocations[ 2 ].size( );
+        uIntType ngx = _gridLocations[ 0 ].size( );
+        uIntType ngy = _gridLocations[ 1 ].size( );
+        uIntType ngz = _gridLocations[ 2 ].size( );
 
         //Resize the internal cells vector
         _internalCells.clear( );
@@ -1529,11 +1592,11 @@ namespace volumeReconstruction{
 
         floatVector cellValues;
 
-        for ( unsigned int i = 0; i < ( ngx - 1 ); i++ ){
+        for ( uIntType i = 0; i < ( ngx - 1 ); i++ ){
 
-            for ( unsigned int j = 0; j < ( ngy - 1 ); j++ ){
+            for ( uIntType j = 0; j < ( ngy - 1 ); j++ ){
 
-                for ( unsigned int k = 0; k < ( ngz - 1 ); k++ ){
+                for ( uIntType k = 0; k < ( ngz - 1 ); k++ ){
 
                     //Get the values of the implicit function
                     cellValues = { _implicitFunctionValues[ ngy * ngz * ( i + 0 ) + ngz * ( j  + 0 ) + ( k + 0 ) ],
@@ -1581,8 +1644,8 @@ namespace volumeReconstruction{
 
         }
 
-        unsigned int ngy = _gridLocations[ 1 ].size( );
-        unsigned int ngz = _gridLocations[ 2 ].size( );
+        uIntType ngy = _gridLocations[ 1 ].size( );
+        uIntType ngz = _gridLocations[ 2 ].size( );
 
         //Resize the boundary point vector
         _boundaryPoints.clear( );
@@ -1591,10 +1654,10 @@ namespace volumeReconstruction{
         _boundaryPointIDToIndex.reserve( _boundaryCells.size( ) );
 
         //Loop over the boundary cells
-        unsigned int i, j, k;
-        unsigned int ri1, rj1, rk1;
-        unsigned int ri2, rj2, rk2;
-        unsigned int ri, rj, rk;
+        uIntType i, j, k;
+        uIntType ri1, rj1, rk1;
+        uIntType ri2, rj2, rk2;
+        uIntType ri, rj, rk;
         floatVector cellValues;
         errorOut error;
         std::unique_ptr< elib::Element > element;
@@ -1644,7 +1707,7 @@ namespace volumeReconstruction{
         floatVector localBoundaryPoint;
         floatVector boundaryPoint;
 
-        unsigned int edgeID;
+        uIntType edgeID;
         uIntVector edgeCells;
 
         bool flipDirection;
@@ -1657,6 +1720,7 @@ namespace volumeReconstruction{
             k = *bc - ngy * ngz * i - ngz * j;
 
             //Determine the grid element
+            element = NULL;
             error = getGridElement( { i, j, k }, element );
 
             if ( error ){
@@ -1715,10 +1779,10 @@ namespace volumeReconstruction{
 
                 //Get the intersection points of the transition edges
 
-                unsigned int i2 = edgeNodes[ 2 * ( eT - edgeTransition.begin( ) ) + 1 ];
-                unsigned int i1 = edgeNodes[ 2 * ( eT - edgeTransition.begin( ) ) + 0 ];
+                uIntType i2 = edgeNodes[ 2 * ( eT - edgeTransition.begin( ) ) + 1 ];
+                uIntType i1 = edgeNodes[ 2 * ( eT - edgeTransition.begin( ) ) + 0 ];
 
-                for ( unsigned int i = 0; i < _dim; i++ ){
+                for ( uIntType i = 0; i < _dim; i++ ){
 
                     if ( ( element->reference_nodes[ i2 ][ i ] - element->reference_nodes[ i1 ][ i ] ) < _absoluteTolerance ){
 
@@ -1823,7 +1887,7 @@ namespace volumeReconstruction{
                 }
 
                 //Store the transition edge
-                unsigned int edgeIndex = eT - edgeTransition.begin( );
+                uIntType edgeIndex = eT - edgeTransition.begin( );
                 edgeID = ngy * ngz * ri1 + ngz * rj1 + rk1;
 
                 if ( edgeIndex < 4 ){ //x edge
@@ -1907,7 +1971,7 @@ namespace volumeReconstruction{
             floatArgs[ 0 ] = {  1,  1,  1 };//element->bounding_box[ 1 ];
             floatArgs[ 1 ] = { -1, -1, -1 };//element->bounding_box[ 0 ];
 
-            for ( unsigned int i = 0; i < points.size( ); i++ ){
+            for ( uIntType i = 0; i < points.size( ); i++ ){
 
                 floatArgs[ 2 + i ] = points[ i ];
                 floatArgs[ 2 + points.size( ) + i ] = normals[ i ];
@@ -1920,7 +1984,7 @@ namespace volumeReconstruction{
             //Assemble the initial iterate
             X0.resize( 5 * _dim );
             X.resize( 5 * _dim );
-            for ( unsigned int i = 0; i < _dim; i++ ){
+            for ( uIntType i = 0; i < _dim; i++ ){
 
 //                X0[            i ] = 0.5 * ( element->bounding_box[ 0 ][ i ] + element->bounding_box[ 1 ][ i ] ); //x
                 X0[            i ] = 0.0;
@@ -1955,7 +2019,7 @@ namespace volumeReconstruction{
 
             }
 
-            for ( unsigned int i = 0; i < _dim; i++ ){
+            for ( uIntType i = 0; i < _dim; i++ ){
 
                 _boundaryPoints.push_back( boundaryPoint[ i ] );
 
@@ -1987,6 +2051,9 @@ namespace volumeReconstruction{
          * :param intMatrix &intOuts: Not used 
          */
 
+        ( void ) floatOuts;
+        ( void ) intOuts;
+
         if ( intArgs.size( ) != 1 ){
 
             return new errorNode( "internalPointResidual", "The intArgs matrix must have one element" );
@@ -2000,8 +2067,8 @@ namespace volumeReconstruction{
         }
 
 
-        unsigned int dim = intArgs[ 0 ][ 0 ];
-        unsigned int nPoints = intArgs[ 0 ][ 1 ];
+        uIntType dim = intArgs[ 0 ][ 0 ];
+        uIntType nPoints = intArgs[ 0 ][ 1 ];
 
         if ( X.size ( ) != 5 * dim ){
 
@@ -2034,17 +2101,17 @@ namespace volumeReconstruction{
         residual = floatVector( 5 * dim, 0 );
         jacobian = floatMatrix( 5 * dim, floatVector( 5 * dim, 0 ) );
 
-        for ( unsigned int i = 0; i < nPoints; i++ ){
+        for ( uIntType i = 0; i < nPoints; i++ ){
 
             //Add the contribution to the first residual
             floatType nxmp = vectorTools::dot( normals[ i ], x - points[ i ] );
 
-            for ( unsigned int _i = 0; _i < dim; _i++ ){
+            for ( uIntType _i = 0; _i < dim; _i++ ){
 
                 residual[ _i ] += nxmp * normals[ i ][ _i ] + x[ _i ];
                 jacobian[ _i ][ _i ] += 1;
 
-                for ( unsigned int _j = 0; _j < dim; _j++ ){
+                for ( uIntType _j = 0; _j < dim; _j++ ){
 
                     jacobian[ _i ][ _j ] += normals[ i ][ _i ] * normals[ i ][ _j ];
 
@@ -2054,7 +2121,7 @@ namespace volumeReconstruction{
 
         }
 
-        for ( unsigned int i = 0; i < dim; i++ ){
+        for ( uIntType i = 0; i < dim; i++ ){
 
             //Add the terms to the residual
             residual[            i ] +=  lub[ i ] - llb[ i ];
@@ -2122,7 +2189,7 @@ namespace volumeReconstruction{
         shared_ptr< XdmfGeometry > _sourceNodeGeometry = XdmfGeometry::New( );
         _sourceNodeGeometry->setType( XdmfGeometryType::XYZ( ) );
         _sourceNodeGeometry->setName( "Source Node Coordinates" );
-        _sourceNodeGeometry->insert( 0, getPoints( )->data( ), 3 * _nPoints, 1, 1 );
+        _sourceNodeGeometry->insert( 0, getPoints( )->data( ), ( uIntType )3 * _nPoints, 1, 1 );
         shared_ptr< XdmfInformation > _sourceNodeGeometryInfo = XdmfInformation::New( "Source Node Coordinates", "The coordinates of the source nodes ( i.e. the points to be reconstructed ) in x1, y1, z1, x2, ... format" );
         _sourceNodeGrid->setGeometry( _sourceNodeGeometry );
 
@@ -2131,7 +2198,7 @@ namespace volumeReconstruction{
         _sourceNodeTopology->setType( XdmfTopologyType::Polyvertex( ) );
         _sourceNodeTopology->setName( "Source Node Topology" );
         uIntVector sourceNodeIds( getPoints( )->size( ) );
-        for ( unsigned int i = 0; i < _nPoints; i++ ){
+        for ( uIntType i = 0; i < _nPoints; i++ ){
             sourceNodeIds[ i ] = i;
         } 
         _sourceNodeTopology->insert( 0, sourceNodeIds.data( ), _nPoints, 1, 1 );
@@ -2171,7 +2238,7 @@ namespace volumeReconstruction{
 
         for ( auto it = _boundaryEdges_x.begin( ); it != _boundaryEdges_x.end( ); it++ ){
 
-            for ( unsigned int i = 0; i < it->second.size( ); i++ ){
+            for ( uIntType i = 0; i < it->second.size( ); i++ ){
                 _boundaryPointConnectivity.push_back( _boundaryPointIDToIndex[ it->second[ i ] ] );
             }
 
@@ -2179,7 +2246,7 @@ namespace volumeReconstruction{
 
         for ( auto it = _boundaryEdges_y.begin( ); it != _boundaryEdges_y.end( ); it++ ){
 
-            for ( unsigned int i = 0; i < it->second.size( ); i++ ){
+            for ( uIntType i = 0; i < it->second.size( ); i++ ){
                 _boundaryPointConnectivity.push_back( _boundaryPointIDToIndex[ it->second[ i ] ] );
             }
 
@@ -2187,7 +2254,7 @@ namespace volumeReconstruction{
 
         for ( auto it = _boundaryEdges_z.begin( ); it != _boundaryEdges_z.end( ); it++ ){
 
-            for ( unsigned int i = 0; i < it->second.size( ); i++ ){
+            for ( uIntType i = 0; i < it->second.size( ); i++ ){
                 _boundaryPointConnectivity.push_back( _boundaryPointIDToIndex[ it->second[ i ] ] );
             }
 
@@ -2209,7 +2276,7 @@ namespace volumeReconstruction{
 
         for ( auto it = _boundaryPointNormals.begin( ); it != _boundaryPointNormals.end( ); it++ ){
 
-            for ( unsigned int i = 0; i < it->second.size( ); i++ ){
+            for ( uIntType i = 0; i < it->second.size( ); i++ ){
 
                 _boundaryPointNormalVector.push_back( it->second[ i ] );
 
@@ -2292,11 +2359,11 @@ namespace volumeReconstruction{
     }
 
 
-    errorOut dualContouring::processBoundaryEdges( const std::unordered_map< unsigned int, uIntVector > &boundaryEdges ){
+    errorOut dualContouring::processBoundaryEdges( const std::unordered_map< uIntType, uIntVector > &boundaryEdges ){
         /*!
          * Process the boundary edges contributions to the normal and surface area vectors
          *
-         * :param const std::unordered_map< unsigned int, uIntVector > &boundaryEdges: The boundary edges
+         * :param const std::unordered_map< uIntType, uIntVector > &boundaryEdges: The boundary edges
          */
 
         //Loop through the edges
@@ -2347,7 +2414,7 @@ namespace volumeReconstruction{
                               _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
 
             //Add the points to the area and normal vectors if required
-            for ( unsigned int i = 0; i < edge->second.size( ); i++ ){
+            for ( uIntType i = 0; i < edge->second.size( ); i++ ){
 
                 if ( _boundaryPointAreas.find( edge->second[ i ] ) == _boundaryPointAreas.end( ) ){
     
@@ -2363,7 +2430,7 @@ namespace volumeReconstruction{
             a = 0.5 * vectorTools::l2norm( n );
             n /= ( 2 * a );
 
-            for ( unsigned int i = 0; i < edge->second.size( ); i++ ){
+            for ( uIntType i = 0; i < edge->second.size( ); i++ ){
 
                 _boundaryPointAreas[ edge->second[ i ] ] += 0.25 * a;
                 _boundaryPointNormals[ edge->second[ i ] ] += 0.25 * a * n;
@@ -2375,7 +2442,7 @@ namespace volumeReconstruction{
             a = 0.5 * vectorTools::l2norm( n );
             n /= ( 2 * a );
 
-            for ( unsigned int i = 0; i < edge->second.size( ); i++ ){
+            for ( uIntType i = 0; i < edge->second.size( ); i++ ){
 
                 _boundaryPointAreas[ edge->second[ i ] ] += 0.25 * a;
                 _boundaryPointNormals[ edge->second[ i ] ] += 0.25 * a * n;
@@ -2388,16 +2455,16 @@ namespace volumeReconstruction{
     }
 
     errorOut dualContouring::interpolateFunctionToBackgroundGrid( const floatVector &functionValuesAtPoints,
-                                                                  const unsigned int &functionDim,
-                                                                  std::unordered_map< unsigned int, floatVector > &functionAtGrid
+                                                                  const uIntType &functionDim,
+                                                                  std::unordered_map< uIntType, floatVector > &functionAtGrid
                                                                 ){ 
         /*!
          * Interpolate a function defined at the data points to the given element in the background grid.
          * 
          * :param const floatVector &functionValuesAtPoints: The value of the function at the data points
-         * :param const unsigned int &functionDim: The dimensionality of the function e.g. a function defined by four scalar values
+         * :param const uIntType &functionDim: The dimensionality of the function e.g. a function defined by four scalar values
          *     would have a dimensionality of four.
-         * :param std::unordered_map< unsigned int, floatVector > &functionAtGrid: The value of the function
+         * :param std::unordered_map< uIntType, floatVector > &functionAtGrid: The value of the function
          *     projected to the nodes in the background grid
          */
 
@@ -2411,14 +2478,14 @@ namespace volumeReconstruction{
         functionAtGrid.clear( );
         functionAtGrid.reserve( 8 * functionDim * _internalCells.size( ) );
 
-        std::unordered_map< unsigned int, floatType > weights;
+        std::unordered_map< uIntType, floatType > weights;
         weights.reserve( 8 * _internalCells.size( ) );
 
         //Get the number of values in the different directions
-        unsigned int ngy = _gridLocations[ 1 ].size( );
-        unsigned int ngz = _gridLocations[ 2 ].size( );
+        uIntType ngy = _gridLocations[ 1 ].size( );
+        uIntType ngz = _gridLocations[ 2 ].size( );
 
-        unsigned int i, j, k;
+        uIntType i, j, k;
         uIntVector indices;
         uIntVector internalPoints;
 
@@ -2538,7 +2605,7 @@ namespace volumeReconstruction{
 
     }
 
-    errorOut dualContouring::performVolumeIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+    errorOut dualContouring::performVolumeIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                        floatVector &integratedValue ){
         /*!
          * Integrate a quantity known at the points over the volume returning the value for the domain.
@@ -2547,7 +2614,7 @@ namespace volumeReconstruction{
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
          *     provided to the volume reconstruction object and the second index is the value of the 
          *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
          */
 
@@ -2570,7 +2637,7 @@ namespace volumeReconstruction{
         }
 
         //Interpolate the function to the background grid
-        std::unordered_map< unsigned int, floatVector > functionAtGrid;
+        std::unordered_map< uIntType, floatVector > functionAtGrid;
         error = interpolateFunctionToBackgroundGrid( valuesAtPoints, valueSize, functionAtGrid );
 
         if ( error ){
@@ -2589,9 +2656,9 @@ namespace volumeReconstruction{
         floatVector qptValue;
 
         //Get the number of values in the different directions
-        unsigned int ngy = _gridLocations[ 1 ].size( );
-        unsigned int ngz = _gridLocations[ 2 ].size( );
-        unsigned int i, j, k;
+        uIntType ngy = _gridLocations[ 1 ].size( );
+        uIntType ngz = _gridLocations[ 2 ].size( );
+        uIntType i, j, k;
         uIntVector indices;
 
         std::unique_ptr< elib::Element > element;
@@ -2668,7 +2735,7 @@ namespace volumeReconstruction{
 
     }
 
-    errorOut dualContouring::performSurfaceIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+    errorOut dualContouring::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                         floatVector &integratedValue ){
         /*!
          * Integrate a quantity known at the point over the surface return the value for the domain.
@@ -2677,7 +2744,7 @@ namespace volumeReconstruction{
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
          *     provided to the volume reconstruction object and the second index is the value of the 
          *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
          */
 
@@ -2696,7 +2763,7 @@ namespace volumeReconstruction{
         return NULL;
     }
 
-    errorOut dualContouring::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const unsigned int valueSize,
+    errorOut dualContouring::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             floatVector &integratedValue ){
         /*!
          * Integrate the flux of a quantity known at the point over the surface return the value for the domain.
@@ -2705,7 +2772,7 @@ namespace volumeReconstruction{
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
          *     provided to the volume reconstruction object and the second index is the value of the 
          *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
          */
 
@@ -2725,7 +2792,7 @@ namespace volumeReconstruction{
     }
 
     errorOut dualContouring::performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
-                                                                            const unsigned int valueSize,
+                                                                            const uIntType valueSize,
                                                                             const floatVector &origin,
                                                                             floatVector &integratedValue ){
         /*!
@@ -2738,7 +2805,7 @@ namespace volumeReconstruction{
          *     provided to the volume reconstruction object, the second index is the first index of the v matirx and the
          *     third index is the second index of the value matrix
          *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param const floatVector &origin: The origin that the relative position vector is computed in relation to.
          * :param floatVector &integratedValue: The final value of the integral
          */
@@ -2758,7 +2825,7 @@ namespace volumeReconstruction{
     }
                     
 
-    errorOut dualContouring::performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const unsigned int valueSize,
+    errorOut dualContouring::performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             const floatVector &origin, floatVector &integratedValue,
                                                             bool computeFlux, bool dyadWithOrigin ){
         /*!
@@ -2768,7 +2835,7 @@ namespace volumeReconstruction{
          *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
          *     provided to the volume reconstruction object and the second index is the value of the 
          *     function to be integrated.
-         * :param const unsigned int valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param const floatVector &origin: The origin.
          * :param floatVector &integratedValue: The final value of the integral
          * :param bool computeFlux: The flag indicating if the flux needs to be computed of the values at the surface.
@@ -2793,7 +2860,7 @@ namespace volumeReconstruction{
         }
 
         //Interpolate the function to the background grid
-        std::unordered_map< unsigned int, floatVector > functionAtGrid;
+        std::unordered_map< uIntType, floatVector > functionAtGrid;
         error = interpolateFunctionToBackgroundGrid( valuesAtPoints, valueSize, functionAtGrid );
 
         if ( error ){
@@ -2810,9 +2877,9 @@ namespace volumeReconstruction{
         floatVector localBoundaryPoint;
         floatVector valueAtBoundaryPoint;
 
-        unsigned int ngy = _gridLocations[ 1 ].size( );
-        unsigned int ngz = _gridLocations[ 2 ].size( );
-        unsigned int i, j, k;
+        uIntType ngy = _gridLocations[ 1 ].size( );
+        uIntType ngz = _gridLocations[ 2 ].size( );
+        uIntType i, j, k;
         uIntVector indices;
 
         std::unique_ptr< elib::Element > element;
@@ -3037,7 +3104,7 @@ namespace volumeReconstruction{
          * Export the configuration
          */
 
-        return _config;
+        return YAML::Clone( _config );
 
     }
 
