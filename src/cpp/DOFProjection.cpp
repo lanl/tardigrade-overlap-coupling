@@ -17,18 +17,18 @@ namespace DOFProjection{
     | Functions which project the values from the macro to micro-scale |
     ==================================================================*/
 
-    errorOut addMacroDomainDisplacementToMicro( const unsigned int dim,
+    errorOut addMacroDomainDisplacementToMicro( const uIntType dim,
                                                 const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                 const floatVector &domainReferenceXis,
                                                 const floatVector &domainMacroInterpolationFunctionValues,
-                                                const unsigned int &nMacroDOF, const floatVector &macroDOFVector,
+                                                const uIntType &nMacroDOF, const floatVector &macroDOFVector,
                                                 const floatVector &microWeights, floatVector &microDisplacements,
-                                                const std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex ){
+                                                const std::unordered_map< uIntType, uIntType > *microNodeToLocalIndex ){
 
         /*!
          * Add the contribution of a macro domain's deformation to the micro-scale
          *
-         * :param const unsigned int dim: The dimension of the problem ( only 3 is tested )
+         * :param const uIntType dim: The dimension of the problem ( only 3 is tested )
          * :param const uIntVector &domainMicroDOFIndices: The indices of the micro-scale nodes present in the domain
          * :param const uIntVector &domainMacroDOFIndices: The indices of the macro-scale nodes present in the domain
          *     these are ( in a macro-scale FEA context ) the nodes of the micromorphic finite element.
@@ -36,7 +36,7 @@ namespace DOFProjection{
          *     center of mass to the position of the micro-scale node in the reference configuration.
          * :param const floatVector &domainMacroInterpolationFunctionValues: The values of the interpolation functions
          *     at the local center of mass.
-         * :param const unsigned int &nMacroDOF: The number of degrees of freedom associated with each macro-scale node.
+         * :param const uIntType &nMacroDOF: The number of degrees of freedom associated with each macro-scale node.
          *     ( only 12 is tested )
          * :param const floatVector &macroDOFVector: The degree of freedom vector for the macro-scale. The ordering for each node
          *     is assumed to be [ u1, u2, u3, phi11, phi12, phi13, phi21, phi22, phi23, phi31, phi32, phi33, ... ]
@@ -47,7 +47,7 @@ namespace DOFProjection{
          *       if the minimum L2 projection is being used.
          * :param floatVector &microDisplacements: The displacements of the micro-scale nodes as determined by the macro-scale
          *     projection.
-         * :param std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex: A map from the micro node index 
+         * :param std::unordered_map< uIntType, uIntType > *microNodeToLocalIndex: A map from the micro node index 
          *     to the indices to be used in the output vector. The micro nodes which are either free or ghost may not be all
          *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the macro index values
@@ -66,7 +66,7 @@ namespace DOFProjection{
         floatVector interpolatedMacroDOF( nMacroDOF, 0 );
 
         //Compute the interpolated value of u and phi
-        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMacroNodeIndices.size(); i++ ){
             interpolatedMacroDOF += domainMacroInterpolationFunctionValues[ i ]
                                   * floatVector( macroDOFVector.begin() + nMacroDOF * domainMacroNodeIndices[ i ],
                                                  macroDOFVector.begin() + nMacroDOF * domainMacroNodeIndices[ i ] + nMacroDOF );
@@ -92,15 +92,15 @@ namespace DOFProjection{
         return NULL;
     }
 
-    errorOut addMacroDomainDisplacementToMicro( const unsigned int dim, const uIntVector &domainMicroNodeIndices,
+    errorOut addMacroDomainDisplacementToMicro( const uIntType dim, const uIntVector &domainMicroNodeIndices,
                                                 const floatVector &u, const floatVector &phi,
                                                 const floatVector &domainReferenceXis,
                                                 const floatVector &microWeights, floatVector &microDisplacements,
-                                                const std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex ){
+                                                const std::unordered_map< uIntType, uIntType > *microNodeToLocalIndex ){
         /*!
          * Add the contribution of a macro domain's deformation to the micro-scale
          *
-         * :param const unsigned int dim: The dimension of the problem
+         * :param const uIntType dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The global micro-node indices in the given domain
          * :param const floatVector &u: The macro-displacement at the local center of mass
          * :param const floatVector &phi: The micro-displacement ( in the micro-morphic sense ) at the local center of mass
@@ -112,7 +112,7 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &microDisplacements: The displacements of the micro-scale nodes as determined by the macro-scale
          *     projection.
-         * :param std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex: A map from the micro node index 
+         * :param std::unordered_map< uIntType, uIntType > *microNodeToLocalIndex: A map from the micro node index 
          *     to the indices to be used in the output vector. The micro nodes which are either free or ghost may not be all
          *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the macro index values
@@ -129,7 +129,7 @@ namespace DOFProjection{
             }
         }
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
             if ( microWeights.size() <= domainMicroNodeIndices[ i ] ){
                 return new errorNode( "addMacroDomainDisplacementToMicro",
@@ -144,10 +144,10 @@ namespace DOFProjection{
         }
 
         //The current micro node number
-        unsigned int m;
+        uIntType m;
 
         //The current output index
-        unsigned int o;
+        uIntType o;
 
         //The current reference micro-position vector
         floatVector Xi;
@@ -155,7 +155,7 @@ namespace DOFProjection{
         //The current value of the micro-degrees of freedom
         floatVector q;
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
             //Get the index of the micro-scale node and the output index
             if ( microNodeToLocalIndex ){
@@ -211,15 +211,15 @@ namespace DOFProjection{
     | Functions which construct the projection matrices |
     ===================================================*/
 
-    errorOut formMacroDomainToMicroInterpolationMatrix( const unsigned int &dim,
-                                                        const unsigned int &nMicroNodes, const unsigned int &nMacroNodes,
+    errorOut formMacroDomainToMicroInterpolationMatrix( const uIntType &dim,
+                                                        const uIntType &nMicroNodes, const uIntType &nMacroNodes,
                                                         const uIntVector &domainMicroNodeIndices,
                                                         const uIntVector &domainMacroNodeIndices,
                                                         const floatVector &domainReferenceXis,
                                                         const floatVector &domainMacroInterpolationFunctionValues,
                                                         const floatVector &microWeights, SparseMatrix &domainN,
-                                                        const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex,
-                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
+                                                        const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex,
+                                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex ){
         /*!
          * Construct the interpolation matrix for a macro domain overlapping with a 
          * micro-domain
@@ -228,9 +228,9 @@ namespace DOFProjection{
          *       variables at the micro-scale is therefore three and the number of macro-scale spatial parameters is
          *       dim + dim * dim.
          *
-         * :param const unsigned int &dim: The dimension of the problem.
-         * :param const unsigned int &nMicroNodes: The number of micro-nodes in the N matrix
-         * :param const unsigned int &nMacroNodes: The number of macro-nodes in the N matrix
+         * :param const uIntType &dim: The dimension of the problem.
+         * :param const uIntType &nMicroNodes: The number of micro-nodes in the N matrix
+         * :param const uIntType &nMacroNodes: The number of macro-nodes in the N matrix
          * :param const uIntVector &domainMicroNodeIndices: The global micro-node indices in the given domain
          * :param const uIntVector &domainMacroDOFIndices: The indices of the macro-scale nodes present in the domain
          *     these are ( in a macro-scale FEA context ) the nodes of the micromorphic finite element.
@@ -243,7 +243,7 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param SparseMatrix &domainN: The macro domain's interpolation function.
-         * :param std::unordered_map< unsigned int, unsigned int > *microNodeToLocalIndex: A map from the micro node index 
+         * :param std::unordered_map< uIntType, uIntType > *microNodeToLocalIndex: A map from the micro node index 
          *     to the indices to be used in the output vector. The micro nodes which are either free or ghost may not be all
          *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -251,7 +251,7 @@ namespace DOFProjection{
          *
          *     Note: If a node is not located in microNodeToLocalIndex ( and microNodeToLocalIndex is not NULL ) this node
          *           will be skipped.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -282,15 +282,15 @@ namespace DOFProjection{
         }
 
         //Set the number of spatial degrees of freedom for the two scales
-        const unsigned int nMicroDOF = dim;
-        const unsigned int nMacroDOF = dim + dim * dim;
+        const uIntType nMicroDOF = dim;
+        const uIntType nMacroDOF = dim + dim * dim;
 
         //Set up the vector of terms for the sparse matrix
         std::vector< T > coefficients;
         coefficients.reserve( nMicroDOF * domainMicroNodeIndices.size() * nMacroDOF * domainMacroNodeIndices.size() );
 
         //Initialize the row and column indices for the sparse matrix
-        unsigned int row0, col0;
+        uIntType row0, col0;
 
         //Initialize the Xi vector
         floatVector Xi;
@@ -299,18 +299,18 @@ namespace DOFProjection{
         floatType w, sf;
 
         //Initialize the global micro node index
-        unsigned int m;
+        uIntType m;
 
         //Initialize the global macro node index
-        unsigned int n;
+        uIntType n;
 
         //Initialize the output index for the micro-nodes
-        unsigned int o;
+        uIntType o;
 
         //Initialize the output index for the macro-nodes
-        unsigned int p;
+        uIntType p;
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
             //Set the global micro node index
             m = domainMicroNodeIndices[ i ];
@@ -346,7 +346,7 @@ namespace DOFProjection{
             //Set the value of the weight
             w = microWeights[ m ];
 
-            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+            for ( uIntType j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
                 //Set the global macro node index
                 n = domainMacroNodeIndices[ j ];
@@ -404,7 +404,7 @@ namespace DOFProjection{
                                                     const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &microWeights,
                                                     floatVector &projectedMicroMasses,
-                                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
+                                                    const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex ){
         /*!
          * Add the contribution of the micro-nodes' mass to the macro nodes.
          *
@@ -420,7 +420,7 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMicroMasses: The projected micro-masses on all of the macro-scale nodes.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -437,7 +437,7 @@ namespace DOFProjection{
             return new errorNode( "addDomainMicroContributionToMacroMass", "The size of the domain's micro weights vector is not equal to the number of micro masses" );
         }
 
-        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMacroNodeIndices.size(); i++ ){
             if ( !macroNodeToLocalIndex ){
                 if ( domainMacroNodeIndices[ i ] >= projectedMicroMasses.size() ){
                     return new errorNode( "addDomainMicroContributionToMacroMass",
@@ -453,7 +453,7 @@ namespace DOFProjection{
         }
 
         //Set the number of macro-nodes in this domain
-        unsigned int nMacroNodes = domainMacroNodeIndices.size();
+        uIntType nMacroNodes = domainMacroNodeIndices.size();
 
         //Initialize the micro node mass
         floatType mass;
@@ -462,16 +462,16 @@ namespace DOFProjection{
         floatType weight;
 
         //Initialize the global micro id
-        unsigned int m;
+        uIntType m;
 
         //Initialize the global macro id
-        unsigned int n;
+        uIntType n;
 
         //Initialize the local macro id
-        unsigned int p;
+        uIntType p;
 
         //Iterate over the micro-node indices
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
             //Set the global micro id
             m = domainMicroNodeIndices[ i ];
@@ -497,7 +497,7 @@ namespace DOFProjection{
             weight = microWeights[ m ];
 
             //Iterate over the macro-node indices
-            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+            for ( uIntType j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
                 //Set the global macro id
                 n = domainMacroNodeIndices[ j ];
@@ -530,7 +530,7 @@ namespace DOFProjection{
                                                     const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &microWeights,
                                                     floatVector &projectedMicroMasses,
-                                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
+                                                    const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex ){
         /*!
          * Add the contribution of the micro-nodes' mass to the macro nodes.
          *
@@ -547,7 +547,7 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMicroMasses: The projected micro-masses on all of the macro-scale nodes.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -568,7 +568,7 @@ namespace DOFProjection{
             return new errorNode( "addDomainMicroContributionToMacroMass", "The size of the domain's micro weights vector is not equal to the number of micro densities" );
         }
 
-        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMacroNodeIndices.size(); i++ ){
             if ( !macroNodeToLocalIndex ){
                 if ( domainMacroNodeIndices[ i ] >= projectedMicroMasses.size() ){
                     return new errorNode( "addDomainMicroContributionToMacroMass",
@@ -584,7 +584,7 @@ namespace DOFProjection{
         }
 
         //Set the number of macro-nodes in this domain
-        unsigned int nMacroNodes = domainMacroNodeIndices.size();
+        uIntType nMacroNodes = domainMacroNodeIndices.size();
 
         //Initialize the micro node mass
         floatType mass;
@@ -593,16 +593,16 @@ namespace DOFProjection{
         floatType weight;
 
         //Initialize the global micro id
-        unsigned int m;
+        uIntType m;
 
         //Initialize the global macro id
-        unsigned int n;
+        uIntType n;
 
         //Initialize the local macro id
-        unsigned int p;
+        uIntType p;
 
         //Iterate over the micro-node indices
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
             //Set the global micro id
             m = domainMicroNodeIndices[ i ];
@@ -636,7 +636,7 @@ namespace DOFProjection{
             weight = microWeights[ m ];
 
             //Iterate over the macro-node indices
-            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+            for ( uIntType j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
                 //Set the global macro id
                 n = domainMacroNodeIndices[ j ];
@@ -664,7 +664,7 @@ namespace DOFProjection{
         return NULL;
     }
  
-    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
+    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const uIntType &dim,
                                                                         const uIntVector &domainMicroNodeIndices,
                                                                         const uIntVector &domainMacroNodeIndices,
                                                                         const floatVector &domainReferenceXis,
@@ -672,12 +672,12 @@ namespace DOFProjection{
                                                                         const floatVector &domainMicroShapeFunctions,
                                                                         const floatVector &microWeights,
                                                                         floatVector &projectedMassMicroMomentOfInertia,
-                                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex
                                                                       ){
         /*!
          * Add the contribution of the micro-nodes in the domain to the macro moment of inertia.
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
@@ -692,7 +692,7 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMassMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
          *     as projected from the micro-nodes weighted by the mass.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -716,17 +716,17 @@ namespace DOFProjection{
 
     }
 
-    errorOut addDomainMassConstant( const unsigned int &dim,
+    errorOut addDomainMassConstant( const uIntType &dim,
                                     const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                     const floatVector &domainReferenceXis, const floatVector &microMasses,
                                     const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                     floatVector &projectedMassConstant,
-                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                    const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex
                                   ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
@@ -740,7 +740,7 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMassConstant: The projected mass constant at the macro-scale node.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -764,17 +764,17 @@ namespace DOFProjection{
 
     }
 
-    errorOut addDomainMassDisplacement( const unsigned int &dim,
+    errorOut addDomainMassDisplacement( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                         const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                         const floatVector &microWeights, const floatVector &microDisplacements,
                                         floatVector &projectedMassDisplacement,
-                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex
                                       ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &microMasses: The masses of the micro-nodes.
@@ -788,7 +788,7 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
          * :param floatVector &projectedMassDisplacement: The projected mass weighted displacement at the macro-scale node.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -812,18 +812,18 @@ namespace DOFProjection{
 
     }
 
-    errorOut addDomainMassMicroDisplacementPosition( const unsigned int &dim,
+    errorOut addDomainMassMicroDisplacementPosition( const uIntType &dim,
                                                      const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                      const floatVector &domainReferenceXis, const floatVector &microMasses,
                                                      const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                                      const floatVector &microDisplacements,
                                                      floatVector &projectedMassDisplacementPosition,
-                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                                     const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex
                                                    ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
@@ -839,7 +839,7 @@ namespace DOFProjection{
          * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
          * :param floatVector &projectedMassDisplacementPosition: The projected mass weighted dyadic product of displacement
          *     and the micro-position at the macro-scale node.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -863,7 +863,7 @@ namespace DOFProjection{
     }
 
 
-    errorOut addDomainMicroToMacroProjectionTerms( const unsigned int &dim,
+    errorOut addDomainMicroToMacroProjectionTerms( const uIntType &dim,
                                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                    const floatVector &domainReferenceXis, const floatVector &microMasses,
                                                    const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
@@ -876,12 +876,12 @@ namespace DOFProjection{
                                                    const bool computeMassConstant,
                                                    const bool computeMassMicroDisplacement,
                                                    const bool computeMassDisplacementPosition,
-                                                   const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                                   const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex
                                                  ){
         /*!
          * Solve for the terms required to project from the micro-scale to the macro-scale.
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
@@ -904,7 +904,7 @@ namespace DOFProjection{
          * :param const bool computeMassConstant: Boolean for whether the contribution to the mass constant.
          * :param const bool computeMassMicroDisplacement: Boolean for whether the contribution of the mass-weighted
          *     displacement should be calculated.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -924,7 +924,7 @@ namespace DOFProjection{
                                   "The micro weight and micro mass vectors are not consistent in size" );
         }
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
             if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
                 return new errorNode( "addDomainMicroToMacroProjectionTerms",
                                       "The number of micro node weights is smaller than the micro indices requires" );
@@ -936,9 +936,9 @@ namespace DOFProjection{
                                   "The number of micro and micro node indices are not consistent with the number of shape functions" );
         }
 
-        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
-            unsigned int n = domainMacroNodeIndices[ i ];
-            unsigned int p = n;
+        for ( uIntType i = 0; i < domainMacroNodeIndices.size(); i++ ){
+            uIntType n = domainMacroNodeIndices[ i ];
+            uIntType p = n;
 
             if ( macroNodeToLocalIndex ){
 
@@ -981,7 +981,7 @@ namespace DOFProjection{
         }
 
         if ( ( computeMassMicroDisplacement ) || ( computeMassDisplacementPosition ) ){
-            for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+            for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
                 if ( microDisplacements.size() < dim * ( domainMicroNodeIndices[ i ] + 1 ) ){
                     return new errorNode( "addDomainMicroToMacroProjectionTerms",
                                           "The size of the micro degree of freedom vector is too small for the provided nodes" );
@@ -1002,16 +1002,16 @@ namespace DOFProjection{
         floatVector XiXi( dim * dim );
 
         //Initialize the micro-node global id
-        unsigned int m;
+        uIntType m;
 
         //Initialize the macro-node global id
-        unsigned int n;
+        uIntType n;
 
         //Initialize the macro-node local id
-        unsigned int p;
+        uIntType p;
 
         //Loop through the micro nodes
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
             //Set the micro-node global id
             m = domainMicroNodeIndices[ i ];
@@ -1039,9 +1039,9 @@ namespace DOFProjection{
             //Compute the dyadic product of Xi with itself
             if ( computeMassMomentOfInertia ){
 
-                for ( unsigned int j = 0; j < dim; j++ ){
+                for ( uIntType j = 0; j < dim; j++ ){
     
-                    for ( unsigned int k = 0; k < dim; k++ ){
+                    for ( uIntType k = 0; k < dim; k++ ){
     
                         XiXi[ dim * j + k ] = domainReferenceXis[ dim * i + j ] * domainReferenceXis[ dim * i + k ];
     
@@ -1058,7 +1058,7 @@ namespace DOFProjection{
             }
 
             //Loop through the macro nodes
-            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+            for ( uIntType j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
                 //Set the macro-node global id
                 n = domainMacroNodeIndices[ j ];
@@ -1075,7 +1075,7 @@ namespace DOFProjection{
                
                 if ( computeMassMomentOfInertia ){ 
 
-                    for ( unsigned int k = 0; k < dim * dim; k++ ){
+                    for ( uIntType k = 0; k < dim * dim; k++ ){
     
                         //Add the contribution to the micro-moment of inertia
                         projectedMassMicroMomentOfInertia[ dim * dim * p + k ]
@@ -1087,7 +1087,7 @@ namespace DOFProjection{
 
                 if ( computeMassConstant ){ 
 
-                    for ( unsigned int k = 0; k < dim; k++ ){
+                    for ( uIntType k = 0; k < dim; k++ ){
     
                         //Add the contribution to the micro-moment of inertia
                         projectedMassConstant[ dim * p + k ] += weight * mass * sf * Xi[ k ];
@@ -1098,7 +1098,7 @@ namespace DOFProjection{
 
                 if ( computeMassMicroDisplacement ) {
 
-                    for ( unsigned int k = 0; k < dim; k++ ){
+                    for ( uIntType k = 0; k < dim; k++ ){
 
                         //Add the contribution to the mass weighted micro-displacement
                         projectedMassDisplacement[ dim * p + k ] += weight * mass * sf * q[ k ];
@@ -1109,9 +1109,9 @@ namespace DOFProjection{
 
                 if ( computeMassDisplacementPosition ){
 
-                    for ( unsigned int k = 0; k < dim; k++ ){
+                    for ( uIntType k = 0; k < dim; k++ ){
 
-                        for ( unsigned int l = 0; l < dim; l++ ){
+                        for ( uIntType l = 0; l < dim; l++ ){
                             projectedMassDisplacementPosition[ dim * dim * p + dim * k + l ]
                                 += weight * mass * sf * q[ k ] * Xi[ l ];
                         }
@@ -1128,7 +1128,7 @@ namespace DOFProjection{
 
     }
 
-    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
+    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const uIntType &dim,
                                                                         const uIntVector &domainMicroNodeIndices,
                                                                         const uIntVector &domainMacroNodeIndices,
                                                                         const floatVector &domainReferenceXis,
@@ -1137,12 +1137,12 @@ namespace DOFProjection{
                                                                         const floatVector &domainMicroShapeFunctions,
                                                                         const floatVector &microWeights,
                                                                         floatVector &projectedMassMicroMomentOfInertia,
-                                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex
                                                                       ){
         /*!
          * Add the contribution of the micro-nodes in the domain to the macro moment of inertia.
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
@@ -1158,7 +1158,7 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMassMicroMomentOfInertia: The moments of inertia at the macro-nodes of the domain
          *     as projected from the micro-nodes weighted by the mass.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -1182,17 +1182,17 @@ namespace DOFProjection{
 
     }
 
-    errorOut addDomainMassConstant( const unsigned int &dim,
+    errorOut addDomainMassConstant( const uIntType &dim,
                                     const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                     const floatVector &domainReferenceXis, const floatVector &microVolumes,
                                     const floatVector &microDensities, const floatVector &domainMicroShapeFunctions,
                                     const floatVector &microWeights,
                                     floatVector &projectedMassConstant,
-                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
+                                    const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
@@ -1207,7 +1207,7 @@ namespace DOFProjection{
          *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &projectedMassConstant: The projected mass constant at the macro-scale node.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -1231,17 +1231,17 @@ namespace DOFProjection{
 
     }
 
-    errorOut addDomainMassDisplacement( const unsigned int &dim,
+    errorOut addDomainMassDisplacement( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                         const floatVector &microVolumes, const floatVector &microDensities,
                                         const floatVector &domainMicroShapeFunctions,
                                         const floatVector &microWeights, const floatVector &microDisplacements,
                                         floatVector &projectedMassDisplacement,
-                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
+                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &microVolumes: The volumes of the micro-nodes.
@@ -1256,7 +1256,7 @@ namespace DOFProjection{
          *       if the minimum L2 norm projection is being used.
          * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
          * :param floatVector &projectedMassDisplacement: The projected mass weighted displacement at the macro-scale node.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -1280,18 +1280,18 @@ namespace DOFProjection{
 
     }
 
-    errorOut addDomainMassMicroDisplacementPosition( const unsigned int &dim,
+    errorOut addDomainMassMicroDisplacementPosition( const uIntType &dim,
                                                      const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                      const floatVector &domainReferenceXis, const floatVector &microVolumes,
                                                      const floatVector &microDensities,
                                                      const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                                      const floatVector &microDisplacements,
                                                      floatVector &projectedMassDisplacementPosition,
-                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
+                                                     const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex ){
         /*!
          * Add the contributions of the domain to the mass constant
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
@@ -1308,7 +1308,7 @@ namespace DOFProjection{
          * :param floatVector &microDisplacements: The displacements of the micro-degrees of freedom.
          * :param floatVector &projectedMassDisplacementPosition: The projected mass weighted dyadic product of displacement
          *     and the micro-position at the macro-scale node.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -1330,7 +1330,7 @@ namespace DOFProjection{
 
     }
 
-    errorOut addDomainMicroToMacroProjectionTerms( const unsigned int &dim,
+    errorOut addDomainMicroToMacroProjectionTerms( const uIntType &dim,
                                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                    const floatVector &domainReferenceXis, const floatVector &microVolumes,
                                                    const floatVector &microDensities, const floatVector &domainMicroShapeFunctions,
@@ -1344,12 +1344,12 @@ namespace DOFProjection{
                                                    const bool computeMassConstant,
                                                    const bool computeMassMicroDisplacement,
                                                    const bool computeMassDisplacementPosition,
-                                                   const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex
+                                                   const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex
                                                  ){
         /*!
          * Solve for the terms required to project from the micro-scale to the macro-scale.
          *
-         * :param const unsigned int &dim: The dimension of the problem.
+         * :param const uIntType &dim: The dimension of the problem.
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const uIntVector &domainMacroNodeIndices: The indices of the macro-nodes associated with the domain
          * :param const floatVector &domainReferenceXis: The micro-position vectors in the domain
@@ -1373,7 +1373,7 @@ namespace DOFProjection{
          * :param const bool computeMassConstant: Boolean for whether the contribution to the mass constant.
          * :param const bool computeMassMicroDisplacement: Boolean for whether the contribution of the mass-weighted
          *     displacement should be calculated.
-         * :param std::unordered_map< unsigned int, unsigned int > *macroNodeToLocalIndex: A map from the macro node index 
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
          *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
          *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
          *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
@@ -1388,7 +1388,7 @@ namespace DOFProjection{
             }
         }
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
             if ( domainMicroNodeIndices[ i ] >= microWeights.size() ){
                 return new errorNode( "addDomainMicroToMacroProjectionTerms",
                                       "The number of micro node weights is smaller than the micro indices requires" );
@@ -1410,9 +1410,9 @@ namespace DOFProjection{
                                   "The number of micro and micro node indices are not consistent with the number of shape functions" );
         }
 
-        for ( unsigned int i = 0; i < domainMacroNodeIndices.size(); i++ ){
-            unsigned int n = domainMacroNodeIndices[ i ];
-            unsigned int p = n;
+        for ( uIntType i = 0; i < domainMacroNodeIndices.size(); i++ ){
+            uIntType n = domainMacroNodeIndices[ i ];
+            uIntType p = n;
 
             if ( macroNodeToLocalIndex ){
 
@@ -1455,7 +1455,7 @@ namespace DOFProjection{
         }
 
         if ( ( computeMassMicroDisplacement ) || ( computeMassDisplacementPosition ) ){
-            for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+            for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
                 if ( microDisplacements.size() < dim * ( domainMicroNodeIndices[ i ] + 1 ) ){
                     return new errorNode( "addDomainMicroToMacroProjectionTerms",
                                           "The size of the micro degree of freedom vector is too small for the provided nodes" );
@@ -1476,16 +1476,16 @@ namespace DOFProjection{
         floatVector XiXi( dim * dim );
 
         //Initialize the micro-node global id
-        unsigned int m;
+        uIntType m;
 
         //Initialize the macro-node global id
-        unsigned int n;
+        uIntType n;
 
         //Initialize the macro-node local id
-        unsigned int p;
+        uIntType p;
 
         //Loop through the micro nodes
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
             //Set the micro-node global id
             m = domainMicroNodeIndices[ i ];
@@ -1514,9 +1514,9 @@ namespace DOFProjection{
             //Compute the dyadic product of Xi with itself
             if ( computeMassMomentOfInertia ){
 
-                for ( unsigned int j = 0; j < dim; j++ ){
+                for ( uIntType j = 0; j < dim; j++ ){
     
-                    for ( unsigned int k = 0; k < dim; k++ ){
+                    for ( uIntType k = 0; k < dim; k++ ){
     
                         XiXi[ dim * j + k ] = domainReferenceXis[ dim * i + j ] * domainReferenceXis[ dim * i + k ];
     
@@ -1533,7 +1533,7 @@ namespace DOFProjection{
             }
 
             //Loop through the macro nodes
-            for ( unsigned int j = 0; j < domainMacroNodeIndices.size(); j++ ){
+            for ( uIntType j = 0; j < domainMacroNodeIndices.size(); j++ ){
 
                 //Set the macro-node global id
                 n = domainMacroNodeIndices[ j ];
@@ -1549,7 +1549,7 @@ namespace DOFProjection{
                
                 if ( computeMassMomentOfInertia ){ 
 
-                    for ( unsigned int k = 0; k < dim * dim; k++ ){
+                    for ( uIntType k = 0; k < dim * dim; k++ ){
     
                         //Add the contribution to the micro-moment of inertia
                         projectedMassMicroMomentOfInertia[ dim * dim * p + k ]
@@ -1561,7 +1561,7 @@ namespace DOFProjection{
 
                 if ( computeMassConstant ){ 
 
-                    for ( unsigned int k = 0; k < dim; k++ ){
+                    for ( uIntType k = 0; k < dim; k++ ){
     
                         //Add the contribution to the micro-moment of inertia
                         projectedMassConstant[ dim * p + k ] += weight * mass * sf * Xi[ k ];
@@ -1572,7 +1572,7 @@ namespace DOFProjection{
 
                 if ( computeMassMicroDisplacement ) {
 
-                    for ( unsigned int k = 0; k < dim; k++ ){
+                    for ( uIntType k = 0; k < dim; k++ ){
 
                         //Add the contribution to the mass weighted micro-displacement
                         projectedMassDisplacement[ dim * p + k ] += weight * mass * sf * q[ k ];
@@ -1583,9 +1583,9 @@ namespace DOFProjection{
 
                 if ( computeMassDisplacementPosition ){
 
-                    for ( unsigned int k = 0; k < dim; k++ ){
+                    for ( uIntType k = 0; k < dim; k++ ){
 
-                        for ( unsigned int l = 0; l < dim; l++ ){
+                        for ( uIntType l = 0; l < dim; l++ ){
                             projectedMassDisplacementPosition[ dim * dim * p + dim * k + l ]
                                 += weight * mass * sf * q[ k ] * Xi[ l ];
                         }
@@ -1602,7 +1602,7 @@ namespace DOFProjection{
 
     }
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
                                         const floatVector &microPositions, const floatVector &microWeights,
                                         floatVector &domainCM ){
@@ -1610,7 +1610,7 @@ namespace DOFProjection{
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
          * within the domain.
          *
-         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microMasses: The masses of the micro nodes.
          * :param const floatVector &microPositions: The positions of the micro-nodes.
@@ -1627,7 +1627,7 @@ namespace DOFProjection{
                                           domainMass, domainCM );
     }
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microPositions,
                                         const floatVector &microWeights, floatVector &domainCM ){
@@ -1635,7 +1635,7 @@ namespace DOFProjection{
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
          * within the domain.
          *
-         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microVolumes: The volumes of the micro nodes.
          * :param const floatVector &microDensities: The densities of the micro nodes.
@@ -1653,7 +1653,7 @@ namespace DOFProjection{
                                           microWeights, domainMass, domainCM );
     }
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microReferencePositions,
                                         const floatVector &microDisplacements, const floatVector &microWeights,
@@ -1662,7 +1662,7 @@ namespace DOFProjection{
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
          * within the domain.
          *
-         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microVolumes: The volumes of the micro nodes.
          * :param const floatVector &microDensities: The densities of the micro nodes.
@@ -1681,7 +1681,7 @@ namespace DOFProjection{
                                           microDisplacements, microWeights, domainMass, domainCM );
     }
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
                                         const floatVector &microPositions, const floatVector &microWeights,
                                         floatType &domainMass, floatVector &domainCM ){
@@ -1689,7 +1689,7 @@ namespace DOFProjection{
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
          * within the domain.
          *
-         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microMasses: The masses of the micro nodes.
          * :param const floatVector &microPositions: The positions of the micro-nodes.
@@ -1702,7 +1702,7 @@ namespace DOFProjection{
          * :param floatVector &domainCM: The center of mass of the domain
          */
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
             if ( microPositions.size() <= dim * domainMicroNodeIndices[ i ] + dim ){
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-positions vector is not consistent with the micro indices" );
@@ -1725,7 +1725,7 @@ namespace DOFProjection{
         //Initialize the center of mass vector
         domainCM = floatVector( dim, 0 );
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
 
             //Add to the domain's mass
@@ -1745,7 +1745,7 @@ namespace DOFProjection{
 
     }
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microPositions,
                                         const floatVector &microWeights, floatType &domainMass, floatVector &domainCM ){
@@ -1753,7 +1753,7 @@ namespace DOFProjection{
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
          * within the domain.
          *
-         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microVolumes: The volumes of the micro nodes.
          * :param const floatVector &microDensities: The densities of the micro nodes.
@@ -1767,7 +1767,7 @@ namespace DOFProjection{
          * :param floatVector &domainCM: The center of mass of the domain
          */
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
             if ( microPositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-positions vector is not consistent with the micro indices" );
@@ -1795,7 +1795,7 @@ namespace DOFProjection{
         //Initialize the center of mass vector
         domainCM = floatVector( dim, 0 );
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
 
             //Add to the domain's mass
@@ -1817,7 +1817,7 @@ namespace DOFProjection{
 
     }
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microReferencePositions,
                                         const floatVector &microDisplacements, const floatVector &microWeights,
@@ -1826,7 +1826,7 @@ namespace DOFProjection{
          * Compute the center of mass of a micro domain from the masses of the micro-nodes contained
          * within the domain.
          *
-         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microVolumes: The volumes of the micro nodes.
          * :param const floatVector &microDensities: The densities of the micro nodes.
@@ -1842,7 +1842,7 @@ namespace DOFProjection{
          * :param floatVector &domainCM: The center of mass of the domain
          */
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
             if ( microReferencePositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-reference positions vector is not consistent with the micro indices" );
@@ -1875,7 +1875,7 @@ namespace DOFProjection{
         //Initialize the center of mass vector
         domainCM = floatVector( dim, 0 );
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
 
             //Add to the domain's mass
@@ -1901,14 +1901,14 @@ namespace DOFProjection{
 
     }
 
-    errorOut computeDomainXis( const unsigned int &dim,
+    errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microPositions,
                                const floatVector &domainCM, floatVector &domainXis ){
         /*
          * Compute the relative position vector between the center of mass of a micro domain and the 
          * micro position.
          *
-         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microPositions: The positions of the micro-nodes.
          * :param floatVector &domainCM: The center of mass of the domain
@@ -1921,7 +1921,7 @@ namespace DOFProjection{
                                   "The center of mass is not consistent with the dimension" );
         }
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
             if ( microPositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-positions vector is not consistent with the micro indices" );
@@ -1931,9 +1931,9 @@ namespace DOFProjection{
         //Resize the Xi vector
         domainXis.resize( dim * domainMicroNodeIndices.size() );
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
-            for ( unsigned int j = 0; j < dim; j++ ){
+            for ( uIntType j = 0; j < dim; j++ ){
            
                 //Compute the relative position vector 
                 domainXis[ dim * i + j ] = microPositions[ dim * domainMicroNodeIndices[ i ] + j ] - domainCM[ j ];
@@ -1946,14 +1946,14 @@ namespace DOFProjection{
 
     }
 
-    errorOut computeDomainXis( const unsigned int &dim,
+    errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microReferencePositions,
                                const floatVector &microDisplacements, const floatVector &domainCM, floatVector &domainXis ){
         /*
          * Compute the relative position vector between the center of mass of a micro domain and the 
          * micro position.
          *
-         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microReferencePositions: The reference positions of the micro-nodes.
          * :param const floatVector &microDisplacements: The displacements of the micro-nodes.
@@ -1967,7 +1967,7 @@ namespace DOFProjection{
                                   "The center of mass is not consistent with the dimension" );
         }
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
             if ( microReferencePositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-reference positions vector is not consistent with the micro indices" );
@@ -1981,9 +1981,9 @@ namespace DOFProjection{
         //Resize the Xi vector
         domainXis.resize( dim * domainMicroNodeIndices.size() );
 
-        for ( unsigned int i = 0; i < domainMicroNodeIndices.size(); i++ ){
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
 
-            for ( unsigned int j = 0; j < dim; j++ ){
+            for ( uIntType j = 0; j < dim; j++ ){
 
                 //Compute the relative position vector 
                 domainXis[ dim * i + j ] = (  microReferencePositions[ dim * domainMicroNodeIndices[ i ] + j ]
@@ -1997,9 +1997,9 @@ namespace DOFProjection{
 
     }
 
-    errorOut formMicroDomainToMacroProjectionMatrix( const unsigned int &dim,
-                                                     const unsigned int nMicroNodes,
-                                                     const unsigned int nMacroNodes,
+    errorOut formMicroDomainToMacroProjectionMatrix( const uIntType &dim,
+                                                     const uIntType nMicroNodes,
+                                                     const uIntType nMacroNodes,
                                                      const uIntVector  &domainMicroNodeIndices,
                                                      const uIntVector  &domainMacroNodeIndices,
                                                      const floatVector &microVolumes,
@@ -2011,13 +2011,13 @@ namespace DOFProjection{
                                                      const floatVector &domainMacroNodeProjectedMassMomentOfInertia,
                                                      const floatVector &domainMacroNodeMassRelativePositionConstant,
                                                      SparseMatrix &projector,
-                                                     const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex,
-                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex ){
+                                                     const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex,
+                                                     const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex ){
 
         /*!
          * Form the micro to macro projection matrix due to the current domain
          *
-         * :param const unsigned int &dim: The dimension of the problem
+         * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The global micro node IDs in the domain
          * :param const uIntVector &domainMacroNodeIndices: The global macro node IDs in the domain
          * :param const floatVector &microVolumes: The volumes of the micro-nodes ( global vector )
@@ -2035,9 +2035,9 @@ namespace DOFProjection{
          *     at each of the macro nodes derived from the projection of the micro masses and relative positions in the domain.
          *     [ C1_1, C1_2, C1_3, C2_1, ... ]
          * :param SparseMatrix &projector: The contribution of the current domain to the projector
-         * :param const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex: The map from the global micro node IDs
+         * :param const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex: The map from the global micro node IDs
          *     to the local micro node ids
-         * :param const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex: The mapp from the global macro node IDs
+         * :param const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex: The mapp from the global macro node IDs
          *     to the local macro node ids
          */
 
@@ -2080,15 +2080,15 @@ namespace DOFProjection{
         }
 
         //Set the number of spatial degrees of freedom for the two scales
-        const unsigned int nMicroDOF = dim;
-        const unsigned int nMacroDOF = dim + dim * dim;
+        const uIntType nMicroDOF = dim;
+        const uIntType nMacroDOF = dim + dim * dim;
 
         //Set up the vector of terms for the sparse matrix
         std::vector< T > coefficients;
         coefficients.reserve( nMicroDOF * domainMicroNodeIndices.size() * nMacroDOF * domainMacroNodeIndices.size() );
 
         //Initialize the row and column indices for the sparse matrix
-        unsigned int row0, col0;
+        uIntType row0, col0;
 
         //Initialize the macro node mass
         floatType macroNodeMass;
@@ -2113,19 +2113,19 @@ namespace DOFProjection{
         floatVector positionTerm;
 
         //Initialize the global micro node index
-        unsigned int m;
+        uIntType m;
 
         //Initialize the global macro node index
-        unsigned int n;
+        uIntType n;
 
         //Initialize the output index for the micro-nodes
-        unsigned int o;
+        uIntType o;
 
         //Initialize the output index for the macro-nodes
-        unsigned int p;
+        uIntType p;
 
         //Loop over the macro nodes
-        for ( unsigned int i = 0; i < domainMacroNodeIndices.size( ); i++ ){
+        for ( uIntType i = 0; i < domainMacroNodeIndices.size( ); i++ ){
 
             //Set the global macro node index
             n = domainMacroNodeIndices[ i ];
@@ -2173,7 +2173,7 @@ namespace DOFProjection{
 
             //Loop over the micro nodes
 
-            for ( unsigned int j = 0; j < domainMicroNodeIndices.size( ); j++ ){
+            for ( uIntType j = 0; j < domainMicroNodeIndices.size( ); j++ ){
 
                 //Set the global micro node index
                 m = domainMicroNodeIndices[ j ];

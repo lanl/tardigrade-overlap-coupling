@@ -29,7 +29,8 @@ namespace DOFProjection{
     typedef double floatType; //!Define the float values type.
     typedef std::vector< floatType > floatVector; //! Define a vector of floats
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
-    typedef std::vector< unsigned int > uIntVector; //!Define a vector of unsigned ints
+    typedef unsigned int uIntType; //!Define the unsigned int type
+    typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
 
     //Eigen Typedefs
     typedef Eigen::SparseMatrix< floatType > SparseMatrix;
@@ -41,34 +42,34 @@ namespace DOFProjection{
     | Functions which project the values from the macro to micro-scale |
     ==================================================================*/
 
-    errorOut addMacroDomainDisplacementToMicro( const unsigned int dim,
+    errorOut addMacroDomainDisplacementToMicro( const uIntType dim,
                                                 const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                 const floatVector &domainReferenceXis,
                                                 const floatVector &domainMacroInterpolationFunctionValues,
-                                                const unsigned int &nMacroDOF, const floatVector &macroDOFVector,
+                                                const uIntType &nMacroDOF, const floatVector &macroDOFVector,
                                                 const floatVector &microWeights, floatVector &microDisplacements,
-                                                const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL );
+                                                const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex = NULL );
 
-    errorOut addMacroDomainDisplacementToMicro( const unsigned int dim, const uIntVector &domainMicroNodeIndices,
+    errorOut addMacroDomainDisplacementToMicro( const uIntType dim, const uIntVector &domainMicroNodeIndices,
                                                 const floatVector &u, const floatVector &phi,
                                                 const floatVector &domainReferenceXis,
                                                 const floatVector &microWeights, floatVector &microDisplacements,
-                                                const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL );
+                                                const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex = NULL );
 
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &microWeights,
                                                     floatVector &projectedMicroMasses,
-                                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
+                                                    const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
 
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microVolumes, const floatVector &microDensities,
                                                     const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &microWeights,
                                                     floatVector &projectedMicroMasses,
-                                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
+                                                    const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
 
-    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
+    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const uIntType &dim,
                                                                         const uIntVector &domainMicroNodeIndices,
                                                                         const uIntVector &domainMacroNodeIndices,
                                                                         const floatVector &domainReferenceXis,
@@ -76,35 +77,35 @@ namespace DOFProjection{
                                                                         const floatVector &domainMicroShapeFunctions,
                                                                         const floatVector &microWeights,
                                                                         floatVector &projectedMassMicroMomentOfInertia,
-                                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+                                                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL
                                                                       );
 
-    errorOut addDomainMassConstant( const unsigned int &dim,
+    errorOut addDomainMassConstant( const uIntType &dim,
                                     const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                     const floatVector &domainReferenceXis, const floatVector &microMasses,
                                     const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                     floatVector &projectedMassConstant,
-                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+                                    const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL
                                   );
 
-    errorOut addDomainMassDisplacement( const unsigned int &dim,
+    errorOut addDomainMassDisplacement( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                         const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                         const floatVector &microWeights, const floatVector &microDisplacements,
                                         floatVector &projectedMassDisplacement,
-                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL
                                       );
 
-    errorOut addDomainMassMicroDisplacementPosition( const unsigned int &dim,
+    errorOut addDomainMassMicroDisplacementPosition( const uIntType &dim,
                                                      const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                      const floatVector &domainReferenceXis, const floatVector &microMasses,
                                                      const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                                      const floatVector &microDisplacements,
                                                      floatVector &projectedMassDisplacementPosition,
-                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+                                                     const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL
                                                    );
 
-    errorOut addDomainMicroToMacroProjectionTerms( const unsigned int &dim,
+    errorOut addDomainMicroToMacroProjectionTerms( const uIntType &dim,
                                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                    const floatVector &domainReferenceXis, const floatVector &microMasses,
                                                    const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
@@ -117,10 +118,10 @@ namespace DOFProjection{
                                                    const bool computeMassConstant = true,
                                                    const bool computeMassMicroDisplacement = true,
                                                    const bool computeMassDisplacementPosition = true,
-                                                   const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+                                                   const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL
                                                  );
 
-    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const unsigned int &dim,
+    errorOut addDomainMicroContributionToMacroMicroMassMomentOfInertia( const uIntType &dim,
                                                                         const uIntVector &domainMicroNodeIndices,
                                                                         const uIntVector &domainMacroNodeIndices,
                                                                         const floatVector &domainReferenceXis,
@@ -129,34 +130,34 @@ namespace DOFProjection{
                                                                         const floatVector &domainMicroShapeFunctions,
                                                                         const floatVector &microWeights,
                                                                         floatVector &projectedMassMicroMomentOfInertia,
-                                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+                                                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL
                                                                       );
 
-    errorOut addDomainMassConstant( const unsigned int &dim,
+    errorOut addDomainMassConstant( const uIntType &dim,
                                     const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                     const floatVector &domainReferenceXis, const floatVector &microVolumes,
                                     const floatVector &microDensities, const floatVector &domainMicroShapeFunctions,
                                     const floatVector &microWeights, floatVector &projectedMassConstant,
-                                    const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+                                    const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL
                                   );
 
-    errorOut addDomainMassDisplacement( const unsigned int &dim,
+    errorOut addDomainMassDisplacement( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                         const floatVector &microVolumes, const floatVector &microDensities, 
                                         const floatVector &domainMicroShapeFunctions, const floatVector &microWeights,
                                         const floatVector &microDisplacements, floatVector &projectedMassDisplacement,
-                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL
                                       );
 
-    errorOut addDomainMassMicroDisplacementPosition( const unsigned int &dim,
+    errorOut addDomainMassMicroDisplacementPosition( const uIntType &dim,
                                                      const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                      const floatVector &domainReferenceXis, const floatVector &microVolumes,
                                                      const floatVector &microDensities, const floatVector &domainMicroShapeFunctions,
                                                      const floatVector &microWeights, const floatVector &microDisplacements,
                                                      floatVector &projectedMassDisplacementPosition,
-                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
+                                                     const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
 
-    errorOut addDomainMicroToMacroProjectionTerms( const unsigned int &dim,
+    errorOut addDomainMicroToMacroProjectionTerms( const uIntType &dim,
                                                    const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                    const floatVector &domainReferenceXis, const floatVector &microVolumes,
                                                    const floatVector &microDensities, const floatVector &domainMicroShapeFunctions,
@@ -170,46 +171,46 @@ namespace DOFProjection{
                                                    const bool computeMassConstant = true,
                                                    const bool computeMassMicroDisplacement = true,
                                                    const bool computeMassDisplacementPosition = true,
-                                                   const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL
+                                                   const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL
                                                  );
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
                                         const floatVector &microPositions, const floatVector &microWeights,
                                         floatType &domainMass, floatVector &domainCM );
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microPositions,
                                         const floatVector &microWeights, floatType &domainMass, floatVector &domainCM );
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microReferencePositions,
                                         const floatVector &microDisplacements, const floatVector &microWeights,
                                         floatType &domainMass, floatVector &domainCM );
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microMasses,
                                         const floatVector &microPositions, const floatVector &microWeights,
                                         floatVector &domainCM );
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microPositions,
                                         const floatVector &microWeights, floatVector &domainCM );
 
-    errorOut computeDomainCenterOfMass( const unsigned int &dim,
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
                                         const uIntVector &domainMicroNodeIndices, const floatVector &microVolumes,
                                         const floatVector &microDensities, const floatVector &microReferencePositions,
                                         const floatVector &microDisplacements, const floatVector &microWeights,
                                         floatVector &domainCM );
 
-    errorOut computeDomainXis( const unsigned int &dim,
+    errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microPositions,
                                const floatVector &domainCM, floatVector &domainXis );
 
-    errorOut computeDomainXis( const unsigned int &dim,
+    errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microReferencePositions,
                                const floatVector &microDisplacements, const floatVector &domainCM, floatVector &domainXis );
 
@@ -219,19 +220,19 @@ namespace DOFProjection{
     | Functions which construct the projection matrices |
     ===================================================*/
 
-    errorOut formMacroDomainToMicroInterpolationMatrix( const unsigned int &dim,
-                                                        const unsigned int &nMicroNodes, const unsigned int &nMacroNodes,
+    errorOut formMacroDomainToMicroInterpolationMatrix( const uIntType &dim,
+                                                        const uIntType &nMicroNodes, const uIntType &nMacroNodes,
                                                         const uIntVector &domainMicroNodeIndices,
                                                         const uIntVector &domainMacroNodeIndices,
                                                         const floatVector &domainReferenceXis,
                                                         const floatVector &domainMacroInterpolationFunctionValues,
                                                         const floatVector &microWeights, SparseMatrix &domainN,
-                                                        const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL,
-                                                        const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
+                                                        const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex = NULL,
+                                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
 
-    errorOut formMicroDomainToMacroProjectionMatrix( const unsigned int &dim,
-                                                     const unsigned int nMicroNodes,
-                                                     const unsigned int nMacroNodes,
+    errorOut formMicroDomainToMacroProjectionMatrix( const uIntType &dim,
+                                                     const uIntType nMicroNodes,
+                                                     const uIntType nMacroNodes,
                                                      const uIntVector  &domainMicroNodeIndices,
                                                      const uIntVector  &domainMacroNodeIndices,
                                                      const floatVector &microVolumes,
@@ -243,8 +244,8 @@ namespace DOFProjection{
                                                      const floatVector &domainMacroNodeProjectedMassMomentOfInertia,
                                                      const floatVector &domainMacroNodeMassRelativePositionConstant,
                                                      SparseMatrix &projector,
-                                                     const std::unordered_map< unsigned int, unsigned int >* microNodeToLocalIndex = NULL,
-                                                     const std::unordered_map< unsigned int, unsigned int >* macroNodeToLocalIndex = NULL );
+                                                     const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex = NULL,
+                                                     const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
 }
 
 
