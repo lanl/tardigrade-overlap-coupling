@@ -10,6 +10,9 @@ Tests for element.h and element.cpp
 
 #include<element.h>
 
+typedef elib::uitype uitype;
+typedef elib::uivec uivec;
+typedef elib::vecOfuivec uimat;
 typedef elib::errorNode errorNode;
 typedef elib::errorOut errorOut;
 
@@ -32,7 +35,7 @@ bool fuzzy_equals(elib::vec a, elib::vec b, double tolr=1e-6, double tola=1e-6){
         assert(1==0);
     }
 
-    for (unsigned int i=0; i<a.size(); i++){
+    for (uitype i=0; i<a.size(); i++){
         if (!fuzzy_equals(a[i], b[i], tolr, tola)){
             return false;
         }
@@ -50,7 +53,7 @@ bool fuzzy_equals(elib::vecOfvec A, elib::vecOfvec B, double tolr=1e-6, double t
         assert(1==0);
     }
 
-    for (unsigned int i=0; i<A.size(); i++){
+    for (uitype i=0; i<A.size(); i++){
         if (!fuzzy_equals(A[i], B[i], tolr, tola)){
             return false;
         }
@@ -63,7 +66,7 @@ void print(elib::vec a){
     Print the vector to the terminal
     */
 
-    for (unsigned int i=0; i<a.size(); i++){
+    for (uitype i=0; i<a.size(); i++){
         std::cout << a[i] << " ";
     }
     std::cout << "\n";
@@ -74,7 +77,7 @@ void print(elib::vecOfvec A){
     Print the matrix to the terminal
     */
 
-    for (unsigned int i=0; i<A.size(); i++){
+    for (uitype i=0; i<A.size(); i++){
         print(A[i]);
     }
 }
@@ -118,7 +121,7 @@ double scalar_field(const elib::vec &x){
     get_scalar_field_definition(a);
 
     double value = 0;
-    for (unsigned int i=0; i<x.size(); i++){
+    for (uitype i=0; i<x.size(); i++){
         value += a[i]*x[i];
     }
     return value;
@@ -137,9 +140,9 @@ elib::vec vector_field(const elib::vec &x){
 
     elib::vec out(A.size(), 0);
 
-    for (unsigned int i=0; i<A.size(); i++){
+    for (uitype i=0; i<A.size(); i++){
         out[i] = b[i];
-        for (unsigned int j=0; j<x.size(); j++){
+        for (uitype j=0; j<x.size(); j++){
             out[i] += A[i][j]*x[j];
         }
     }
@@ -173,9 +176,9 @@ void linear_transform(const elib::vec &v, elib::vec &w){
     get_linear_transformation_definition(A, b);
 
     w.resize(v.size());
-    for (unsigned int i=0; i<w.size(); i++){
+    for (uitype i=0; i<w.size(); i++){
         w[i] = b[i];
-        for (unsigned int j=0; j<v.size(); j++){
+        for (uitype j=0; j<v.size(); j++){
             w[i] += A[i][j]*v[j];
         }
     }
@@ -200,7 +203,7 @@ void define_hex8_fully_integrated_quadrature(elib::quadrature_rule &qrule){
     elib::vec quadrature_weights = {1, 1, 1, 1, 1, 1, 1, 1};
 
     qrule.resize(8);
-    for (unsigned int i=0; i<8; i++){
+    for (uitype i=0; i<8; i++){
         qrule[i] = {quadrature_points[i], quadrature_weights[i]};
     }
     return;
@@ -212,7 +215,7 @@ int test_Hex8_get_shape_functions(std::ofstream &results){
     */
 
     // Define the element's nodes
-    std::vector< unsigned int > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector< uitype > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
 
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
@@ -243,9 +246,9 @@ int test_Hex8_get_shape_functions(std::ofstream &results){
     }
 
     // Check the shape function values at the nodes
-    for (unsigned int n=0; n<element.local_node_coordinates.size(); n++){
+    for (uitype n=0; n<element.local_node_coordinates.size(); n++){
         element.get_shape_functions(element.local_node_coordinates[n], shape_functions);
-        for (unsigned int m=0; m<element.local_node_coordinates.size(); m++){
+        for (uitype m=0; m<element.local_node_coordinates.size(); m++){
             if (m==n){
                 if (!fuzzy_equals(shape_functions[m], 1)){
                     results << "test_Hex8_get_shape_functions (test 2a) & False\n";
@@ -271,7 +274,7 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
     */
 
     // Define the element's nodes
-    std::vector< unsigned int > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector< uitype > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
 
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
@@ -299,7 +302,7 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
 
     elib::vecOfvec answer;
     answer.resize(8);
-    for (unsigned int i=0; i<8; i++){
+    for (uitype i=0; i<8; i++){
         answer[i].resize(3);
         answer[i][0] = (sfpx[i] - sf0[i])/eps;
         answer[i][1] = (sfpy[i] - sf0[i])/eps;
@@ -330,7 +333,7 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
     element.get_shape_functions({    0.1, -0.2+eps,     0.3}, sfpy);
     element.get_shape_functions({    0.1,     -0.2, 0.3+eps}, sfpz);
 
-    for (unsigned int i=0; i<8; i++){
+    for (uitype i=0; i<8; i++){
         answer[i][0] = (sfpx[i] - sf0[i])/eps;
         answer[i][1] = (sfpy[i] - sf0[i])/eps;
         answer[i][2] = (sfpz[i] - sf0[i])/eps;
@@ -353,7 +356,7 @@ int test_Hex8_local_point_inside(std::ofstream &results){
     */
 
     // Define the element's nodes
-    std::vector< unsigned int > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector< uitype > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
 
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
@@ -378,7 +381,7 @@ int test_Hex8_local_point_inside(std::ofstream &results){
         return 1;
     }
 
-    for (unsigned int i=0; i<xi.size(); i++){
+    for (uitype i=0; i<xi.size(); i++){
         xi[i] = 2;
         if (element.local_point_inside(xi)){
             results << "test_Hex8_local_point_inside (test 2) & False\n";
@@ -408,7 +411,7 @@ int test_interpolate(elib::Element &element, std::ofstream &results){
 
     //Compute the global coordinates of the nodes via interpolation
     elib::vec value;
-    for (unsigned int n=0; n<element.local_node_coordinates.size(); n++){
+    for (uitype n=0; n<element.local_node_coordinates.size(); n++){
         element.interpolate(element.nodes, element.local_node_coordinates[n], value);
         if (!fuzzy_equals(value, element.nodes[n])){
             results << element.name.c_str() << "_test_interpolate (test 1) & False\n";
@@ -428,7 +431,7 @@ int test_interpolate(elib::Element &element, std::ofstream &results){
     //Interpolate a variable linear scalar field
     double scalar_answer;
     elib::vec scalar_nodal_values(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         scalar_nodal_values[n] = scalar_field(element.nodes[n]);
     }
 
@@ -445,7 +448,7 @@ int test_interpolate(elib::Element &element, std::ofstream &results){
 
     //Interpolate a variable vector field
     elib::vecOfvec vector_nodal_values(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         vector_nodal_values[n] = vector_field(element.nodes[n]);
     }
 
@@ -479,7 +482,7 @@ int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &l
     elib::vec delta = global_test_point;
     elib::vec xtmp, xi, xip, xim, N0, Ntmpp, Ntmpm;
     elib::vecOfvec dNdx_num(element.nodes.size());
-    for (unsigned int n=0; n<dNdx_num.size(); n++){
+    for (uitype n=0; n<dNdx_num.size(); n++){
         dNdx_num[n] = elib::vec(element.nodes[n].size(), 0);
     }
 
@@ -489,7 +492,7 @@ int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &l
     //Compute the initial values of the shape functions
     element.get_shape_functions(xi, N0);
 
-    for (unsigned int i=0; i<element.nodes[0].size(); i++){
+    for (uitype i=0; i<element.nodes[0].size(); i++){
 
         //Perturb the global coordinates positively
         delta[i] *= 1+eps;
@@ -513,7 +516,7 @@ int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &l
         element.get_shape_functions(xim, Ntmpm);
 
         //Set the values of the estimated gradient
-        for (unsigned int n=0; n<Ntmpp.size(); n++){dNdx_num[n][i] = (Ntmpp[n] - Ntmpm[n])/(2*global_test_point[i]*eps);}
+        for (uitype n=0; n<Ntmpp.size(); n++){dNdx_num[n][i] = (Ntmpp[n] - Ntmpm[n])/(2*global_test_point[i]*eps);}
 
         //Remove the negative perturbation
         delta[i] /= 1-eps;
@@ -547,7 +550,7 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
 
     //Form the scalar field at the nodes
     elib::vec scalar_nodal_values(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         scalar_nodal_values[n] = scalar_field(element.nodes[n]);
     }
 
@@ -579,7 +582,7 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     elib::vecOfvec vector_nodal_values(element.nodes.size());
     elib::vec vg0, vgpx, vgpy, vgpz;
 
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         vector_nodal_values[n] = vector_field(element.nodes[n]);
     }
 
@@ -592,8 +595,8 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     element.interpolate(vector_nodal_values, local_coordinates, perturbation_matrix[0]);
 
     //Perturb the local coordinates and interpolate
-    for (unsigned int i=0; i<perturbation_matrix.size()-1; i++){
-        for (unsigned int j=0; j<perturbation_matrix.size()-1; j++){
+    for (uitype i=0; i<perturbation_matrix.size()-1; i++){
+        for (uitype j=0; j<perturbation_matrix.size()-1; j++){
             if (i == j){
                 perturbed_coordinates[j] = local_coordinates[j] + eps;
     	    }
@@ -606,9 +609,9 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
 
     //Approximate the derivative using finite differences
     vector_answer.resize(vector_nodal_values[0].size());
-    for (unsigned int i=0; i<vector_answer.size(); i++){
+    for (uitype i=0; i<vector_answer.size(); i++){
 	vector_answer[i].resize(perturbation_matrix.size()-1);
-        for (unsigned int j=1; j<perturbation_matrix.size(); j++){
+        for (uitype j=1; j<perturbation_matrix.size(); j++){
             vector_answer[i][j-1] = (perturbation_matrix[j][i] - perturbation_matrix[0][i])/eps;
 	}
     }
@@ -635,7 +638,7 @@ int test_get_global_gradient(elib::Element &element, std::ofstream &results){
 
     //Compute a set of reference coordinates using a linear transformation
     elib::vecOfvec reference_coordinates(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         reference_coordinates[n].resize(element.nodes.size());
         linear_transform(element.nodes[n], reference_coordinates[n]);
     }
@@ -644,7 +647,7 @@ int test_get_global_gradient(elib::Element &element, std::ofstream &results){
     elib::vec scalar_nodal_current_values(element.nodes.size());
     elib::vec scalar_nodal_reference_values(element.nodes.size());
 
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         scalar_nodal_current_values[n] = scalar_field(element.nodes[n]);
         scalar_nodal_reference_values[n] = scalar_field(reference_coordinates[n]);
     }
@@ -667,7 +670,7 @@ int test_get_global_gradient(elib::Element &element, std::ofstream &results){
     elib::vecOfvec vector_nodal_current_values(element.nodes.size());
     elib::vecOfvec vector_nodal_reference_values(element.nodes.size());
 
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         vector_nodal_current_values[n] = vector_field(element.nodes[n]);
         vector_nodal_reference_values[n] = vector_field(reference_coordinates[n]);
     }
@@ -735,7 +738,7 @@ int test_get_jacobian(elib::Element &element, std::ofstream &results){
 
     //Compute a set of reference coordinates using a linear transformation
     elib::vecOfvec reference_coordinates(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         reference_coordinates[n].resize(element.nodes.size());
         linear_transform(element.nodes[n], reference_coordinates[n]);
     }
@@ -775,7 +778,7 @@ int test_bounding_box_contains_point(elib::Element &element, std::ofstream &resu
     }
 
     //Check if points smaller than the bounds will be detected as being outside of the element
-    for (unsigned int i=0; i<element.bounding_box[0].size(); i++){
+    for (uitype i=0; i<element.bounding_box[0].size(); i++){
         x = element.bounding_box[0];
         x[i] -= delta;
         if (element.bounding_box_contains_point(x)){
@@ -791,7 +794,7 @@ int test_bounding_box_contains_point(elib::Element &element, std::ofstream &resu
     }
 
     //Check if points larger than the bounds will be detected as being outside of the element
-    for (unsigned int i=0; i<element.bounding_box[1].size(); i++){
+    for (uitype i=0; i<element.bounding_box[1].size(); i++){
         x = element.bounding_box[1];
         x[i] += delta;
         if (element.bounding_box_contains_point(x)){
@@ -812,7 +815,7 @@ int test_contains_point(elib::Element &element, std::ofstream &results){
     :param std::ofstream &results: The output file to write the results to
     */
 
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         if (!element.contains_point(element.nodes[n])){
             results << element.name.c_str() << "_test_contains_point (test 1) & False\n";
             return 1;
@@ -893,7 +896,7 @@ int test_Hex8_functionality(std::ofstream &results){
                             {0, 1, 1}};
 
     // Define the element's node ids
-    std::vector< unsigned int > node_ids = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector< uitype > node_ids = {1, 2, 3, 4, 5, 6, 7, 8};
 
     // Define the element's quadrature rule
     elib::quadrature_rule qrule;
@@ -974,11 +977,11 @@ int test_invert(std::ofstream &results){
     elib::vecOfvec result;
 
     result.resize(A.size());
-    for (unsigned int i=0; i<A.size(); i++){
+    for (uitype i=0; i<A.size(); i++){
         result[i].resize(A[i].size());
-        for (unsigned int j=0; j<A[i].size(); j++){
+        for (uitype j=0; j<A[i].size(); j++){
             result[i][j] = 0;
-            for (unsigned int k=0; k<A[i].size(); k++){
+            for (uitype k=0; k<A[i].size(); k++){
                 result[i][j] += A[i][k]*Ainv[k][j];
             }
         }
@@ -1006,8 +1009,8 @@ int test_solve(std::ofstream &results){
 
     elib::vec b(A.size(), 0);
 
-    for (unsigned int i=0; i<A.size(); i++){
-        for (unsigned int j=0; j<A[i].size(); j++){
+    for (uitype i=0; i<A.size(); i++){
+        for (uitype j=0; j<A[i].size(); j++){
             b[i] += A[i][j]*answer[j];
         }
     }
