@@ -112,13 +112,21 @@ namespace elib{
             errorOut compute_local_coordinates(const vec &global_coordinates, vec &local_coordinates,
                                                double tolr=1e-9, double tola=1e-9, unsigned int maxiter=20, unsigned int maxls=5);
 
-            virtual errorOut get_shape_functions(const vec &local_coordinates, vec &result){
-                return new errorNode( "get_shape_functions", "Not implemented" );
-            } //Must be over-ridden
-            virtual errorOut get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result){
-                return new errorNode( "get_local_grad_shape_functions", "Not implemented" );
-            } //Must be over-ridden
-            virtual bool local_point_inside(const vec &local_coordinates, const double tol=1e-9){return false;} //Must be over-ridden
+            virtual errorOut get_shape_functions(const vec &local_coordinates, vec &result) = 0;
+//            {
+//                unusedArgs( local_coordinates, result );
+//                return new errorNode( "get_shape_functions", "Not implemented" );
+//            } //Must be over-ridden
+            virtual errorOut get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result) = 0;
+//            {
+//                unusedArgs( local_coordinates, result );
+//                return new errorNode( "get_local_grad_shape_functions", "Not implemented" );
+//            } //Must be over-ridden
+            virtual bool local_point_inside(const vec &local_coordinates, const double tol=1e-9) = 0;
+//            {
+//                unusedArgs( local_coordinates, tol );
+//                return false;
+//            } //Must be over-ridden
 
             bool bounding_box_contains_point(const vec &x);
 
