@@ -60,6 +60,11 @@ namespace volumeReconstruction{
                                    floatVector *domainUpperBounds = NULL,
                                    floatVector *domainLowerBounds = NULL);
 
+            void getPointsWithinRadiusOfOrigin( const floatVector &origin, const floatType &radius,
+                                                uIntVector &indices,
+                                                floatVector *domainUpperBounds = NULL,
+                                                floatVector *domainLowerBounds = NULL );
+
             void printData( const uIntType &dim );
 
         private:

@@ -254,6 +254,86 @@ namespace volumeReconstruction{
 
     }
 
+    void KDNode::getPointsWithinRadiusOfOrigin( const floatVector &origin, const floatType &radius,
+                                                uIntVector &indices,
+                                                floatVector *domainUpperBounds,
+                                                floatVector *domainLowerBounds ){
+        /*!
+         * Find all of the points within a given radius of the origin
+         *
+         * :param const floatVector &origin: The origin to use as the reference point for the origin
+         * :param const floatType &radius: The radius to use as the bound
+         * :param uIntVector &indices: The indices contained within the radius
+         * :param floatVector *domainUpperBounds: The upper bounds of the domain associated with the node
+         * :param floatVector *domainLowerBounds: The lower bounds of the domain associated with the node
+         */
+
+        //Get the dimension
+        uIntType dim = origin.size( );
+
+        floatVector _domainUpperBounds;
+        floatVector _domainLowerBounds;
+
+        //Assemble the current point
+        floatVector median( _points->begin( ) + _index,
+                            _points->begin( ) + _index + dim );
+
+        if( !domainUpperBounds ){
+            
+            _domainUpperBounds = floatVector( dim );
+            _domainLowerBounds = floatVector( dim );
+
+            for ( uIntType i = 0; i < dim; i++ ){
+
+                _domainUpperBounds[ i ] = getMaximumValueDimension( i );
+                _domainLowerBounds[ i ] = getMinimumValueDimension( i );
+
+            }
+
+            //Reassign the pointers
+            domainUpperBounds = &_domainUpperBounds;
+            domainLowerBounds = &_domainLowerBounds;
+
+        }
+
+        //Check if the current point is within the range
+        floatVector deltaVec = median - origin;
+        floatType deltaRadiusSquared = vectorTools::dot( deltaVec, deltaVec );
+
+        if ( deltaRadiusSquared <= ( radius * radius ) ){
+
+            indices.push_back( _index );
+
+        }
+
+        //Check the left child exists and is within range for the current axis
+        if ( ( left_child ) &&
+             ( ( std::fabs( deltaVec[ _axis ] ) <= radius ) ||
+               ( std::fabs( ( *domainLowerBounds )[ _axis ] - origin[ _axis ] ) <= radius ) ) ){
+
+             floatVector newDomainUpperBounds = *domainUpperBounds;
+             newDomainUpperBounds[ _axis ] = median[ _axis ];
+
+             left_child->getPointsWithinRadiusOfOrigin( origin, radius, indices,
+                                                        &newDomainUpperBounds, domainLowerBounds );
+
+        }
+
+        //Check the right child exists and is within range
+        if ( ( right_child ) &&
+             ( ( std::fabs( deltaVec[ _axis ] ) <= radius ) ||
+               ( std::fabs( ( *domainUpperBounds )[ _axis ] - origin[ _axis ] ) <= radius ) ) ){
+
+             floatVector newDomainLowerBounds = *domainLowerBounds;
+             newDomainLowerBounds[ _axis ] = median[ _axis ];
+
+             right_child->getPointsWithinRadiusOfOrigin( origin, radius, indices,
+                                                         domainUpperBounds, &newDomainLowerBounds );
+
+        }
+
+    }
+
     floatType KDNode::getMinimumValueDimension( const uIntType &d ){
         /*!
          * Get the minimum value of a given dimension in the tree

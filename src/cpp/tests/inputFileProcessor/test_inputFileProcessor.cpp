@@ -961,15 +961,15 @@ int main(){
     test_setConfigurationFile( results );
     test_initializeFileInterfaces( results );
     test_initializeIncrement( results );
-//    test_getFreeMicroDomainNames( results );
-//    test_getGhostMicroDomainNames( results );
-//    test_getFreeMicroSurfaceNames( results );
-//    test_getGhostMicroSurfaceNames( results );
-//    test_getFreeMacroDomainNames( results );
-//    test_getGhostMacroDomainNames( results );
-//    test_getNonOverlappedMicroSurfaceNames( results );
-//    test_getCouplingInitialization( results );
-//    test_getVolumeReconstructionConfig( results );
+    test_getFreeMicroDomainNames( results );
+    test_getGhostMicroDomainNames( results );
+    test_getFreeMicroSurfaceNames( results );
+    test_getGhostMicroSurfaceNames( results );
+    test_getFreeMacroDomainNames( results );
+    test_getGhostMacroDomainNames( results );
+    test_getNonOverlappedMicroSurfaceNames( results );
+    test_getCouplingInitialization( results );
+    test_getVolumeReconstructionConfig( results );
 
     //Close the results file
     results.close();
