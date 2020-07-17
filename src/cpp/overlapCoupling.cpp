@@ -2052,7 +2052,7 @@ namespace overlapCoupling{
 
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
-                    homogenizedBodyForces[ macroCellID ].push_back( integratedValues[ localIndex + i ] );
+                    homogenizedBodyForces[ macroCellID ].push_back( integratedValues[ localIndex + i ] / integratedValues[ 0 ] );
 
                 }
 
