@@ -837,6 +837,53 @@ namespace volumeReconstruction{
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
 
+    errorOut volumeReconstructionBase::performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
+                                                                                      const uIntType valueSize,
+                                                                                      const floatVector &origin,
+                                                                                      floatVector &integratedValue,
+                                                                                      const uIntVector *subdomainIDs ){
+        /*!
+         * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
+         *
+         * \int_{\partial\mathcal{B}} n_i v_ij da \approx \sum_{p = 1}^N n_i^p v_ij^p da^p
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_111, v_112, v_113, ..., v_121, v_122, v_123, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object, the second index is the first index of the v matirx and the
+         *     third index is the second index of the value matrix
+         *     function to be integrated.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
+         * :param const floatVector &origin: The origin to compute the surface integral relative to 
+         * :param floatVector &integratedValue: The final value of the integral
+         * :param uIntVector *subdomainIDs: The IDs of points in the subdomain of the surface to integrate over
+         */
+
+        ( void ) valuesAtPoints;
+        ( void ) valueSize;
+        ( void ) origin;
+        ( void ) integratedValue;
+        ( void ) subdomainIDs;
+
+        return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
+    }
+
+    errorOut volumeReconstructionBase::getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
+                                                             uIntVector &subdomainNodes ){
+        /*!
+         * Break the surface into subdomains which are separated by ( approximately ) minDistance.
+         *
+         * :param const floatType &minDistance: The minimum distance between the subdomain centers
+         * :param uIntVector &subdomainNodeCounts: The number of nodes in each subdomain
+         * :param uIntVector &subdomainNodes: The IDs of the nodes in the subdomains in the order of subdomainNodeCounts
+         */
+
+        ( void ) minDistance;
+        ( void ) subdomainNodeCounts;
+        ( void ) subdomainNodes;
+
+        return new errorNode( "getSurfaceSubdomains", "Surface decomposition into subdomains not implemented" );
+    }
+
     errorOut volumeReconstructionBase::writeToXDMF( ){
         /*!
          * Write the volume-reconstruction data to an XDMF file for review
@@ -1749,6 +1796,8 @@ namespace volumeReconstruction{
 
         bool flipDirection;
 
+        uIntVector ownedIndices( _boundaryCells.size( ) );
+
         for ( auto bc = _boundaryCells.begin( ); bc != _boundaryCells.end( ); bc++ ){
 
             //Determine the lower-left hand corner index
@@ -2063,8 +2112,12 @@ namespace volumeReconstruction{
             }
 
             _boundaryPointIDToIndex.emplace( *bc, bc - _boundaryCells.begin( ) );
+            ownedIndices[ bc - _boundaryCells.begin( ) ] = _dim * ( bc - _boundaryCells.begin( ) );
 
         }
+
+        //Form the KD tree of the boundary points
+        _boundaryPointTree = KDNode( &_boundaryPoints, ownedIndices, 0, _dim );
 
         return NULL;
     }
@@ -2831,7 +2884,8 @@ namespace volumeReconstruction{
     errorOut dualContouring::performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
                                                                             const uIntType valueSize,
                                                                             const floatVector &origin,
-                                                                            floatVector &integratedValue ){
+                                                                            floatVector &integratedValue,
+                                                                            const uIntVector *subdomainIDs ){
         /*!
          * $\int_{\partial\mathcal{B}} n_i v_ij ( x_k' - o_k ) da \approx \sum_{p = 1}^N n_i^p v_ij^p ( x_k' - o_k ) da^p$
          *
@@ -2845,9 +2899,10 @@ namespace volumeReconstruction{
          * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param const floatVector &origin: The origin that the relative position vector is computed in relation to.
          * :param floatVector &integratedValue: The final value of the integral
+         * :param const uIntVector *subdomainIDs: The IDs of points in the subdomain to integrate over
          */
 
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, true );
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, true, subdomainIDs );
 
         if ( error ){
 
@@ -2864,7 +2919,8 @@ namespace volumeReconstruction{
 
     errorOut dualContouring::performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             const floatVector &origin, floatVector &integratedValue,
-                                                            bool computeFlux, bool dyadWithOrigin ){
+                                                            bool computeFlux, bool dyadWithOrigin,
+                                                            const uIntVector *subdomainIDs ){
         /*!
          * Integrate a quantity known at the points over the surface return the value for the domain.
          *
@@ -2878,6 +2934,7 @@ namespace volumeReconstruction{
          * :param bool computeFlux: The flag indicating if the flux needs to be computed of the values at the surface.
          * :param bool dyadWithOrigin: The flag indicating if the dyadic product between the values on the surface
          *     ( post flux calculation ) needs to be computed.
+         * :param uIntVector *subdomainIDs: The IDs of points in the subdomain to integrate over
          */
 
         errorOut error;
@@ -2947,7 +3004,15 @@ namespace volumeReconstruction{
 
         floatMatrix nodalFunctionValues;
 
-        for ( auto cell = _boundaryCells.begin( ); cell != _boundaryCells.end( ); cell++ ){
+        const uIntVector *surfaceCells = &_boundaryCells;
+
+        if ( subdomainIDs ){
+
+            surfaceCells = subdomainIDs;
+
+        }
+
+        for ( auto cell = surfaceCells->begin( ); cell != surfaceCells->end( ); cell++ ){
 
             //Get the bottom corner node IDs from the cell id
             i = *cell / ( ngy * ngz );

@@ -126,10 +126,14 @@ namespace volumeReconstruction{
             virtual errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             floatVector &integratedValue );
 
-            errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
-                                                                    const uIntType valueSize,
-                                                                    const floatVector &origin,
-                                                                    floatVector &integratedValue );
+            virtual errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
+                                                                            const uIntType valueSize,
+                                                                            const floatVector &origin,
+                                                                            floatVector &integratedValue,
+                                                                            const uIntVector *subdomainIDs = NULL );
+
+            virtual errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
+                                                   uIntVector &subdomainNodes );
 
             const YAML::Node exportConfiguration( );
 
@@ -202,7 +206,8 @@ namespace volumeReconstruction{
                                                     floatVector &integratedValue );
 
             errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                                    const floatVector &origin, floatVector &integratedValue );
+                                                                    const floatVector &origin, floatVector &integratedValue,
+                                                                    const uIntVector *subdomainIDs = NULL );
 
         protected:
 
@@ -215,7 +220,7 @@ namespace volumeReconstruction{
 
             errorOut performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                     const floatVector &origin, floatVector &integratedValue,
-                                                    bool computeFlux, bool dyadWithOrigin );
+                                                    bool computeFlux, bool dyadWithOrigin, const uIntVector *subdomainIDs = NULL );
 
         private:
 
@@ -269,6 +274,8 @@ namespace volumeReconstruction{
             std::unordered_map< uIntType, floatVector > _boundaryPointNormals;
             errorOut computeBoundaryPointNormalsAndAreas( );
             errorOut processBoundaryEdges( const std::unordered_map< uIntType, uIntVector > &boundaryEdges );
+
+            KDNode _boundaryPointTree;
 
             errorOut writeToXDMF( );
 
