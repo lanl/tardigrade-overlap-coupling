@@ -552,6 +552,16 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
+    const floatVector microBodyForcesAnswer = { 0., 0., 0. };
+    const floatVector *microBodyForcesResult = reader.getMicroBodyForces( );
+
+    if ( !vectorTools::fuzzyEquals( *microBodyForcesResult, microBodyForcesAnswer ) ){
+
+        results << "test_initializeIncrement (test 26) & False\n";
+        return 1;
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

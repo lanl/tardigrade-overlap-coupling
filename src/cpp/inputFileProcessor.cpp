@@ -458,6 +458,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the micro body forces
+        error = extractMicroBodyForces( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the micro body forces" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the macro displacements
         error = extractMacroDisplacements( macroIncrement );
 
@@ -842,11 +851,49 @@ namespace inputFileProcessor{
 
         if ( error ){
 
-            errorOut result = new errorNode( "extractMicroNodeDensities", "Error in extraction of the micro densitys" );
+            errorOut result = new errorNode( "extractMicroNodeDensities", "Error in extraction of the micro densities" );
             result->addNext( error );
             return result;
 
         }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMicroBodyForces( const unsigned int &increment ){
+        /*!
+         * Extract the node micro-body forces at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        //Check if the body force name has been defined
+        _microBodyForceFlag = false;
+        if ( !_config[ "microscale_definition" ][ "body_force_variable_name" ] ){
+
+            _config [ "microscale_definition" ][ "body_force_variable_name" ] = "NULL"; //Indicate that the body force is assumed to be zero
+            _microBodyForces = { 0., 0., 0. }; //Set the body force to zero
+
+            return NULL;
+
+        }
+
+        //Extract the micro body force vector
+        errorOut error =
+            _microscale->getSolutionData( increment,
+                                          _config[ "microscale_definition" ][ "body_force_variable_name" ].as< std::string > ( ),
+                                          "Node", _microBodyForces );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroBodyForce", "Error in extraction of the micro body forces" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        _microBodyForceFlag = true;
 
         return NULL;
 
@@ -1193,6 +1240,14 @@ namespace inputFileProcessor{
          */
 
         return &_microDensities;
+    }
+
+    const floatVector* inputFileProcessor::getMicroBodyForces( ){
+        /*!
+         * Get a pointer to the micro body forces
+         */
+
+        return &_microBodyForces;
     }
 
     const floatVector* inputFileProcessor::getMicroVolumes( ){

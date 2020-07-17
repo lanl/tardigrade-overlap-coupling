@@ -74,6 +74,7 @@ namespace inputFileProcessor{
             const floatVector* getMicroDisplacements( );
             const floatVector* getMacroDisplacements( );
             const floatVector* getMacroDispDOFVector( );
+            const floatVector* getMicroBodyForces( );
 
             const floatVector* getMicroNodeReferencePositions( );
             const floatVector* getMacroNodeReferencePositions( );
@@ -145,6 +146,7 @@ namespace inputFileProcessor{
             errorOut checkVolumeReconstructionInitialization( );
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
+            errorOut extractMicroBodyForces( const unsigned int &increment );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
             errorOut extractMicroDisplacements( const unsigned int &increment );
             errorOut extractReferenceMicroMeshData( const unsigned int &increment );
@@ -180,6 +182,9 @@ namespace inputFileProcessor{
             uIntVector  _microNodeReferenceConnectivity;
             uIntVector  _microNodeReferenceConnectivityCellIndices;
             unsigned int _microCellCounts;
+
+            floatVector _microBodyForces;
+            bool _microBodyForceFlag = false;
 
             floatVector _macroDisplacements;
             floatVector _macroDispDOFVector;
