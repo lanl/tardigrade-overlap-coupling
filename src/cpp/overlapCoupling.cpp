@@ -1952,16 +1952,44 @@ namespace overlapCoupling{
         //Assemble the averaging vector at the nodes for non-volume weighted averaging quantities
         unsigned int dataCountAtPoint = 1  //Volume calculation
                                       + 1; //Density
+
+        //Add the micro body force if it is defined
+        if ( _inputProcessor.microBodyForceDefined( ) ){
+
+            dataCountAtPoint += _dim; //Add the micro body force
+
+        }
+
         floatVector dataAtMicroPoints( dataCountAtPoint * microDomainNodeIDs.size( ), 0 );
 
         const floatVector *microDensities = _inputProcessor.getMicroDensities( );
 
+        const floatVector *microBodyForces = _inputProcessor.getMicroBodyForces( );
+
         unsigned int index = 0;
+        unsigned int localIndex = 0;
 
         for ( auto node = microDomainNodeIDs.begin( ); node != microDomainNodeIDs.end( ); node++, index++ ){
 
             dataAtMicroPoints[ dataCountAtPoint * index + 0 ] = 1.;                           //Integrate the volume of the domain
             dataAtMicroPoints[ dataCountAtPoint * index + 1 ] = ( *microDensities )[ *node ]; //Integrate the density of the domain
+
+            //Local index
+            localIndex = 2;
+
+            //Add the micro body forces
+            if ( _inputProcessor.microBodyForceDefined( ) ){
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ]
+                        = ( *microBodyForces )[ *node + i ]; //Integrate the body forces of the domain
+
+                }
+
+                localIndex += _dim;
+
+            }
 
         }
 
@@ -1987,12 +2015,59 @@ namespace overlapCoupling{
             tmp = { integratedValues[ 1 ] / integratedValues[ 0 ] };
             homogenizedDensities.emplace( macroCellID, tmp ); //Save the density
 
+            localIndex = 2;
+
+            if ( _inputProcessor.microBodyForceDefined( ) ){
+
+                tmp.resize( _dim );
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    tmp[ i ] = integratedValues[ localIndex + i ] / integratedValues[ 0 ];
+
+                }
+
+                localIndex += _dim;
+
+            }
+            else{
+
+                tmp = *microBodyForces;
+
+            }
+
+            homogenizedBodyForces.emplace( macroCellID, tmp ); //Save the body force
+
         }
         else{
 
             homogenizedVolumes[ macroCellID ].push_back( integratedValues[ 0 ] ); //Save the volume
 
             homogenizedDensities[ macroCellID ].push_back( integratedValues[ 1 ] / integratedValues[ 0 ] ); //Save the density
+
+            localIndex = 2;
+
+            //Save the body forces
+            if ( _inputProcessor.microBodyForceDefined( ) ){
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    homogenizedBodyForces[ macroCellID ].push_back( integratedValues[ localIndex + i ] );
+
+                }
+
+                localIndex += _dim;
+
+            }
+            else{
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    homogenizedBodyForces[ macroCellID ].push_back( ( *microBodyForces )[ i ] );
+
+                }
+
+            }
 
         }
 

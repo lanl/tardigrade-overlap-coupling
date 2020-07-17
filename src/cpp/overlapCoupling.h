@@ -196,6 +196,7 @@ namespace overlapCoupling{
             //The homogenized values
             std::unordered_map< uIntType, floatVector > homogenizedVolumes;
             std::unordered_map< uIntType, floatVector > homogenizedDensities;
+            std::unordered_map< uIntType, floatVector > homogenizedBodyForces;
 
     };
 
