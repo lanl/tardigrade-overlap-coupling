@@ -557,7 +557,14 @@ int test_initializeIncrement( std::ofstream &results ){
 
     if ( !vectorTools::fuzzyEquals( *microBodyForcesResult, microBodyForcesAnswer ) ){
 
-        results << "test_initializeIncrement (test 26) & False\n";
+        results << "test_initializeIncrement (test 28) & False\n";
+        return 1;
+
+    }
+
+    if ( reader.microBodyForceDefined( ) ){
+
+        results << "test_initializeIncrement (test 29) & False\n";
         return 1;
 
     }

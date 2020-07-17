@@ -114,6 +114,8 @@ namespace inputFileProcessor{
 
             YAML::Node getVolumeReconstructionConfig( );
 
+            bool microBodyForceDefined( );
+
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
 

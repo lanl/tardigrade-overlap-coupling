@@ -1770,6 +1770,14 @@ namespace inputFileProcessor{
         return _volumeReconstructionConfig;
     }
 
+    bool inputFileProcessor::microBodyForceDefined( ){
+        /*!
+         * Get whether the micro-body force has been defined
+         */
+
+        return _microBodyForceFlag;
+    }
+
     const floatVector* inputFileProcessor::getMicroDisplacements( ){
         /*!
          * Get the micro-displacements
