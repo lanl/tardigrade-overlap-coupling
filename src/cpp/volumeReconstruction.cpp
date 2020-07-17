@@ -620,7 +620,7 @@ namespace volumeReconstruction{
         }
 
         //Form the KD tree
-        _tree = KDNode( _points, ownedIndices, 0, _dim );
+        _pointTree = KDNode( _points, ownedIndices, 0, _dim );
 
         return NULL;
     }
@@ -901,8 +901,8 @@ namespace volumeReconstruction{
 
         for ( uIntType i = 0; i < _dim; i++ ){
 
-            _upperBounds[ i ] = _tree.getMaximumValueDimension( i );
-            _lowerBounds[ i ] = _tree.getMinimumValueDimension( i );
+            _upperBounds[ i ] = _pointTree.getMaximumValueDimension( i );
+            _lowerBounds[ i ] = _pointTree.getMinimumValueDimension( i );
 
         }
         
@@ -1501,8 +1501,8 @@ namespace volumeReconstruction{
         floatVector domainUpperBounds = *getUpperBounds( );
         floatVector domainLowerBounds = *getLowerBounds( );
 
-        _tree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], pointIndices,
-                                &domainUpperBounds, &domainLowerBounds );
+        _pointTree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], pointIndices,
+                                     &domainUpperBounds, &domainLowerBounds );
 
         //If there are no points contained within this element, return
         if ( indices.size( ) == 0 ){
@@ -1901,7 +1901,7 @@ namespace volumeReconstruction{
                 floatVector domainUpperBounds = *getUpperBounds( );
                 floatVector domainLowerBounds = *getLowerBounds( );
                 supportingPoints.clear( );
-                _tree.getPointsInRange( upperBounds, lowerBounds, supportingPoints, &domainUpperBounds, &domainLowerBounds );
+                _pointTree.getPointsInRange( upperBounds, lowerBounds, supportingPoints, &domainUpperBounds, &domainLowerBounds );
 
                 //Determine the normal at the intersection point
                 if ( ( supportingPoints.size( ) >= _minNormalApproximationCount ) && ( _useMaterialPointsForNormals ) ){
@@ -2576,8 +2576,8 @@ namespace volumeReconstruction{
 
             //Find the points inside of this element
             internalPoints.clear( );
-            _tree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], internalPoints,
-                                    &upperBounds, &lowerBounds );
+            _pointTree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], internalPoints,
+                                         &upperBounds, &lowerBounds );
 
             //Loop over the points adding their contributions to the function at the current grid points
             

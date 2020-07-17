@@ -154,7 +154,7 @@ namespace volumeReconstruction{
             std::string _type;
 
             const floatVector *_points;
-            KDNode _tree;
+            KDNode _pointTree;
             floatType _functionValue = 1;
             const floatVector *_functionValues = NULL;
             uIntType _nPoints;
