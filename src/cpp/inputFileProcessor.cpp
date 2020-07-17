@@ -870,7 +870,8 @@ namespace inputFileProcessor{
 
         //Check if the body force name has been defined
         _microBodyForceFlag = false;
-        if ( !_config[ "microscale_definition" ][ "body_force_variable_name" ] ){
+        if ( ( !_config[ "microscale_definition" ][ "body_force_variable_name" ] ) ||
+             ( _config[ "microscale_definition" ][ "body_force_variable_name" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
 
             _config [ "microscale_definition" ][ "body_force_variable_name" ] = "NULL"; //Indicate that the body force is assumed to be zero
             _microBodyForces = { 0., 0., 0. }; //Set the body force to zero
