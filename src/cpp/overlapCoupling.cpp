@@ -2001,7 +2001,7 @@ namespace overlapCoupling{
             }
 
             //Add the micro acclerations
-            if ( _inputProcessor.microAcclerationsDefined( ) ){
+            if ( _inputProcessor.microAccelerationDefined( ) ){
 
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
@@ -2009,6 +2009,8 @@ namespace overlapCoupling{
                         = ( *microDensities )[ *node ] * ( *microAccelerations )[ *node + i ]; //Integrate the accelerations of the domain
 
                 }
+
+                localIndex += _dim;
 
             }
 
@@ -2114,7 +2116,7 @@ namespace overlapCoupling{
             }
 
             //Save the accelerations
-            if ( _inputProcessor.microAccelerationsDefined( ) ){
+            if ( _inputProcessor.microAccelerationDefined( ) ){
 
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
