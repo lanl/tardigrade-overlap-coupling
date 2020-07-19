@@ -1960,11 +1960,20 @@ namespace overlapCoupling{
 
         }
 
+        //Add the micro inertia term if the acceleration is defined
+        if ( _inputProcessor.microAccelerationDefined( ) ){
+
+            dataCountAtPoint += _dim; //Add the micro inertia term
+
+        }
+
         floatVector dataAtMicroPoints( dataCountAtPoint * microDomainNodeIDs.size( ), 0 );
 
         const floatVector *microDensities = _inputProcessor.getMicroDensities( );
 
         const floatVector *microBodyForces = _inputProcessor.getMicroBodyForces( );
+
+        const floatVector *microAccelerations = _inputProcessor.getMicroAccelerations( );
 
         unsigned int index = 0;
         unsigned int localIndex = 0;
@@ -1988,6 +1997,18 @@ namespace overlapCoupling{
                 }
 
                 localIndex += _dim;
+
+            }
+
+            //Add the micro acclerations
+            if ( _inputProcessor.microAcclerationsDefined( ) ){
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ]
+                        = ( *microDensities )[ *node ] * ( *microAccelerations )[ *node + i ]; //Integrate the accelerations of the domain
+
+                }
 
             }
 
@@ -2017,6 +2038,7 @@ namespace overlapCoupling{
 
             localIndex = 2;
 
+            //Save the body force
             if ( _inputProcessor.microBodyForceDefined( ) ){
 
                 tmp.resize( _dim );
@@ -2036,7 +2058,29 @@ namespace overlapCoupling{
 
             }
 
-            homogenizedBodyForces.emplace( macroCellID, tmp ); //Save the body force
+            homogenizedBodyForces.emplace( macroCellID, tmp );
+
+            //Save the acceleration
+            if ( _inputProcessor.microAccelerationDefined( ) ){
+
+                tmp.resize( _dim );
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    tmp[ i ] = integratedValues[ localIndex + i ] / integratedValues[ 0 ];
+
+                }
+
+                localIndex += _dim;
+
+            }
+            else{
+
+                tmp = *microAccelerations;
+
+            }
+
+            homogenizedAccelerations.emplace( macroCellID, tmp );
 
         }
         else{
@@ -2064,6 +2108,28 @@ namespace overlapCoupling{
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
                     homogenizedBodyForces[ macroCellID ].push_back( ( *microBodyForces )[ i ] );
+
+                }
+
+            }
+
+            //Save the accelerations
+            if ( _inputProcessor.microAccelerationsDefined( ) ){
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    homogenizedAccelerations[ macroCellID ].push_back( integratedValues[ localIndex + i ] / integratedValues[ 0 ] );
+
+                }
+
+                localIndex += _dim;
+
+            }
+            else{
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    homogenizedAccelerations[ macroCellID ].push_back( ( *microAccelerations )[ i ] );
 
                 }
 
