@@ -3,6 +3,7 @@
 coupling_initialization:
         type: use_first_increment #Other options will be "from_file" and "use_current_increment"
         projection_type: "direct_projection" #Other options are "l2_projection"
+        use_reconstructed_mass_centers: false #Whether to use the reconstructed or particle particle mass centers in the homogenization
 
 macroscale_definition:
         filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/macroscale_xdmf.xdmf
