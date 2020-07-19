@@ -569,6 +569,25 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatVector microAccelerationsAnswer = { 0., 0., 0. };
+    const floatVector *microAccelerationsResult = reader.getMicroAccelerations( );
+
+    if ( !vectorTools::fuzzyEquals( *microAccelerationsResult, microAccelerationsAnswer ) ){
+
+        vectorTools::print( *microAccelerationsResult );
+        results << "test_initializeIncrement (test 30) & False\n";
+        return 1;
+
+    }
+
+    if ( reader.microAccelerationDefined( ) ){
+
+        results << "test_initializeIncrement (test 31) & False\n";
+        return 1;
+
+    }
+
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

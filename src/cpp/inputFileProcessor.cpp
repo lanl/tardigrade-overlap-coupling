@@ -467,6 +467,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the micro accelerations
+        error = extractMicroAccelerations( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the micro accelerations" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the macro displacements
         error = extractMacroDisplacements( macroIncrement );
 
@@ -900,6 +909,45 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMicroAccelerations( const unsigned int &increment ){
+        /*!
+         * Extract the node micro-body forces at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        //Check if the body force name has been defined
+        _microAccelerationFlag = false;
+        if ( ( !_config[ "microscale_definition" ][ "acceleration_variable_name" ] ) ||
+             ( _config[ "microscale_definition" ][ "acceleration_variable_name" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
+
+            _config [ "microscale_definition" ][ "acceleration_variable_name" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
+            _microAccelerations = { 0., 0., 0. }; //Set the acceleration to zero
+
+            return NULL;
+
+        }
+
+        //Extract the micro acceleration vector
+        errorOut error =
+            _microscale->getSolutionData( increment,
+                                          _config[ "microscale_definition" ][ "acceleration_variable_name" ].as< std::string > ( ),
+                                          "Node", _microAccelerations );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroAccelerations", "Error in extraction of the micro accelerations" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        _microAccelerationFlag = true;
+
+        return NULL;
+
+    }
+
     errorOut inputFileProcessor::extractMicroNodeVolumes( const unsigned int &increment ){
         /*!
          * Extract the node volumes for the micro domain at the indicated increment
@@ -1249,6 +1297,14 @@ namespace inputFileProcessor{
          */
 
         return &_microBodyForces;
+    }
+
+    const floatVector* inputFileProcessor::getMicroAccelerations( ){
+        /*!
+         * Get a pointer to the micro accelerations
+         */
+
+        return &_microAccelerations;
     }
 
     const floatVector* inputFileProcessor::getMicroVolumes( ){
@@ -1777,6 +1833,14 @@ namespace inputFileProcessor{
          */
 
         return _microBodyForceFlag;
+    }
+
+    bool inputFileProcessor::microAccelerationDefined( ){
+        /*!
+         * Get whether the micro-acceleration has been defined
+         */
+
+        return _microAccelerationFlag;
     }
 
     const floatVector* inputFileProcessor::getMicroDisplacements( ){
