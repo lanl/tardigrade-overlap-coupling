@@ -1740,9 +1740,15 @@ namespace overlapCoupling{
             //Get the number of micro domain in this macro cell
             unsigned int nCellMicroDomains = ( *_inputProcessor.getFreeMacroCellMicroDomainCounts( ) )[ macroIndex ];
 
+            //Domain micro centers of mass
+            floatVector microDomainCentersOfMass( _ghostMicroDomainCentersOfMass.begin( ) + _dim * microDomainStartIndex,
+                                                  _ghostMicroDomainCentersOfMass.begin( ) + _dim * ( microDomainStartIndex + nCellMicroDomains ) );
+
+            unsigned int microIndex = 0;
+
             for ( auto microDomain  = _inputProcessor.getGhostMicroDomainNames( )->begin( ) + microDomainStartIndex;
                        microDomain != _inputProcessor.getGhostMicroDomainNames( )->begin( ) + microDomainStartIndex + nCellMicroDomains;
-                       microDomain++ ){
+                       microDomain++, microIndex++ ){
 
                 microNodePositions.clear( );
                 reconstructedVolume.reset( );
@@ -1760,7 +1766,14 @@ namespace overlapCoupling{
                 }
 
                 //Compute the volume averages
-                error = computeDomainVolumeAverages( *macroCell, *microDomain, microDomainNodeIds, reconstructedVolume );
+                floatVector domainCenterOfMass( microDomainCentersOfMass.begin( ) + _dim * microIndex,
+                                                microDomainCentersOfMass.begin( ) + _dim * ( microIndex + 1 ) );
+
+                std::cout << "domainCenterOfMass\n";
+                vectorTools::print( domainCenterOfMass );
+
+                error = computeDomainVolumeAverages( *macroCell, microDomainNodeIds,
+                                                     reconstructedVolume, &domainCenterOfMass );
 
                 if ( error ){
 
@@ -1771,19 +1784,23 @@ namespace overlapCoupling{
 
                 }
                 
-                //Compute the surface averages
-                error = computeDomainSurfaceAverages( *macroCell, *microDomain, reconstructedVolume );
-
-                if ( error ){
-
-                    errorOut result = new errorNode( "homogenizeMicroScale",
-                                                     "Error in the computation of the surface averages of the microscale domain" );
-                    result->addNext( error );
-                    return result;
-
-                }
+//                //Compute the surface averages
+//                error = computeDomainSurfaceAverages( *macroCell, *microDomain, reconstructedVolume );
+//
+//                if ( error ){
+//
+//                    errorOut result = new errorNode( "homogenizeMicroScale",
+//                                                     "Error in the computation of the surface averages of the microscale domain" );
+//                    result->addNext( error );
+//                    return result;
+//
+//                }
                 
             }
+
+            vectorTools::print( homogenizedVolumes[ *macroCell ] );
+            vectorTools::print( homogenizedDensities[ *macroCell ] );
+            vectorTools::print( homogenizedCentersOfMass[ *macroCell ] );
 
             //Compute the approximate stresses
             error = computeHomogenizedStresses( *macroCell );
@@ -1932,26 +1949,27 @@ namespace overlapCoupling{
 
     }
 
-    errorOut overlapCoupling::computeDomainVolumeAverages( const uIntType &macroCellID, const std::string &microDomainName,
-                                                           const uIntVector &microDomainNodeIDs,
-                                                           std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
+    errorOut overlapCoupling::computeDomainVolumeAverages( const uIntType &macroCellID, const uIntVector &microDomainNodeIDs,
+                                                           std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume,
+                                                           const floatVector *microDomainCenterOfMass ){
         /*!
          * Compute the required volume averages over the micro-domain.
          *
          * :param const uIntType &macroCellID: The ID number of the macro-cell associated with the micro domain.
-         * :param const std::string &microDomainName: The name of the micro-domain to have the volume averages
-         *     computed over.
          * :param const uIntVector &microDomainNodeIDs: The micro domain's node ids
          * :param volumeReconstruction::volumeReconstructionBase &reconstructedVolume: The reconstructed volume
          *     ready to have volume integrals computed over.
+         * :param const floatVector *microDomainCenterOfMass: The center of mass for the micro-domain computed
+         *     directly from the particles.
          */
-
-        ( void ) macroCellID;
-        ( void ) microDomainName;
 
         //Assemble the averaging vector at the nodes for non-volume weighted averaging quantities
         unsigned int dataCountAtPoint = 1  //Volume calculation
                                       + 1; //Density
+
+        if ( _inputProcessor.useReconstructedMassCenters( ) ){
+            dataCountAtPoint += _dim; //Domain center of mass
+        }
 
         //Add the micro body force if it is defined
         if ( _inputProcessor.microBodyForceDefined( ) ){
@@ -1975,6 +1993,10 @@ namespace overlapCoupling{
 
         const floatVector *microAccelerations = _inputProcessor.getMicroAccelerations( );
 
+        const floatVector *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
+
+        const floatVector *microDisplacements = _inputProcessor.getMicroDisplacements( );
+
         unsigned int index = 0;
         unsigned int localIndex = 0;
 
@@ -1983,8 +2005,23 @@ namespace overlapCoupling{
             dataAtMicroPoints[ dataCountAtPoint * index + 0 ] = 1.;                           //Integrate the volume of the domain
             dataAtMicroPoints[ dataCountAtPoint * index + 1 ] = ( *microDensities )[ *node ]; //Integrate the density of the domain
 
-            //Local index
             localIndex = 2;
+
+            if ( _inputProcessor.useReconstructedMassCenters( ) ){
+
+                //Integrate for the domain's center of mass
+                for ( unsigned int i = 0; i < _dim; i++ ){
+    
+                    dataAtMicroPoints[ dataCountAtPoint * index + 2 + i ] =
+                        ( *microDensities )[ *node ] * ( ( *microReferencePositions )[ _dim * ( *node )  + i ]
+                                                       + ( *microDisplacements )[ _dim * ( *node ) + i ] );
+    
+                }
+
+                //Local index
+                localIndex += 3;
+
+            }
 
             //Add the micro body forces
             if ( _inputProcessor.microBodyForceDefined( ) ){
@@ -1992,7 +2029,7 @@ namespace overlapCoupling{
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
                     dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ]
-                        = ( *microBodyForces )[ *node + i ]; //Integrate the body forces of the domain
+                        = ( *microBodyForces )[ _dim * ( *node ) + i ]; //Integrate the body forces of the domain
 
                 }
 
@@ -2006,7 +2043,7 @@ namespace overlapCoupling{
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
                     dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ]
-                        = ( *microDensities )[ *node ] * ( *microAccelerations )[ *node + i ]; //Integrate the accelerations of the domain
+                        = ( *microDensities )[ *node ] * ( *microAccelerations )[ _dim * ( *node ) + i ]; //Integrate the accelerations of the domain
 
                 }
 
@@ -2039,6 +2076,20 @@ namespace overlapCoupling{
             homogenizedDensities.emplace( macroCellID, tmp ); //Save the density
 
             localIndex = 2;
+
+            if ( _inputProcessor.useReconstructedMassCenters( ) ){
+
+                tmp = floatVector( integratedValues.begin( ) + 2, integratedValues.begin( ) + 2 + _dim ) / integratedValues[ 1 ];
+                homogenizedCentersOfMass.emplace( macroCellID, tmp ); //Save the center of mass
+
+                localIndex += 3;
+
+            }
+            else{
+
+                homogenizedCentersOfMass.emplace( macroCellID, *microDomainCenterOfMass );
+
+            }
 
             //Save the body force
             if ( _inputProcessor.microBodyForceDefined( ) ){
@@ -2093,6 +2144,25 @@ namespace overlapCoupling{
 
             localIndex = 2;
 
+            //Save the centers of mass
+            if ( _inputProcessor.useReconstructedMassCenters( ) ){
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+                    homogenizedCentersOfMass[ macroCellID ].push_back( integratedValues[ 2 + i ] / integratedValues[ 1 ] );
+                }
+
+                localIndex += 3;
+            }
+            else{
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    homogenizedCentersOfMass[ macroCellID ].push_back( ( *microDomainCenterOfMass )[ i ] );
+
+                }
+
+            }
+
             //Save the body forces
             if ( _inputProcessor.microBodyForceDefined( ) ){
 
@@ -2136,6 +2206,143 @@ namespace overlapCoupling{
                 }
 
             }
+
+        }
+
+        //Perform the relative position volume integrations
+        dataCountAtPoint = 0;
+
+        //Add the micro body force couple if it is defined
+        if ( _inputProcessor.microBodyForceDefined( ) ){
+
+            dataCountAtPoint += _dim * _dim; //Add the micro body force couple
+
+        }
+
+        //Add the micro inertia term if the acceleration is defined
+        if ( _inputProcessor.microAccelerationDefined( ) ){
+
+            dataCountAtPoint += _dim * _dim; //Add the micro inertia term
+
+        }
+
+        integratedValues.clear( );
+        integratedValues.resize( 0 );
+        floatVector microPosition( _dim );
+
+        if ( dataCountAtPoint > 0 ){
+
+            index = 0;
+            floatVector dataAtMicroPoints( dataCountAtPoint * microDomainNodeIDs.size( ), 0 );
+    
+            for ( auto node = microDomainNodeIDs.begin( ); node != microDomainNodeIDs.end( ); node++, index++ ){
+
+                //Extract the micro relative position
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    microPosition[ i ] = ( ( *microReferencePositions )[ _dim * ( *node )  + i ]
+                                         + ( *microDisplacements )[ _dim * ( *node ) + i ] );
+
+                }
+
+                localIndex = 0;
+
+                //Add the contributions to the micro body couple
+                if ( _inputProcessor.microBodyForceDefined( ) ){
+
+                    floatVector microBodyForce( microBodyForces->begin( ) + _dim * ( *node ),
+                                                microBodyForces->begin( ) + _dim * ( *node + 1 ) );
+
+                    floatVector integrand
+                        = ( *microDensities )[ *node ] * vectorTools::appendVectors( vectorTools::dyadic( microBodyForce, microPosition ) );
+    
+                    for ( unsigned int i = 0; i < _dim * _dim; i++ ){
+    
+                        dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ]
+                            = integrand[ i ]; //Integrate the body force couple over the domain
+    
+                    }
+    
+                    localIndex += _dim * _dim;
+    
+                }
+    
+                //Add the contributions to the micro inertia
+                if ( _inputProcessor.microAccelerationDefined( ) ){
+
+                    floatVector microRelativeAcceleration( microAccelerations->begin( ) + _dim * ( *node ),
+                                                           microAccelerations->begin( ) + _dim * ( *node + 1 ) );
+                    microRelativeAcceleration -= floatVector( homogenizedAccelerations[ macroCellID ].end( ) - _dim,
+                                                              homogenizedAccelerations[ macroCellID ].end( ) );
+
+                    floatVector integrand
+                        = ( *microDensities )[ *node ] * vectorTools::appendVectors( vectorTools::dyadic( microRelativeAcceleration, microPosition ) );
+    
+                    for ( unsigned int i = 0; i < _dim * _dim; i++ ){
+    
+                        dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ]
+                            = integrand[ i ]; //Integrate the accelerations of the domain
+    
+                    }
+    
+                    localIndex += _dim * _dim;
+    
+                }
+
+            }
+
+            floatVector centerOfMass( homogenizedCentersOfMass[ macroCellID ].end( ) - _dim,
+                                      homogenizedCentersOfMass[ macroCellID ].end( ) );
+
+            error = reconstructedVolume->performRelativePositionVolumeIntegration( dataAtMicroPoints, dataCountAtPoint,
+                                                                                   centerOfMass, integratedValues );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeDomainVolumeAverages",
+                                                 "Error in the computation of the relative position volume integration" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+
+        if ( !_inputProcessor.microBodyForceDefined( ) ){
+
+            integratedValues = vectorTools::appendVectors( { floatVector( _dim * _dim, 0 ), integratedValues } );
+
+        }
+        if ( !_inputProcessor.microAccelerationDefined( ) ){
+
+            integratedValues = vectorTools::appendVectors( { integratedValues, floatVector( _dim * _dim, 0 ) } );
+
+        }
+
+        if ( homogenizedBodyForceCouples.find( macroCellID ) == homogenizedBodyForceCouples.end( ) ){
+
+            floatVector tmp( integratedValues.begin( ),
+                             integratedValues.begin( ) + _dim * _dim );
+            tmp /= ( homogenizedVolumes[ macroCellID ].back( ) * homogenizedDensities[ macroCellID ].back( ) );
+            homogenizedBodyForceCouples.emplace( macroCellID, tmp );
+
+            tmp = floatVector( integratedValues.begin( ) + _dim * _dim,
+                               integratedValues.begin( ) + 2 * _dim * _dim );
+            tmp /= ( homogenizedVolumes[ macroCellID ].back( ) * homogenizedDensities[ macroCellID ].back( ) );
+            homogenizedMicroInertias.emplace( macroCellID, tmp );
+
+        }
+        else{
+            floatVector tmp( integratedValues.begin( ),
+                             integratedValues.begin( ) + _dim * _dim );
+            tmp /= ( homogenizedVolumes[ macroCellID ].back( ) * homogenizedDensities[ macroCellID ].back( ) );
+            homogenizedBodyForceCouples[ macroCellID ] = vectorTools::appendVectors( { homogenizedBodyForceCouples[ macroCellID ],
+                                                                                       tmp } );
+            tmp = floatVector( integratedValues.begin( ) + _dim * _dim,
+                               integratedValues.begin( ) + 2 * _dim * _dim );
+            tmp /= ( homogenizedVolumes[ macroCellID ].back( ) * homogenizedDensities[ macroCellID ].back( ) );
+            homogenizedMicroInertias[ macroCellID ] = vectorTools::appendVectors( { homogenizedMicroInertias[ macroCellID ],
+                                                                                    tmp } );
 
         }
 

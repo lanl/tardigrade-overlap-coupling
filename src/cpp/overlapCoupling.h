@@ -169,9 +169,9 @@ namespace overlapCoupling{
                                         uIntVector &microDomainNodeIds, floatVector &microNodePositions,
                                         std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
-            errorOut computeDomainVolumeAverages( const uIntType &macroCellName, const std::string &microDomainName,
-                                                  const uIntVector &microDomainNodeIDs,
-                                                  std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
+            errorOut computeDomainVolumeAverages( const uIntType &macroCellName, const uIntVector &microDomainNodeIDs,
+                                                  std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume, 
+                                                  const floatVector *microDomainCenterOfMass = NULL );
 
             errorOut computeDomainSurfaceAverages( const uIntType &macroCellName, const std::string &microDomainName,
                                                    std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
@@ -196,8 +196,11 @@ namespace overlapCoupling{
             //The homogenized values
             std::unordered_map< uIntType, floatVector > homogenizedVolumes;
             std::unordered_map< uIntType, floatVector > homogenizedDensities;
+            std::unordered_map< uIntType, floatVector > homogenizedCentersOfMass;
             std::unordered_map< uIntType, floatVector > homogenizedBodyForces;
+            std::unordered_map< uIntType, floatVector > homogenizedBodyForceCouples;
             std::unordered_map< uIntType, floatVector > homogenizedAccelerations;
+            std::unordered_map< uIntType, floatVector > homogenizedMicroInertias;
 
     };
 
