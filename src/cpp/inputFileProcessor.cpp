@@ -1394,6 +1394,12 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config[ "coupling_initialization" ][ "use_reconstructed_mass_centers" ] ){
+
+            _config[ "coupling_initialization" ][ "use_reconstructed_mass_centers" ] = true;
+
+        }
+
         return NULL;
 
     }
@@ -2013,6 +2019,16 @@ namespace inputFileProcessor{
          */
 
         return &_global_to_local_macro_node_map;
+    }
+
+    bool inputFileProcessor::useReconstructedMassCenters( ){
+        /*!
+         * Query whether the reconstructed mass centers should be used or not
+         * in the homogenization.
+         */
+
+        return _config[ "coupling_initialization" ][ "use_reconstructed_mass_centers" ].as< bool >( );
+
     }
 
 }

@@ -125,6 +125,8 @@ namespace inputFileProcessor{
             std::shared_ptr< dataFileInterface::dataFileBase > _macroscale;
             std::shared_ptr< dataFileInterface::dataFileBase > _microscale;
 
+            bool useReconstructedMassCenters( );
+
         private:
             //Private functions
             void initialize( );

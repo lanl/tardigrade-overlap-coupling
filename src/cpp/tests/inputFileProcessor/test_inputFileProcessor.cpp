@@ -587,6 +587,12 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    if ( reader.useReconstructedMassCenters( ) ){
+
+        results << "test_initializeIncrement (test 32) & False\n";
+        return 1;
+
+    }
 
     results << "test_initializeIncrement & True\n";
     return 0;
