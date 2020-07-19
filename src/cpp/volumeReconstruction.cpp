@@ -300,7 +300,9 @@ namespace volumeReconstruction{
         floatVector deltaVec = median - origin;
         floatType deltaRadiusSquared = vectorTools::dot( deltaVec, deltaVec );
 
-        if ( deltaRadiusSquared <= ( radius * radius ) ){
+        bool medianInside = deltaRadiusSquared <= ( radius * radius );
+
+        if ( medianInside ){
 
             indices.push_back( _index );
 
@@ -308,8 +310,11 @@ namespace volumeReconstruction{
 
         //Check the left child exists and is within range for the current axis
         if ( ( left_child ) &&
-             ( ( std::fabs( deltaVec[ _axis ] ) <= radius ) ||
-               ( std::fabs( ( *domainLowerBounds )[ _axis ] - origin[ _axis ] ) <= radius ) ) ){
+             ( ( std::fabs( median[ _axis ] - origin[ _axis ] ) <= radius ) ||
+               ( std::fabs( ( *domainLowerBounds )[ _axis ] - origin[ _axis ] ) <= radius ) ||
+               ( ( median[ _axis ] >= origin[ _axis ] ) && ( origin[ _axis ] >= ( *domainLowerBounds )[ _axis ] ) )
+             )
+           ){
 
              floatVector newDomainUpperBounds = *domainUpperBounds;
              newDomainUpperBounds[ _axis ] = median[ _axis ];
@@ -321,8 +326,11 @@ namespace volumeReconstruction{
 
         //Check the right child exists and is within range
         if ( ( right_child ) &&
-             ( ( std::fabs( deltaVec[ _axis ] ) <= radius ) ||
-               ( std::fabs( ( *domainUpperBounds )[ _axis ] - origin[ _axis ] ) <= radius ) ) ){
+             ( ( std::fabs( median[ _axis ] - origin[ _axis ] ) <= radius ) ||
+               ( std::fabs( ( *domainUpperBounds )[ _axis ] - origin[ _axis ] ) <= radius ) ||
+               ( ( ( *domainUpperBounds )[ _axis ] >= origin[ _axis ] ) && ( origin[ _axis ] >= median[ _axis ] ) ) 
+             )
+           ){
 
              floatVector newDomainLowerBounds = *domainLowerBounds;
              newDomainLowerBounds[ _axis ] = median[ _axis ];
@@ -3197,6 +3205,170 @@ namespace volumeReconstruction{
             integratedValue += valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
 
         }
+
+        return NULL;
+    }
+
+    errorOut dualContouring::getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
+                                                   uIntVector &subdomainIDs ){
+        /*!
+         * Break the surface into subdomains which are separated by ( approximately ) minDistance.
+         *
+         * :param const floatType &minDistance: The minimum distance between the subdomain centers
+         * :param uIntVector &subdomainNodeCounts: The number of nodes in each subdomain
+         * :param uIntVector &subdomainIDs: The IDs of the nodes in the subdomains in the order of subdomainNodeCounts
+         */
+
+        errorOut error;
+
+        //Check if the domain has been constructed yet
+        if ( !getEvaluated( ) ){
+            error = evaluate( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "performSurfaceIntegration",
+                                                 "Error encountered during the reconstruction of the volume" );
+                result->addNext( error );
+                return result;
+
+            }
+        }
+
+        //Initialize the subdomain nodes
+        subdomainIDs.reserve( _boundaryCells.size( ) );
+
+        if ( _boundaryCells.size( ) < 1 ){
+
+            return new errorNode( "getSubsurfaceDomains",
+                                  "Boundary points must contain at least one node" );
+
+        }
+
+        /*=====================================================================
+        |                       Identify the seed nodes                       |
+        =====================================================================*/
+
+        uIntVector remainingNodes = _boundaryCells; //Copy over the boundary cells
+
+        //Begin seed node loop
+        uIntVector seedNodeIDs;
+        while ( remainingNodes.size( ) > 0 ){ 
+
+            //Store a new subdomain seed node
+            seedNodeIDs.push_back( remainingNodes[ 0 ] );
+            floatVector currentSeedPoint( _boundaryPoints.begin( ) + _dim * _boundaryPointIDToIndex[ seedNodeIDs.back( ) ],
+                                          _boundaryPoints.begin( ) + _dim * ( _boundaryPointIDToIndex[ seedNodeIDs.back( ) ] + 1 ) );
+
+            //Form a KD tree of the remaining nodes
+            floatVector remainingNodeCoords;
+            remainingNodeCoords.reserve( _dim * remainingNodes.size( ) );
+            uIntVector ownedIndices;
+            ownedIndices.reserve( remainingNodes.size( ) );
+
+            for ( auto rN = remainingNodes.begin( ); rN != remainingNodes.end( ); rN++ ){
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    remainingNodeCoords.push_back( _boundaryPoints[ _dim * _boundaryPointIDToIndex[ *rN ] + i ] );
+
+                }
+
+                ownedIndices.push_back( _dim * ( rN - remainingNodes.begin( ) ) );
+
+            }
+
+            //TODO: Change this to delete the nodes from the tree rather than rebuilding the tree
+            KDNode remainingTree( &remainingNodeCoords, ownedIndices, 0, _dim );
+
+            //Find the nodes that are within the min-distance radius of the most recently added seed point
+            uIntVector internalNodes;
+            remainingTree.getPointsWithinRadiusOfOrigin( currentSeedPoint, minDistance, internalNodes );
+
+            //TODO: This is just the Euclidean distance. If there are multiple surfaces this approximation will fail
+            //      This does help to winnow the cells down for a true Geometric distance to be computed using Dijkstra's
+            //      algorithm or similar to eliminate nodes that cannot be reached from the seed node
+
+            //Remove those nodes from the remaining node coords
+            internalNodes /= _dim;
+            std::sort( internalNodes.begin( ), internalNodes.end( ) );
+
+            for ( auto iN = internalNodes.rbegin( ); iN != internalNodes.rend( ); iN++ ){
+
+                if ( *iN < ( remainingNodes.size( ) - 1 ) ){
+                    //Swap the element to the end
+                    std::swap( remainingNodes[ *iN ], remainingNodes.back( ) );
+                }
+                remainingNodes.pop_back( );
+
+            }
+
+        }
+
+        /*=====================================================================
+        |   Associate the boundary points in the domain with the seed nodes   |
+        =====================================================================*/
+        
+        uIntMatrix seedNodePoints( seedNodeIDs.size( ) );
+
+        for ( auto sNP = seedNodePoints.begin( ); sNP != seedNodePoints.end( ); sNP++ ){
+
+            sNP->reserve( _boundaryCells.size( ) / seedNodePoints.size( ) ); //Assume the points will be distributed evenly
+
+        }
+
+        //Loop through the boundary cells;
+        for ( auto bC = _boundaryCells.begin( ); bC!= _boundaryCells.end( ); bC++ ){
+
+            //Get the coordinates of the current boundary cell
+            floatVector currentBoundaryPoint( _boundaryPoints.begin( ) + _dim * _boundaryPointIDToIndex[ *bC ],
+                                              _boundaryPoints.begin( ) + _dim * ( _boundaryPointIDToIndex[ *bC ] + 1 ) );
+
+            //Get the current seed point
+            floatVector currentSeedPoint( _boundaryPoints.begin( ) + _dim * _boundaryPointIDToIndex[ seedNodeIDs[ 0 ] ],
+                                          _boundaryPoints.begin( ) + _dim * ( _boundaryPointIDToIndex[ seedNodeIDs[ 0 ] ] + 1 ) );
+
+            //Compute the distance
+            floatType bestDistance = vectorTools::l2norm( currentBoundaryPoint - currentSeedPoint );
+            uIntType seedNum = 0;
+
+            for ( auto sNP = seedNodeIDs.begin( ) + 1; sNP != seedNodeIDs.end( ); sNP++ ){
+
+                //Get the coordinates of the current seed node
+                floatVector currentSeedPoint( _boundaryPoints.begin( ) + _dim * _boundaryPointIDToIndex[ *sNP ],
+                                              _boundaryPoints.begin( ) + _dim * ( _boundaryPointIDToIndex[ *sNP ] + 1 ) );
+
+                //Compute the distance
+                floatType currentDistance = vectorTools::l2norm( currentBoundaryPoint - currentSeedPoint );
+
+                //Check if the current seed point is the closest
+                if ( bestDistance > currentDistance ){
+
+                    //Set the current point as the closest
+                    bestDistance = currentDistance;
+                    seedNum = sNP - seedNodeIDs.begin( );
+
+                }
+
+            }
+
+            //Add the boundary point to the nearest seed node point
+            seedNodePoints[ seedNum ].push_back( *bC );
+
+        }
+
+        //Update the counts for the number of nodes in each subdomain
+        subdomainNodeCounts.clear( );
+        subdomainNodeCounts.resize( seedNodeIDs.size( ) );
+
+        unsigned int indx = 0;
+        for ( auto sNP = seedNodePoints.begin( ); sNP != seedNodePoints.end( ); sNP++, indx++ ){
+
+            subdomainNodeCounts[ indx ] = sNP->size( );
+
+        }
+
+        subdomainIDs = vectorTools::appendVectors( seedNodePoints );
 
         return NULL;
     }

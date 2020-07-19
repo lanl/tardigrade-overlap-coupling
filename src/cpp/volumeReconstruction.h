@@ -26,6 +26,7 @@ namespace volumeReconstruction{
     typedef std::vector< std::vector< intType > > intMatrix; //!Define a matrix of ints
     typedef elib::uitype uIntType;
     typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
+    typedef std::vector< uIntVector > uIntMatrix; //!Define a matrix of unsigned ints
     typedef std::vector< std::string > stringVector; //!Define a vector of strings
     typedef std::unordered_map< uIntType, uIntType > DOFMap;
 
@@ -133,7 +134,7 @@ namespace volumeReconstruction{
                                                                             const uIntVector *subdomainIDs = NULL );
 
             virtual errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
-                                                   uIntVector &subdomainNodes );
+                                                   uIntVector &subdomainIDs );
 
             const YAML::Node exportConfiguration( );
 
@@ -208,6 +209,9 @@ namespace volumeReconstruction{
             errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                     const floatVector &origin, floatVector &integratedValue,
                                                                     const uIntVector *subdomainIDs = NULL );
+
+            errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
+                                           uIntVector &subdomainIDs );
 
         protected:
 
