@@ -1801,6 +1801,7 @@ namespace overlapCoupling{
             vectorTools::print( homogenizedVolumes[ *macroCell ] );
             vectorTools::print( homogenizedDensities[ *macroCell ] );
             vectorTools::print( homogenizedCentersOfMass[ *macroCell ] );
+            vectorTools::print( homogenizedSymmetricMicroStresses[ *macroCell ] );
 
             //Compute the approximate stresses
             error = computeHomogenizedStresses( *macroCell );
@@ -1965,7 +1966,8 @@ namespace overlapCoupling{
 
         //Assemble the averaging vector at the nodes for non-volume weighted averaging quantities
         unsigned int dataCountAtPoint = 1  //Volume calculation
-                                      + 1; //Density
+                                      + 1  //Density
+                                      + 9; //Stress
 
         if ( _inputProcessor.useReconstructedMassCenters( ) ){
             dataCountAtPoint += _dim; //Domain center of mass
@@ -1997,6 +1999,15 @@ namespace overlapCoupling{
 
         const floatVector *microDisplacements = _inputProcessor.getMicroDisplacements( );
 
+        const floatVector *microStresses = _inputProcessor.getMicroStresses( );
+
+        if ( microStresses->size( ) != _dim * _dim * microDensities->size( ) ){
+
+            return new errorNode( "computeDomainVolumeAverages",
+                                  "The micro stress vector size is not consistent wtih the number of points and the dimension" );
+
+        }
+
         unsigned int index = 0;
         unsigned int localIndex = 0;
 
@@ -2005,7 +2016,12 @@ namespace overlapCoupling{
             dataAtMicroPoints[ dataCountAtPoint * index + 0 ] = 1.;                           //Integrate the volume of the domain
             dataAtMicroPoints[ dataCountAtPoint * index + 1 ] = ( *microDensities )[ *node ]; //Integrate the density of the domain
 
-            localIndex = 2;
+            //Integrate the micro stresses
+            for ( unsigned int i = 0; i < _dim * _dim; i++ ){
+                dataAtMicroPoints[ dataCountAtPoint * index + 2 + i ] = ( *microStresses )[ _dim * _dim * ( *node ) + i ];
+            }
+
+            localIndex = 11;
 
             if ( _inputProcessor.useReconstructedMassCenters( ) ){
 
@@ -2075,11 +2091,15 @@ namespace overlapCoupling{
             tmp = { integratedValues[ 1 ] / integratedValues[ 0 ] };
             homogenizedDensities.emplace( macroCellID, tmp ); //Save the density
 
-            localIndex = 2;
+            tmp = floatVector( integratedValues.begin( ) + 2,
+                               integratedValues.begin( ) + 2 + _dim * _dim ) / integratedValues[ 0 ];
+            homogenizedSymmetricMicroStresses.emplace( macroCellID, tmp ); //Save the symmetric micro stress
+
+            localIndex = 11;
 
             if ( _inputProcessor.useReconstructedMassCenters( ) ){
 
-                tmp = floatVector( integratedValues.begin( ) + 2, integratedValues.begin( ) + 2 + _dim ) / integratedValues[ 1 ];
+                tmp = floatVector( integratedValues.begin( ) + localIndex, integratedValues.begin( ) + localIndex + _dim ) / integratedValues[ 1 ];
                 homogenizedCentersOfMass.emplace( macroCellID, tmp ); //Save the center of mass
 
                 localIndex += 3;
@@ -2142,14 +2162,21 @@ namespace overlapCoupling{
 
             homogenizedDensities[ macroCellID ].push_back( integratedValues[ 1 ] / integratedValues[ 0 ] ); //Save the density
 
-            localIndex = 2;
+            homogenizedSymmetricMicroStresses[ macroCellID ]
+                = vectorTools::appendVectors( { homogenizedSymmetricMicroStresses[ macroCellID ],
+                                                floatVector( integratedValues.begin( ) + 2,
+                                                             integratedValues.begin( ) + 2 + _dim * _dim ) / integratedValues[ 0 ] } );
+
+
+            localIndex = 11;
 
             //Save the centers of mass
             if ( _inputProcessor.useReconstructedMassCenters( ) ){
 
-                for ( unsigned int i = 0; i < _dim; i++ ){
-                    homogenizedCentersOfMass[ macroCellID ].push_back( integratedValues[ 2 + i ] / integratedValues[ 1 ] );
-                }
+                homogenizedCentersOfMass[ macroCellID ]
+                    = vectorTools::appendVectors( { homogenizedCentersOfMass[ macroCellID ],
+                                                    floatVector( integratedValues.begin( ) + localIndex,
+                                                                 integratedValues.begin( ) + localIndex + _dim ) / integratedValues[ 1 ] } );
 
                 localIndex += 3;
             }
@@ -2166,11 +2193,10 @@ namespace overlapCoupling{
             //Save the body forces
             if ( _inputProcessor.microBodyForceDefined( ) ){
 
-                for ( unsigned int i = 0; i < _dim; i++ ){
-
-                    homogenizedBodyForces[ macroCellID ].push_back( integratedValues[ localIndex + i ] / integratedValues[ 0 ] );
-
-                }
+                homogenizedBodyForces[ macroCellID ]
+                    = vectorTools::appendVectors( { homogenizedBodyForces[ macroCellID ],
+                                                    floatVector( integratedValues.begin( ) + localIndex,
+                                                                 integratedValues.begin( ) + localIndex + _dim ) / integratedValues[ 1 ] } );
 
                 localIndex += _dim;
 
@@ -2188,11 +2214,10 @@ namespace overlapCoupling{
             //Save the accelerations
             if ( _inputProcessor.microAccelerationDefined( ) ){
 
-                for ( unsigned int i = 0; i < _dim; i++ ){
-
-                    homogenizedAccelerations[ macroCellID ].push_back( integratedValues[ localIndex + i ] / integratedValues[ 0 ] );
-
-                }
+                homogenizedAccelerations[ macroCellID ]
+                    = vectorTools::appendVectors( { homogenizedAccelerations[ macroCellID ],
+                                                    floatVector( integratedValues.begin( ) + localIndex,
+                                                                 integratedValues.begin( ) + localIndex + _dim ) / integratedValues[ 1 ] } );
 
                 localIndex += _dim;
 

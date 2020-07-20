@@ -201,6 +201,7 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > homogenizedBodyForceCouples;
             std::unordered_map< uIntType, floatVector > homogenizedAccelerations;
             std::unordered_map< uIntType, floatVector > homogenizedMicroInertias;
+            std::unordered_map< uIntType, floatVector > homogenizedSymmetricMicroStresses;
 
     };
 
