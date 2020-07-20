@@ -2028,7 +2028,7 @@ namespace overlapCoupling{
                 //Integrate for the domain's center of mass
                 for ( unsigned int i = 0; i < _dim; i++ ){
     
-                    dataAtMicroPoints[ dataCountAtPoint * index + 2 + i ] =
+                    dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ] =
                         ( *microDensities )[ *node ] * ( ( *microReferencePositions )[ _dim * ( *node )  + i ]
                                                        + ( *microDisplacements )[ _dim * ( *node ) + i ] );
     
