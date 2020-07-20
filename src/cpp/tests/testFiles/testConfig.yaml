@@ -40,9 +40,9 @@ microscale_definition:
                 s21: s21
                 s22: s22
                 s23: s23
-                s21: s31
-                s22: s32
-                s23: s33
+                s31: s31
+                s32: s32
+                s33: s33
         node_id_variable_name: NODEID
         cell_id_variable_name: ELEMID
         volume_surface_node_pairs: #Defines the nodesets that represent the volumes and surface of the averaging domains
