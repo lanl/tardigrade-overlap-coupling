@@ -104,14 +104,30 @@ free_macroscale_domains:
           macro_cell: 1 #The index of the cell that corresponds to the macroscale free domain
           macro_nodeset: free_nodes
           micro_nodesets:
-                  - ghost_nodeset_volume_1
-                  - ghost_nodeset_volume_2
-                  - ghost_nodeset_volume_3
-                  - ghost_nodeset_volume_4
-                  - ghost_nodeset_volume_5
-                  - ghost_nodeset_volume_6
-                  - ghost_nodeset_volume_7
-                  - ghost_nodeset_volume_8
+                  - 
+                    name: ghost_nodeset_volume_1
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_2
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_3
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_4
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_5
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_6
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_7
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_8
+                    number_of_surface_microdomains: 6
 
 ghost_macroscale_domains:
         -
@@ -119,14 +135,22 @@ ghost_macroscale_domains:
           macro_cell: 2 #The index of the cell that corresponds to the macroscale ghost domain
           macro_nodeset: ghost_nodes
           micro_nodesets:
-                  - free_nodeset_volume_1
-                  - free_nodeset_volume_2
-                  - free_nodeset_volume_3
-                  - free_nodeset_volume_4
-                  - free_nodeset_volume_5
-                  - free_nodeset_volume_6
-                  - free_nodeset_volume_7
-                  - free_nodeset_volume_8
+                  - 
+                    name: free_nodeset_volume_1
+                  - 
+                    name: free_nodeset_volume_2
+                  - 
+                    name: free_nodeset_volume_3
+                  - 
+                    name: free_nodeset_volume_4
+                  - 
+                    name: free_nodeset_volume_5
+                  - 
+                    name: free_nodeset_volume_6
+                  - 
+                    name: free_nodeset_volume_7
+                  - 
+                    name: free_nodeset_volume_8
 
 non_overlapped_microscale_domains: #Defining these is required for the non-overlapped micro-scale nodes which are adjacent to the overlapped domain. In other words, if a node is shared between a non-overlapped domain and a ghost or free domain, it should be noted here.
         - non_overlapped_nodeset_surface_1
