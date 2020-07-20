@@ -982,6 +982,84 @@ int test_getGhostMacroDomainNames( std::ofstream &results ){
 
 }
 
+int test_getFreeMicroSurfaceApproximateSplitCount( std::ostream &results ){
+    /*!
+     * Test getting a pointer to the approximate number of surfaces to split a micro
+     * domain into.
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getFreeMicroSurfaceApproximateSplitCount & False\n";
+        return 1;
+    }
+
+    uIntVector answer( 8, 6 );
+
+    const uIntVector *result = reader.getFreeMicroSurfaceApproximateSplitCount( );
+
+    unsigned int indx = 0;
+    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+
+        if ( !vectorTools::fuzzyEquals( *it, answer[ indx ] ) ){
+
+            results << "test_getFreeMicroSurfaceApproximateSplitCount (test 1) & False\n";
+            return 1;
+
+        }
+
+        indx++;
+
+    }
+
+    results << "test_getFreeMicroSurfaceApproximateSplitCount & True\n";
+    return 0;
+}
+
+int test_getGhostMicroSurfaceApproximateSplitCount( std::ostream &results ){
+    /*!
+     * Test getting a pointer to the approximate number of surfaces to split a micro
+     * domain into.
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_getGhostMicroSurfaceApproximateSplitCount & False\n";
+        return 1;
+    }
+
+    uIntVector answer( 8, 6 );
+
+    const uIntVector *result = reader.getGhostMicroSurfaceApproximateSplitCount( );
+
+    unsigned int indx = 0;
+    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+
+        if ( !vectorTools::fuzzyEquals( *it, answer[ indx ] ) ){
+
+            results << "test_getGhostMicroSurfaceApproximateSplitCount (test 1) & False\n";
+            return 1;
+
+        }
+
+        indx++;
+
+    }
+
+    results << "test_getGhostMicroSurfaceApproximateSplitCount & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -1007,6 +1085,8 @@ int main(){
     test_getNonOverlappedMicroSurfaceNames( results );
     test_getCouplingInitialization( results );
     test_getVolumeReconstructionConfig( results );
+    test_getFreeMicroSurfaceApproximateSplitCount( results );
+    test_getGhostMicroSurfaceApproximateSplitCount( results );
 
     //Close the results file
     results.close();

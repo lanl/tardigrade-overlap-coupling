@@ -538,7 +538,8 @@ namespace inputFileProcessor{
             errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ],
                                                              _free_macro_cell_ids, _free_macro_cell_micro_domain_counts,
                                                              _free_macro_volume_sets,
-                                                             _ghost_micro_volume_sets );
+                                                             _ghost_micro_volume_sets,
+                                                             _ghost_micro_surface_approximate_split_count );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the free macroscale domains" );
@@ -561,7 +562,8 @@ namespace inputFileProcessor{
             errorOut error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ],
                                                              _ghost_macro_cell_ids, _ghost_macro_cell_micro_domain_counts,
                                                              _ghost_macro_volume_sets,
-                                                             _free_micro_volume_sets );
+                                                             _free_micro_volume_sets,
+                                                             _free_micro_surface_approximate_split_count );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the ghost macroscale domains" );
@@ -656,21 +658,24 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::checkCommonDomainConfiguration( const YAML::Node &domainConfig,
+    errorOut inputFileProcessor::checkCommonDomainConfiguration( YAML::Node domainConfig,
                                                                  uIntVector &macroCellIds,
                                                                  uIntVector &macroCellMicroDomainCounts,
                                                                  stringVector &macroVolumeNodesets,
-                                                                 stringVector &microVolumeNodesets ){
+                                                                 stringVector &microVolumeNodesets,
+                                                                 uIntVector &microSurfaceDomainCount ){
         /*!
          * Extract common values in the configuration of a domain
          *
-         * :param YAML::Node &domainConfig: The configuration of a particular domain.
+         * :param YAML::Node domainConfig: The configuration of a particular domain.
          * :param uIntVector &macroCellIds: The macro-cell Ids corresponding to the domain
          * :param uIntVector &macroCellMicroDomainCounts: The number of micro domains in each macro domain
          * :param stringVector &macroVolumeNodesets: The nodeset names for the nodes in the
          *     macro domains
          * :param stringVector &microVolumeNodesets: The nodeset names for the nodes in the
          *     micro domains
+         * :param uIntVector &microSurfaceDomainCount: The approximate number of subdomains to split the
+         *     micro domain's surface into
          */
 
         if ( ( !domainConfig.IsSequence() ) && ( !domainConfig.IsNull( ) ) ){
@@ -727,7 +732,26 @@ namespace inputFileProcessor{
             indx2 = 1;
             for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
 
-                if ( !nodeset->IsScalar( ) ){
+                if ( !( *nodeset )[ "name" ] ){
+
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "The keyword 'name' is not defined in micro-nodeset entry " + std::to_string( indx2 ) + " of domain entry " + std::to_string( indx ) + " is not defined" );
+
+                }
+
+                if ( !( *nodeset )[ "number_of_surface_microdomains" ] ){
+                       
+                       ( *nodeset )[ "number_of_surface_microdomains" ] = _defaultNumberOfMicroDomainSurfaceRegions;
+
+                }
+                else if ( !( *nodeset )[ "number_of_surface_microdomains" ].IsScalar( ) ){
+
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "Micro-nodeset 'number_of_surface_microdomains' in entry " + std::to_string( indx2 ) + " of domain entry " + std::to_string( indx ) + " must be a scalar integer" );
+
+                }
+
+                if ( !( *nodeset )[ "name" ].IsScalar( ) ){
 
                     return new errorNode( "checkCommonDomainConfiguration",
                                           "Micro-nodeset entry " + std::to_string( indx2 ) + " of domain entry " + std::to_string( indx ) + " is not a Scalar" );
@@ -756,14 +780,18 @@ namespace inputFileProcessor{
 
             for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
 
-                if ( std::find( microVolumeNodesets.begin( ), microVolumeNodesets.end( ), nodeset->as< std::string >( ) ) != microVolumeNodesets.end( ) ){
+                std::string nodesetName = ( *nodeset )[ "name" ].as< std::string >( );
+                uIntType numberOfSurfaceMicroDomains = ( *nodeset )[ "number_of_surface_microdomains" ].as< uIntType >( );
+
+                if ( std::find( microVolumeNodesets.begin( ), microVolumeNodesets.end( ), nodesetName ) != microVolumeNodesets.end( ) ){
 
                     return new errorNode( "checkCommonDomainConfiguration",
                                           nodeset->as< std::string >( ) + " appears more than once in the coupling definition" );
 
                 }
 
-                microVolumeNodesets.push_back( nodeset->as< std::string >( ) );
+                microVolumeNodesets.push_back( nodesetName );
+                microSurfaceDomainCount.push_back( numberOfSurfaceMicroDomains );
 
             }
 
@@ -1439,6 +1467,24 @@ namespace inputFileProcessor{
          */
 
         return &_ghost_micro_volume_sets;
+    }
+
+    const uIntVector* inputFileProcessor::getFreeMicroSurfaceApproximateSplitCount( ){
+        /*!
+         * Get the free micro-surface approximate split counts. I.e. the number of 
+         * surfaces a given micro domain should be split into ( approximately )
+         */
+
+        return &_free_micro_surface_approximate_split_count;
+    }
+
+    const uIntVector* inputFileProcessor::getGhostMicroSurfaceApproximateSplitCount( ){
+        /*!
+         * Get the ghost micro-surface approximate split counts. I.e. the number of 
+         * surfaces a given micro domain should be split into ( approximately )
+         */
+
+        return &_ghost_micro_surface_approximate_split_count;
     }
 
     const stringVector* inputFileProcessor::getFreeMicroSurfaceNames( ){

@@ -86,6 +86,9 @@ namespace inputFileProcessor{
             const stringVector* getFreeMicroDomainNames( );
             const stringVector* getGhostMicroDomainNames( );
 
+            const uIntVector* getFreeMicroSurfaceApproximateSplitCount( );
+            const uIntVector* getGhostMicroSurfaceApproximateSplitCount( );
+
             const stringVector* getFreeMicroSurfaceNames( );
             const stringVector* getGhostMicroSurfaceNames( );
             const stringVector* getNonOverlappedMicroSurfaceNames( );
@@ -139,11 +142,12 @@ namespace inputFileProcessor{
             errorOut openConfigurationFile( const std::string &configurationFilename );
             errorOut setMicroNodeWeights( const unsigned int increment );
             errorOut setSurfaceSets( const unsigned int microIncrement );
-            errorOut checkCommonDomainConfiguration( const YAML::Node &domainConfig,
+            errorOut checkCommonDomainConfiguration( YAML::Node domainConfig,
                                                      uIntVector &macroCellIds,
                                                      uIntVector &macroCellMicroDomainCounts,
                                                      stringVector &macroVolumeNodesets,
-                                                     stringVector &microVolumeNodesets );
+                                                     stringVector &microVolumeNodesets,
+                                                     uIntVector &microSurfaceDomainCount );
 
             errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
                                                         stringVector &microSurfaceNodesets );
@@ -212,6 +216,9 @@ namespace inputFileProcessor{
             stringVector _free_micro_volume_sets;
             stringVector _ghost_micro_volume_sets;
             
+            uIntVector _free_micro_surface_approximate_split_count;
+            uIntVector _ghost_micro_surface_approximate_split_count;
+
             stringVector _free_macro_volume_sets;
             stringVector _ghost_macro_volume_sets;
 
@@ -233,6 +240,8 @@ namespace inputFileProcessor{
             DOFMap _global_to_local_micro_node_map;
 
             bool _computeMicroShapeFunctions = false;
+
+            uIntType _defaultNumberOfMicroDomainSurfaceRegions = 6;
 
     };
 
