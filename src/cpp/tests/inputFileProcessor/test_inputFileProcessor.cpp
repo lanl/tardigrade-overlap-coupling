@@ -594,6 +594,18 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    unsigned int dim = 3;
+    const floatVector microStressesAnswer( dim * dim * reader.getMicroDensities( )->size( ) );
+    const floatVector *microStressesResult = reader.getMicroStresses( );
+
+    if ( !vectorTools::fuzzyEquals( *microStressesResult, microStressesAnswer ) ){
+
+        vectorTools::print( *microStressesResult );
+        results << "test_initializeIncrement (test 33) & False\n";
+        return 1;
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }
