@@ -1817,38 +1817,7 @@ namespace overlapCoupling{
 
         }
 
-//        //Loop through the ghost macro-scale cells
-//        microDomainStartIndex = 0;
-//        for ( auto macroCell  = _inputProcessor.getGhostMacroDomainNames( )->begin( );
-//                   macroCell != _inputProcessor.getGhostMacroDomainNames( )->end( );
-//                   macroCell++ ){
-//
-//            //Set the macro index
-//            unsigned int macroIndex = macroCell - _inputProcessor.getGhostMacroDomainNames( )->begin( );
-//
-//            //Get the number of micro domain in this macro cell
-//            unsigned int nCellMicroDomains = ( *_inputProcessor.getGhostMacroCellMicroDomainCounts( ) )[ macroIndex ];
-//
-//            for ( auto microDomain  = _inputProcessor.getFreeMicroDomainNames( )->begin( ) + microDomainStartIndex;
-//                       microDomain != _inputProcessor.getFreeMicroDomainNames( )->begin( ) + microDomainStartIndex + nCellMicroDomains;
-//                       microDomain++ ){
-//
-//                floatVector microNodePositions;
-//                std::shared_ptr< volumeReconstruction::volumeReconstructionBase > reconstructedVolume;
-//
-//                //Compute the volume averages
-//                error = computeDomainVolumeAverages( *macroCell, *microDomain, reconstructedVolume );
-//                
-//                //Compute the surface averages
-//                
-//            }
-//
-//            //Compute the approximate stresses
-//
-//            //Increment the start index of the micro domain
-//            microDomainStartIndex += nCellMicroDomains;
-//
-//        }
+        //Loop through the ghost macro-scale cells
 
         return NULL;
     }
@@ -2042,7 +2011,7 @@ namespace overlapCoupling{
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
                     dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ]
-                        = ( *microBodyForces )[ _dim * ( *node ) + i ]; //Integrate the body forces of the domain
+                        = ( *microDensities )[ *node ] * ( *microBodyForces )[ _dim * ( *node ) + i ]; //Integrate the body forces of the domain
 
                 }
 
@@ -2115,7 +2084,7 @@ namespace overlapCoupling{
 
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
-                    tmp[ i ] = integratedValues[ localIndex + i ] / integratedValues[ 0 ];
+                    tmp[ i ] = integratedValues[ localIndex + i ] / integratedValues[ 1 ];
 
                 }
 
@@ -2137,7 +2106,7 @@ namespace overlapCoupling{
 
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
-                    tmp[ i ] = integratedValues[ localIndex + i ] / integratedValues[ 0 ];
+                    tmp[ i ] = integratedValues[ localIndex + i ] / integratedValues[ 1 ];
 
                 }
 
