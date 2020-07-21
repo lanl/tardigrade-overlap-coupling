@@ -230,6 +230,10 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionTractions;
             std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionCouples;
 
+            //The values at the macro cell quadrature points
+            std::unordered_map< uIntType, floatVector > quadraturePointCauchyStress;
+            std::unordered_map< uIntType, floatVector > quadraturePointHigherOrderStress;
+
     };
 
     errorOut MADOutlierDetection( const floatVector &x, uIntVector &outliers, const floatType threshold = 10,

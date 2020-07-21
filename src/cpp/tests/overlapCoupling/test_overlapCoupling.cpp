@@ -434,7 +434,7 @@ int main(){
 
 //    test_overlapCoupling_constructor( results );
 //    test_overlapCoupling_initializeCoupling( results );
-//    test_overlapCoupling_processIncrement( results );
+    test_overlapCoupling_processIncrement( results );
 //    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
 //    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
 //    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );

@@ -1864,6 +1864,26 @@ namespace overlapCoupling{
          * :param const unsigned int &microIncrement: The increment at the micro-scale to homogenize
          */
 
+        //Clear all of the previous values at the micro domains
+        homogenizedVolumes.clear( );
+        homogenizedSurfaceAreas.clear( );
+        homogenizedDensities.clear( );
+        homogenizedCentersOfMass.clear( );
+        homogenizedBodyForces.clear( );
+        homogenizedBodyForceCouples.clear( );
+        homogenizedAccelerations.clear( );
+        homogenizedMicroInertias.clear( );
+        homogenizedSymmetricMicroStresses.clear( );
+        homogenizedSurfaceRegionAreas.clear( );
+        homogenizedSurfaceRegionDensities.clear( );
+        homogenizedSurfaceRegionCentersOfMass.clear( );
+        homogenizedSurfaceRegionTractions.clear( );
+        homogenizedSurfaceRegionCouples.clear( );
+
+        //Clear all of the previous values at the quadrature points
+        quadraturePointCauchyStress.clear( );
+        quadraturePointHigherOrderStress.clear( );
+
         //Loop through the free macro-scale cells
         unsigned int microDomainStartIndex = 0;
         errorOut error = NULL;
@@ -2978,12 +2998,11 @@ namespace overlapCoupling{
                 }
 
                 //Higher order stress contribution
-                col0 += _dim * _dim;
                 for ( unsigned int i = 0; i < _dim * _dim; i++ ){
 
                     for ( unsigned int j = 0; j < _dim; j++ ){
 
-                        coefficients.push_back( DOFProjection::T( row0 + i, col0 + _dim * _dim * j + i, dNdx[ n ][ j ] * Jxw ) );
+                        coefficients.push_back( DOFProjection::T( row0 + i, col0 + _dim * _dim + _dim * _dim * j + i, dNdx[ n ][ j ] * Jxw ) );
 
                     }
 
@@ -3013,8 +3032,6 @@ namespace overlapCoupling{
             logSVec[ i ] = std::log10( logSVec[ i ] + _absoluteTolerance );
 
         }
-        std::cout << "singular values\n";
-        vectorTools::print( logSVec );
 
         //Determine where the "shelf" in the singular values occurs
         std::vector< unsigned int > outliers;
@@ -3036,9 +3053,39 @@ namespace overlapCoupling{
 
         Eigen::Map< Eigen::MatrixXd > RHS( rhsVec.data( ), rhsVec.size( ), 1 ); 
 
-        Eigen::MatrixXd x = svd.solve(RHS);
+        //Solve for the stresses
+        Eigen::MatrixXd x = svd.solve( RHS );
 
-        return new errorNode( "computeHomogenizedStresses", "Error: Not implemented" );
+        //Extract the stresses at the evaluation points
+        uIntType nCauchy = _dim * _dim;
+        uIntType nHigherOrder = _dim * _dim * _dim;
+
+        uIntType nEvaluationPoints = x.size( ) / ( nCauchy + nHigherOrder );
+
+        floatVector cauchyStresses( _dim * _dim * nEvaluationPoints );
+        floatVector higherOrderStresses( _dim * _dim * _dim * nEvaluationPoints );
+
+        for ( unsigned int n = 0; n < nEvaluationPoints; n++ ){
+
+            for ( unsigned int i = 0; i < nCauchy; i++ ){
+
+                cauchyStresses[ nCauchy * n + i ] = x( ( nCauchy + nHigherOrder ) * n + i );
+
+            }
+
+            for ( unsigned int i = 0; i < nHigherOrder; i++ ){
+
+                higherOrderStresses[ nHigherOrder * n + i ] = x( ( nCauchy + nHigherOrder ) * n + nCauchy + i );
+
+            }
+
+        }
+
+        quadraturePointCauchyStress.emplace( macroCellID, cauchyStresses );
+        quadraturePointHigherOrderStress.emplace( macroCellID, higherOrderStresses );
+
+        return NULL;
+
     }
 
     const floatVector* overlapCoupling::getReferenceFreeMicroDomainMasses( ){
