@@ -231,6 +231,12 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionCouples;
 
             //The values at the macro cell quadrature points
+            std::unordered_map< uIntType, floatVector > quadraturePointDensities;
+            std::unordered_map< uIntType, floatVector > quadraturePointBodyForce;
+            std::unordered_map< uIntType, floatVector > quadraturePointAccelerations;
+            std::unordered_map< uIntType, floatVector > quadraturePointBodyCouples;
+            std::unordered_map< uIntType, floatVector > quadraturePointMicroInertias;
+            std::unordered_map< uIntType, floatVector > quadraturePointSymmetricMicroStress;
             std::unordered_map< uIntType, floatVector > quadraturePointCauchyStress;
             std::unordered_map< uIntType, floatVector > quadraturePointHigherOrderStress;
 

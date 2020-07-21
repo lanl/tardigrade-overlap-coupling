@@ -1881,6 +1881,12 @@ namespace overlapCoupling{
         homogenizedSurfaceRegionCouples.clear( );
 
         //Clear all of the previous values at the quadrature points
+        quadraturePointDensities.clear( );
+        quadraturePointBodyForce.clear( );
+        quadraturePointAccelerations.clear( );
+        quadraturePointBodyCouples.clear( );
+        quadraturePointMicroInertias.clear( );
+        quadraturePointSymmetricMicroStress.clear( );
         quadraturePointCauchyStress.clear( );
         quadraturePointHigherOrderStress.clear( );
 
@@ -2869,7 +2875,17 @@ namespace overlapCoupling{
         floatVector linearMomentumRHS( _dim * nMacroCellNodes, 0 );
         floatVector firstMomentRHS( _dim * _dim * nMacroCellNodes, 0 );
 
+        //Project values ot the nodes
+        floatVector volumeAtNodes( nMacroCellNodes, 0 );
+        floatVector densityAtNodes( nMacroCellNodes, 0 );
+        floatMatrix bodyForceAtNodes( nMacroCellNodes, floatVector( _dim, 0 ) );
+        floatMatrix accelerationAtNodes( nMacroCellNodes, floatVector( _dim, 0 ) );
+        floatMatrix bodyCoupleAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
+        floatMatrix microInertiaAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
+        floatMatrix symmetricMicroStressAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
+
         //Add the volume integral components of the right hand side vectors
+        //Also project the integral components to the nodes
         for ( unsigned int i = 0; i < nMicroDomains; i++ ){
 
             floatType density = homogenizedDensities[ macroCellID ][ i ];
@@ -2926,7 +2942,28 @@ namespace overlapCoupling{
 
                 }
 
+                //Project values to the nodes
+                volumeAtNodes[ j ]               += N * volume;
+                densityAtNodes[ j ]              += N * density * volume;
+                bodyForceAtNodes[ j ]            += N * bodyForce * volume;
+                accelerationAtNodes[ j ]         += N * acceleration * volume;
+                bodyCoupleAtNodes[ j ]           += N * bodyCouple * volume;
+                microInertiaAtNodes[ j ]         += N * microInertia * volume;
+                symmetricMicroStressAtNodes[ j ] += N * symmetricMicroStress * volume;
+
             }
+
+        }
+
+        //De-weight the projected values at the nodes
+        for ( unsigned int n = 0; n < nMacroCellNodes; n++ ){
+
+            densityAtNodes[ n ]              /= volumeAtNodes[ n ];
+            bodyForceAtNodes[ n ]            /= volumeAtNodes[ n ];
+            accelerationAtNodes[ n ]         /= volumeAtNodes[ n ];
+            bodyCoupleAtNodes[ n ]           /= volumeAtNodes[ n ];
+            microInertiaAtNodes[ n ]         /= volumeAtNodes[ n ];
+            symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
 
         }
 
@@ -3018,6 +3055,14 @@ namespace overlapCoupling{
         std::vector< DOFProjection::T > coefficients;
         coefficients.reserve( ( 2 * _dim * _dim + 3 * _dim * _dim ) * element->nodes.size( ) * element->qrule.size( ) );
 
+        //Quadrature point interpolated values
+        floatVector densities( element->qrule.size( ), 0 );
+        floatMatrix bodyForces( element->qrule.size( ), floatVector( _dim, 0 ) );
+        floatMatrix accelerations( element->qrule.size( ), floatVector( _dim, 0 ) );
+        floatMatrix bodyCouples( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
+        floatMatrix microInertias( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
+        floatMatrix symmetricMicroStress( element->qrule.size( ), floatVector( _dim * _dim, 0 ) ); 
+
         for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
 
             //Set the index
@@ -3095,6 +3140,14 @@ namespace overlapCoupling{
 
                 }
 
+                //Interpolate the nodal values to the quadrature points
+                densities[ qptIndex ]            += shapeFunctions[ n ] * densityAtNodes[ n ];
+                bodyForces[ qptIndex ]           += shapeFunctions[ n ] * bodyForceAtNodes[ n ];
+                accelerations[ qptIndex ]        += shapeFunctions[ n ] * accelerationAtNodes[ n ];
+                bodyCouples[ qptIndex ]          += shapeFunctions[ n ] * bodyCoupleAtNodes[ n ];
+                microInertias[ qptIndex ]        += shapeFunctions[ n ] * microInertiaAtNodes[ n ];
+                symmetricMicroStress[ qptIndex ] += shapeFunctions[ n ] * symmetricMicroStressAtNodes[ n ];
+
             }
 
         }
@@ -3170,6 +3223,14 @@ namespace overlapCoupling{
 
         quadraturePointCauchyStress.emplace( macroCellID, cauchyStresses );
         quadraturePointHigherOrderStress.emplace( macroCellID, higherOrderStresses );
+
+        //Emplace the values at the quadrature points
+        quadraturePointDensities.emplace( macroCellID, densities );
+        quadraturePointBodyForce.emplace( macroCellID, vectorTools::appendVectors( bodyForces ) );
+        quadraturePointAccelerations.emplace( macroCellID, vectorTools::appendVectors( accelerations ) );
+        quadraturePointBodyCouples.emplace( macroCellID, vectorTools::appendVectors( bodyCouples ) );
+        quadraturePointMicroInertias.emplace( macroCellID, vectorTools::appendVectors( microInertias ) );
+        quadraturePointSymmetricMicroStress.emplace( macroCellID, vectorTools::appendVectors( symmetricMicroStress ) );
 
         return NULL;
 
