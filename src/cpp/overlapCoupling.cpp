@@ -932,6 +932,80 @@ namespace overlapCoupling{
         return NULL;
     }
 
+    errorOut overlapCoupling::buildMacroDomainElement( const unsigned int cellID,
+                                                       const floatVector &nodeLocations,
+                                                       const uIntVector &connectivity,
+                                                       const uIntVector &connectivityCellIndices,
+                                                       std::unique_ptr< elib::Element > &element ){
+        /*!
+         * Construct a finite element representation of the macro domain
+         *
+         * :param const unsigned int cellID: The macro cell ID number
+         * :param const floatVector &nodeLocations: The nodal location vector
+         * :param const uIntVector &connectivity: The connectivity vector
+         * :param const uIntVector &connectivityCellIndices: The indices of the different cells
+         *     in the connectivity vector.
+         * :param std::unique_ptr< elib::Element > &element: The element representation of the macro domain
+         */
+
+        //Make sure the cellID is allowable
+        if ( cellID >= connectivityCellIndices.size( ) ){
+
+            return new errorNode( "buildMacroDomainElement",
+                                  "The cellID is too large for the connectivity cell indices vector" );
+
+        }
+
+        //Get the XDMF cell type
+        unsigned int index0 = connectivityCellIndices[ cellID ];
+        unsigned int cellType = connectivity[ index0 ];
+
+        //Get the element name
+        auto it = elib::XDMFTypeToElementName.find( cellType );
+
+        if ( it == elib::XDMFTypeToElementName.end( ) ){
+
+            return new errorNode( "buildMacroDomainElement",
+                                  "The cell type " + std::to_string(cellType) + " is not supported" );
+
+        }
+        
+        //Get the number of nodes
+        auto it2 = elib::XDMFTypeToNodeCount.find( cellType );
+
+        if ( it2 == elib::XDMFTypeToNodeCount.end( ) ){
+
+            return new errorNode( "buildMacroDomainElement",
+                                  "The cell type " + std::to_string( cellType ) + " is not found in the node count map" );
+
+        }
+
+        //Get the nodes from the file
+        elib::vecOfvec nodes( it2->second, elib::vec( _dim, 0 ) );
+        for ( unsigned int n = 0; n < it2->second; n++ ){
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                nodes[ n ][ i ] = nodeLocations[ _dim * connectivity[ index0 + 1 + n ] + i ];
+
+            }
+
+        }
+        
+        //Get the element
+        auto qrule = elib::default_qrules.find( it->second );
+        if ( qrule == elib::default_qrules.end( ) ){
+
+            return new errorNode( "buildMacroDomainElement",
+                                  "The element type " + it->second + " is not found in the default quadrature rules map" );
+
+        }
+
+        element = elib::build_element_from_string( it->second, { }, nodes, qrule->second );
+
+        return NULL;
+    }
+
     errorOut overlapCoupling::computeShapeFunctionsAtPoints( const unsigned int cellID,
                                                              const floatVector &nodeLocations,
                                                              const uIntVector &connectivity,
@@ -958,6 +1032,11 @@ namespace overlapCoupling{
 
         }
 
+        //Build the element representing the macro-scale domain
+        std::unique_ptr< elib::Element > element;
+        errorOut error = overlapCoupling::buildMacroDomainElement( cellID, nodeLocations, connectivity,
+                                                                   connectivityCellIndices, element );
+
         //Make sure the number of points and the size of the output are consistent
         unsigned nPoints = points.size( ) / _dim;
         if ( ( points.size( ) % _dim ) > 0 ){
@@ -969,60 +1048,12 @@ namespace overlapCoupling{
 
         }
 
-        //Get the XDMF cell type
-        unsigned int index0 = connectivityCellIndices[ cellID ];
-        unsigned int cellType = connectivity[ index0 ];
-
-        //Get the element name
-        auto it = elib::XDMFTypeToElementName.find( cellType );
-
-        if ( it == elib::XDMFTypeToElementName.end( ) ){
-
-            return new errorNode( "computeShapeFunctionsAtPoints",
-                                  "The cell type " + std::to_string(cellType) + " is not supported" );
-
-        }
-        
-        //Get the number of nodes
-        auto it2 = elib::XDMFTypeToNodeCount.find( cellType );
-
-        if ( it2 == elib::XDMFTypeToNodeCount.end( ) ){
-
-            return new errorNode( "computeShapeFunctionsAtPoints",
-                                  "The cell type " + std::to_string( cellType ) + " is not found in the node count map" );
-
-        }
-
         shapeFunctions.clear();
-        shapeFunctions.reserve( it2->second * nPoints );
-
-        //Get the nodes from the file
-        elib::vecOfvec nodes( it2->second, elib::vec( _dim, 0 ) );
-        for ( unsigned int n = 0; n < it2->second; n++ ){
-
-            for ( unsigned int i = 0; i < _dim; i++ ){
-
-                nodes[ n ][ i ] = nodeLocations[ _dim * connectivity[ index0 + 1 + n ] + i ];
-
-            }
-
-        }
-        
-        //Get the element
-        auto qrule = elib::default_qrules.find( it->second );
-        if ( qrule == elib::default_qrules.end( ) ){
-
-            return new errorNode( "computeShapeFunctionsAtPoints",
-                                  "The element type " + it->second + " is not found in the default quadrature rules map" );
-
-        }
-
-        std::unique_ptr< elib::Element > element = elib::build_element_from_string( it->second, { }, nodes, qrule->second );
+        shapeFunctions.reserve( element->reference_nodes.size( ) * nPoints );
 
         //Compute the shape functions at each point
         floatVector point;
         floatVector localPosition, pointShapeFunctions;
-        errorOut error = NULL;
 
         //Loop over the output vector
         for ( unsigned int p = 0; p < nPoints; p++ ){
@@ -1801,7 +1832,7 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
-            error = computeHomogenizedStresses( *macroCell );
+//            error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
 
@@ -2617,8 +2648,8 @@ namespace overlapCoupling{
         uIntType nMicroDomains = homogenizedCentersOfMass[ macroCellID ].size( ) / _dim;
         uIntType nMacroCellNodes = shapefunctionsAtCentersOfMass.size( ) / ( homogenizedCentersOfMass[ macroCellID ].size( ) / _dim );
 
-        floatVector linearMomentumRHS( _dim, 0 );
-        floatVector firstMomentRHS( _dim * _dim, 0 );
+        floatVector linearMomentumRHS( _dim * nMacroCellNodes, 0 );
+        floatVector firstMomentRHS( _dim * _dim * nMacroCellNodes, 0 );
 
         //Add the volume integral components of the right hand side vectors
         for ( unsigned int i = 0; i < nMicroDomains; i++ ){
@@ -2656,16 +2687,88 @@ namespace overlapCoupling{
 
             for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
 
-                linearMomentumRHS
-                    += shapefunctionsAtCentersOfMass[ nMacroCellNodes * i + j ] * density * ( bodyForce - acceleration ) * volume;
+                //Get the shapefunction value for the node
+                floatType N = shapefunctionsAtCentersOfMass[ nMacroCellNodes * i + j ];
 
-                firstMomentRHS
-                    += shapefunctionsAtCentersOfMass[ nMacroCellNodes * i + j ]
-                     * ( density * ( bodyCouple - microInertia ) - symmetricMicroStress_T ) * volume;
+                //Compute the contribution to the node
+                floatVector nLinearMomentumRHS = N * density * ( bodyForce - acceleration ) * volume;
+
+                floatVector nFirstMomentRHS = N * ( density * ( bodyCouple - microInertia ) - symmetricMicroStress_T ) * volume;
+
+                //Add the contribution to the overall RHS vectors
+                for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
+
+                    linearMomentumRHS[ _dim * j + it - nLinearMomentumRHS.begin( ) ] = *it;
+
+                }
+
+                for ( auto it = nFirstMomentRHS.begin( ); it != nFirstMomentRHS.end( ); it++ ){
+
+                    firstMomentRHS[ _dim * _dim * j + it - nFirstMomentRHS.begin( ) ] = *it;
+
+                }
 
             }
 
         }
+
+        //Add the surface integral components of the right hand side vectors
+        uIntType nMicroSurfaceRegions = homogenizedSurfaceRegionAreas[ macroCellID ].size( );
+
+        //Compute the shape functions at the surface region centers
+        floatVector shapefunctionsAtSurfaceRegionCentersOfMass;
+        error = overlapCoupling::computeShapeFunctionsAtPoints( macroCellID, *macroNodeReferenceLocations, *macroDisplacements,
+                                                                *macroConnectivity, *macroConnectivityCellIndices,
+                                                                homogenizedSurfaceRegionCentersOfMass[ macroCellID ],
+                                                                shapefunctionsAtSurfaceRegionCentersOfMass );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeHomogenizedStresses",
+                                             "Error in the computation of the shapefunctions at the micro domain surface region centers of mass for macro cell " + std::to_string( macroCellID ) );
+            result->addNext( error );
+            return result;
+
+        }
+
+//        //Add the surface integral components of the right hand side vectors
+//        for ( unsigned int i = 0; i < nMicroSurfaceRegions; i++ ){
+//
+//            floatType area = homogenizedSurfaceRegionAreas[ i ];
+//
+//            floatVector traction( homogenizedSurfaceRegionTractions.begin( ) + _dim * i,
+//                                  homogenizedSurfaceRegionTractions.begin( ) + _dim * ( i + 1 ) );
+//
+//            floatVector couple( homogenizedSurfaceRegionCouples.begin( ) + _dim * _dim * i,
+//                                homogenizedSurfaceRegionCouples.begin( ) + _dim * _dim * ( i + 1 ) );
+//
+//            for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
+//
+//                //Get the shapefunction value for the surface region
+//                floatType N = shapefunctionsAtSurfaceRegionsCentersOfMass[ nMacroCellNodes * i + j ];
+//
+//                //Compute the contribution to the node
+//                floatVector nLinearMomentumRHS = N * traction * area;
+//
+//                floatVector nFirstMomentRHS = N * couple * area;
+//
+//                //Add the contribution to the overall RHS vectors
+//                for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
+//
+//                    linearMomentumRHS[ _dim * j + it - nLinearMomentumRHS.begin( ) ] = *it;
+//
+//                }
+//
+//                for ( auto it = nFirstMomentRHS.begin( ); it != nFirstMomentRHS.end( ); it++ ){
+//
+//                    firstMomentRHS[ _dim * _dim * j + it - nFirstMomentRHS.begin( ) ] = *it;
+//
+//                }
+//
+//            }
+//
+//        }
+        vectorTools::print( shapefunctionsAtSurfaceRegionCentersOfMass );
 
         return new errorNode( "computeHomogenizedStresses", "Error: Not implemented" );
     }

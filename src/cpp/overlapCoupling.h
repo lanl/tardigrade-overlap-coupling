@@ -112,6 +112,12 @@ namespace overlapCoupling{
                                                     floatVector &freeDomainCM, floatVector &ghostDomainCM );
 
             //Compute the shape functions at the centers of mass
+            errorOut buildMacroDomainElement( const unsigned int cellID,
+                                              const floatVector &nodeLocations,
+                                              const uIntVector &connectivity,
+                                              const uIntVector &connectivityCellIndices,
+                                              std::unique_ptr< elib::Element > &element );            
+
             errorOut computeShapeFunctionsAtPoints( const unsigned int cellID, const floatVector &nodeLocations,
                                                     const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
                                                     const floatVector &points, floatVector &shapeFunctions );
