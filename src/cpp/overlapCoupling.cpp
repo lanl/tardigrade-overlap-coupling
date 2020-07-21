@@ -2639,13 +2639,29 @@ namespace overlapCoupling{
             floatVector microInertia( homogenizedMicroInertias[ macroCellID ].begin( ) + _dim * _dim * i,
                                       homogenizedMicroInertias[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
 
+            floatVector symmetricMicroStress( homogenizedSymmetricMicroStresses[ macroCellID ].begin( ) + _dim * _dim * i,
+                                              homogenizedSymmetricMicroStresses[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
+
+            floatVector symmetricMicroStress_T( _dim * _dim );
+
+            for ( unsigned int _i = 0; _i < _dim; _i++ ){
+
+                for ( unsigned int _j = 0; _j < _dim; _j++ ){
+
+                    symmetricMicroStress_T[ _dim * _j + _i ] = symmetricMicroStress[ _dim * _i + _j ];
+
+                }
+
+            }
+
             for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
 
                 linearMomentumRHS
                     += shapefunctionsAtCentersOfMass[ nMacroCellNodes * i + j ] * density * ( bodyForce - acceleration ) * volume;
 
                 firstMomentRHS
-                    += shapefunctionsAtCentersOfMass[ nMacroCellNodes * i + j ] * density * ( bodyCouple - microInertia ) * volume;
+                    += shapefunctionsAtCentersOfMass[ nMacroCellNodes * i + j ]
+                     * ( density * ( bodyCouple - microInertia ) - symmetricMicroStress_T ) * volume;
 
             }
 
