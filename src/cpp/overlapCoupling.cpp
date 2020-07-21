@@ -1744,7 +1744,10 @@ namespace overlapCoupling{
             floatVector microDomainCentersOfMass( _ghostMicroDomainCentersOfMass.begin( ) + _dim * microDomainStartIndex,
                                                   _ghostMicroDomainCentersOfMass.begin( ) + _dim * ( microDomainStartIndex + nCellMicroDomains ) );
 
-            unsigned int microIndex = 0;
+            //Domain surface appproximate number of decompositions
+            const uIntVector *microDomainSurfaceDecompositions = _inputProcessor.getGhostMicroSurfaceApproximateSplitCount( );
+
+            unsigned int microIndex = microDomainStartIndex;
 
             for ( auto microDomain  = _inputProcessor.getGhostMicroDomainNames( )->begin( ) + microDomainStartIndex;
                        microDomain != _inputProcessor.getGhostMicroDomainNames( )->begin( ) + microDomainStartIndex + nCellMicroDomains;
@@ -1769,9 +1772,6 @@ namespace overlapCoupling{
                 floatVector domainCenterOfMass( microDomainCentersOfMass.begin( ) + _dim * microIndex,
                                                 microDomainCentersOfMass.begin( ) + _dim * ( microIndex + 1 ) );
 
-                std::cout << "domainCenterOfMass\n";
-                vectorTools::print( domainCenterOfMass );
-
                 error = computeDomainVolumeAverages( *macroCell, microDomainNodeIds,
                                                      reconstructedVolume, &domainCenterOfMass );
 
@@ -1784,24 +1784,21 @@ namespace overlapCoupling{
 
                 }
                 
-//                //Compute the surface averages
-//                error = computeDomainSurfaceAverages( *macroCell, *microDomain, reconstructedVolume );
-//
-//                if ( error ){
-//
-//                    errorOut result = new errorNode( "homogenizeMicroScale",
-//                                                     "Error in the computation of the surface averages of the microscale domain" );
-//                    result->addNext( error );
-//                    return result;
-//
-//                }
+                //Compute the surface averages
+                error = computeDomainSurfaceAverages( *macroCell, microDomainNodeIds,
+                                                      ( *microDomainSurfaceDecompositions )[ microIndex ],
+                                                      reconstructedVolume );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "homogenizeMicroScale",
+                                                     "Error in the computation of the surface averages of the microscale domain" );
+                    result->addNext( error );
+                    return result;
+
+                }
                 
             }
-
-            vectorTools::print( homogenizedVolumes[ *macroCell ] );
-            vectorTools::print( homogenizedDensities[ *macroCell ] );
-            vectorTools::print( homogenizedCentersOfMass[ *macroCell ] );
-            vectorTools::print( homogenizedSymmetricMicroStresses[ *macroCell ] );
 
             //Compute the approximate stresses
             error = computeHomogenizedStresses( *macroCell );
@@ -2375,23 +2372,245 @@ namespace overlapCoupling{
 
     }
 
-    errorOut overlapCoupling::computeDomainSurfaceAverages(  const uIntType &macroCellID, const std::string &microDomainName,
-                                                             std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
+    errorOut overlapCoupling::computeDomainSurfaceAverages( const uIntType &macroCellID, const uIntVector &microDomainNodeIDs,
+                                                            const uIntType &microDomainSurfaceDecompositionCount,
+                                                            std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
         /*!
          * Compute the required surface averages over the micro-domain.
          *
          * :param const uIntType &macroCellID: The ID of the macro-cell associated with the micro domain.
-         * :param const std::string &microDomainName: The name of the micro-domain to have the volume averages
+         * :param const std::string &microDomainNodeIDs: The IDs of the nodes in the micro-domain to have the surface averages
          *     computed over.
+         * :param const uIntType &microDomainSurfaceDecompositionCount: The approximate number of regions to split the surface
+         *     of the micro surface into.
          * :param volumeReconstruction::volumeReconstructionBase &reconstructedVolume: The reconstructed volume
          *     ready to have surface integrals computed over.
          */
 
-        ( void ) macroCellID;
-        ( void ) microDomainName;
-        ( void ) reconstructedVolume;
+        //Extract the required micro-scale values
+        const floatVector *microDensities = _inputProcessor.getMicroDensities( );
+        const floatVector *microDisplacements = _inputProcessor.getMicroDisplacements( );
+        const floatVector *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
+        const floatVector *microStresses = _inputProcessor.getMicroStresses( );
 
-        return new errorNode( "computeDomainSurfaceAverages", "Error: Not implemented" );
+        //Check the micro-stress size
+        if ( microStresses->size( ) != _dim * _dim * microDensities->size( ) ){
+
+            return new errorNode( "computeDomainSurfaceAverages",
+                                  "The micro-stress vector is not consistent with the dimension and number of points" );
+
+        }
+
+        /*=====================================================================
+        |           Compute the reconstructed domain's surface area           |
+        =====================================================================*/
+
+        uIntType dataCountAtPoint = 1; //Total surface area
+
+        floatVector dataAtMicroPoints( microDomainNodeIDs.size( ), 1 );
+
+        floatVector integratedValue;
+
+        errorOut error = reconstructedVolume->performSurfaceIntegration( dataAtMicroPoints, 1, integratedValue );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                                             "Error in the computation of the domain's surface area" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        if ( homogenizedSurfaceAreas.find( macroCellID ) == homogenizedSurfaceAreas.end( ) ){
+
+            homogenizedSurfaceAreas[ macroCellID ] = { integratedValue[ 0 ] };
+
+        }
+        else{
+
+            homogenizedSurfaceAreas[ macroCellID ].push_back( integratedValue[ 0 ] );
+
+        }
+
+        /*=====================================================================
+        |           Compute the properties of the surface subdomains          |
+        =====================================================================*/
+
+        uIntVector subdomainNodeCounts;
+        uIntVector subdomainNodeIDs;
+
+        floatType minSurfaceSpacing
+            = std::sqrt( homogenizedSurfaceAreas[ macroCellID ].back( ) / ( 3.14159 * microDomainSurfaceDecompositionCount ) );
+
+        error = reconstructedVolume->getSurfaceSubdomains( minSurfaceSpacing, subdomainNodeCounts, subdomainNodeIDs );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeDomainSurfaceAverages", "Error in extracting of the reconstructed volume's surface subdomains" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Get the centers of mass of the surface regions
+        floatVector surfaceRegionCentersOfMass( _dim * subdomainNodeCounts.size( ) );
+
+        dataCountAtPoint = 1     //Surface area of region
+                         + 1     //Mass of region
+                         + _dim; //Micro point position
+
+        dataAtMicroPoints.clear( );
+        dataAtMicroPoints.reserve( dataCountAtPoint * microDomainNodeIDs.size( ) );
+
+        for ( auto node = microDomainNodeIDs.begin( ); node != microDomainNodeIDs.end( ); node++ ){
+
+            dataAtMicroPoints.push_back( 1 );
+            dataAtMicroPoints.push_back( ( *microDensities )[ *node ] );
+
+            floatVector microPoint = floatVector( microReferencePositions->begin( ) + _dim * ( *node ),
+                                                  microReferencePositions->begin( ) + _dim * ( ( *node ) + 1 ) )
+                                   + floatVector( microDisplacements->begin( ) + _dim * ( *node ),
+                                                  microDisplacements->begin( ) + _dim * ( ( *node ) + 1 ) );
+
+            for ( unsigned int i = 0; i < microPoint.size( ); i++ ){
+
+                dataAtMicroPoints.push_back( ( *microDensities )[ *node ] * microPoint[ i ] );
+
+            }
+
+        }
+
+        unsigned int startPoint = 0;
+
+        if ( homogenizedSurfaceRegionCentersOfMass.find( macroCellID ) == homogenizedSurfaceRegionCentersOfMass.end( ) ){
+
+            homogenizedSurfaceRegionAreas.emplace( macroCellID, floatVector( 0 ) );
+            homogenizedSurfaceRegionDensities.emplace( macroCellID, floatVector( 0 ) );
+            homogenizedSurfaceRegionCentersOfMass.emplace( macroCellID, floatVector( 0 ) );
+            homogenizedSurfaceRegionTractions.emplace( macroCellID, floatVector( 0 ) );
+            homogenizedSurfaceRegionCouples.emplace( macroCellID, floatVector( 0 ) );
+
+        }
+
+        for ( auto sNC = subdomainNodeCounts.begin( ); sNC != subdomainNodeCounts.end( ); sNC++ ){
+
+            //Perform the surface integration
+            uIntVector nodesInDomain( subdomainNodeIDs.begin( ) + startPoint,
+                                      subdomainNodeIDs.begin( ) + startPoint + *sNC );
+
+            error = reconstructedVolume->performSurfaceIntegration( dataAtMicroPoints, dataCountAtPoint,
+                                                                    integratedValue, &nodesInDomain );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                                                 "Error in the integration of the micro region ( "
+                                                 + std::to_string( sNC - subdomainNodeCounts.begin( ) ) + " )" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Extract the region surface areas and the region surface densities
+            homogenizedSurfaceRegionAreas[ macroCellID ].push_back( integratedValue[ 0 ] );
+            homogenizedSurfaceRegionDensities[ macroCellID ].push_back( integratedValue[ 1 ] / integratedValue[ 0 ] );
+
+            //Extract the centers of mass of the surface regions
+            floatVector regionCenterOfMass( integratedValue.begin( ) + 2,
+                                            integratedValue.begin( ) + dataCountAtPoint );
+            regionCenterOfMass /= integratedValue[ 1 ];
+
+            homogenizedSurfaceRegionCentersOfMass[ macroCellID ]
+                = vectorTools::appendVectors( { homogenizedSurfaceRegionCentersOfMass[ macroCellID ],
+                                                regionCenterOfMass } );
+
+            startPoint += *sNC;
+        }
+
+        /*===================================================================================
+        | Compute the surface tractions and couples over the micro domain's surface regions |
+        ===================================================================================*/
+
+        dataCountAtPoint = _dim * _dim;
+
+        dataAtMicroPoints.clear( );
+        dataAtMicroPoints.reserve( dataCountAtPoint * microDomainNodeIDs.size( ) );
+
+        for ( auto node = microDomainNodeIDs.begin( ); node != microDomainNodeIDs.end( ); node++ ){
+
+            floatVector microStress( microStresses->begin( ) + _dim * _dim * ( *node ),
+                                     microStresses->begin( ) + _dim * _dim * ( ( *node ) + 1 ) );
+
+            for ( unsigned int i = 0; i < _dim * _dim; i++ ){
+
+                dataAtMicroPoints.push_back( microStress[ i ] );
+
+            }
+
+        }
+
+        startPoint = 0;
+
+        for ( auto sNC = subdomainNodeCounts.begin( ); sNC != subdomainNodeCounts.end( ); sNC++ ){
+
+            uIntVector nodesInDomain( subdomainNodeIDs.begin( ) + startPoint,
+                                      subdomainNodeIDs.begin( ) + startPoint + *sNC );
+
+            //Compute the tractions
+            error = reconstructedVolume->performSurfaceFluxIntegration( dataAtMicroPoints, dataCountAtPoint,
+                                                                        integratedValue, &nodesInDomain );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                                                 "Error in the computation of the surface traction of the the micro region ( "
+                                                 + std::to_string( sNC - subdomainNodeCounts.begin( ) ) + " )" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            unsigned int regionID = homogenizedSurfaceRegionTractions[ macroCellID ].size( ) / _dim;
+
+            floatType regionSurfaceArea = homogenizedSurfaceRegionAreas[ macroCellID ][ regionID ];
+
+            integratedValue /= regionSurfaceArea;
+
+            homogenizedSurfaceRegionTractions[ macroCellID ]
+                = vectorTools::appendVectors( { homogenizedSurfaceRegionTractions[ macroCellID ],
+                                                integratedValue } );
+
+            //Compute the couples
+            floatVector regionCenterOfMass( homogenizedSurfaceRegionCentersOfMass[ macroCellID ].begin( ) + _dim * regionID,
+                                            homogenizedSurfaceRegionCentersOfMass[ macroCellID ].begin( ) + _dim * ( regionID + 1 ) );
+
+            error = reconstructedVolume->performRelativePositionSurfaceFluxIntegration( dataAtMicroPoints, dataCountAtPoint,
+                                                                                        regionCenterOfMass, integratedValue,
+                                                                                        &nodesInDomain );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                                                 "Error in the computation of the surface couple of the micro region ( "
+                                                 + std::to_string( sNC - subdomainNodeCounts.begin( ) ) + " )" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            integratedValue /= regionSurfaceArea;
+
+            homogenizedSurfaceRegionCouples[ macroCellID ]
+                = vectorTools::appendVectors( { homogenizedSurfaceRegionCouples[ macroCellID ],
+                                                integratedValue } );
+            
+
+            startPoint += *sNC;
+
+        }
+
+        return NULL;
     }
 
     errorOut overlapCoupling::computeHomogenizedStresses( const uIntType &macroCellID ){

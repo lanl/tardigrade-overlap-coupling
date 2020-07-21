@@ -169,11 +169,12 @@ namespace overlapCoupling{
                                         uIntVector &microDomainNodeIds, floatVector &microNodePositions,
                                         std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
-            errorOut computeDomainVolumeAverages( const uIntType &macroCellName, const uIntVector &microDomainNodeIDs,
+            errorOut computeDomainVolumeAverages( const uIntType &macroCellID, const uIntVector &microDomainNodeIDs,
                                                   std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume, 
                                                   const floatVector *microDomainCenterOfMass = NULL );
 
-            errorOut computeDomainSurfaceAverages( const uIntType &macroCellName, const std::string &microDomainName,
+            errorOut computeDomainSurfaceAverages( const uIntType &macroCellID, const uIntVector &microDomainNodeIDs,
+                                                   const uIntType &microDomainSurfaceDecompositionCount,
                                                    std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
             errorOut computeHomogenizedStresses( const uIntType &macroCellName );
@@ -195,6 +196,7 @@ namespace overlapCoupling{
 
             //The homogenized values
             std::unordered_map< uIntType, floatVector > homogenizedVolumes;
+            std::unordered_map< uIntType, floatVector > homogenizedSurfaceAreas;
             std::unordered_map< uIntType, floatVector > homogenizedDensities;
             std::unordered_map< uIntType, floatVector > homogenizedCentersOfMass;
             std::unordered_map< uIntType, floatVector > homogenizedBodyForces;
@@ -202,6 +204,11 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > homogenizedAccelerations;
             std::unordered_map< uIntType, floatVector > homogenizedMicroInertias;
             std::unordered_map< uIntType, floatVector > homogenizedSymmetricMicroStresses;
+            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionAreas;
+            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionDensities;
+            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionCentersOfMass;
+            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionTractions;
+            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionCouples;
 
     };
 
