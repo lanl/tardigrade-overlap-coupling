@@ -1980,6 +1980,93 @@ namespace overlapCoupling{
         }
 
         //Loop through the ghost macro-scale cells
+        microDomainStartIndex = 0;
+        for ( auto macroCell  = _inputProcessor.getGhostMacroCellIds( )->begin( );
+                   macroCell != _inputProcessor.getGhostMacroCellIds( )->end( );
+                   macroCell++ ){
+
+            //Set the macro index
+            unsigned int macroIndex = macroCell - _inputProcessor.getGhostMacroCellIds( )->begin( );
+
+            //Get the number of micro domain in this macro cell
+            unsigned int nCellMicroDomains = ( *_inputProcessor.getGhostMacroCellMicroDomainCounts( ) )[ macroIndex ];
+
+            //Domain micro centers of mass
+            floatVector microDomainCentersOfMass( _freeMicroDomainCentersOfMass.begin( ) + _dim * microDomainStartIndex,
+                                                  _freeMicroDomainCentersOfMass.begin( ) + _dim * ( microDomainStartIndex + nCellMicroDomains ) );
+
+            //Domain surface appproximate number of decompositions
+            const uIntVector *microDomainSurfaceDecompositions = _inputProcessor.getFreeMicroSurfaceApproximateSplitCount( );
+
+            unsigned int microIndex = microDomainStartIndex;
+
+            for ( auto microDomain  = _inputProcessor.getFreeMicroDomainNames( )->begin( ) + microDomainStartIndex;
+                       microDomain != _inputProcessor.getFreeMicroDomainNames( )->begin( ) + microDomainStartIndex + nCellMicroDomains;
+                       microDomain++, microIndex++ ){
+
+                microNodePositions.clear( );
+                reconstructedVolume.reset( );
+
+                //Reconstruct the micro-domain's volume
+                error = reconstructDomain( microIncrement, *microDomain, microDomainNodeIds, microNodePositions, reconstructedVolume );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "homogenizeMicroScale",
+                                                     "Error in the reconstruction of the microscale domain" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                //Compute the volume averages
+                floatVector domainCenterOfMass( microDomainCentersOfMass.begin( ) + _dim * microIndex,
+                                                microDomainCentersOfMass.begin( ) + _dim * ( microIndex + 1 ) );
+
+                error = computeDomainVolumeAverages( *macroCell, microDomainNodeIds,
+                                                     reconstructedVolume, &domainCenterOfMass );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "computeDomainVolumeAverages",
+                                                     "Error in the computation of the volume averages of the microscale domain" );
+                    result->addNext( error );
+                    return result;
+
+                }
+                
+                //Compute the surface averages
+                error = computeDomainSurfaceAverages( *macroCell, microDomainNodeIds,
+                                                      ( *microDomainSurfaceDecompositions )[ microIndex ],
+                                                      reconstructedVolume );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "homogenizeMicroScale",
+                                                     "Error in the computation of the surface averages of the microscale domain" );
+                    result->addNext( error );
+                    return result;
+
+                }
+                
+            }
+
+            //Compute the approximate stresses
+            error = computeHomogenizedStresses( *macroCell );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "homogenizeMicroScale",
+                                                 "Error in the computation of the homogenized stresses" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Increment the start index of the micro domain
+            microDomainStartIndex += nCellMicroDomains;
+
+        }
 
         return NULL;
     }
