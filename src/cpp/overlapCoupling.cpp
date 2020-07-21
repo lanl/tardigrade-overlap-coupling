@@ -2592,6 +2592,65 @@ namespace overlapCoupling{
 
         ( void ) macroCellID;
 
+        //Get the pointers to the values
+        const floatVector *macroNodeReferenceLocations = _inputProcessor.getMacroNodeReferencePositions( );
+        const floatVector *macroDisplacements = _inputProcessor.getMacroDisplacements( );
+        const uIntVector *macroConnectivity = _inputProcessor.getMacroNodeReferenceConnectivity( );
+        const uIntVector *macroConnectivityCellIndices = _inputProcessor.getMacroNodeReferenceConnectivityCellIndices( );
+
+        //Get the shape functions at the micro-domain centroids
+        floatVector shapefunctionsAtCentersOfMass;
+        errorOut error = overlapCoupling::computeShapeFunctionsAtPoints( macroCellID, *macroNodeReferenceLocations, *macroDisplacements,
+                                                                         *macroConnectivity, *macroConnectivityCellIndices,
+                                                                         homogenizedCentersOfMass[ macroCellID ],
+                                                                         shapefunctionsAtCentersOfMass );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeHomogenizedStresses",
+                                             "Error in the computation of the shapefunctions at the micro domain centers of mass for macro cell " + std::to_string( macroCellID ) );
+            result->addNext( error );
+            return result;
+
+        }
+
+        uIntType nMicroDomains = homogenizedCentersOfMass[ macroCellID ].size( ) / _dim;
+        uIntType nMacroCellNodes = shapefunctionsAtCentersOfMass.size( ) / ( homogenizedCentersOfMass[ macroCellID ].size( ) / _dim );
+
+        floatVector linearMomentumRHS( _dim, 0 );
+        floatVector firstMomentRHS( _dim * _dim, 0 );
+
+        //Add the volume integral components of the right hand side vectors
+        for ( unsigned int i = 0; i < nMicroDomains; i++ ){
+
+            floatType density = homogenizedDensities[ macroCellID ][ i ];
+
+            floatType volume = homogenizedVolumes[ macroCellID ][ i ];
+
+            floatVector bodyForce( homogenizedBodyForces[ macroCellID ].begin( ) + _dim * i,
+                                   homogenizedBodyForces[ macroCellID ].begin( ) + _dim * ( i + 1 ) );
+
+            floatVector acceleration( homogenizedAccelerations[ macroCellID ].begin( ) + _dim * i,
+                                      homogenizedAccelerations[ macroCellID ].begin( ) + _dim * ( i + 1 ) );
+
+            floatVector bodyCouple( homogenizedBodyForceCouples[ macroCellID ].begin( ) + _dim * _dim * i,
+                                    homogenizedBodyForceCouples[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
+
+            floatVector microInertia( homogenizedMicroInertias[ macroCellID ].begin( ) + _dim * _dim * i,
+                                      homogenizedMicroInertias[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
+
+            for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
+
+                linearMomentumRHS
+                    += shapefunctionsAtCentersOfMass[ nMacroCellNodes * i + j ] * density * ( bodyForce - acceleration ) * volume;
+
+                firstMomentRHS
+                    += shapefunctionsAtCentersOfMass[ nMacroCellNodes * i + j ] * density * ( bodyCouple - microInertia ) * volume;
+
+            }
+
+        }
+
         return new errorNode( "computeHomogenizedStresses", "Error: Not implemented" );
     }
 
