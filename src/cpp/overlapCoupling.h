@@ -134,6 +134,12 @@ namespace overlapCoupling{
                                                     const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
                                                     const floatVector &points, floatVector &shapeFunctions );
 
+            errorOut computeShapeFunctionGradientsAtPoints( const unsigned int cellID,
+                                                            const floatVector &nodeReferenceLocations,
+                                                            const floatVector &nodeDisplacements,
+                                                            const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
+                                                            const floatVector &points, floatVector &shapeFunctions );
+
             errorOut computeShapeFunctionsAtReferenceCentersOfMass( );
 
             errorOut computeDomainShapeFunctionInformation( const unsigned int &cellID,

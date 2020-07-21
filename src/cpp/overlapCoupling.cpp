@@ -1027,7 +1027,7 @@ namespace overlapCoupling{
         //Make sure the cellID is allowable
         if ( cellID >= connectivityCellIndices.size( ) ){
 
-            return new errorNode( "computeShapeFunctionsAtPoints",
+            return new errorNode( "buildMacroDomainElement",
                                   "The cellID is too large for the connectivity cell indices vector" );
 
         }
@@ -1041,7 +1041,7 @@ namespace overlapCoupling{
 
         if ( it == elib::XDMFTypeToElementName.end( ) ){
 
-            return new errorNode( "computeShapeFunctionsAtPoints",
+            return new errorNode( "buildMacroDomainElement",
                                   "The cell type " + std::to_string(cellType) + " is not supported" );
 
         }
@@ -1051,19 +1051,20 @@ namespace overlapCoupling{
 
         if ( it2 == elib::XDMFTypeToNodeCount.end( ) ){
 
-            return new errorNode( "computeShapeFunctionsAtPoints",
+            return new errorNode( "buildMacroDomainElement",
                                   "The cell type " + std::to_string( cellType ) + " is not found in the node count map" );
 
         }
 
         //Get the nodes from the file
-        elib::vecOfvec nodes( it2->second, elib::vec( _dim, 0 ) );
+        elib::vecOfvec referenceNodes( it2->second, elib::vec( _dim, 0 ) );
+        elib::vecOfvec displacements( it2->second, elib::vec( _dim, 0 ) );
         for ( unsigned int n = 0; n < it2->second; n++ ){
 
             for ( unsigned int i = 0; i < _dim; i++ ){
 
-                nodes[ n ][ i ] = nodeReferenceLocations[ _dim * connectivity[ index0 + 1 + n ] + i ]
-                                + nodeDisplacements[ _dim * connectivity[ index0 + 1 + n ] + i ];
+                referenceNodes[ n ][ i ] = nodeReferenceLocations[ _dim * connectivity[ index0 + 1 + n ] + i ];
+                displacements[ n ][ i ] = nodeDisplacements[ _dim * connectivity[ index0 + 1 + n ] + i ];
 
             }
 
@@ -1073,12 +1074,13 @@ namespace overlapCoupling{
         auto qrule = elib::default_qrules.find( it->second );
         if ( qrule == elib::default_qrules.end( ) ){
 
-            return new errorNode( "computeShapeFunctionsAtPoints",
+            return new errorNode( "buildMacroDomainElement",
                                   "The element type " + it->second + " is not found in the default quadrature rules map" );
 
         }
 
-        element = elib::build_element_from_string( it->second, { }, nodes, qrule->second );
+        element = elib::build_element_from_string( it->second, { }, referenceNodes, qrule->second );
+        element->update_node_positions( displacements );
 
         return NULL;
 
@@ -1243,6 +1245,97 @@ namespace overlapCoupling{
             for ( unsigned int i = 0; i < pointShapeFunctions.size( ); i++ ){
 
                 shapeFunctions.push_back( pointShapeFunctions[ i ] );
+
+            }
+
+        }
+
+        return NULL;
+            
+    }
+
+    errorOut overlapCoupling::computeShapeFunctionGradientsAtPoints( const unsigned int cellID,
+                                                                     const floatVector &nodeReferenceLocations,
+                                                                     const floatVector &nodeDisplacements,
+                                                                     const uIntVector &connectivity,
+                                                                     const uIntVector &connectivityCellIndices,
+                                                                     const floatVector &points,
+                                                                     floatVector &shapeFunctionGradients ){
+        /*!
+         * Compute the shape functions of a given macro-scale domain at the given points
+         *
+         * :param const unsigned int &cellID: The cell ID at which to compute the shape functions
+         * :param const floatVector &nodeReferenceLocations: The nodal reference location vector
+         * :param const floatVector &nodeDisplacements: The nodal reference location vector
+         * :param const uIntVector &connectivity: The connectivity vector
+         * :param const uIntVector &connectivityCellIndices: The indices of the different cells
+         *     in the connectivity vector.
+         * :param const floatVector &points: The points at which to compute the shape functions
+         * :param floatVector &shapeFunctionGradients: The gradients of the shapefunctions at the points. The 
+         *     output vector is organized [ N11_x, N11_y, N11_z, N12_x, ... ] where the first index is the
+         *     point number, the second index is the node number, and the _ indicates a gradient w.r.t. the
+         *     third index.
+         */
+
+        //Build the element representing the macro-scale domain
+        std::unique_ptr< elib::Element > element;
+        errorOut error = overlapCoupling::buildMacroDomainElement( cellID, nodeReferenceLocations, nodeDisplacements,
+                                                                   connectivity, connectivityCellIndices, element );
+
+        //Make sure the number of points and the size of the output are consistent
+        unsigned nPoints = points.size( ) / _dim;
+        if ( ( points.size( ) % _dim ) > 0 ){
+
+            return new errorNode( "computeShapeFunctionGradientsAtPoints",
+                                  "The points vector is inconsistent with the dimension\n"
+                                  "    points.size( ): " + std::to_string( points.size( ) ) + "\n" +
+                                  "    nPoints: " + std::to_string( nPoints ) );
+
+        }
+
+        shapeFunctionGradients.clear();
+        shapeFunctionGradients.reserve( element->reference_nodes.size( ) * nPoints * _dim );
+
+        //Compute the shape functions at each point
+        floatVector point;
+        floatMatrix dNdx;
+        floatVector localPosition, pointShapeFunctionGradientsVec;
+
+        //Loop over the output vector
+        for ( unsigned int p = 0; p < nPoints; p++ ){
+
+            point = floatVector( points.begin( ) + _dim * p, points.begin( ) + _dim * ( p + 1 ) );
+
+            error = element->compute_local_coordinates( point, localPosition );
+
+            if ( !element->local_point_inside( localPosition ) ){
+
+                shapeFunctionGradients.push_back( 0. );
+                continue;
+
+            }
+
+            if ( error ) {
+
+                return new errorNode( "computeShapeFunctionGradientsAtPoints",
+                                      "Error in computing the local coordinates for point " + std::to_string( p ) );
+
+            }
+
+            error = element->get_global_shapefunction_gradients( localPosition, dNdx );
+
+            if ( error ) {
+
+                return new errorNode( "computeShapeFunctionGradientsAtPoints",
+                                      "Error in the computation of the shape functions for point " + std::to_string( p ) );
+
+            }
+
+            pointShapeFunctionGradientsVec = vectorTools::appendVectors( dNdx );
+
+            for ( unsigned int i = 0; i < pointShapeFunctionGradientsVec.size( ); i++ ){
+
+                shapeFunctionGradients.push_back( pointShapeFunctionGradientsVec[ i ] );
 
             }
 
@@ -2789,8 +2882,59 @@ namespace overlapCoupling{
 
         //Assemble the LHS matrix
         //Construct the element representation of the macro-scale
-        //buildMacroDomainElement( macroCellID, 
+        std::unique_ptr< elib::Element > element;
+        error = buildMacroDomainElement( macroCellID, *macroNodeReferenceLocations,
+                                         *macroDisplacements, *macroConnectivity,
+                                         *macroConnectivityCellIndices, element );
 
+        if ( error ){
+
+            errorOut result = new errorNode( "computeHomogenizedStresses",
+                                             "Error in the formation of the macro domain element" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Loop over the quadrature points adding the contribution of each to the LHS matrix
+        floatType Jxw;
+        floatVector shapeFunctions;
+        floatMatrix dNdx, jacobian;
+
+        for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+            //Set the index
+            uIntType qptIndex = qpt - element->qrule.begin( );
+
+            //Get the values of the shape function and the gradients
+            error = element->get_shape_functions( qpt->first, shapeFunctions );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeHomogenizedStresses",
+                                                 "Error in the computation of the shape functions\n" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Get the values of the shape function gradients
+            error = element->get_global_shapefunction_gradients( qpt->first, dNdx );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeHomogenizedStresses",
+                                                 "Error in the computation of the shape function gradients\n" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Get the Jacobian of transformation
+            element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
+            Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
+
+        }
 
         return new errorNode( "computeHomogenizedStresses", "Error: Not implemented" );
     }
