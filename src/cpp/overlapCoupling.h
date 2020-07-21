@@ -118,6 +118,13 @@ namespace overlapCoupling{
                                               const uIntVector &connectivityCellIndices,
                                               std::unique_ptr< elib::Element > &element );            
 
+            errorOut buildMacroDomainElement( const unsigned int cellID,
+                                              const floatVector &nodeReferenceLocations,
+                                              const floatVector &nodeDisplacements,
+                                              const uIntVector &connectivity,
+                                              const uIntVector &connectivityCellIndices,
+                                              std::unique_ptr< elib::Element > &element );            
+
             errorOut computeShapeFunctionsAtPoints( const unsigned int cellID, const floatVector &nodeLocations,
                                                     const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
                                                     const floatVector &points, floatVector &shapeFunctions );
