@@ -381,6 +381,45 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     return 0;
 }
 
+int test_MADOutlierDetection( std::ofstream &results ){
+    /*!
+     * Test the computation of outliers using the maximum absolution deviation 
+     * detection metric.
+     * 
+     * :param std::ofstream &results: The output file.
+     */
+
+    floatVector x = { 0.70154526, 0.00265005, 0.29766985, 0.0570927 , 0.12136678 };
+    uIntVector outliers;
+
+    errorOut error = overlapCoupling::MADOutlierDetection( x, outliers, 5 );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_MADOutlierDetection & False\n";
+        return 1;
+
+    }
+
+    if ( outliers.size() > 0 ){
+        results << "test_MADOutlierDetection (test 1) & False\n";
+        return 1;
+    }
+
+    overlapCoupling::MADOutlierDetection( x, outliers, 4 );
+
+    if ( !vectorTools::fuzzyEquals( outliers, { 0 } ) ){
+
+        results << "test_MADOutlierDetection (test 1) & False\n";
+        return 1;
+
+    }
+
+    results << "test_MADOutlierDetection & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -393,15 +432,16 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-    test_overlapCoupling_constructor( results );
-    test_overlapCoupling_initializeCoupling( results );
+//    test_overlapCoupling_constructor( results );
+//    test_overlapCoupling_initializeCoupling( results );
 //    test_overlapCoupling_processIncrement( results );
-    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
-    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
-    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
-    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+    test_MADOutlierDetection( results );
 
     //Close the results file
     results.close();

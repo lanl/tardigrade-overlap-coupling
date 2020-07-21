@@ -73,6 +73,7 @@ namespace overlapCoupling{
             const unsigned int _dim = 3; //The dimension of the problem is hard-coded to be 3D
             errorOut _error;
             inputFileProcessor::inputFileProcessor _inputProcessor;
+            floatType _absoluteTolerance = 1e-9;
 
             //Domain mass properties
             floatVector _referenceFreeMicroDomainMasses;
@@ -230,6 +231,9 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionCouples;
 
     };
+
+    errorOut MADOutlierDetection( const floatVector &x, uIntVector &outliers, const floatType threshold = 10,
+                                  const floatType eps = 1e-9 );
 
 }
 

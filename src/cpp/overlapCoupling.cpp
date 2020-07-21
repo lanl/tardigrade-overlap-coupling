@@ -2828,6 +2828,9 @@ namespace overlapCoupling{
 
         //Compute the shape functions at the surface region centers
         floatVector shapefunctionsAtSurfaceRegionCentersOfMass;
+
+        //TODO: The following computation of the shape-function values may cause issues if the re-constructed surface is found
+        //      to be outside of the macro Cell's domain. This will likely need to be addressed
         error = overlapCoupling::computeShapeFunctionsAtPoints( macroCellID, *macroNodeReferenceLocations, *macroDisplacements,
                                                                 *macroConnectivity, *macroConnectivityCellIndices,
                                                                 homogenizedSurfaceRegionCentersOfMass[ macroCellID ],
@@ -2897,14 +2900,24 @@ namespace overlapCoupling{
         }
 
         //Loop over the quadrature points adding the contribution of each to the LHS matrix
+        //This formulation does not construct the stresses at each of the micro domains but 
+        //rather computes the stresses at the macro domain's Gauss points which enables the
+        //solution of the macro balance equations.
+
         floatType Jxw;
         floatVector shapeFunctions;
         floatMatrix dNdx, jacobian;
+
+        std::vector< DOFProjection::T > coefficients;
+        coefficients.reserve( ( 2 * _dim * _dim + 3 * _dim * _dim ) * element->nodes.size( ) * element->qrule.size( ) );
 
         for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
 
             //Set the index
             uIntType qptIndex = qpt - element->qrule.begin( );
+
+            //Set the column
+            uIntType col0 = ( _dim * _dim + _dim * _dim * _dim ) * qptIndex;
 
             //Get the values of the shape function and the gradients
             error = element->get_shape_functions( qpt->first, shapeFunctions );
@@ -2931,10 +2944,99 @@ namespace overlapCoupling{
             }
 
             //Get the Jacobian of transformation
-            element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
+            element->get_local_gradient( element->nodes, qpt->first, jacobian );
             Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
 
+            for ( unsigned int n = 0; n < element->nodes.size( ); n++ ){
+
+                //Set the row
+                uIntType row0 = n * ( _dim + _dim * _dim );
+
+                //Add the balance of linear momentum contributions
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    for ( unsigned int j = 0; j < _dim; j++ ){
+
+                        coefficients.push_back( DOFProjection::T( row0 + i, col0 + i + _dim * j, dNdx[ n ][ j ] * Jxw ) );
+
+                    }
+
+                }
+
+                //Add the balance of the first moment of momentum contributions
+                row0 += _dim;
+
+                //Cauchy stress contribution
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    for ( unsigned int j = 0; j < _dim; j++ ){
+
+                        coefficients.push_back( DOFProjection::T( row0 + _dim * j + i, col0 + _dim * i + j, -shapeFunctions[ n ] * Jxw ) );
+
+                    }
+
+                }
+
+                //Higher order stress contribution
+                col0 += _dim * _dim;
+                for ( unsigned int i = 0; i < _dim * _dim; i++ ){
+
+                    for ( unsigned int j = 0; j < _dim; j++ ){
+
+                        coefficients.push_back( DOFProjection::T( row0 + i, col0 + _dim * _dim * j + i, dNdx[ n ][ j ] * Jxw ) );
+
+                    }
+
+                }
+
+            }
+
         }
+
+        //Form the left-hand side sparse matrix
+        SparseMatrix LHS( ( _dim + _dim * _dim ) * element->nodes.size( ), _dim * _dim * ( 1 + _dim ) * element->qrule.size( ) );
+        LHS.setFromTriplets( coefficients.begin( ), coefficients.end( ) );
+
+        //Perform the SVD decomposition
+        Eigen::JacobiSVD< Eigen::MatrixXd > svd( LHS.toDense( ), Eigen::ComputeThinU | Eigen::ComputeThinV );
+       
+        //Compute the threshold for the SVD 
+        floatVector logSVec( LHS.rows( ), 0 );
+
+        Eigen::Map< Eigen::MatrixXd > logS( logSVec.data(), logSVec.size(), 1 );
+
+        //Compute the singular values
+        logS = svd.singularValues();
+
+        for ( unsigned int i = 0; i < logSVec.size( ); i++ ){
+
+            logSVec[ i ] = std::log10( logSVec[ i ] + _absoluteTolerance );
+
+        }
+        std::cout << "singular values\n";
+        vectorTools::print( logSVec );
+
+        //Determine where the "shelf" in the singular values occurs
+        std::vector< unsigned int > outliers;
+
+        MADOutlierDetection( logSVec, outliers, 10 );
+
+        if ( outliers.size( ) > 0 ){
+
+            svd.setThreshold( std::max( pow( 10, logSVec[ outliers[ 0 ] ] ), _absoluteTolerance ) );
+
+        }
+        else{
+
+            svd.setThreshold( _absoluteTolerance );
+
+        }
+
+        floatVector rhsVec = vectorTools::appendVectors( { linearMomentumRHS, firstMomentRHS } );
+
+        Eigen::Map< Eigen::MatrixXd > RHS( rhsVec.data( ), rhsVec.size( ), 1 ); 
+
+        Eigen::MatrixXd x = svd.solve(RHS);
 
         return new errorNode( "computeHomogenizedStresses", "Error: Not implemented" );
     }
@@ -3033,6 +3135,42 @@ namespace overlapCoupling{
          */
 
         return &_projected_ghost_micro_displacement;
+    }
+
+    errorOut MADOutlierDetection( const floatVector &x, uIntVector &outliers, const floatType threshold,
+                                  const floatType eps ){
+        /*!
+         * Detect outliers using median absolute deviation
+         * MAD = median ( | X_i - median(X) | )
+         *
+         * :param const floatVector &x: The x vector to search for outliers
+         * :param uIntVector> &outliers: The vector of outliers
+         * :param const floatType threshold: The threshold with which to identify an outlier. Defaults to 10.
+         * :param const floatType eps: The minimum allowable value for MAD
+         */
+
+        floatType median = vectorTools::median(x);
+
+        std::vector< floatType > absDeviations = vectorTools::abs(x - median);
+
+        floatType MAD = vectorTools::median(absDeviations) + eps;
+
+        absDeviations /= MAD;
+
+        outliers.resize(0);
+        outliers.reserve(x.size() / 10);
+
+        for ( unsigned int i = 0; i < absDeviations.size( ); i++ ){
+
+            if ( absDeviations[ i ] > threshold ){
+
+                outliers.push_back(i);
+
+            }
+
+        }
+
+        return NULL;
     }
 
 }
