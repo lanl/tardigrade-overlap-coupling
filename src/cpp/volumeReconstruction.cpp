@@ -803,7 +803,7 @@ namespace volumeReconstruction{
     }
 
     errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                                  floatVector &integratedValue ){
+                                                                  floatVector &integratedValue, const uIntVector *subdomainIDs ){
         /*!
          * Integrate a quantity known at the point over the surface and return the value for the domain.
          *
@@ -813,17 +813,20 @@ namespace volumeReconstruction{
          *     function to be integrated.
          * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
+         * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
+         *     defaults to NULL and so the full domain is integrated over
          */
 
         ( void ) valuesAtPoints;
         ( void ) valueSize;
         ( void ) integratedValue;
+        ( void ) subdomainIDs;
 
         return new errorNode( "performSurfaceIntegration", "Surface integration not implemented" );
     }
 
     errorOut volumeReconstructionBase::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                                      floatVector &integratedValue ){
+                                                                      floatVector &integratedValue, const uIntVector *subdomainIDs ){
         /*!
          * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
          *
@@ -836,11 +839,14 @@ namespace volumeReconstruction{
          *     function to be integrated.
          * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
+         * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
+         *     defaults to NULL and so the full domain is integrated over
          */
 
         ( void ) valuesAtPoints;
         ( void ) valueSize;
         ( void ) integratedValue;
+        ( void ) subdomainIDs;
 
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
@@ -2834,7 +2840,7 @@ namespace volumeReconstruction{
     }
 
     errorOut dualContouring::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                        floatVector &integratedValue ){
+                                                        floatVector &integratedValue, const uIntVector *subdomainIDs ){
         /*!
          * Integrate a quantity known at the point over the surface return the value for the domain.
          *
@@ -2844,10 +2850,11 @@ namespace volumeReconstruction{
          *     function to be integrated.
          * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
+         * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
          */
 
         floatVector origin;
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, false );
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, false, subdomainIDs );
 
         if ( error ){
 
@@ -2862,7 +2869,7 @@ namespace volumeReconstruction{
     }
 
     errorOut dualContouring::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                            floatVector &integratedValue ){
+                                                            floatVector &integratedValue, const uIntVector *subdomainIDs ){
         /*!
          * Integrate the flux of a quantity known at the point over the surface return the value for the domain.
          *
@@ -2872,10 +2879,11 @@ namespace volumeReconstruction{
          *     function to be integrated.
          * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
+         * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
          */
 
         floatVector origin;
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false );
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false, subdomainIDs );
 
         if ( error ){
 

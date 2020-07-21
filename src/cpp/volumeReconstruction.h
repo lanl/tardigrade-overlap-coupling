@@ -122,10 +122,10 @@ namespace volumeReconstruction{
                                                                        const floatVector &origin, floatVector &integratedValue );
 
             virtual errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                        floatVector &integratedValue );
+                                                        floatVector &integratedValue, const uIntVector *subdomainIDs = NULL );
 
             virtual errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                            floatVector &integratedValue );
+                                                            floatVector &integratedValue, const uIntVector *subdomainIDs = NULL );
 
             virtual errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
                                                                             const uIntType valueSize,
@@ -201,10 +201,10 @@ namespace volumeReconstruction{
                                                floatVector &integratedValue );
 
             errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                floatVector &integratedValue );
+                                                floatVector &integratedValue, const uIntVector *subdomainIDs = NULL );
 
             errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                    floatVector &integratedValue );
+                                                    floatVector &integratedValue, const uIntVector *subdomainIDs = NULL );
 
             errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                     const floatVector &origin, floatVector &integratedValue,
