@@ -1572,6 +1572,18 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config[ "coupling_initialization" ][ "macro_proportionality_coefficient" ] ){
+
+            _config[ "coupling_initialization" ][ "macro_proportionality_coefficient" ] = 1e-3; //Default to 1e-3
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "micro_proportionality_coefficient" ] ){
+
+            _config[ "coupling_initialization" ][ "micro_proportionality_coefficient" ] = 1e-3; //Default to 1e-3
+
+        }
+
         return NULL;
 
     }

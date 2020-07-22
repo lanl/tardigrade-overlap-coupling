@@ -976,6 +976,42 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
+    if ( couplingInitialization[ "macro_proportionality_coefficient" ] ){
+
+        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "macro_proportionality_coefficient" ].as< floatType >( ),
+                                        1e-3 ) ){
+
+            results << "test_getCouplingInitialization (test 15) & False\n";
+            return 1;
+
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 16) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "micro_proportionality_coefficient" ] ){
+
+        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "micro_proportionality_coefficient" ].as< floatType >( ),
+                                        1e-3 ) ){
+
+            results << "test_getCouplingInitialization (test 17) & False\n";
+            return 1;
+
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 18) & False\n";
+        return 1;
+
+    }
+
     results << "test_getCouplingInitialization & True\n";
     return 0;
 
