@@ -31,7 +31,10 @@ namespace overlapCoupling{
 
     //!The different strategies for the partitioning coefficient
     enum partitioningCoefficient { VOLUME_FRACTION };
-    std::map< std::string, partitioningCoefficient > = { "volume_fraction", VOLUME_FRACTION };
+    const std::map< std::string, partitioningCoefficient > partitioningCoefficientStrategies =
+        {
+            { "volume_fraction", VOLUME_FRACTION }
+        };
 
     class overlapCoupling{
         /*!
@@ -226,7 +229,7 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > homogenizedBodyForces;
             std::unordered_map< uIntType, floatVector > homogenizedBodyForceCouples;
             std::unordered_map< uIntType, floatVector > homogenizedAccelerations;
-            std::unordered_map< uIntType, floatVector > homogenizedMicroInertias;
+            std::unordered_map< uIntType, floatVector > homogenizedMicroSpinInertias;
             std::unordered_map< uIntType, floatVector > homogenizedSymmetricMicroStresses;
             std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionAreas;
             std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionDensities;
@@ -239,7 +242,7 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > quadraturePointBodyForce;
             std::unordered_map< uIntType, floatVector > quadraturePointAccelerations;
             std::unordered_map< uIntType, floatVector > quadraturePointBodyCouples;
-            std::unordered_map< uIntType, floatVector > quadraturePointMicroInertias;
+            std::unordered_map< uIntType, floatVector > quadraturePointMicroSpinInertias;
             std::unordered_map< uIntType, floatVector > quadraturePointSymmetricMicroStress;
             std::unordered_map< uIntType, floatVector > quadraturePointCauchyStress;
             std::unordered_map< uIntType, floatVector > quadraturePointHigherOrderStress;

@@ -1548,6 +1548,30 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config [ "coupling_initialization" ][ "potential_energy_weighting_factor" ] ){
+
+            _config[ "coupling_initialization" ][ "potential_energy_weighting_factor" ] = 0.5; //Default to 0.5
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "potential_energy_partitioning_coefficient" ] ){
+
+            _config[ "coupling_initialization" ][ "potential_energy_partitioning_coefficient" ][ "type" ] = "volume_fraction"; //Default to volume fraction
+
+        }
+
+        if ( !_config [ "coupling_initialization" ][ "kinetic_energy_weighting_factor" ] ){
+
+            _config[ "coupling_initialization" ][ "kinetic_energy_weighting_factor" ] = 0.5; //Default to 0.5
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "kinetic_energy_partitioning_coefficient" ] ){
+
+            _config[ "coupling_initialization" ][ "kinetic_energy_partitioning_coefficient" ][ "type" ] = "volume_fraction"; //Default to volume fraction
+
+        }
+
         return NULL;
 
     }

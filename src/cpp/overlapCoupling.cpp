@@ -1872,7 +1872,7 @@ namespace overlapCoupling{
         homogenizedBodyForces.clear( );
         homogenizedBodyForceCouples.clear( );
         homogenizedAccelerations.clear( );
-        homogenizedMicroInertias.clear( );
+        homogenizedMicroSpinInertias.clear( );
         homogenizedSymmetricMicroStresses.clear( );
         homogenizedSurfaceRegionAreas.clear( );
         homogenizedSurfaceRegionDensities.clear( );
@@ -1885,7 +1885,7 @@ namespace overlapCoupling{
         quadraturePointBodyForce.clear( );
         quadraturePointAccelerations.clear( );
         quadraturePointBodyCouples.clear( );
-        quadraturePointMicroInertias.clear( );
+        quadraturePointMicroSpinInertias.clear( );
         quadraturePointSymmetricMicroStress.clear( );
         quadraturePointCauchyStress.clear( );
         quadraturePointHigherOrderStress.clear( );
@@ -2201,10 +2201,10 @@ namespace overlapCoupling{
 
         }
 
-        //Add the micro inertia term if the acceleration is defined
+        //Add the micro spin inertia term if the acceleration is defined
         if ( _inputProcessor.microAccelerationDefined( ) ){
 
-            dataCountAtPoint += _dim; //Add the micro inertia term
+            dataCountAtPoint += _dim; //Add the micro spin inertia term
 
         }
 
@@ -2465,10 +2465,10 @@ namespace overlapCoupling{
 
         }
 
-        //Add the micro inertia term if the acceleration is defined
+        //Add the micro spin inertia term if the acceleration is defined
         if ( _inputProcessor.microAccelerationDefined( ) ){
 
-            dataCountAtPoint += _dim * _dim; //Add the micro inertia term
+            dataCountAtPoint += _dim * _dim; //Add the micro spin inertia term
 
         }
 
@@ -2513,7 +2513,7 @@ namespace overlapCoupling{
     
                 }
     
-                //Add the contributions to the micro inertia
+                //Add the contributions to the micro spin inertia
                 if ( _inputProcessor.microAccelerationDefined( ) ){
 
                     floatVector microRelativeAcceleration( microAccelerations->begin( ) + _dim * ( *node ),
@@ -2575,7 +2575,7 @@ namespace overlapCoupling{
             tmp = floatVector( integratedValues.begin( ) + _dim * _dim,
                                integratedValues.begin( ) + 2 * _dim * _dim );
             tmp /= ( homogenizedVolumes[ macroCellID ].back( ) * homogenizedDensities[ macroCellID ].back( ) );
-            homogenizedMicroInertias.emplace( macroCellID, tmp );
+            homogenizedMicroSpinInertias.emplace( macroCellID, tmp );
 
         }
         else{
@@ -2587,8 +2587,8 @@ namespace overlapCoupling{
             tmp = floatVector( integratedValues.begin( ) + _dim * _dim,
                                integratedValues.begin( ) + 2 * _dim * _dim );
             tmp /= ( homogenizedVolumes[ macroCellID ].back( ) * homogenizedDensities[ macroCellID ].back( ) );
-            homogenizedMicroInertias[ macroCellID ] = vectorTools::appendVectors( { homogenizedMicroInertias[ macroCellID ],
-                                                                                    tmp } );
+            homogenizedMicroSpinInertias[ macroCellID ] = vectorTools::appendVectors( { homogenizedMicroSpinInertias[ macroCellID ],
+                                                                                      tmp } );
 
         }
 
@@ -2881,7 +2881,7 @@ namespace overlapCoupling{
         floatMatrix bodyForceAtNodes( nMacroCellNodes, floatVector( _dim, 0 ) );
         floatMatrix accelerationAtNodes( nMacroCellNodes, floatVector( _dim, 0 ) );
         floatMatrix bodyCoupleAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
-        floatMatrix microInertiaAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
+        floatMatrix microSpinInertiaAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
         floatMatrix symmetricMicroStressAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
 
         //Add the volume integral components of the right hand side vectors
@@ -2901,8 +2901,8 @@ namespace overlapCoupling{
             floatVector bodyCouple( homogenizedBodyForceCouples[ macroCellID ].begin( ) + _dim * _dim * i,
                                     homogenizedBodyForceCouples[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
 
-            floatVector microInertia( homogenizedMicroInertias[ macroCellID ].begin( ) + _dim * _dim * i,
-                                      homogenizedMicroInertias[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
+            floatVector microSpinInertia( homogenizedMicroSpinInertias[ macroCellID ].begin( ) + _dim * _dim * i,
+                                          homogenizedMicroSpinInertias[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
 
             floatVector symmetricMicroStress( homogenizedSymmetricMicroStresses[ macroCellID ].begin( ) + _dim * _dim * i,
                                               homogenizedSymmetricMicroStresses[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
@@ -2927,7 +2927,7 @@ namespace overlapCoupling{
                 //Compute the contribution to the node
                 floatVector nLinearMomentumRHS = N * density * ( bodyForce - acceleration ) * volume;
 
-                floatVector nFirstMomentRHS = N * ( density * ( bodyCouple - microInertia ) - symmetricMicroStress_T ) * volume;
+                floatVector nFirstMomentRHS = N * ( density * ( bodyCouple - microSpinInertia ) - symmetricMicroStress_T ) * volume;
 
                 //Add the contribution to the overall RHS vectors
                 for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
@@ -2948,7 +2948,7 @@ namespace overlapCoupling{
                 bodyForceAtNodes[ j ]            += N * bodyForce * volume;
                 accelerationAtNodes[ j ]         += N * acceleration * volume;
                 bodyCoupleAtNodes[ j ]           += N * bodyCouple * volume;
-                microInertiaAtNodes[ j ]         += N * microInertia * volume;
+                microSpinInertiaAtNodes[ j ]     += N * microSpinInertia * volume;
                 symmetricMicroStressAtNodes[ j ] += N * symmetricMicroStress * volume;
 
             }
@@ -2962,7 +2962,7 @@ namespace overlapCoupling{
             bodyForceAtNodes[ n ]            /= volumeAtNodes[ n ];
             accelerationAtNodes[ n ]         /= volumeAtNodes[ n ];
             bodyCoupleAtNodes[ n ]           /= volumeAtNodes[ n ];
-            microInertiaAtNodes[ n ]         /= volumeAtNodes[ n ];
+            microSpinInertiaAtNodes[ n ]     /= volumeAtNodes[ n ];
             symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
 
         }
@@ -3060,7 +3060,7 @@ namespace overlapCoupling{
         floatMatrix bodyForces( element->qrule.size( ), floatVector( _dim, 0 ) );
         floatMatrix accelerations( element->qrule.size( ), floatVector( _dim, 0 ) );
         floatMatrix bodyCouples( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
-        floatMatrix microInertias( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
+        floatMatrix microSpinInertias( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
         floatMatrix symmetricMicroStress( element->qrule.size( ), floatVector( _dim * _dim, 0 ) ); 
 
         for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
@@ -3145,7 +3145,7 @@ namespace overlapCoupling{
                 bodyForces[ qptIndex ]           += shapeFunctions[ n ] * bodyForceAtNodes[ n ];
                 accelerations[ qptIndex ]        += shapeFunctions[ n ] * accelerationAtNodes[ n ];
                 bodyCouples[ qptIndex ]          += shapeFunctions[ n ] * bodyCoupleAtNodes[ n ];
-                microInertias[ qptIndex ]        += shapeFunctions[ n ] * microInertiaAtNodes[ n ];
+                microSpinInertias[ qptIndex ]    += shapeFunctions[ n ] * microSpinInertiaAtNodes[ n ];
                 symmetricMicroStress[ qptIndex ] += shapeFunctions[ n ] * symmetricMicroStressAtNodes[ n ];
 
             }
@@ -3229,7 +3229,7 @@ namespace overlapCoupling{
         quadraturePointBodyForce.emplace( macroCellID, vectorTools::appendVectors( bodyForces ) );
         quadraturePointAccelerations.emplace( macroCellID, vectorTools::appendVectors( accelerations ) );
         quadraturePointBodyCouples.emplace( macroCellID, vectorTools::appendVectors( bodyCouples ) );
-        quadraturePointMicroInertias.emplace( macroCellID, vectorTools::appendVectors( microInertias ) );
+        quadraturePointMicroSpinInertias.emplace( macroCellID, vectorTools::appendVectors( microSpinInertias ) );
         quadraturePointSymmetricMicroStress.emplace( macroCellID, vectorTools::appendVectors( symmetricMicroStress ) );
 
         return NULL;
