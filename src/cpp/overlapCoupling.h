@@ -225,6 +225,7 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > homogenizedVolumes;
             std::unordered_map< uIntType, floatVector > homogenizedSurfaceAreas;
             std::unordered_map< uIntType, floatVector > homogenizedDensities;
+            std::unordered_map< uIntType, floatVector > homogenizedMicroInertias;
             std::unordered_map< uIntType, floatVector > homogenizedCentersOfMass;
             std::unordered_map< uIntType, floatVector > homogenizedBodyForces;
             std::unordered_map< uIntType, floatVector > homogenizedBodyForceCouples;
