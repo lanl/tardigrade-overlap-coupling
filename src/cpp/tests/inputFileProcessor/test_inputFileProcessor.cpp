@@ -865,6 +865,117 @@ int test_getCouplingInitialization( std::ofstream &results ){
         return 1;
     }
 
+    std::string projectionTypeAnswer = "direct_projection";
+    bool useReconstructedMassCentersAnswer = false;
+    floatType potentialWeightingFactorAnswer = 0.5;
+    floatType kineticWeightingFactorAnswer = 0.5;
+    std::string potentialPartitioningTypeAnswer = "volume_fraction";
+    std::string kineticPartitioningTypeAnswer = "volume_fraction";
+
+    if ( couplingInitialization[ "projection_type" ] ){
+
+        if( couplingInitialization[ "projection_type" ].as< std::string >( ).compare( projectionTypeAnswer ) != 0 ){
+
+            results << "test_getCouplingInitialization (test 3) & False\n";
+            return 1;
+
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 4) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "use_reconstructed_mass_centers" ] ){
+
+        if ( couplingInitialization[ "use_reconstructed_mass_centers" ].as< bool >( ) != useReconstructedMassCentersAnswer ){
+
+            results << "test_getCouplingInitialization (test 5) & False\n";
+            return 1;
+
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 6) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "potential_energy_weighting_factor" ] ){
+
+        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "potential_energy_weighting_factor" ].as< floatType >( ),
+                                        potentialWeightingFactorAnswer ) ){
+    
+            results << "test_getCouplingInitialization (test 7) & False\n";
+            return 1;
+    
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 8) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "kinetic_energy_weighting_factor" ] ){
+
+        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "kinetic_energy_weighting_factor" ].as< floatType >( ),
+                                        kineticWeightingFactorAnswer ) ){
+    
+            results << "test_getCouplingInitialization (test 9) & False\n";
+            return 1;
+    
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 10) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "potential_energy_partitioning_coefficient" ][ "type" ] ){
+
+        if ( couplingInitialization[ "potential_energy_partitioning_coefficient" ][ "type" ].as< std::string >( ).compare( potentialPartitioningTypeAnswer ) != 0 ){
+    
+            results << "test_getCouplingInitialization (test 11) & False\n";
+            return 1;
+    
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 12) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "kinetic_energy_partitioning_coefficient" ][ "type" ] ){
+
+        if ( couplingInitialization[ "kinetic_energy_partitioning_coefficient" ][ "type" ].as< std::string >( ).compare( kineticPartitioningTypeAnswer ) != 0 ){
+    
+            results << "test_getCouplingInitialization (test 13) & False\n";
+            return 1;
+    
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 14) & False\n";
+        return 1;
+
+    }
+
     results << "test_getCouplingInitialization & True\n";
     return 0;
 

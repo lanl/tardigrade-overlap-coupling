@@ -29,6 +29,10 @@ namespace overlapCoupling{
     typedef inputFileProcessor::DOFMap DOFMap;
     typedef DOFProjection::SparseMatrix SparseMatrix;
 
+    //!The different strategies for the partitioning coefficient
+    enum partitioningCoefficient { VOLUME_FRACTION };
+    std::map< std::string, partitioningCoefficient > = { "volume_fraction", VOLUME_FRACTION };
+
     class overlapCoupling{
         /*!
          * The implementation of the overlap coupling
