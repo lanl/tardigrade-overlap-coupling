@@ -3102,7 +3102,17 @@ namespace overlapCoupling{
             }
 
             //Get the Jacobian of transformation
-            element->get_local_gradient( element->nodes, qpt->first, jacobian );
+            error = element->get_local_gradient( element->nodes, qpt->first, jacobian );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeHomogenizedStresses",
+                                                 "Error in the computation of the local gradient\n" );
+                result->addNext( error );
+                return result;
+
+            }
+
             Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
 
             for ( unsigned int n = 0; n < element->nodes.size( ); n++ ){
@@ -3366,6 +3376,214 @@ namespace overlapCoupling{
             if ( absDeviations[ i ] > threshold ){
 
                 outliers.push_back(i);
+
+            }
+
+        }
+
+        return NULL;
+    }
+
+    errorOut formMicromorphicElementMassMatrix( const std::unique_ptr< elib::Element > &element,
+                                                const floatVector &degreeOfFreedomValues,
+                                                const floatVector &momentOfInertia,
+                                                const floatVector &density,
+                                                const DOFMap *nodeIDToIndex,
+                                                std::vector< DOFProjection::T > &coefficients ){
+        /*!
+         * Form the micromorphic mass matrix for an element
+         *
+         * :param const std::unique_ptr< elib::Element > &element: The element to form the mass matrix of
+         * :param const floatVector &degreeOfFreedomValues: The degree of freedom values at the element nodes
+         * :param const floatVector &momentOfInertia: The moment of inertia in the current configuration
+         *     at the quadrature points ordered as [ i1_11, i1_12, i1_13, i1_21, ... , i2_11, i2_12, ... ] 
+         *     where the first index is the quadrature point and the second indices are the indices of the
+         *     moment of inertia tensor.
+         * :param const floatVector &density: The density in the current configuration
+         *     at the quadrature points
+         * :param const DOFMap &nodeIDToIndex: A map from the node id's to the DOF index
+         * :param std::vector< DOFProjection::T > &coefficients: The coefficients of the mass matrix
+         */
+
+        //Get the dimension of the element
+        uIntType dim = element->nodes[ 0 ].size( );
+
+        const uIntType uSize   = dim;
+        const uIntType phiSize = dim * dim;
+
+        //Check that the degree of freedom value vector's length is consistent with the element
+        if ( degreeOfFreedomValues.size( ) != ( uSize + phiSize ) * element->nodes.size( ) ){
+
+            return new errorNode( "formMicromorphicElementMassMatrix",
+                                  "The degree of freedom vector size is not consistent with the element dimension" );
+
+        }
+
+        if ( momentOfInertia.size( ) != element->qrule.size( ) * phiSize ){
+
+            return new errorNode( "formMicromorphicElementMassMatrix",
+                                  "The moment of inertia vector size is not consistent with the quadrature rule and element dimension" );
+
+        }
+
+        if ( density.size( ) != element->qrule.size( ) ){
+
+            return new errorNode( "formMicromorphicElementMassMatrix",
+                                  "The density vector size is not consistent with the quadrature rule" );
+
+        }
+
+        //Interpolate the degree of freedom values to the quadrature point
+        floatMatrix reshapedDOFValues = vectorTools::inflate( degreeOfFreedomValues, element->nodes.size( ), uSize + phiSize );
+
+        //Variable initialize
+        floatVector shapeFunctions;
+        floatVector interpolatedValues;
+        floatVector qptMomentOfInertia;
+        floatVector uQpt, XiQpt, invXiQpt, referenceMomentOfInertia, inertiaTerm;
+        floatMatrix jacobian;
+
+        floatVector eye( dim * dim );
+        vectorTools::eye( eye );
+
+        floatType J, Jxw, sFo, sFp;
+        uIntType qptIndex, row0, col0;
+        errorOut error = NULL;
+
+        vectorTools::print( eye );
+
+        //Loop over the quadrature points
+        for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+            //Set the quadrature point index
+            qptIndex = qpt - element->qrule.begin( );
+
+            //Evaluate the shape function values
+            error = element->get_shape_functions( qpt->first, shapeFunctions );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                                                 "Error in the computation of the shape functions" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Get the Jacobian between the reference and current configurations
+            error = element->get_jacobian( qpt->first, element->reference_nodes, jacobian );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                                                 "Error in the computation of the jacobian" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            J = vectorTools::determinant( vectorTools::appendVectors( jacobian ), dim, dim );
+
+            //Get the Jacobian between the local and reference configurations
+            error = element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                                                 "Error in the computation of the local gradient\n" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), dim, dim ) * qpt->second;
+
+            //Interpolate the DOF nodes to the node
+            error = element->interpolate( reshapedDOFValues, qpt->first, interpolatedValues );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                                                 "Error in the interpolation of the degree of freedom values" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            uQpt = floatVector( interpolatedValues.begin( ), interpolatedValues.begin( ) + dim );
+            XiQpt = eye + floatVector( interpolatedValues.begin( ) + dim, interpolatedValues.end( ) );
+
+            invXiQpt = vectorTools::inverse( XiQpt, dim, dim );
+
+            //Compute the moment of inertia in the reference configuration
+            qptMomentOfInertia = floatVector( momentOfInertia.begin( ) + dim * dim * qptIndex,
+                                              momentOfInertia.begin( ) + dim * dim * ( qptIndex + 1 ) );
+            referenceMomentOfInertia
+                = vectorTools::matrixMultiply( vectorTools::matrixMultiply( invXiQpt, qptMomentOfInertia, dim, dim, dim, dim ),
+                                               invXiQpt, dim, dim, dim, dim, false, true );
+
+            //Evaluate the integrand term
+            inertiaTerm = density[ qptIndex ] * referenceMomentOfInertia * Jxw;
+
+            //Add the contrubutions to the mass matrix
+            for ( uIntType o = 0; o < shapeFunctions.size( ); o++ ){
+
+                sFo = shapeFunctions[ o ];
+
+                auto gni1 = nodeIDToIndex->find( element->global_node_ids[ o ] );
+
+                if ( gni1 == nodeIDToIndex->end( ) ){
+
+                    return new errorNode( "formMicromorphicElementMassMatrix",
+                                          "Node " + std::to_string( element->global_node_ids[ o ] ) + " not found in the ID map" );
+                                          
+
+                }
+
+                row0 = ( uSize + phiSize ) * gni1->second;
+
+                for ( uIntType p = 0; p < shapeFunctions.size( ); p++ ){
+
+                    sFp = shapeFunctions[ p ];
+
+                    auto gni2 = nodeIDToIndex->find( element->global_node_ids[ p ] );
+
+                    if ( gni2 == nodeIDToIndex->end( ) ){
+    
+                        return new errorNode( "formMicromorphicElementMassMatrix",
+                                              "Node " + std::to_string( element->global_node_ids[ p ] ) + " not found in the ID map" );
+                                              
+    
+                    }
+    
+                    col0 = ( uSize + phiSize ) * gni2->second;
+
+                    for ( unsigned int j = 0; j < dim; j++ ){
+
+                        for ( unsigned int k = 0; k < dim; k++ ){
+
+                            coefficients.push_back( DOFProjection::T( row0 + j,
+                                                                      col0 + j,
+                                                                      eye[ dim * j + k ] * density[ qptIndex ] * J * sFo * sFp * Jxw ) );
+    
+                            for ( unsigned int K = 0; K < dim; K++ ){
+    
+                                for ( unsigned int L = 0; L < dim; L++ ){
+    
+                                    coefficients.push_back( DOFProjection::T( row0 + dim * dim * o + dim * j + K,
+                                                                              col0 + dim * dim * p + dim * k + L,
+                                                                              eye[ dim * j + k ] * sFo * sFp * inertiaTerm[ dim * K + L ] ) );
+
+    
+                                }
+    
+                            }
+
+                        }
+
+                    }
+
+                }
 
             }
 
