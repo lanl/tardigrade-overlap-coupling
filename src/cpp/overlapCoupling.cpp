@@ -3433,6 +3433,13 @@ namespace overlapCoupling{
 
         }
 
+        if ( element->global_node_ids.size( ) != element->nodes.size( )  ){
+
+            return new errorNode( "formMicromorphicElementMassMatrix",
+                                  "The size of the global node id in the element are not the same size as the number of nodes" );
+
+        }
+
         //Interpolate the degree of freedom values to the quadrature point
         floatMatrix reshapedDOFValues = vectorTools::inflate( degreeOfFreedomValues, element->nodes.size( ), uSize + phiSize );
 
@@ -3449,8 +3456,6 @@ namespace overlapCoupling{
         floatType J, Jxw, sFo, sFp;
         uIntType qptIndex, row0, col0;
         errorOut error = NULL;
-
-        vectorTools::print( eye );
 
         //Loop over the quadrature points
         for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
@@ -3518,12 +3523,13 @@ namespace overlapCoupling{
             //Compute the moment of inertia in the reference configuration
             qptMomentOfInertia = floatVector( momentOfInertia.begin( ) + dim * dim * qptIndex,
                                               momentOfInertia.begin( ) + dim * dim * ( qptIndex + 1 ) );
+
             referenceMomentOfInertia
                 = vectorTools::matrixMultiply( vectorTools::matrixMultiply( invXiQpt, qptMomentOfInertia, dim, dim, dim, dim ),
                                                invXiQpt, dim, dim, dim, dim, false, true );
 
             //Evaluate the integrand term
-            inertiaTerm = density[ qptIndex ] * referenceMomentOfInertia * Jxw;
+            inertiaTerm = density[ qptIndex ] * J * referenceMomentOfInertia * Jxw;
 
             //Add the contrubutions to the mass matrix
             for ( uIntType o = 0; o < shapeFunctions.size( ); o++ ){
@@ -3563,15 +3569,15 @@ namespace overlapCoupling{
                         for ( unsigned int k = 0; k < dim; k++ ){
 
                             coefficients.push_back( DOFProjection::T( row0 + j,
-                                                                      col0 + j,
+                                                                      col0 + k,
                                                                       eye[ dim * j + k ] * density[ qptIndex ] * J * sFo * sFp * Jxw ) );
     
                             for ( unsigned int K = 0; K < dim; K++ ){
     
                                 for ( unsigned int L = 0; L < dim; L++ ){
     
-                                    coefficients.push_back( DOFProjection::T( row0 + dim * dim * o + dim * j + K,
-                                                                              col0 + dim * dim * p + dim * k + L,
+                                    coefficients.push_back( DOFProjection::T( row0 + dim + dim * j + K,
+                                                                              col0 + dim + dim * k + L,
                                                                               eye[ dim * j + k ] * sFo * sFp * inertiaTerm[ dim * K + L ] ) );
 
     

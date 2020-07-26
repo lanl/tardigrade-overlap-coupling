@@ -253,11 +253,12 @@ namespace overlapCoupling{
     errorOut MADOutlierDetection( const floatVector &x, uIntVector &outliers, const floatType threshold = 10,
                                   const floatType eps = 1e-9 );
 
-    errorOut formMicromorphicMassMatrix( const std::unique_ptr< elib::Element > &element,
-                                         const floatVector &degreeOfFreedomValues,
-                                         const floatVector &momentOfInertia,
-                                         const floatVector &density,
-                                         std::vector< DOFProjection::T > &coefficients );
+    errorOut formMicromorphicElementMassMatrix( const std::unique_ptr< elib::Element > &element,
+                                                const floatVector &degreeOfFreedomValues,
+                                                const floatVector &momentOfInertia,
+                                                const floatVector &density,
+                                                const DOFMap *nodeIDToIndex,
+                                                std::vector< DOFProjection::T > &coefficients );
 
 }
 
