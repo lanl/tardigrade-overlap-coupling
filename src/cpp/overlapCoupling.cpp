@@ -3761,7 +3761,16 @@ namespace overlapCoupling{
         J = vectorTools::determinant( vectorTools::appendVectors( jacobian ), dim, dim );
 
         //Get the Jacobian between the local and reference configurations
-        error = element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
+        if ( useReference ){
+
+            error = element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
+
+        }
+        else{
+
+            error = element->get_local_gradient( element->nodes, qpt->first, jacobian );
+
+        }
 
         if ( error ){
 
