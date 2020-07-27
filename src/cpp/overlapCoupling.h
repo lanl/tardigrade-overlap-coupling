@@ -260,6 +260,25 @@ namespace overlapCoupling{
                                                 const DOFMap *nodeIDToIndex,
                                                 std::vector< DOFProjection::T > &coefficients );
 
+    errorOut formMicromorphicElementInternalForceVector( const std::unique_ptr< elib::Element > &element,
+                                                         const floatVector &degreeOfFreedomValues,
+                                                         const floatVector &cauchyStress,
+                                                         const floatVector &symmetricMicroStress,
+                                                         const floatVector &higherOrderStress,
+                                                         const DOFMap *nodeIDToIndex,
+                                                         Eigen::MatrixXd &internalForceVector );
+
+    errorOut computeMicromorphicElementRequiredValues( const std::unique_ptr< elib::Element > &element,
+                                                       const elib::quadrature_rule::iterator &qpt,
+                                                       const uIntType dim,
+                                                       const floatMatrix &reshapedDOFValues,
+                                                       const bool useReference,
+                                                       floatVector &shapeFunctions,
+                                                       floatMatrix &gradShapeFunctions,
+                                                       floatVector &deformationGradient,
+                                                       floatType &J, floatType &Jxw,
+                                                       floatVector &uQpt, floatVector &XiQpt );
+
 }
 
 #endif

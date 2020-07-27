@@ -3440,7 +3440,7 @@ namespace overlapCoupling{
 
         }
 
-        //Interpolate the degree of freedom values to the quadrature point
+        //Reshape the degree of freedom values to a matrix of values where the rows are the values at the nodes
         floatMatrix reshapedDOFValues = vectorTools::inflate( degreeOfFreedomValues, element->nodes.size( ), uSize + phiSize );
 
         //Variable initialize
@@ -3598,4 +3598,205 @@ namespace overlapCoupling{
         return NULL;
     }
 
+    errorOut formMicromorphicElementInternalForceVector( const std::unique_ptr< elib::Element > &element,
+                                                         const floatVector &degreeOfFreedomValues,
+                                                         const floatVector &cauchyStress,
+                                                         const floatVector &symmetricMicroStress,
+                                                         const floatVector &higherOrderStress,
+                                                         const DOFMap *nodeIDToIndex,
+                                                         Eigen::MatrixXd &internalForceVector ){
+        /*!
+         * Add the contribution of the micromorphic element to the internal force vector
+         *
+         * :param const std::unique_ptr< elib::Element > &element: The FEA representation of the micromorphic element
+         * :param const floatVector &degreeOfFreedomValues: The values of the degrees of freedom at the nodes of the element
+         * :param const floatVector &cauchyStress: The cauchy stress at the quadrature points of the element
+         *     ( current configuration )
+         * :param const floatVector &symmetricMicroStress: The symmetric micro-stress at the quadrature points of the element
+         *     ( current configuration )
+         * :param const floatVector &higherOrderStress: The higher-order stress at the quadrature points of the element
+         *     ( current configuraiton )
+         * :param const DOFMap *nodeIDToIndex: The map from the global node ids to the ordering in the internal force vector
+         * :param Eigen::MatrixXd &internalForceVector: The internal force vector to be populated.
+         */
+
+        //Get the dimension of the element
+        uIntType dim = element->nodes[ 0 ].size( );
+
+        const uIntType uSize   = dim;
+        const uIntType phiSize = dim * dim;
+
+        //Check that the degree of freedom value vector's length is consistent with the element
+        if ( degreeOfFreedomValues.size( ) != ( uSize + phiSize ) * element->nodes.size( ) ){
+
+            return new errorNode( "formMicromorphicElementInternalForceVector",
+                                  "The degree of freedom vector size is not consistent with the element dimension" );
+
+        }
+
+        if ( cauchyStress.size( ) != element->qrule.size( ) * dim * dim ){
+
+            return new errorNode( "formMicromorphicElementInternalForceVector",
+                                  "The Cauchy stress vector size is not consistent with the quadrature rule and element dimension" );
+
+        }
+
+        if ( symmetricMicroStress.size( ) != element->qrule.size( ) * dim * dim ){
+
+            return new errorNode( "formMicromorphicElementInternalForceVector",
+                                  "The symmetric micro-stress vector size is not consistent with the quadrature rule" );
+
+        }
+
+        if ( higherOrderStress.size( ) != element->qrule.size( ) * dim * dim * dim ){
+
+            return new errorNode( "formMicromoprhicElementInternalForceVector",
+                                  "The higher-order stress vector size is not consistent with the quadrature rule" );
+
+        }
+
+        if ( element->global_node_ids.size( ) != element->nodes.size( )  ){
+
+            return new errorNode( "formMicromorphicElementInternalForceVector",
+                                  "The size of the global node id in the element are not the same size as the number of nodes" );
+
+        }
+
+        //Reshape the degree of freedom values to a matrix of values where the rows are the values at the nodes
+        floatMatrix reshapedDOFValues = vectorTools::inflate( degreeOfFreedomValues, element->nodes.size( ), uSize + phiSize );
+
+        //Initialize variables
+        floatType J, Jxw;
+
+        floatVector shapeFunctions, deformationGradient, uQpt, XiQpt;
+
+        floatMatrix gradShapeFunctions;
+
+        uIntType qptIndex, row0, col0;
+
+        errorOut error = NULL;
+
+        //Loop over the quadrature points
+        for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+            //Set the quadrature point index
+            qptIndex = qpt - element->qrule.begin( );
+
+            //Evaluate the properties required for the integration
+            error = computeMicromorphicElementRequiredValues( element, qpt, dim, reshapedDOFValues, true,
+                                                              shapeFunctions, gradShapeFunctions,
+                                                              deformationGradient, J, Jxw, uQpt, XiQpt );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                                                 "Error in the computation of the required values for the element" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+
+        return NULL;
+    }
+
+    errorOut computeMicromorphicElementRequiredValues( const std::unique_ptr< elib::Element > &element,
+                                                       const elib::quadrature_rule::iterator &qpt,
+                                                       const uIntType dim,
+                                                       const floatMatrix &reshapedDOFValues,
+                                                       const bool useReference,
+                                                       floatVector &shapeFunctions,
+                                                       floatMatrix &gradShapeFunctions,
+                                                       floatVector &deformationGradient,
+                                                       floatType &J, floatType &Jxw,
+                                                       floatVector &uQpt, floatVector &XiQpt ){
+        /*!
+         * Compute the required values for the integration of a micromorphic element
+         */
+
+        //Initialize internal variables
+        floatVector interpolatedValues, eye;
+        vectorTools::eye( eye );
+
+        floatMatrix jacobian;
+
+        //Evaluate the shape function values
+        errorOut error = element->get_shape_functions( qpt->first, shapeFunctions );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                                             "Error in the computation of the shape functions" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Evaluate the gradients of the shape functions
+        error = element->get_global_shapefunction_gradients( qpt->first, gradShapeFunctions, useReference );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                                             "Error in the computation of the shape function gradients" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Get the deformation gradient between the reference and current configurations
+        error = element->get_jacobian( qpt->first, element->reference_nodes, jacobian );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                                             "Error in the computation of the jacobian" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        deformationGradient = vectorTools::appendVectors( jacobian );
+        J = vectorTools::determinant( vectorTools::appendVectors( jacobian ), dim, dim );
+
+        //Get the Jacobian between the local and reference configurations
+        error = element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                                             "Error in the computation of the local gradient\n" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), dim, dim ) * qpt->second;
+
+        //Interpolate the DOF nodes to the node
+        error = element->interpolate( reshapedDOFValues, qpt->first, interpolatedValues );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                                             "Error in the interpolation of the degree of freedom values" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        if ( interpolatedValues.size( ) < ( dim + dim * dim ) ){
+
+            std::string output = "The interpolated values shape is not consistent with the required dimension for the displacement ";
+            output            += "and micro-displacement interpolation";
+            return new errorNode( "computeMicromorphicElementRequiredValues", output );
+
+        }
+
+        uQpt = floatVector( interpolatedValues.begin( ), interpolatedValues.begin( ) + dim );
+        XiQpt = eye + floatVector( interpolatedValues.begin( ) + dim, interpolatedValues.begin( ) + ( dim + dim * dim ) );
+
+        return NULL;
+    }
 }
