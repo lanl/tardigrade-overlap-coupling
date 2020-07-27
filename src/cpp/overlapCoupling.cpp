@@ -3716,7 +3716,7 @@ namespace overlapCoupling{
          */
 
         //Initialize internal variables
-        floatVector interpolatedValues, eye;
+        floatVector interpolatedValues, eye( dim * dim );
         vectorTools::eye( eye );
 
         floatMatrix jacobian;

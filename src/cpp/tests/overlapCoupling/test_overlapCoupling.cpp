@@ -618,6 +618,274 @@ int test_formMicromorphicElementMassMatrix( std::ofstream &results ){
     return 0;
 }
 
+int test_computeMicromorphicElementRequiredValues( std::ofstream &results ){
+    /*!
+     * Test the computation of the default required values from the micromorphic element
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::unique_ptr< elib::Element > element;
+
+    floatMatrix reference_nodes =
+        {
+            { 0, 0, 0 },
+            { 1, 0, 0 },
+            { 1, 1, 0 },
+            { 0, 1, 0 },
+            { 0, 0, 1 },
+            { 1, 0, 1 },
+            { 1, 1, 1 },
+            { 0, 1, 1 }
+        };
+
+    floatVector degreeOfFreedomValues =
+        {
+            -0.1       , -0.1       , -0.1       , -0.03264781,  0.02111065,
+             0.00079745, -0.00409562,  0.03073762,  0.01799572, -0.02048283,
+             0.00914281, -0.04062647,  0.1       , -0.1       , -0.1       ,
+            -0.02032996,  0.0489607 , -0.01085405, -0.00867754,  0.00475848,
+             0.04859963,  0.00442464,  0.0211827 ,  0.04006121,  0.1       ,
+             0.1       , -0.1       , -0.03999713,  0.03122015,  0.01574864,
+            -0.0025961 , -0.0232323 , -0.03535742, -0.00621033, -0.00485358,
+             0.00917265, -0.1       ,  0.1       , -0.1       ,  0.04252169,
+             0.04223892,  0.01351459,  0.01295129, -0.04424972,  0.0322117 ,
+            -0.03558341, -0.01547058,  0.01382653, -0.1       , -0.1       ,
+             0.1       ,  0.0348995 , -0.02256884, -0.04231619,  0.00654967,
+             0.01205778, -0.01045064, -0.01303744, -0.00900963, -0.01305943,
+             0.1       , -0.1       ,  0.1       , -0.03487759, -0.04996436,
+            -0.00305152, -0.00471929, -0.04222132, -0.03447746, -0.03298123,
+            -0.02164259, -0.03886441,  0.1       ,  0.1       ,  0.1       ,
+             0.00967625,  0.04231608, -0.001698  ,  0.01340712, -0.03988135,
+            -0.04814852,  0.0196056 , -0.01305974, -0.0333702 , -0.1       ,
+             0.1       ,  0.1       , -0.02290295,  0.02739323,  0.00481225,
+             0.0424606 , -0.00402194, -0.00948801,  0.0395755 ,  0.02496865,
+            -0.04143367
+        };
+
+    floatMatrix nodeDisplacement;
+    nodeDisplacement.reserve( 8 );
+    for ( unsigned int i = 0; i < 8; i++ ){
+
+        nodeDisplacement.push_back( floatVector( degreeOfFreedomValues.begin( ) + 12 * i,
+                                                 degreeOfFreedomValues.begin( ) + 12 * i + 3 ) );
+
+    }
+
+    auto qrule = elib::default_qrules.find( "Hex8" );
+    element = elib::build_element_from_string( "Hex8", { 10, 7, 3, 9, 1, 8, 13, 4 }, reference_nodes, qrule->second );
+    element->update_node_positions( nodeDisplacement );
+
+    floatMatrix reshapedDOFValues = vectorTools::inflate( degreeOfFreedomValues, 8, 12 );
+    floatVector uQptResult, XiQptResult, shapeFunctionsResult, deformationGradientResult;
+    floatMatrix gradShapeFunctionsResult;
+    floatType JResult, JxwResult;
+
+    floatType JAnswer = 1.728;
+    floatType JxwReferenceAnswer = 0.125;
+    floatType JxwCurrentAnswer = 0.216;
+    floatType tmp = 0.0577350269;
+
+    floatMatrix shapeFunctionAnswer
+        {
+            { 0.490563,   0.131446,   0.0352208,  0.131446,   0.131446,   0.0352208,  0.00943739, 0.0352208 }, 
+            { 0.131446,   0.490563,   0.131446,   0.0352208,  0.0352208,  0.131446,   0.0352208,  0.00943739 },
+            { 0.0352208,  0.131446,   0.490563,   0.131446,   0.00943739, 0.0352208,  0.131446,   0.0352208 },
+            { 0.131446,   0.0352208,  0.131446,   0.490563,   0.0352208,  0.00943739, 0.0352208,  0.131446 },
+            { 0.131446,   0.0352208,  0.00943739, 0.0352208,  0.490563,   0.131446,   0.0352208,  0.131446 },
+            { 0.0352208,  0.131446,   0.0352208,  0.00943739, 0.131446,   0.490563,   0.131446,   0.0352208 },
+            { 0.00943739, 0.0352208,  0.131446,   0.0352208,  0.0352208,  0.131446,   0.490563,   0.131446 },
+            { 0.0352208,  0.00943739, 0.0352208,  0.131446,   0.131446,   0.0352208,  0.131446,   0.490563 },
+        };
+
+    floatMatrix gradShapeFunctionsReferenceAnswer
+        {
+            { -0.622008, -0.622008, -0.622008, 0.622008, -0.166667, -0.166667, 0.166667, 0.166667, -0.0446582, -0.166667, 0.622008, -0.166667, -0.166667, -0.166667, 0.622008, 0.166667, -0.0446582, 0.166667, 0.0446582, 0.0446582, 0.0446582, -0.0446582, 0.166667, 0.166667 },
+            { -0.622008, -0.166667, -0.166667, 0.622008, -0.622008, -0.622008, 0.166667, 0.622008, -0.166667, -0.166667, 0.166667, -0.0446582, -0.166667, -0.0446582, 0.166667, 0.166667, -0.166667, 0.622008, 0.0446582, 0.166667, 0.166667, -0.0446582, 0.0446582, 0.0446582 },
+            { -0.166667, -0.166667, -0.0446582, 0.166667, -0.622008, -0.166667, 0.622008, 0.622008, -0.622008, -0.622008, 0.166667, -0.166667, -0.0446582, -0.0446582, 0.0446582, 0.0446582, -0.166667, 0.166667, 0.166667, 0.166667, 0.622008, -0.166667, 0.0446582, 0.166667 },
+            { -0.166667, -0.622008, -0.166667, 0.166667, -0.166667, -0.0446582, 0.622008, 0.166667, -0.166667, -0.622008, 0.622008, -0.622008, -0.0446582, -0.166667, 0.166667, 0.0446582, -0.0446582, 0.0446582, 0.166667, 0.0446582, 0.166667, -0.166667, 0.166667, 0.622008 },
+            { -0.166667, -0.166667, -0.622008, 0.166667, -0.0446582, -0.166667, 0.0446582, 0.0446582, -0.0446582, -0.0446582, 0.166667, -0.166667, -0.622008, -0.622008, 0.622008, 0.622008, -0.166667, 0.166667, 0.166667, 0.166667, 0.0446582, -0.166667, 0.622008, 0.166667 },
+            { -0.166667, -0.0446582, -0.166667, 0.166667, -0.166667, -0.622008, 0.0446582, 0.166667, -0.166667, -0.0446582, 0.0446582, -0.0446582, -0.622008, -0.166667, 0.166667, 0.622008, -0.622008, 0.622008, 0.166667, 0.622008, 0.166667, -0.166667, 0.166667, 0.0446582 },
+            { -0.0446582, -0.0446582, -0.0446582, 0.0446582, -0.166667, -0.166667, 0.166667, 0.166667, -0.622008, -0.166667, 0.0446582, -0.166667, -0.166667, -0.166667, 0.0446582, 0.166667, -0.622008, 0.166667, 0.622008, 0.622008, 0.622008, -0.622008, 0.166667, 0.166667 },
+            { -0.0446582, -0.166667, -0.166667, 0.0446582, -0.0446582, -0.0446582, 0.166667, 0.0446582, -0.166667, -0.166667, 0.166667, -0.622008, -0.166667, -0.622008, 0.166667, 0.166667, -0.166667, 0.0446582, 0.622008, 0.166667, 0.166667, -0.622008, 0.622008, 0.622008 }
+        };
+
+    floatMatrix gradShapeFunctionsCurrentAnswer
+        {
+            { -0.51834, -0.51834, -0.51834, 0.51834, -0.138889, -0.138889, 0.138889, 0.138889, -0.0372152, -0.138889, 0.51834, -0.138889, -0.138889, -0.138889, 0.51834, 0.138889, -0.0372152, 0.138889, 0.0372152, 0.0372152, 0.0372152, -0.0372152, 0.138889, 0.138889 },
+            { -0.51834, -0.138889, -0.138889, 0.51834, -0.51834, -0.51834, 0.138889, 0.51834, -0.138889, -0.138889, 0.138889, -0.0372152, -0.138889, -0.0372152, 0.138889, 0.138889, -0.138889, 0.51834, 0.0372152, 0.138889, 0.138889, -0.0372152, 0.0372152, 0.0372152 },
+            { -0.138889, -0.138889, -0.0372152, 0.138889, -0.51834, -0.138889, 0.51834, 0.51834, -0.51834, -0.51834, 0.138889, -0.138889, -0.0372152, -0.0372152, 0.0372152, 0.0372152, -0.138889, 0.138889, 0.138889, 0.138889, 0.51834, -0.138889, 0.0372152, 0.138889 },
+            { -0.138889, -0.51834, -0.138889, 0.138889, -0.138889, -0.0372152, 0.51834, 0.138889, -0.138889, -0.51834, 0.51834, -0.51834, -0.0372152, -0.138889, 0.138889, 0.0372152, -0.0372152, 0.0372152, 0.138889, 0.0372152, 0.138889, -0.138889, 0.138889, 0.51834 },
+            { -0.138889, -0.138889, -0.51834, 0.138889, -0.0372152, -0.138889, 0.0372152, 0.0372152, -0.0372152, -0.0372152, 0.138889, -0.138889, -0.51834, -0.51834, 0.51834, 0.51834, -0.138889, 0.138889, 0.138889, 0.138889, 0.0372152, -0.138889, 0.51834, 0.138889 },
+            { -0.138889, -0.0372152, -0.138889, 0.138889, -0.138889, -0.51834, 0.0372152, 0.138889, -0.138889, -0.0372152, 0.0372152, -0.0372152, -0.51834, -0.138889, 0.138889, 0.51834, -0.51834, 0.51834, 0.138889, 0.51834, 0.138889, -0.138889, 0.138889, 0.0372152 },
+            { -0.0372152, -0.0372152, -0.0372152, 0.0372152, -0.138889, -0.138889, 0.138889, 0.138889, -0.51834, -0.138889, 0.0372152, -0.138889, -0.138889, -0.138889, 0.0372152, 0.138889, -0.51834, 0.138889, 0.51834, 0.51834, 0.51834, -0.51834, 0.138889, 0.138889 },
+            { -0.0372152, -0.138889, -0.138889, 0.0372152, -0.0372152, -0.0372152, 0.138889, 0.0372152, -0.138889, -0.138889, 0.138889, -0.51834, -0.138889, -0.51834, 0.138889, 0.138889, -0.138889, 0.0372152, 0.51834, 0.138889, 0.138889, -0.51834, 0.51834, 0.51834 },
+        };
+
+    floatVector deformationGradientAnswer = { 1.2, 0.0, 0.0,
+                                              0.0, 1.2, 0.0,
+                                              0.0, 0.0, 1.2 };
+
+    floatMatrix uQptAnswer =
+        {
+            { -tmp, -tmp, -tmp },
+            {  tmp, -tmp, -tmp },
+            {  tmp,  tmp, -tmp },
+            { -tmp,  tmp, -tmp },
+            { -tmp, -tmp,  tmp },
+            {  tmp, -tmp,  tmp },
+            {  tmp,  tmp,  tmp },
+            { -tmp,  tmp,  tmp },
+        };
+
+    floatMatrix XiQptAnswer =
+        {
+            {  9.88136118e-01,  2.00813257e-02, -4.22070732e-03,  7.77908101e-04,  1.00864936e+00,  1.48284518e-02, -1.56589841e-02,  3.87462985e-03,  9.82616852e-01 },
+            {  9.78744967e-01,  2.67710907e-02, -4.57959127e-03,  -4.19704309e-03,  9.95194617e-01,  1.60081991e-02, -6.32184786e-03,  7.02386931e-03,  1.00887017e+00 },
+            { 9.81712207e-01,  3.26011268e-02,  7.54296900e-03,   2.29737042e-03,  9.77737555e-01, -1.40649506e-02, -5.17738385e-03, -2.99266479e-03,  1.00281440e+00 },
+            {  1.00882498e+00,  3.31486739e-02,  7.47592280e-03,  1.14078262e-02,  9.77539770e-01,  1.15950117e-02, -1.56866541e-02, -3.97893908e-03,  9.96610936e-01 },
+            {  1.00597891e+00, -6.26624679e-03, -2.02399680e-02,  8.23385344e-03,  1.00086213e+00, -7.72359125e-03, -8.68680450e-03, -3.08540289e-03,  9.78507688e-01 },
+            {  9.83113378e-01, -1.22727139e-02, -7.82937249e-03,  5.49537395e-04,  9.75961052e-01, -1.88694411e-02, -1.46165030e-02, -9.84911837e-03,  9.77660786e-01 },
+            {  9.93597014e-01,  2.45120434e-02,  7.93844761e-05,  1.15392913e-02,  9.70627254e-01, -3.13985669e-02,  7.91831580e-03, -6.63726565e-03,  9.75335260e-01 },
+            {  9.96234380e-01,  2.21313473e-02, -1.27548343e-03,  2.46714378e-02,  9.87375422e-01, -9.49015591e-03,  1.35403120e-02,  6.90293147e-03,  9.73290037e-01 }
+        };
+
+    errorOut error = NULL;
+    for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+        error = overlapCoupling::computeMicromorphicElementRequiredValues( element, qpt, 3, reshapedDOFValues, true,
+                                                                           shapeFunctionsResult, gradShapeFunctionsResult,
+                                                                           deformationGradientResult,
+                                                                           JResult, JxwResult, uQptResult, XiQptResult );
+
+        if ( error ){
+        
+            error->print( );
+            results << "test_computeMicromorphicElementRequiredValues & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( shapeFunctionAnswer[ qpt - element->qrule.begin( ) ], shapeFunctionsResult ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 1) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( gradShapeFunctionsReferenceAnswer[ qpt - element->qrule.begin( ) ],
+                                        vectorTools::appendVectors( gradShapeFunctionsResult ) ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 2) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( deformationGradientAnswer, deformationGradientResult ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 3) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( JResult, JAnswer ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 4) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( JxwResult, JxwReferenceAnswer ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 5) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( uQptAnswer[ qpt - element->qrule.begin( ) ], uQptResult ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 6) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( XiQptAnswer[ qpt - element->qrule.begin( ) ], XiQptResult ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 7) & False\n";
+            return 1;
+
+        }
+
+        error = overlapCoupling::computeMicromorphicElementRequiredValues( element, qpt, 3, reshapedDOFValues, false,
+                                                                           shapeFunctionsResult, gradShapeFunctionsResult,
+                                                                           deformationGradientResult,
+                                                                           JResult, JxwResult, uQptResult, XiQptResult );
+
+        if ( error ){
+        
+            error->print( );
+            results << "test_computeMicromorphicElementRequiredValues & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( shapeFunctionAnswer[ qpt - element->qrule.begin( ) ], shapeFunctionsResult ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 8) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( gradShapeFunctionsCurrentAnswer[ qpt - element->qrule.begin( ) ],
+                                        vectorTools::appendVectors( gradShapeFunctionsResult ) ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 9) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( deformationGradientAnswer, deformationGradientResult ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 10) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( JResult, JAnswer ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 11) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( JxwResult, JxwCurrentAnswer ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 12) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( uQptAnswer[ qpt - element->qrule.begin( ) ], uQptResult ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 13) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( XiQptAnswer[ qpt - element->qrule.begin( ) ], XiQptResult ) ){
+
+            results << "test_computeMicromorphicElementRequiredValues (test 14) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    results << "test_computeMicromorphicElementRequiredValues & True\n";
+    return 0;
+
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -630,17 +898,18 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-    test_overlapCoupling_constructor( results );
-    test_overlapCoupling_initializeCoupling( results );
-    test_overlapCoupling_processIncrement( results );
-    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
-    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
-    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
-    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
-    test_MADOutlierDetection( results );
-    test_formMicromorphicElementMassMatrix( results );
+//    test_overlapCoupling_constructor( results );
+//    test_overlapCoupling_initializeCoupling( results );
+//    test_overlapCoupling_processIncrement( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+//    test_MADOutlierDetection( results );
+//    test_formMicromorphicElementMassMatrix( results );
+    test_computeMicromorphicElementRequiredValues( results );
 
     //Close the results file
     results.close();
