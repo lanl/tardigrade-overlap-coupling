@@ -6,6 +6,8 @@
 
 #include<overlapCoupling.h>
 #include<Eigen/SparseQR>
+#include<micromorphic_tools.h>
+#include<balance_equations.h>
 
 namespace overlapCoupling{
 
@@ -3585,6 +3587,15 @@ namespace overlapCoupling{
         const uIntType uSize   = dim;
         const uIntType phiSize = dim * dim;
 
+        if ( dim != 3 ){
+
+            std::string output  = "The dimension of the problem is required to be 3. This only matters ( it is believed )\n";
+            output             += "because of dNdX, fint, and cint which are currently consistend with a 3D problem as required\n";
+            output             += "by balance_equations.h";
+            return new errorNode( "formMicromorphicElementInternalForceVector", output );
+
+        }
+
         //Check that the degree of freedom value vector's length is consistent with the element
         if ( degreeOfFreedomValues.size( ) != ( uSize + phiSize ) * element->nodes.size( ) ){
 
@@ -3625,9 +3636,13 @@ namespace overlapCoupling{
         floatMatrix reshapedDOFValues = vectorTools::inflate( degreeOfFreedomValues, element->nodes.size( ), uSize + phiSize );
 
         //Initialize variables
-        floatType J, Jxw;
+        floatType N, J, Jxw;
+        floatType dNdX[ 3 ], fint[ 3 ], cint[ 9 ];
+        int errorCode;
 
         floatVector shapeFunctions, deformationGradient, uQpt, XiQpt;
+        floatVector cauchyQpt, sQpt, mQpt;
+        floatVector pk2Qpt, referenceMicroStressQpt, referenceHigherOrderStressQpt;
 
         floatMatrix gradShapeFunctions;
 
@@ -3652,6 +3667,88 @@ namespace overlapCoupling{
                                                  "Error in the computation of the required values for the element" );
                 result->addNext( error );
                 return result;
+
+            }
+
+            //Pull back the stresses at the quadrature points to the reference configuration
+            cauchyQpt = floatVector( cauchyStress.begin( ) + dim * dim * qptIndex,
+                                     cauchyStress.begin( ) + dim * dim * ( qptIndex + 1 ) );
+
+            sQpt = floatVector( symmetricMicroStress.begin( ) + dim * dim * qptIndex,
+                                symmetricMicroStress.begin( ) + dim * dim * ( qptIndex + 1 ) );
+
+            mQpt = floatVector( higherOrderStress.begin( ) + dim * dim * dim * qptIndex,
+                                higherOrderStress.begin( ) + dim * dim * dim * ( qptIndex + 1 ) );
+
+            //Pull back the Cauchy stress
+            error = micromorphicTools::pullBackCauchyStress( cauchyQpt, deformationGradient, pk2Qpt );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                                                 "Error in the pull-back operation on the Cauchy stress" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Pull back the symmetric micro-stress
+            error = micromorphicTools::pullBackMicroStress( sQpt, deformationGradient, referenceMicroStressQpt );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                                                 "Error in the pull-back operation on the symmetric micro-stress" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Pull back the higher order stress
+            error = micromorphicTools::pullBackHigherOrderStress( mQpt, deformationGradient, XiQpt, referenceHigherOrderStressQpt );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                                                 "Error in the pull-back operation on the higher order stress" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Loop over the nodes
+            for ( unsigned int n = 0; n < shapeFunctions.size( ); n++ ){
+
+                //Set the shape function and gradient of the shape function values
+                N = shapeFunctions[ n ];
+
+                for ( unsigned int i = 0; i < dim; i++ ){
+
+                    dNdX[ i ] = gradShapeFunctions[ n ][ i ];
+
+                }
+
+                //Compute the terms for the balance of linear momentum
+                errorCode = balance_equations::compute_internal_force( dNdX, deformationGradient, pk2Qpt, fint );
+
+                if ( errorCode != 0 ){
+
+                    return new errorNode( "formMicromorphicElementInternalForceVector",
+                                          "The internal force term returned an error code: " + std::to_string( errorCode ) );
+
+                }
+
+                //Compute the terms for the balance of first moment of momentum
+                errorCode = balance_equations::compute_internal_couple( N, dNdX, deformationGradient, XiQpt,
+                                                                        pk2Qpt, referenceMicroStressQpt,
+                                                                        referenceHigherOrderStressQpt, cint );
+
+                if ( errorCode != 0 ){
+
+                    return new errorNode( "formMicromorphicElementInternalForceVector",
+                                          "The internal couple term returned an error code: " + std::to_string( errorCode ) );
+
+                }
 
             }
 

@@ -68,6 +68,24 @@ LIB+=-L$(ROOTDIR)/solver_tools/src/cpp
 VOLUMERECONSTRUCTIONSOURCE = $(ROOTDIR)/overlap_coupling/src/cpp/volumeReconstruction.cpp
 VOLUMERECONSTRUCTIONHEADER = $(ROOTDIR)/overlap_coupling/src/cpp/volumeReconstruction.h
 
+#Add the location of the micromorphic tools files
+MICROMORPHICTOOLSSOURCE = $(ROOTDIR)/micromorphic_tools/src/cpp/micromorphic_tools.cpp
+MICROMORPHICTOOLSHEADER = $(ROOTDIR)/micromorphic_tools/src/cpp/micromorphic_tools.h
+INC+=-I$(ROOTDIR)/micromorphic_tools/src/cpp
+LIB+=-I$(ROOTDIR)/micromorphic_tools/src/cpp
+
+#Add the location of the constitutive tools files
+CONSTITUTIVETOOLSSOURCE = $(ROOTDIR)/constitutive_tools/src/cpp/constitutive_tools.cpp
+CONSTITUTIVETOOLSHEADER = $(ROOTDIR)/constitutive_tools/src/cpp/constitutive_tools.h
+INC+=-I$(ROOTDIR)/constitutive_tools/src/cpp
+LIB+=-I$(ROOTDIR)/constitutive_tools/src/cpp
+
+#Add the location of the balance equation file
+BALANCEEQUATIONSSOURCE = $(ROOTDIR)/micromorphic_element/src/cpp/balance_equations.cpp
+BALANCEEQUATIONSHEADER = $(ROOTDIR)/micromorphic_element/src/cpp/balance_equations.h
+INC+=-I$(ROOTDIR)/micromorphic_element/src/cpp
+LIB+=-I$(ROOTDIR)/micromorphic_element/src/cpp
+
 # Add the location of the YAML headers and library
 INC+= -I$(ROOTDIR)/yaml-cpp/include
 LIB+= -L$(ROOTDIR)/yaml-cpp/build/
