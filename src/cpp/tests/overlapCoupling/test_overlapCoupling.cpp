@@ -908,7 +908,7 @@ int main(){
 ////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
 ////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
 //    test_MADOutlierDetection( results );
-//    test_formMicromorphicElementMassMatrix( results );
+    test_formMicromorphicElementMassMatrix( results );
     test_computeMicromorphicElementRequiredValues( results );
 
     //Close the results file

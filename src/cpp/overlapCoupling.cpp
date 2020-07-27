@@ -3445,10 +3445,10 @@ namespace overlapCoupling{
 
         //Variable initialize
         floatVector shapeFunctions;
-        floatVector interpolatedValues;
+        floatVector interpolatedValues, deformationGradient;
         floatVector qptMomentOfInertia;
         floatVector uQpt, XiQpt, invXiQpt, referenceMomentOfInertia, inertiaTerm;
-        floatMatrix jacobian;
+        floatMatrix gradShapeFunctions;
 
         floatVector eye( dim * dim );
         vectorTools::eye( eye );
@@ -3463,60 +3463,19 @@ namespace overlapCoupling{
             //Set the quadrature point index
             qptIndex = qpt - element->qrule.begin( );
 
-            //Evaluate the shape function values
-            error = element->get_shape_functions( qpt->first, shapeFunctions );
+            //Compute the base micromorphic element terms
+            error = computeMicromorphicElementRequiredValues( element, qpt, dim, reshapedDOFValues, true,
+                                                              shapeFunctions, gradShapeFunctions,
+                                                              deformationGradient, J, Jxw, uQpt, XiQpt );
 
             if ( error ){
 
-                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
-                                                 "Error in the computation of the shape functions" );
+                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                                                 "Error in the computation of the required values for the element" );
                 result->addNext( error );
                 return result;
 
             }
-
-            //Get the Jacobian between the reference and current configurations
-            error = element->get_jacobian( qpt->first, element->reference_nodes, jacobian );
-
-            if ( error ){
-
-                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
-                                                 "Error in the computation of the jacobian" );
-                result->addNext( error );
-                return result;
-
-            }
-
-            J = vectorTools::determinant( vectorTools::appendVectors( jacobian ), dim, dim );
-
-            //Get the Jacobian between the local and reference configurations
-            error = element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
-
-            if ( error ){
-
-                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
-                                                 "Error in the computation of the local gradient\n" );
-                result->addNext( error );
-                return result;
-
-            }
-
-            Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), dim, dim ) * qpt->second;
-
-            //Interpolate the DOF nodes to the node
-            error = element->interpolate( reshapedDOFValues, qpt->first, interpolatedValues );
-
-            if ( error ){
-
-                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
-                                                 "Error in the interpolation of the degree of freedom values" );
-                result->addNext( error );
-                return result;
-
-            }
-
-            uQpt = floatVector( interpolatedValues.begin( ), interpolatedValues.begin( ) + dim );
-            XiQpt = eye + floatVector( interpolatedValues.begin( ) + dim, interpolatedValues.end( ) );
 
             invXiQpt = vectorTools::inverse( XiQpt, dim, dim );
 
