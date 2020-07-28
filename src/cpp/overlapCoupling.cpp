@@ -3646,7 +3646,7 @@ namespace overlapCoupling{
 
         floatMatrix gradShapeFunctions;
 
-        uIntType qptIndex, row0, col0;
+        uIntType qptIndex, row0;
 
         errorOut error = NULL;
 
@@ -3747,6 +3747,41 @@ namespace overlapCoupling{
 
                     return new errorNode( "formMicromorphicElementInternalForceVector",
                                           "The internal couple term returned an error code: " + std::to_string( errorCode ) );
+
+                }
+
+                //Get the initial index
+                auto it = nodeIDToIndex->find( element->global_node_ids[ n ] );
+                
+                if ( it == nodeIDToIndex->end( ) ){
+
+                    return new errorNode( "formMicromorphicElementInternalForceVector",
+                                          "The global node id " + std::to_string( element->global_node_ids[ n ] ) +
+                                          " is not found in the id to index map" );
+
+                }
+
+                //Set the row index
+                row0 = ( uSize + phiSize ) * it->second;
+
+                if ( ( row0 + uSize + phiSize ) > internalForceVector.rows( ) ){
+
+                    return new errorNode( "formMicromorphicElementInternalForceVector",
+                                          "The global node id " + std::to_string( element->global_node_ids[ n ] ) +
+                                          " has an index ( " + std::to_string( it->second ) + " ) which results in a index larger than" +
+                                          " the internal force vector size ( " + std::to_string( internalForceVector.rows( ) ) + ")" );
+
+                }
+
+                for ( unsigned int i = 0; i < dim; i++ ){
+
+                    internalForceVector( row0 + i, 0 ) -= fint[ i ] * Jxw;
+
+                }
+
+                for ( unsigned int i = 0; i < ( dim * dim ); i++ ){
+
+                    internalForceVector( row0 + i + dim, 0 ) -= cint[ i ] * Jxw;
 
                 }
 
