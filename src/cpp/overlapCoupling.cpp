@@ -1893,6 +1893,10 @@ namespace overlapCoupling{
         quadraturePointCauchyStress.clear( );
         quadraturePointHigherOrderStress.clear( );
 
+        //Clear the external forces at the nodes
+        externalForcesAtNodes.clear( );
+        externalCouplesAtNodes.clear( );
+
         //Loop through the free macro-scale cells
         unsigned int microDomainStartIndex = 0;
         errorOut error = NULL;
@@ -2954,24 +2958,28 @@ namespace overlapCoupling{
                 //Project values to the nodes
                 volumeAtNodes[ j ]               += N * volume;
                 densityAtNodes[ j ]              += N * density * volume;
-                bodyForceAtNodes[ j ]            += N * bodyForce * volume;
-                accelerationAtNodes[ j ]         += N * acceleration * volume;
-                bodyCoupleAtNodes[ j ]           += N * bodyCouple * volume;
-                microSpinInertiaAtNodes[ j ]     += N * microSpinInertia * volume;
+                bodyForceAtNodes[ j ]            += N * density * bodyForce * volume;
+                accelerationAtNodes[ j ]         += N * density * acceleration * volume;
+                bodyCoupleAtNodes[ j ]           += N * density * bodyCouple * volume;
+                microSpinInertiaAtNodes[ j ]     += N * density * microSpinInertia * volume;
                 symmetricMicroStressAtNodes[ j ] += N * symmetricMicroStress * volume;
 
             }
 
         }
 
+        //Save the contributions of the body forces and couples to the external force at the nodes
+        externalForcesAtNodes.emplace( macroCellID, vectorTools::appendVectors( bodyForceAtNodes ) );
+        externalCouplesAtNodes.emplace( macroCellID, vectorTools::appendVectors( bodyCoupleAtNodes ) );
+
         //De-weight the projected values at the nodes
         for ( unsigned int n = 0; n < nMacroCellNodes; n++ ){
 
             densityAtNodes[ n ]              /= volumeAtNodes[ n ];
-            bodyForceAtNodes[ n ]            /= volumeAtNodes[ n ];
-            accelerationAtNodes[ n ]         /= volumeAtNodes[ n ];
-            bodyCoupleAtNodes[ n ]           /= volumeAtNodes[ n ];
-            microSpinInertiaAtNodes[ n ]     /= volumeAtNodes[ n ];
+            bodyForceAtNodes[ n ]            /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
+            accelerationAtNodes[ n ]         /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
+            bodyCoupleAtNodes[ n ]           /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
+            microSpinInertiaAtNodes[ n ]     /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
             symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
 
         }
@@ -3036,12 +3044,14 @@ namespace overlapCoupling{
                 for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
 
                     linearMomentumRHS[ _dim * j + it - nLinearMomentumRHS.begin( ) ] += *it;
+                    externalForcesAtNodes[ macroCellID ][ _dim * j + it - nLinearMomentumRHS.begin( ) ] += *it;
 
                 }
 
                 for ( auto it = nFirstMomentRHS.begin( ); it != nFirstMomentRHS.end( ); it++ ){
 
                     firstMomentRHS[ _dim * _dim * j + it - nFirstMomentRHS.begin( ) ] += *it;
+                    externalCouplesAtNodes[ macroCellID ][ _dim * _dim * j + it - nFirstMomentRHS.begin( ) ] += *it;
 
                 }
 

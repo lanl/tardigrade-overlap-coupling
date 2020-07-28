@@ -248,6 +248,10 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > quadraturePointCauchyStress;
             std::unordered_map< uIntType, floatVector > quadraturePointHigherOrderStress;
 
+            //The external forces at the nodes
+            std::unordered_map< uIntType, floatVector > externalForcesAtNodes;
+            std::unordered_map< uIntType, floatVector > externalCouplesAtNodes;
+
     };
 
     errorOut MADOutlierDetection( const floatVector &x, uIntVector &outliers, const floatType threshold = 10,
