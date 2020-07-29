@@ -2081,6 +2081,18 @@ namespace overlapCoupling{
 
         }
 
+        //Compute the homogenized force vectors and mass matrices
+        error = assembleHomogenizedMatricesAndVectors( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "homogenizeMicroScale",
+                                             "Error in the computation of the homogenized forces and mass matrix" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
     }
 
@@ -3910,12 +3922,10 @@ namespace overlapCoupling{
         return NULL;
     }
 
-    errorOut overlapCoupling::assembleHomogenizedExternalForceVector( Eigen::MatrixXd &homogenizedFEXT){
+    errorOut overlapCoupling::assembleHomogenizedExternalForceVector( ){
         /*!
          * Assemble the homogenized external force vector. This vector doesn't have
          * any scaling from the coefficients but is just the raw vector.
-         *
-         * :param Eigen::MatrixXd &homogenizedFEXT: The homogenized external force vector
          */
 
         //Loop over the elements in the external force container
@@ -3926,28 +3936,36 @@ namespace overlapCoupling{
         //Resize the output vector
         homogenizedFEXT = Eigen::MatrixXd::Zero( ( _dim + _dim * _dim ) * nodeIDToIndex->size( ), 1 );
 
-        for ( auto macroCellID = nodeIDToIndex->begin( ); macroCellID != nodeIDToIndex->end( ); macroCellID->first ){
+        //Collect all of the cells in the overlapping domain
+        const uIntVector *freeMacroCellIds = _inputProcessor.getFreeMacroCellIds( );
+        const uIntVector *ghostMacroCellIds = _inputProcessor.getGhostMacroCellIds( );
 
+        uIntVector macroCellIDVector( freeMacroCellIds->begin( ), freeMacroCellIds->end( ) );
+        macroCellIDVector = vectorTools::appendVectors( { macroCellIDVector, *ghostMacroCellIds } );
+
+        for ( auto macroCellID = macroCellIDVector.begin( ); macroCellID != macroCellIDVector.end( ); macroCellID++ ){
+
+            std::cout << "macroCellID: " << *macroCellID << "\n";
             //Make sure that the macroCellID is stored in the external force vector
-            if ( externalForcesAtNodes.find( macroCellID->first ) == externalForcesAtNodes.end( ) ){
+            if ( externalForcesAtNodes.find( *macroCellID ) == externalForcesAtNodes.end( ) ){
 
                 return new errorNode( "assembleHomogenizedExternalForceVector",
-                                      "Macro cell ID " + std::to_string( macroCellID->first ) +
+                                      "Macro cell ID " + std::to_string( *macroCellID ) +
                                       " not found in external forces at nodes." );
 
             }
 
             //Make sure that the macroCellID is stored in the external couple vector
-            if ( externalCouplesAtNodes.find( macroCellID->first ) == externalCouplesAtNodes.end( ) ){
+            if ( externalCouplesAtNodes.find( *macroCellID ) == externalCouplesAtNodes.end( ) ){
 
                 return new errorNode( "assembleHomogenizedExternalForceVector",
-                                      "Macro cell ID " + std::to_string( macroCellID->first ) +
+                                      "Macro cell ID " + std::to_string( *macroCellID ) +
                                       " not found in external couples at nodes." );
 
             }
 
             //Form the macro element
-            error = buildMacroDomainElement( macroCellID->first,
+            error = buildMacroDomainElement( *macroCellID,
                                              *_inputProcessor.getMacroNodeReferencePositions( ),
                                              *_inputProcessor.getMacroNodeReferenceConnectivity( ),
                                              *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
@@ -3957,7 +3975,7 @@ namespace overlapCoupling{
 
                 errorOut result = new errorNode( "assembleHomogenizedExternalForceVector",
                                                  "Error in the construction of the macro domain element for macro cell " +
-                                                 std::to_string( macroCellID->first ) );
+                                                 std::to_string( *macroCellID ) );
                 result->addNext( error );
                 return result;
 
@@ -3968,17 +3986,27 @@ namespace overlapCoupling{
                       globalNodeID != element->global_node_ids.end( );
                       globalNodeID++ ){
 
+                auto index = nodeIDToIndex->find( *globalNodeID );
+
+                if ( index == nodeIDToIndex->end( ) ){
+
+                    return new errorNode( "assembleHomogenizedExternalForceVector",
+                                          "Macro global node " + std::to_string( *globalNodeID ) +
+                                          " not found in the id to index map" );
+
+                }
+
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
-                    homogenizedFEXT( ( _dim + _dim * _dim ) * macroCellID->second + i, 0 )
-                        += externalForcesAtNodes[ macroCellID->first ][ _dim * ( *globalNodeID ) + i ];
+                    homogenizedFEXT( ( _dim + _dim * _dim ) * index->second + i, 0 )
+                        += externalForcesAtNodes[ index->first ][ _dim * ( globalNodeID - element->global_node_ids.begin( ) ) + i ];
 
                 }
 
                 for ( unsigned int i = 0; i < _dim * _dim; i++ ){
 
-                    homogenizedFEXT( ( _dim + _dim * _dim ) * macroCellID->second + i + _dim, 0 )
-                        += externalCouplesAtNodes[ macroCellID->first ][ _dim * _dim * ( *globalNodeID ) + i ];
+                    homogenizedFEXT( ( _dim + _dim * _dim ) * index->second + i + _dim, 0 )
+                        += externalCouplesAtNodes[ index->first ][ _dim * _dim * ( globalNodeID - element->global_node_ids.begin( ) ) + i ];
 
                 }
 
@@ -3990,11 +4018,10 @@ namespace overlapCoupling{
 
     }
 
-    errorOut overlapCoupling::assembleHomogenizedInternalForceVector( Eigen::MatrixXd &homogenizedFINT ){
+    errorOut overlapCoupling::assembleHomogenizedInternalForceVector( ){
         /*!
          * Assemble the homogenized internal force vector.
          *
-         * :param Eigen::Matrix Xd &homogenizedFINT: The homogenized internal force vector
          */
 
         //Loop over the elements in the external force container
@@ -4141,6 +4168,37 @@ namespace overlapCoupling{
 
             vectorTools::print( elementDOFVector );
             assert( 1 == 0 );
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut overlapCoupling::assembleHomogenizedMatricesAndVectors( ){
+        /*!
+         * Assemble the homogenized mass matrices and force vectors
+         */
+
+        errorOut error = assembleHomogenizedInternalForceVector( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
+                                             "Error in the construction of the homogenized internal force vector" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = assembleHomogenizedExternalForceVector( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
+                                             "Error in the construction of the homogenized external force vector" );
+            result->addNext( error );
+            return result;
 
         }
 

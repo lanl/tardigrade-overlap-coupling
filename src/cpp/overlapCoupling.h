@@ -206,15 +206,13 @@ namespace overlapCoupling{
 
             errorOut computeHomogenizedStresses( const uIntType &macroCellName );
 
-            errorOut assembleHomogenizedMatricesAndVectors( Eigen::MatrixXd &homogenizedMassMatrix,
-                                                            Eigen::MatrixXd &homogenizedINT,
-                                                            Eigen::MatrixXd &homogenizedFEXT );
+            errorOut assembleHomogenizedMatricesAndVectors( );
 
             errorOut assembleHomogenizedMassMatrix( Eigen::MatrixXd &homogenizedMassMatrix );
 
-            errorOut assembleHomogenizedInternalForceVector( Eigen::MatrixXd &homogenizedFINT );
+            errorOut assembleHomogenizedInternalForceVector( );
 
-            errorOut assembleHomogenizedExternalForceVector( Eigen::MatrixXd &homogenizedFEXT );
+            errorOut assembleHomogenizedExternalForceVector( );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;
@@ -261,6 +259,9 @@ namespace overlapCoupling{
             //The external forces at the nodes
             std::unordered_map< uIntType, floatVector > externalForcesAtNodes;
             std::unordered_map< uIntType, floatVector > externalCouplesAtNodes;
+
+            Eigen::MatrixXd homogenizedFINT;
+            Eigen::MatrixXd homogenizedFEXT;
 
     };
 
