@@ -1550,8 +1550,6 @@ namespace overlapCoupling{
 
             }
 
-            //Set the micro deformation phi
-
         }
 
         for ( auto it = freeMicroNodeIds->begin( ); it != freeMicroNodeIds->end( ); it++ ){
@@ -2344,7 +2342,7 @@ namespace overlapCoupling{
             integratedValues
                 = vectorTools::appendVectors( { floatVector( integratedValues.begin( ),
                                                              integratedValues.begin( ) + initialOffset + _dim ),
-                                                floatVector( _dim, -1 ),
+                                                floatVector( _dim, 0 ),
                                                 floatVector( integratedValues.begin( ) + initialOffset + _dim,
                                                              integratedValues.end( ) ) } );
 
@@ -2354,7 +2352,7 @@ namespace overlapCoupling{
         if ( !_inputProcessor.microAccelerationDefined( ) ){
 
             integratedValues
-                = vectorTools::appendVectors( { integratedValues, floatVector( _dim, -2 ) } );
+                = vectorTools::appendVectors( { integratedValues, floatVector( _dim, 0 ) } );
 
         }
 
@@ -2545,7 +2543,7 @@ namespace overlapCoupling{
 
             integratedValues = vectorTools::appendVectors( { floatVector( integratedValues.begin( ),
                                                                           integratedValues.begin( ) + initialOffset ),
-                                                             floatVector( _dim * _dim, 1 ),
+                                                             floatVector( _dim * _dim, 0 ),
                                                              floatVector( integratedValues.begin( ) + initialOffset,
                                                                           integratedValues.end( ) ) } );
 
@@ -2553,7 +2551,7 @@ namespace overlapCoupling{
 
         if ( !_inputProcessor.microAccelerationDefined( ) ){
 
-            integratedValues = vectorTools::appendVectors( { integratedValues, floatVector( _dim * _dim, 2 ) } );
+            integratedValues = vectorTools::appendVectors( { integratedValues, floatVector( _dim * _dim, 0 ) } );
 
         }
 
@@ -4067,13 +4065,10 @@ namespace overlapCoupling{
 
             }
 
-            //Set the micro deformation phi
-
         }
 
         //Resize the output vector
         homogenizedFINT = Eigen::MatrixXd::Zero( nMacroDispDOF * nodeIDToIndex->size( ), 1 );
-
 
         //Loop over the macro cells
         floatVector elementDisplacement;
@@ -4085,12 +4080,11 @@ namespace overlapCoupling{
 
         uIntVector macroCellIDVector( freeMacroCellIds->begin( ), freeMacroCellIds->end( ) );
         macroCellIDVector = vectorTools::appendVectors( { macroCellIDVector, *ghostMacroCellIds } );
-        assert( 1 == 0 );
 
-        for ( auto macroCellID = nodeIDToIndex->begin( ); macroCellID != nodeIDToIndex->end( ); macroCellID++ ){
+        for ( auto macroCellID = macroCellIDVector.begin( ); macroCellID != macroCellIDVector.end( ); macroCellID++ ){
 
             //Form the macro element
-            error = buildMacroDomainElement( macroCellID->first,
+            error = buildMacroDomainElement( *macroCellID,
                                              *_inputProcessor.getMacroNodeReferencePositions( ),
                                              *_inputProcessor.getMacroDisplacements( ),
                                              *_inputProcessor.getMacroNodeReferenceConnectivity( ),
@@ -4101,7 +4095,7 @@ namespace overlapCoupling{
 
                 errorOut result = new errorNode( "assembleHomogenizedInternalForceVector",
                                                  "Error in the construction of the macro domain element for macro cell " +
-                                                 std::to_string( macroCellID->first ) );
+                                                 std::to_string( *macroCellID ) );
                 result->addNext( error );
                 return result;
 
@@ -4169,23 +4163,20 @@ namespace overlapCoupling{
             }
 
             error = formMicromorphicElementInternalForceVector( element, elementDOFVector,
-                                                                quadraturePointCauchyStress[ macroCellID->first ],
-                                                                quadraturePointSymmetricMicroStress[ macroCellID->first ],
-                                                                quadraturePointHigherOrderStress[ macroCellID->first ],
+                                                                quadraturePointCauchyStress[ *macroCellID ],
+                                                                quadraturePointSymmetricMicroStress[ *macroCellID ],
+                                                                quadraturePointHigherOrderStress[ *macroCellID ],
                                                                 nodeIDToIndex, homogenizedFINT );
 
             if ( error ){
 
                 errorOut result = new errorNode( "assembleHomogenizedInternalForceVector",
                                                  "Error in the assembly of the terms of the internal force vector for element " +
-                                                 std::to_string( macroCellID->first ) );
+                                                 std::to_string( *macroCellID ) );
                 result->addNext( error );
                 return result;
 
             }
-
-            vectorTools::print( elementDOFVector );
-            assert( 1 == 0 );
 
         }
 
