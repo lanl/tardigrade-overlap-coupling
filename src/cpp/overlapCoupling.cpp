@@ -1889,6 +1889,7 @@ namespace overlapCoupling{
         quadraturePointDensities.clear( );
         quadraturePointBodyForce.clear( );
         quadraturePointAccelerations.clear( );
+        quadraturePointMicroInertias.clear( );
         quadraturePointBodyCouples.clear( );
         quadraturePointMicroSpinInertias.clear( );
         quadraturePointSymmetricMicroStress.clear( );
@@ -2907,6 +2908,7 @@ namespace overlapCoupling{
         floatVector densityAtNodes( nMacroCellNodes, 0 );
         floatMatrix bodyForceAtNodes( nMacroCellNodes, floatVector( _dim, 0 ) );
         floatMatrix accelerationAtNodes( nMacroCellNodes, floatVector( _dim, 0 ) );
+        floatMatrix microInertiaAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
         floatMatrix bodyCoupleAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
         floatMatrix microSpinInertiaAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
         floatMatrix symmetricMicroStressAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
@@ -2924,6 +2926,9 @@ namespace overlapCoupling{
 
             floatVector acceleration( homogenizedAccelerations[ macroCellID ].begin( ) + _dim * i,
                                       homogenizedAccelerations[ macroCellID ].begin( ) + _dim * ( i + 1 ) );
+
+            floatVector microInertia( homogenizedMicroInertias[ macroCellID ].begin( ) + _dim * _dim * i,
+                                      homogenizedMicroInertias[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
 
             floatVector bodyCouple( homogenizedBodyForceCouples[ macroCellID ].begin( ) + _dim * _dim * i,
                                     homogenizedBodyForceCouples[ macroCellID ].begin( ) + _dim * _dim * ( i + 1 ) );
@@ -2974,6 +2979,7 @@ namespace overlapCoupling{
                 densityAtNodes[ j ]              += N * density * volume;
                 bodyForceAtNodes[ j ]            += N * density * bodyForce * volume;
                 accelerationAtNodes[ j ]         += N * density * acceleration * volume;
+                microInertiaAtNodes[ j ]         += N * density * microInertia * volume;
                 bodyCoupleAtNodes[ j ]           += N * density * bodyCouple * volume;
                 microSpinInertiaAtNodes[ j ]     += N * density * microSpinInertia * volume;
                 symmetricMicroStressAtNodes[ j ] += N * symmetricMicroStress * volume;
@@ -2992,6 +2998,7 @@ namespace overlapCoupling{
             densityAtNodes[ n ]              /= volumeAtNodes[ n ];
             bodyForceAtNodes[ n ]            /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
             accelerationAtNodes[ n ]         /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
+            microInertiaAtNodes[ n ]         /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
             bodyCoupleAtNodes[ n ]           /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
             microSpinInertiaAtNodes[ n ]     /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
             symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
@@ -3091,6 +3098,7 @@ namespace overlapCoupling{
         floatVector densities( element->qrule.size( ), 0 );
         floatMatrix bodyForces( element->qrule.size( ), floatVector( _dim, 0 ) );
         floatMatrix accelerations( element->qrule.size( ), floatVector( _dim, 0 ) );
+        floatMatrix microInertias( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
         floatMatrix bodyCouples( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
         floatMatrix microSpinInertias( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
         floatMatrix symmetricMicroStress( element->qrule.size( ), floatVector( _dim * _dim, 0 ) ); 
@@ -3186,6 +3194,7 @@ namespace overlapCoupling{
                 densities[ qptIndex ]            += shapeFunctions[ n ] * densityAtNodes[ n ];
                 bodyForces[ qptIndex ]           += shapeFunctions[ n ] * bodyForceAtNodes[ n ];
                 accelerations[ qptIndex ]        += shapeFunctions[ n ] * accelerationAtNodes[ n ];
+                microInertias[ qptIndex ]        += shapeFunctions[ n ] * microInertiaAtNodes[ n ];
                 bodyCouples[ qptIndex ]          += shapeFunctions[ n ] * bodyCoupleAtNodes[ n ];
                 microSpinInertias[ qptIndex ]    += shapeFunctions[ n ] * microSpinInertiaAtNodes[ n ];
                 symmetricMicroStress[ qptIndex ] += shapeFunctions[ n ] * symmetricMicroStressAtNodes[ n ];
@@ -3270,6 +3279,7 @@ namespace overlapCoupling{
         quadraturePointDensities.emplace( macroCellID, densities );
         quadraturePointBodyForce.emplace( macroCellID, vectorTools::appendVectors( bodyForces ) );
         quadraturePointAccelerations.emplace( macroCellID, vectorTools::appendVectors( accelerations ) );
+        quadraturePointMicroInertias.emplace( macroCellID, vectorTools::appendVectors( microInertias ) );
         quadraturePointBodyCouples.emplace( macroCellID, vectorTools::appendVectors( bodyCouples ) );
         quadraturePointMicroSpinInertias.emplace( macroCellID, vectorTools::appendVectors( microSpinInertias ) );
         quadraturePointSymmetricMicroStress.emplace( macroCellID, vectorTools::appendVectors( symmetricMicroStress ) );
@@ -3565,7 +3575,6 @@ namespace overlapCoupling{
                                                                               col0 + dim + dim * k + L,
                                                                               eye[ dim * j + k ] * sFo * sFp * inertiaTerm[ dim * K + L ] ) );
 
-    
                                 }
     
                             }
@@ -4071,7 +4080,6 @@ namespace overlapCoupling{
         homogenizedFINT = Eigen::MatrixXd::Zero( nMacroDispDOF * nodeIDToIndex->size( ), 1 );
 
         //Loop over the macro cells
-        floatVector elementDisplacement;
         floatVector elementDOFVector;
 
         //Collect all of the cells in the overlapping domain
@@ -4102,8 +4110,6 @@ namespace overlapCoupling{
             }
             
             //Extract the homogenized degrees of freedom for the element
-            elementDisplacement.clear( );
-            elementDisplacement.reserve( _dim * element->nodes.size( ) );
 
             floatVector nodeDOF;
             elementDOFVector.clear( );
@@ -4184,6 +4190,168 @@ namespace overlapCoupling{
 
     }
 
+    errorOut overlapCoupling::assembleHomogenizedMassMatrix( ){
+        /*!
+         * Assemble the homogenized mass matrix.
+         */
+
+        //Loop over the elements in the external force container
+        std::unique_ptr< elib::Element > element;
+        errorOut error = NULL;
+        const DOFMap *nodeIDToIndex = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+        //Set the number of displacement degrees of freedom
+        unsigned int nMacroDispDOF = _dim + _dim * _dim;
+
+        //Get the free and ghost macro node ids
+        const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
+        const uIntVector *ghostMacroNodeIds = _inputProcessor.getGhostMacroNodeIds( );
+
+        //Assemble the free macro node degree of freedom vector
+        floatVector freeMacroDisplacements( nMacroDispDOF * freeMacroNodeIds->size( ) );
+
+        const floatVector *macroDispDOFVector = _inputProcessor.getMacroDispDOFVector( );
+        for ( auto it = freeMacroNodeIds->begin( ); it != freeMacroNodeIds->end( ); it++ ){
+
+            auto map = _inputProcessor.getMacroGlobalToLocalDOFMap( )->find( *it );
+
+            if ( map == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
+
+                return new errorNode( "assembleHomogenizedInternalForceVector",
+                                      "Global degree of freedom '" + std::to_string( *it ) + "' not found in degree of freedom map" );
+
+            }
+
+            //Set the macro displacements
+            for ( unsigned int i = 0; i < nMacroDispDOF; i++ ){
+
+                freeMacroDisplacements[ nMacroDispDOF * ( map->second ) + i ]
+                    = ( *macroDispDOFVector )[ nMacroDispDOF * map->first + i ];
+
+            }
+
+        }
+
+        //Loop over the macro cells adding the contributions to the mass matrix
+        floatVector elementDOFVector;
+
+        //Collect all of the cells in the overlapping domain
+        const uIntVector *freeMacroCellIds = _inputProcessor.getFreeMacroCellIds( );
+        const uIntVector *ghostMacroCellIds = _inputProcessor.getGhostMacroCellIds( );
+
+        uIntVector macroCellIDVector( freeMacroCellIds->begin( ), freeMacroCellIds->end( ) );
+        macroCellIDVector = vectorTools::appendVectors( { macroCellIDVector, *ghostMacroCellIds } );
+
+        std::vector< DOFProjection::T > coefficients;
+
+        uIntType numCoefficients = 0;
+        for ( auto it = externalForcesAtNodes.begin( ); it != externalForcesAtNodes.end( ); it++ ){
+
+            //Get the number of quadrature points in the element
+            uIntType elementQuadraturePointCount = quadraturePointDensities[ it->first ].size( );
+
+            //Get the number of nodes in the element
+            uIntType elementNodeCount = it->second.size( ) / _dim;
+            numCoefficients += elementQuadraturePointCount * elementNodeCount * elementNodeCount * _dim * _dim * ( 1 + _dim * _dim );
+
+        }
+
+        coefficients.reserve( numCoefficients );
+
+        for ( auto macroCellID = macroCellIDVector.begin( ); macroCellID != macroCellIDVector.end( ); macroCellID++ ){
+
+            //Form the macro element
+            error = buildMacroDomainElement( *macroCellID,
+                                             *_inputProcessor.getMacroNodeReferencePositions( ),
+                                             *_inputProcessor.getMacroDisplacements( ),
+                                             *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                             *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
+                                             element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "assembleHomogenizedInternalForceVector",
+                                                 "Error in the construction of the macro domain element for macro cell " +
+                                                 std::to_string( *macroCellID ) );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Extract the homogenized degrees of freedom for the element
+            floatVector nodeDOF;
+            elementDOFVector.clear( );
+            elementDOFVector.reserve( nMacroDispDOF * element->nodes.size( ) );
+
+            for ( auto nodeID = element->global_node_ids.begin( ); nodeID != element->global_node_ids.end( ); nodeID++ ){
+
+                //Find the node in the global to local map
+                auto index = nodeIDToIndex->find( *nodeID );
+
+                if ( index == nodeIDToIndex->end( ) ){
+
+                    return new errorNode( "assembleHomogenizedInternalForceVector",
+                                          "Macro-scale node with global id " + std::to_string( *nodeID ) +
+                                          " is not found in the global ID to the local index" );
+
+                }
+
+                //Check if the macro-node is free
+                auto freeNodeID = std::find( freeMacroNodeIds->begin( ), freeMacroNodeIds->end( ), *nodeID );
+
+                if ( freeNodeID != freeMacroNodeIds->end( ) ){
+
+                    //Extract the degrees of freedom from the free node
+                    nodeDOF = floatVector( freeMacroDisplacements.begin( ) + ( nMacroDispDOF ) * ( index->second ),
+                                           freeMacroDisplacements.begin( ) + ( nMacroDispDOF ) * ( index->second + 1 ) );
+
+                }
+                else{
+
+                    auto ghostNodeID = std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *nodeID );
+
+                    if ( ghostNodeID != ghostMacroNodeIds->end( ) ){
+
+                        //Extract the degrees of freedom from the ghost node
+                        nodeDOF = floatVector( _projected_ghost_macro_displacement.begin( ) + nMacroDispDOF * ( index->second - _inputProcessor.getFreeMacroNodeIds( )->size( ) ),
+                                               _projected_ghost_macro_displacement.begin( ) + nMacroDispDOF * ( index->second + 1 - _inputProcessor.getFreeMacroNodeIds( )->size( ) ) );
+
+                    }
+                    else{
+
+                        return new errorNode( "assembleHomogenizedInternalForceVector",
+                                              "The macro node " + std::to_string( *nodeID ) +
+                                              " is not found in either the ghost or free macro node IDs" );
+
+                    }
+
+                }
+
+                //Save the element DOF vector
+                for ( unsigned int i = 0; i < nodeDOF.size( ); i++ ){
+
+                    elementDOFVector.push_back( nodeDOF[ i ] );
+
+                }
+
+            }
+
+            //Add the contributions to the mass matrix
+            error = formMicromorphicElementMassMatrix( element, elementDOFVector,
+                                                       quadraturePointMicroInertias[ *macroCellID ],
+                                                       quadraturePointDensities[ *macroCellID ],
+                                                       nodeIDToIndex, coefficients );
+
+        }
+
+        homogenizedMassMatrix = SparseMatrix( ( _dim + _dim * _dim ) * nodeIDToIndex->size( ),
+                                              ( _dim + _dim * _dim ) * nodeIDToIndex->size( ) );
+        homogenizedMassMatrix.setFromTriplets( coefficients.begin( ), coefficients.end( ) );
+
+        return NULL;
+
+    }
+
     errorOut overlapCoupling::assembleHomogenizedMatricesAndVectors( ){
         /*!
          * Assemble the homogenized mass matrices and force vectors
@@ -4206,6 +4374,17 @@ namespace overlapCoupling{
 
             errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
                                              "Error in the construction of the homogenized internal force vector" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = assembleHomogenizedMassMatrix( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
+                                             "Error in the construction of the homogenized mass matrix" );
             result->addNext( error );
             return result;
 

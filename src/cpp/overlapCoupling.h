@@ -208,7 +208,7 @@ namespace overlapCoupling{
 
             errorOut assembleHomogenizedMatricesAndVectors( );
 
-            errorOut assembleHomogenizedMassMatrix( Eigen::MatrixXd &homogenizedMassMatrix );
+            errorOut assembleHomogenizedMassMatrix( );
 
             errorOut assembleHomogenizedInternalForceVector( );
 
@@ -250,6 +250,7 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > quadraturePointDensities;
             std::unordered_map< uIntType, floatVector > quadraturePointBodyForce;
             std::unordered_map< uIntType, floatVector > quadraturePointAccelerations;
+            std::unordered_map< uIntType, floatVector > quadraturePointMicroInertias;
             std::unordered_map< uIntType, floatVector > quadraturePointBodyCouples;
             std::unordered_map< uIntType, floatVector > quadraturePointMicroSpinInertias;
             std::unordered_map< uIntType, floatVector > quadraturePointSymmetricMicroStress;
@@ -260,6 +261,7 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > externalForcesAtNodes;
             std::unordered_map< uIntType, floatVector > externalCouplesAtNodes;
 
+            SparseMatrix homogenizedMassMatrix;
             Eigen::MatrixXd homogenizedFINT;
             Eigen::MatrixXd homogenizedFEXT;
 
