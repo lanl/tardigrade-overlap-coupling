@@ -4043,7 +4043,7 @@ namespace overlapCoupling{
         //Loop over the macro cells
         floatVector elementDisplacement;
         floatVector elementDOFVector;
-        for ( auto macroCellID = nodeIDToIndex->begin( ); macroCellID != nodeIDToIndex->end( ); macroCellID->first ){
+        for ( auto macroCellID = nodeIDToIndex->begin( ); macroCellID != nodeIDToIndex->end( ); macroCellID++ ){
 
             //Form the macro element
             error = buildMacroDomainElement( macroCellID->first,
@@ -4120,6 +4120,22 @@ namespace overlapCoupling{
                     elementDOFVector.push_back( nodeDOF[ i ] );
 
                 }
+
+            }
+
+            error = formMicromorphicElementInternalForceVector( element, elementDOFVector,
+                                                                quadraturePointCauchyStress[ macroCellID->first ],
+                                                                quadraturePointSymmetricMicroStress[ macroCellID->first ],
+                                                                quadraturePointHigherOrderStress[ macroCellID->first ],
+                                                                nodeIDToIndex, homogenizedFINT );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "assembleHomogenizedInternalForceVector",
+                                                 "Error in the assembly of the terms of the internal force vector for element " +
+                                                 std::to_string( macroCellID->first ) );
+                result->addNext( error );
+                return result;
 
             }
 
