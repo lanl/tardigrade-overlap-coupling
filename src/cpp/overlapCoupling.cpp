@@ -984,6 +984,8 @@ namespace overlapCoupling{
 
         //Get the nodes from the file
         elib::vecOfvec nodes( it2->second, elib::vec( _dim, 0 ) );
+        uIntVector globalNodeIds( connectivity.begin( ) + index0 + 1,
+                                  connectivity.begin( ) + index0 + 1 + it2->second );
         for ( unsigned int n = 0; n < it2->second; n++ ){
 
             for ( unsigned int i = 0; i < _dim; i++ ){
@@ -1003,7 +1005,7 @@ namespace overlapCoupling{
 
         }
 
-        element = elib::build_element_from_string( it->second, { }, nodes, qrule->second );
+        element = elib::build_element_from_string( it->second, globalNodeIds, nodes, qrule->second );
 
         return NULL;
     }
@@ -1061,6 +1063,8 @@ namespace overlapCoupling{
         //Get the nodes from the file
         elib::vecOfvec referenceNodes( it2->second, elib::vec( _dim, 0 ) );
         elib::vecOfvec displacements( it2->second, elib::vec( _dim, 0 ) );
+        uIntVector globalNodeIds( connectivity.begin( ) + index0 + 1,
+                                  connectivity.begin( ) + index0 + 1 + it2->second );
         for ( unsigned int n = 0; n < it2->second; n++ ){
 
             for ( unsigned int i = 0; i < _dim; i++ ){
@@ -1081,7 +1085,7 @@ namespace overlapCoupling{
 
         }
 
-        element = elib::build_element_from_string( it->second, { }, referenceNodes, qrule->second );
+        element = elib::build_element_from_string( it->second, globalNodeIds, referenceNodes, qrule->second );
         element->update_node_positions( displacements );
 
         return NULL;
@@ -3945,7 +3949,6 @@ namespace overlapCoupling{
 
         for ( auto macroCellID = macroCellIDVector.begin( ); macroCellID != macroCellIDVector.end( ); macroCellID++ ){
 
-            std::cout << "macroCellID: " << *macroCellID << "\n";
             //Make sure that the macroCellID is stored in the external force vector
             if ( externalForcesAtNodes.find( *macroCellID ) == externalForcesAtNodes.end( ) ){
 
@@ -3967,6 +3970,7 @@ namespace overlapCoupling{
             //Form the macro element
             error = buildMacroDomainElement( *macroCellID,
                                              *_inputProcessor.getMacroNodeReferencePositions( ),
+                                             *_inputProcessor.getMacroDisplacements( ),
                                              *_inputProcessor.getMacroNodeReferenceConnectivity( ),
                                              *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
                                              element );
@@ -3982,9 +3986,13 @@ namespace overlapCoupling{
             }
 
             //Loop over the external node ids
+
             for ( auto globalNodeID = element->global_node_ids.begin( );
                       globalNodeID != element->global_node_ids.end( );
                       globalNodeID++ ){
+
+                //Get the element nodal index
+                uIntType elementNodeIndex = globalNodeID - element->global_node_ids.begin( );
 
                 auto index = nodeIDToIndex->find( *globalNodeID );
 
@@ -3999,14 +4007,14 @@ namespace overlapCoupling{
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
                     homogenizedFEXT( ( _dim + _dim * _dim ) * index->second + i, 0 )
-                        += externalForcesAtNodes[ index->first ][ _dim * ( globalNodeID - element->global_node_ids.begin( ) ) + i ];
+                        += externalForcesAtNodes[ *macroCellID ][ _dim * elementNodeIndex + i ];
 
                 }
 
                 for ( unsigned int i = 0; i < _dim * _dim; i++ ){
 
                     homogenizedFEXT( ( _dim + _dim * _dim ) * index->second + i + _dim, 0 )
-                        += externalCouplesAtNodes[ index->first ][ _dim * _dim * ( globalNodeID - element->global_node_ids.begin( ) ) + i ];
+                        += externalCouplesAtNodes[ *macroCellID ][ _dim * _dim * elementNodeIndex + i ];
 
                 }
 
@@ -4046,7 +4054,7 @@ namespace overlapCoupling{
 
             if ( map == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
 
-                return new errorNode( "projectDegreesOfFreedom",
+                return new errorNode( "assembleHomogenizedInternalForceVector",
                                       "Global degree of freedom '" + std::to_string( *it ) + "' not found in degree of freedom map" );
 
             }
@@ -4070,18 +4078,28 @@ namespace overlapCoupling{
         //Loop over the macro cells
         floatVector elementDisplacement;
         floatVector elementDOFVector;
+
+        //Collect all of the cells in the overlapping domain
+        const uIntVector *freeMacroCellIds = _inputProcessor.getFreeMacroCellIds( );
+        const uIntVector *ghostMacroCellIds = _inputProcessor.getGhostMacroCellIds( );
+
+        uIntVector macroCellIDVector( freeMacroCellIds->begin( ), freeMacroCellIds->end( ) );
+        macroCellIDVector = vectorTools::appendVectors( { macroCellIDVector, *ghostMacroCellIds } );
+        assert( 1 == 0 );
+
         for ( auto macroCellID = nodeIDToIndex->begin( ); macroCellID != nodeIDToIndex->end( ); macroCellID++ ){
 
             //Form the macro element
             error = buildMacroDomainElement( macroCellID->first,
                                              *_inputProcessor.getMacroNodeReferencePositions( ),
+                                             *_inputProcessor.getMacroDisplacements( ),
                                              *_inputProcessor.getMacroNodeReferenceConnectivity( ),
                                              *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
                                              element );
 
             if ( error ){
 
-                errorOut result = new errorNode( "assembleHomogenizedExternalForceVector",
+                errorOut result = new errorNode( "assembleHomogenizedInternalForceVector",
                                                  "Error in the construction of the macro domain element for macro cell " +
                                                  std::to_string( macroCellID->first ) );
                 result->addNext( error );
@@ -4180,23 +4198,23 @@ namespace overlapCoupling{
          * Assemble the homogenized mass matrices and force vectors
          */
 
-        errorOut error = assembleHomogenizedInternalForceVector( );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
-                                             "Error in the construction of the homogenized internal force vector" );
-            result->addNext( error );
-            return result;
-
-        }
-
-        error = assembleHomogenizedExternalForceVector( );
+        errorOut error = assembleHomogenizedExternalForceVector( );
 
         if ( error ){
 
             errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
                                              "Error in the construction of the homogenized external force vector" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = assembleHomogenizedInternalForceVector( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
+                                             "Error in the construction of the homogenized internal force vector" );
             result->addNext( error );
             return result;
 
