@@ -3909,4 +3909,227 @@ namespace overlapCoupling{
 
         return NULL;
     }
+
+    errorOut overlapCoupling::assembleHomogenizedExternalForceVector( Eigen::MatrixXd &homogenizedFEXT){
+        /*!
+         * Assemble the homogenized external force vector. This vector doesn't have
+         * any scaling from the coefficients but is just the raw vector.
+         *
+         * :param Eigen::MatrixXd &homogenizedFEXT: The homogenized external force vector
+         */
+
+        //Loop over the elements in the external force container
+        std::unique_ptr< elib::Element > element;
+        errorOut error = NULL;
+        const DOFMap *nodeIDToIndex = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+        //Resize the output vector
+        homogenizedFEXT = Eigen::MatrixXd::Zero( ( _dim + _dim * _dim ) * nodeIDToIndex->size( ), 1 );
+
+        for ( auto macroCellID = nodeIDToIndex->begin( ); macroCellID != nodeIDToIndex->end( ); macroCellID->first ){
+
+            //Make sure that the macroCellID is stored in the external force vector
+            if ( externalForcesAtNodes.find( macroCellID->first ) == externalForcesAtNodes.end( ) ){
+
+                return new errorNode( "assembleHomogenizedExternalForceVector",
+                                      "Macro cell ID " + std::to_string( macroCellID->first ) +
+                                      " not found in external forces at nodes." );
+
+            }
+
+            //Make sure that the macroCellID is stored in the external couple vector
+            if ( externalCouplesAtNodes.find( macroCellID->first ) == externalCouplesAtNodes.end( ) ){
+
+                return new errorNode( "assembleHomogenizedExternalForceVector",
+                                      "Macro cell ID " + std::to_string( macroCellID->first ) +
+                                      " not found in external couples at nodes." );
+
+            }
+
+            //Form the macro element
+            error = buildMacroDomainElement( macroCellID->first,
+                                             *_inputProcessor.getMacroNodeReferencePositions( ),
+                                             *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                             *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
+                                             element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "assembleHomogenizedExternalForceVector",
+                                                 "Error in the construction of the macro domain element for macro cell " +
+                                                 std::to_string( macroCellID->first ) );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Loop over the external node ids
+            for ( auto globalNodeID = element->global_node_ids.begin( );
+                      globalNodeID != element->global_node_ids.end( );
+                      globalNodeID++ ){
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    homogenizedFEXT( ( _dim + _dim * _dim ) * macroCellID->second + i, 0 )
+                        += externalForcesAtNodes[ macroCellID->first ][ _dim * ( *globalNodeID ) + i ];
+
+                }
+
+                for ( unsigned int i = 0; i < _dim * _dim; i++ ){
+
+                    homogenizedFEXT( ( _dim + _dim * _dim ) * macroCellID->second + i + _dim, 0 )
+                        += externalCouplesAtNodes[ macroCellID->first ][ _dim * _dim * ( *globalNodeID ) + i ];
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut overlapCoupling::assembleHomogenizedInternalForceVector( Eigen::MatrixXd &homogenizedFINT ){
+        /*!
+         * Assemble the homogenized internal force vector.
+         *
+         * :param Eigen::Matrix Xd &homogenizedFINT: The homogenized internal force vector
+         */
+
+        //Loop over the elements in the external force container
+        std::unique_ptr< elib::Element > element;
+        errorOut error = NULL;
+        const DOFMap *nodeIDToIndex = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+        //Set the number of displacement degrees of freedom
+        unsigned int nMacroDispDOF = _dim + _dim * _dim;
+
+        //Get the free and ghost macro node ids
+        const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
+        const uIntVector *ghostMacroNodeIds = _inputProcessor.getGhostMacroNodeIds( );
+
+        //Assemble the free macro node degree of freedom vector
+        floatVector freeMacroDisplacements( nMacroDispDOF * freeMacroNodeIds->size( ) );
+
+        const floatVector *macroDispDOFVector = _inputProcessor.getMacroDispDOFVector( );
+        for ( auto it = freeMacroNodeIds->begin( ); it != freeMacroNodeIds->end( ); it++ ){
+
+            auto map = _inputProcessor.getMacroGlobalToLocalDOFMap( )->find( *it );
+
+            if ( map == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
+
+                return new errorNode( "projectDegreesOfFreedom",
+                                      "Global degree of freedom '" + std::to_string( *it ) + "' not found in degree of freedom map" );
+
+            }
+
+            //Set the macro displacements
+            for ( unsigned int i = 0; i < nMacroDispDOF; i++ ){
+
+                freeMacroDisplacements[ nMacroDispDOF * ( map->second ) + i ]
+                    = ( *macroDispDOFVector )[ nMacroDispDOF * map->first + i ];
+
+            }
+
+            //Set the micro deformation phi
+
+        }
+
+        //Resize the output vector
+        homogenizedFINT = Eigen::MatrixXd::Zero( nMacroDispDOF * nodeIDToIndex->size( ), 1 );
+
+
+        //Loop over the macro cells
+        floatVector elementDisplacement;
+        floatVector elementDOFVector;
+        for ( auto macroCellID = nodeIDToIndex->begin( ); macroCellID != nodeIDToIndex->end( ); macroCellID->first ){
+
+            //Form the macro element
+            error = buildMacroDomainElement( macroCellID->first,
+                                             *_inputProcessor.getMacroNodeReferencePositions( ),
+                                             *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                             *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
+                                             element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "assembleHomogenizedExternalForceVector",
+                                                 "Error in the construction of the macro domain element for macro cell " +
+                                                 std::to_string( macroCellID->first ) );
+                result->addNext( error );
+                return result;
+
+            }
+            
+            //Extract the homogenized degrees of freedom for the element
+            elementDisplacement.clear( );
+            elementDisplacement.reserve( _dim * element->nodes.size( ) );
+
+            floatVector nodeDOF;
+            elementDOFVector.clear( );
+            elementDOFVector.reserve( nMacroDispDOF * element->nodes.size( ) );
+
+            for ( auto nodeID = element->global_node_ids.begin( ); nodeID != element->global_node_ids.end( ); nodeID++ ){
+
+                //Find the node in the global to local map
+                auto index = nodeIDToIndex->find( *nodeID );
+
+                if ( index == nodeIDToIndex->end( ) ){
+
+                    return new errorNode( "assembleHomogenizedInternalForceVector",
+                                          "Macro-scale node with global id " + std::to_string( *nodeID ) +
+                                          " is not found in the global ID to the local index" );
+
+                }
+
+                //Check if the macro-node is free
+                auto freeNodeID = std::find( freeMacroNodeIds->begin( ), freeMacroNodeIds->end( ), *nodeID );
+
+                if ( freeNodeID != freeMacroNodeIds->end( ) ){
+
+                    //Extract the degrees of freedom from the free node
+                    nodeDOF = floatVector( freeMacroDisplacements.begin( ) + ( nMacroDispDOF ) * ( index->second ),
+                                           freeMacroDisplacements.begin( ) + ( nMacroDispDOF ) * ( index->second + 1 ) );
+
+                }
+                else{
+
+                    auto ghostNodeID = std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *nodeID );
+
+                    if ( ghostNodeID != ghostMacroNodeIds->end( ) ){
+
+                        //Extract the degrees of freedom from the ghost node
+                        nodeDOF = floatVector( _projected_ghost_macro_displacement.begin( ) + nMacroDispDOF * ( index->second - _inputProcessor.getFreeMacroNodeIds( )->size( ) ),
+                                               _projected_ghost_macro_displacement.begin( ) + nMacroDispDOF * ( index->second + 1 - _inputProcessor.getFreeMacroNodeIds( )->size( ) ) );
+
+                    }
+                    else{
+
+                        return new errorNode( "assembleHomogenizedInternalForceVector",
+                                              "The macro node " + std::to_string( *nodeID ) +
+                                              " is not found in either the ghost or free macro node IDs" );
+
+                    }
+
+                }
+
+                //Save the element DOF vector
+                for ( unsigned int i = 0; i < nodeDOF.size( ); i++ ){
+
+                    elementDOFVector.push_back( nodeDOF[ i ] );
+
+                }
+
+            }
+
+            vectorTools::print( elementDOFVector );
+            assert( 1 == 0 );
+
+        }
+
+        return NULL;
+
+    }
+
 }

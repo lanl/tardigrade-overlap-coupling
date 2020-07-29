@@ -205,6 +205,16 @@ namespace overlapCoupling{
                                                    std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
             errorOut computeHomogenizedStresses( const uIntType &macroCellName );
+
+            errorOut assembleHomogenizedMatricesAndVectors( Eigen::MatrixXd &homogenizedMassMatrix,
+                                                            Eigen::MatrixXd &homogenizedINT,
+                                                            Eigen::MatrixXd &homogenizedFEXT );
+
+            errorOut assembleHomogenizedMassMatrix( Eigen::MatrixXd &homogenizedMassMatrix );
+
+            errorOut assembleHomogenizedInternalForceVector( Eigen::MatrixXd &homogenizedFINT );
+
+            errorOut assembleHomogenizedExternalForceVector( Eigen::MatrixXd &homogenizedFEXT );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;
