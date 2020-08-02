@@ -43,6 +43,7 @@
     component = 0
     dof_num   = 0
     variable  = disp_x
+    save_in   = FInternal_1
 
     #Coupled variables
     u1     = disp_x
@@ -63,6 +64,7 @@
     component = 1
     dof_num   = 1
     variable  = disp_y
+    save_in   = FInternal_2
 
     #Coupled variables
     u1     = disp_x
@@ -83,6 +85,7 @@
     component = 2
     dof_num   = 2
     variable  = disp_z
+    save_in   = FInternal_3
 
     #Coupled variables
     u1     = disp_x
@@ -105,6 +108,7 @@
     component_j = 0
     dof_num     = 3
     variable    = phi_xx
+    save_in   = CInternal_11
 
     #Coupled variables
     u1     = disp_x
@@ -126,6 +130,7 @@
     component_j = 1
     dof_num     = 4
     variable    = phi_xy
+    save_in   = CInternal_12
 
     #Coupled variables
     u1     = disp_x
@@ -147,6 +152,7 @@
     component_j = 2
     dof_num     = 5
     variable    = phi_xz
+    save_in   = CInternal_13
 
     #Coupled variables
     u1     = disp_x
@@ -168,6 +174,7 @@
     component_j = 0
     dof_num     = 6
     variable    = phi_yx
+    save_in   = CInternal_21
 
     #Coupled variables
     u1     = disp_x
@@ -189,6 +196,7 @@
     component_j = 1
     dof_num     = 7
     variable    = phi_yy
+    save_in   = CInternal_22
 
     #Coupled variables
     u1     = disp_x
@@ -210,6 +218,7 @@
     component_j = 2
     dof_num     = 8
     variable    = phi_yz
+    save_in   = CInternal_23
 
     #Coupled variables
     u1     = disp_x
@@ -231,6 +240,7 @@
     component_j = 0
     dof_num     = 9
     variable    = phi_zx
+    save_in   = CInternal_31
 
     #Coupled variables
     u1     = disp_x
@@ -252,6 +262,7 @@
     component_j = 1
     dof_num     = 10
     variable    = phi_zy
+    save_in   = CInternal_32
 
     #Coupled variables
     u1     = disp_x
@@ -273,6 +284,7 @@
     component_j = 2
     dof_num     = 11
     variable    = phi_zz
+    save_in   = CInternal_33
 
     #Coupled variables
     u1     = disp_x
@@ -409,6 +421,66 @@
     family = LAGRANGE
   [../]
   [./phiDotDot_33]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInternal_1]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInternal_2]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInternal_3]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInternal_11]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInternal_12]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInternal_13]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInternal_21]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInternal_22]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInternal_23]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInternal_31]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInternal_32]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInternal_33]
     order = FIRST
     family = LAGRANGE
   [../]

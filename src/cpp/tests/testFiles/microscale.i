@@ -15,6 +15,7 @@
 [Modules]
   [./TensorMechanics]
     [./Master]
+      save_in = 'FInternal_1 FInternal_2 FInternal_3'
       [./all]
         strain = FINITE
         add_variables = true
@@ -127,6 +128,52 @@
     order = FIRST
     family = LAGRANGE
   [../]
+
+  [./uDot_1]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./uDot_2]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./uDot_3]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./uDotDot_1]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./uDotDot_2]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./uDotDot_3]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInternal_1 ]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInternal_2 ]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInternal_3 ]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
 []
 
 [AuxKernels]
@@ -215,6 +262,49 @@
     ElementIntegrateUserObject = density_nodal_average
     compute_nodal_volume = true
   [../]
+
+  [./uDot_1]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = disp_x
+    variable = uDot_1
+  [../]
+
+  [./uDot_2]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = disp_y
+    variable = uDot_2
+  [../]
+
+  [./uDot_3]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = disp_z
+    variable = uDot_3
+  [../]
+
+  [./uDotDot_1]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = disp_x
+    variable = uDotDot_1
+  [../]
+
+  [./uDotDot_2]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = disp_y
+    variable = uDotDot_2
+  [../]
+
+  [./uDotDot_3]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = disp_z
+    variable = uDotDot_3
+  [../]
+
 []
 
 [UserObjects]
@@ -257,6 +347,11 @@
 #  petsc_options = '-ksp_monitor_true_residual -ksp_compute_singularvalues'# -pc_svd_monitor'
   petsc_options_iname = '-pc_type -sub_pc_type -pc_asm_overlap -ksp_gmres_restart -print_linear_residuals'# -ksp_view_mat'
   petsc_options_value = 'asm      lu           1               101                false                  '# binary'
+  [./TimeIntegrator]
+    type = NewmarkBeta
+    beta = 0.25
+    gamma = 0.5
+  [../]
 []
 
 [Outputs]
