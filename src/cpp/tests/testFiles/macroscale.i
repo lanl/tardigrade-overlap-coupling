@@ -316,6 +316,102 @@
     order = CONSTANT
     family = MONOMIAL
   [../]
+  [./uDot_1]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./uDot_2]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./uDot_3]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDot_11]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDot_12]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDot_13]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDot_21]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDot_22]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDot_23]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDot_31]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDot_32]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDot_33]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./uDotDot_1]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./uDotDot_2]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./uDotDot_3]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDotDot_11]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDotDot_12]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDotDot_13]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDotDot_21]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDotDot_22]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDotDot_23]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDotDot_31]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDotDot_32]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+  [./phiDotDot_33]
+    order = FIRST
+    family = LAGRANGE
+  [../]
 []
 
 [AuxKernels]
@@ -325,50 +421,179 @@
     index = 0
     variable = pk2_11
   [../]
-[]
-
-[AuxKernels]
   [./pk2_22]
     type = MaterialStdVectorAux
     property = PK2
     index = 4
     variable = pk2_22
   [../]
-[]
-
-[AuxKernels]
   [./pk2_33]
     type = MaterialStdVectorAux
     property = PK2
     index = 8
     variable = pk2_33
   [../]
-[]
-
-[AuxKernels]
   [./sigma_11]
     type = MaterialStdVectorAux
     property = SIGMA
     index = 0
     variable = sigma_11
   [../]
-[]
-
-[AuxKernels]
   [./sigma_22]
     type = MaterialStdVectorAux
     property = SIGMA
     index = 4
     variable = sigma_22
   [../]
-[]
-
-[AuxKernels]
   [./sigma_33]
     type = MaterialStdVectorAux
     property = SIGMA
     index = 8
     variable = sigma_33
+  [../]
+  [./uDot_1]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = disp_x
+    variable = uDot_1
+  [../]
+  [./uDot_2]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = disp_y
+    variable = uDot_2
+  [../]
+  [./uDot_3]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = disp_z
+    variable = uDot_3
+  [../]
+  [./phiDot_11]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = phi_xx
+    variable = phiDot_11
+  [../]
+  [./phiDot_12]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = phi_xy
+    variable = phiDot_12
+  [../]
+  [./phiDot_13]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = phi_xz
+    variable = phiDot_13
+  [../]
+  [./phiDot_21]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = phi_yx
+    variable = phiDot_21
+  [../]
+  [./phiDot_22]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = phi_yy
+    variable = phiDot_22
+  [../]
+  [./phiDot_23]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = phi_yz
+    variable = phiDot_23
+  [../]
+  [./phiDot_31]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = phi_zx
+    variable = phiDot_31
+  [../]
+  [./phiDot_32]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = phi_zy
+    variable = phiDot_32
+  [../]
+  [./phiDot_33]
+    type = DOFTimeDerivative
+    derivative_order = 1
+    coupled = phi_zz
+    variable = phiDot_33
+  [../]
+  [./uDotDot_1]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = disp_x
+    variable = uDotDot_1
+  [../]
+  [./uDotDot_2]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = disp_y
+    variable = uDotDot_2
+  [../]
+  [./uDotDot_3]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = disp_z
+    variable = uDotDot_3
+  [../]
+  [./phiDotDot_11]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = phi_xx
+    variable = phiDotDot_11
+  [../]
+  [./phiDotDot_12]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = phi_xy
+    variable = phiDotDot_12
+  [../]
+  [./phiDotDot_13]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = phi_xz
+    variable = phiDotDot_13
+  [../]
+  [./phiDotDot_21]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = phi_yx
+    variable = phiDotDot_21
+  [../]
+  [./phiDotDot_22]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = phi_yy
+    variable = phiDotDot_22
+  [../]
+  [./phiDotDot_23]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = phi_yz
+    variable = phiDotDot_23
+  [../]
+  [./phiDotDot_31]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = phi_zx
+    variable = phiDotDot_31
+  [../]
+  [./phiDotDot_32]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = phi_zy
+    variable = phiDotDot_32
+  [../]
+  [./phiDotDot_33]
+    type = DOFTimeDerivative
+    derivative_order = 2
+    coupled = phi_zz
+    variable = phiDotDot_33
   [../]
 []
 
@@ -457,6 +682,11 @@
   nl_rel_tol = 1e-8
   nl_abs_tol = 1e-8
   nl_max_its = 100
+  [./TimeIntegrator]
+    type = NewmarkBeta
+    beta = 0.25
+    gamma = 0.5
+  [../]
 []
 
 [Outputs]
