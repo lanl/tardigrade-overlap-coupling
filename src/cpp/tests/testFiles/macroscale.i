@@ -37,8 +37,9 @@
 []
 
 [Kernels]
+  ## INTERNAL TERMS
   #Define the internal force balance equations
-  [./force_1]
+  [./internal_force_1]
     type = InternalForce
     component = 0
     dof_num   = 0
@@ -59,7 +60,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./force_2]
+  [./internal_force_2]
     type = InternalForce
     component = 1
     dof_num   = 1
@@ -80,7 +81,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./force_3]
+  [./internal_force_3]
     type = InternalForce
     component = 2
     dof_num   = 2
@@ -102,7 +103,7 @@
     phi_21 = phi_yx
   [../]
   #Define the internal couple balance equations
-  [./couple_11]
+  [./internal_couple_11]
     type = InternalCouple
     component_i = 0
     component_j = 0
@@ -124,7 +125,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./couple_12]
+  [./internal_couple_12]
     type = InternalCouple
     component_i = 0
     component_j = 1
@@ -146,7 +147,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./couple_13]
+  [./internal_couple_13]
     type = InternalCouple
     component_i = 0
     component_j = 2
@@ -168,7 +169,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./couple_21]
+  [./internal_couple_21]
     type = InternalCouple
     component_i = 1
     component_j = 0
@@ -190,7 +191,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./couple_22]
+  [./internal_couple_22]
     type = InternalCouple
     component_i = 1
     component_j = 1
@@ -212,7 +213,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./couple_23]
+  [./internal_couple_23]
     type = InternalCouple
     component_i = 1
     component_j = 2
@@ -234,7 +235,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./couple_31]
+  [./internal_couple_31]
     type = InternalCouple
     component_i = 2
     component_j = 0
@@ -256,7 +257,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./couple_32]
+  [./internal_couple_32]
     type = InternalCouple
     component_i = 2
     component_j = 1
@@ -278,7 +279,7 @@
     phi_31 = phi_zx
     phi_21 = phi_yx
   [../]
-  [./couple_33]
+  [./internal_couple_33]
     type = InternalCouple
     component_i = 2
     component_j = 2
@@ -299,6 +300,310 @@
     phi_32 = phi_zy
     phi_31 = phi_zx
     phi_21 = phi_yx
+  [../]
+  #INERTIAL TERMS
+  #Inertial force terms
+  [./inertial_force_1]
+    type = MicromorphicInertialForce
+    component = 0
+    dof_num   = 0
+    variable  = disp_x
+    save_in   = FInertial_1
+
+    #Coupled variables
+    u1     = disp_x
+    u2     = disp_y
+    u3     = disp_z
+
+    #Material values
+    reference_density = 2000.
+    
+  [../]
+
+  [./inertial_force_2]
+    type = MicromorphicInertialForce
+    component = 0
+    dof_num   = 1
+    variable  = disp_y
+    save_in   = FInertial_2
+
+    #Coupled variables
+    u1     = disp_x
+    u2     = disp_y
+    u3     = disp_z
+
+    #Material values
+    reference_density = 2000.
+    
+  [../]
+
+  [./inertial_force_3]
+    type = MicromorphicInertialForce
+    component = 0
+    dof_num   = 2
+    variable  = disp_z
+    save_in   = FInertial_3
+
+    #Coupled variables
+    u1     = disp_x
+    u2     = disp_y
+    u3     = disp_z
+
+    #Material values
+    reference_density = 2000.
+    
+  [../]
+
+  [./inertial_couple_11]
+    type = MicromorphicInertialCouple
+    component_i = 0
+    component_j = 0
+    dof_num = 0
+    variable = phi_xx
+
+    #Coupled variables
+    phi11 = phi_xx
+    phi12 = phi_xy
+    phi13 = phi_xz
+    phi21 = phi_yx
+    phi22 = phi_yy
+    phi23 = phi_yz
+    phi31 = phi_zx
+    phi32 = phi_zy
+    phi33 = phi_zz
+
+    #Material values
+    reference_density = 2000.
+    I11 = 1e-5
+    I12 = 0.
+    I13 = 0.
+    I22 = 1e-5
+    I23 = 0.
+    I33 = 1e-5
+  [../]
+
+  [./inertial_couple_12]
+    type = MicromorphicInertialCouple
+    component_i = 0
+    component_j = 1
+    dof_num = 1
+    variable = phi_xy
+
+    #Coupled variables
+    phi11 = phi_xx
+    phi12 = phi_xy
+    phi13 = phi_xz
+    phi21 = phi_yx
+    phi22 = phi_yy
+    phi23 = phi_yz
+    phi31 = phi_zx
+    phi32 = phi_zy
+    phi33 = phi_zz
+
+    #Material values
+    reference_density = 2000.
+    I11 = 1e-5
+    I12 = 0.
+    I13 = 0.
+    I22 = 1e-5
+    I23 = 0.
+    I33 = 1e-5
+  [../]
+
+  [./inertial_couple_13]
+    type = MicromorphicInertialCouple
+    component_i = 0
+    component_j = 2
+    dof_num = 2
+    variable = phi_xz
+
+    #Coupled variables
+    phi11 = phi_xx
+    phi12 = phi_xy
+    phi13 = phi_xz
+    phi21 = phi_yx
+    phi22 = phi_yy
+    phi23 = phi_yz
+    phi31 = phi_zx
+    phi32 = phi_zy
+    phi33 = phi_zz
+
+    #Material values
+    reference_density = 2000.
+    I11 = 1e-5
+    I12 = 0.
+    I13 = 0.
+    I22 = 1e-5
+    I23 = 0.
+    I33 = 1e-5
+  [../]
+
+  [./inertial_couple_21]
+    type = MicromorphicInertialCouple
+    component_i = 1
+    component_j = 0
+    dof_num = 3
+    variable = phi_yx
+
+    #Coupled variables
+    phi11 = phi_xx
+    phi12 = phi_xy
+    phi13 = phi_xz
+    phi21 = phi_yx
+    phi22 = phi_yy
+    phi23 = phi_yz
+    phi31 = phi_zx
+    phi32 = phi_zy
+    phi33 = phi_zz
+
+    #Material values
+    reference_density = 2000.
+    I11 = 1e-5
+    I12 = 0.
+    I13 = 0.
+    I22 = 1e-5
+    I23 = 0.
+    I33 = 1e-5
+  [../]
+
+  [./inertial_couple_22]
+    type = MicromorphicInertialCouple
+    component_i = 1
+    component_j = 1
+    dof_num = 4
+    variable = phi_yy
+
+    #Coupled variables
+    phi11 = phi_xx
+    phi12 = phi_xy
+    phi13 = phi_xz
+    phi21 = phi_yx
+    phi22 = phi_yy
+    phi23 = phi_yz
+    phi31 = phi_zx
+    phi32 = phi_zy
+    phi33 = phi_zz
+
+    #Material values
+    reference_density = 2000.
+    I11 = 1e-5
+    I12 = 0.
+    I13 = 0.
+    I22 = 1e-5
+    I23 = 0.
+    I33 = 1e-5
+  [../]
+
+  [./inertial_couple_23]
+    type = MicromorphicInertialCouple
+    component_i = 1
+    component_j = 2
+    dof_num = 5
+    variable = phi_yz
+
+    #Coupled variables
+    phi11 = phi_xx
+    phi12 = phi_xy
+    phi13 = phi_xz
+    phi21 = phi_yx
+    phi22 = phi_yy
+    phi23 = phi_yz
+    phi31 = phi_zx
+    phi32 = phi_zy
+    phi33 = phi_zz
+
+    #Material values
+    reference_density = 2000.
+    I11 = 1e-5
+    I12 = 0.
+    I13 = 0.
+    I22 = 1e-5
+    I23 = 0.
+    I33 = 1e-5
+  [../]
+
+  [./inertial_couple_31]
+    type = MicromorphicInertialCouple
+    component_i = 2
+    component_j = 0
+    dof_num = 6
+    variable = phi_zx
+
+    #Coupled variables
+    phi11 = phi_xx
+    phi12 = phi_xy
+    phi13 = phi_xz
+    phi21 = phi_yx
+    phi22 = phi_yy
+    phi23 = phi_yz
+    phi31 = phi_zx
+    phi32 = phi_zy
+    phi33 = phi_zz
+
+    #Material values
+    reference_density = 2000.
+    I11 = 1e-5
+    I12 = 0.
+    I13 = 0.
+    I22 = 1e-5
+    I23 = 0.
+    I33 = 1e-5
+  [../]
+
+  [./inertial_couple_32]
+    type = MicromorphicInertialCouple
+    component_i = 2
+    component_j = 1
+    dof_num = 7
+    variable = phi_zy
+
+    #Coupled variables
+    phi11 = phi_xx
+    phi12 = phi_xy
+    phi13 = phi_xz
+    phi21 = phi_yx
+    phi22 = phi_yy
+    phi23 = phi_yz
+    phi31 = phi_zx
+    phi32 = phi_zy
+    phi33 = phi_zz
+
+    #Material values
+    reference_density = 2000.
+    I11 = 1e-5
+    I12 = 0.
+    I13 = 0.
+    I22 = 1e-5
+    I23 = 0.
+    I33 = 1e-5
+  [../]
+
+  [./inertial_couple_33]
+    type = MicromorphicInertialCouple
+    component_i = 2
+    component_j = 2
+    dof_num = 8
+    variable = phi_zz
+
+    #Coupled variables
+    phi11 = phi_xx
+    phi12 = phi_xy
+    phi13 = phi_xz
+    phi21 = phi_yx
+    phi22 = phi_yy
+    phi23 = phi_yz
+    phi31 = phi_zx
+    phi32 = phi_zy
+    phi33 = phi_zz
+
+    #Material values
+    reference_density = 2000.
+    I11 = 1e-5
+    I12 = 0.
+    I13 = 0.
+    I22 = 1e-5
+    I23 = 0.
+    I33 = 1e-5
   [../]
 []
 
@@ -481,6 +786,66 @@
   [../]
 
   [./CInternal_33]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInertial_1]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInertial_2]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInertial_3]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInertial_11]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInertial_12]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInertial_13]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInertial_21]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInertial_22]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInertial_23]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInertial_31]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInertial_32]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CInertial_33]
     order = FIRST
     family = LAGRANGE
   [../]

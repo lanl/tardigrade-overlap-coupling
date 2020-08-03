@@ -71,6 +71,30 @@
   [../]
 []
 
+[Kernels]
+  [./inertia_x]
+    type = InertialForce
+    variable = disp_x
+    save_in = FInertial_1
+    use_displaced_mesh = true
+    density = density
+  [../]
+  [./inertia_y]
+    type = InertialForce
+    variable = disp_y
+    save_in = FInertial_2
+    use_displaced_mesh = true
+    density = density
+  [../]
+  [./inertia_z]
+    type = InertialForce
+    variable = disp_z
+    save_in = FInertial_3
+    use_displaced_mesh = true
+    density = density
+  [../]
+[]
+
 #Stress outputs
 
 [AuxVariables]
@@ -170,6 +194,21 @@
   [../]
 
   [./FInternal_3 ]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInertial_1 ]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInertial_2 ]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FInertial_3 ]
     order = FIRST
     family = LAGRANGE
   [../]
