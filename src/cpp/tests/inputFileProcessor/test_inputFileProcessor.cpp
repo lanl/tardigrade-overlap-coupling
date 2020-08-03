@@ -578,9 +578,6 @@ int test_initializeIncrement( std::ofstream &results ){
 
         if ( !vectorTools::fuzzyEquals( *mAR, microAccelerationsAnswer[ ( mAR - microAccelerationsResult->begin( ) ) % 3 ], 1e-5, 1e-5 ) ){
     
-            std::cout << "result: " << *mAR << "\n";
-            std::cout << "answer: " << microAccelerationsAnswer[ ( mAR - microAccelerationsResult->begin( ) ) % 3 ] << "\n";
-            std::cout << "error:  " << *mAR - microAccelerationsAnswer[ ( mAR - microAccelerationsResult->begin( ) ) % 3 ] << "\n";
             results << "test_initializeIncrement (test 30) & False\n";
             return 1;
     
@@ -602,6 +599,28 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatVector microVelocitiesAnswer = { 0., 0., 0.002 };
+
+    const floatVector *microVelocitiesResult = reader.getMicroVelocities( );
+
+    for ( auto mVR = microVelocitiesResult->begin( ); mVR != microVelocitiesResult->end( ); mVR++ ){
+
+        if ( !vectorTools::fuzzyEquals( *mVR, microVelocitiesAnswer[ ( mVR - microVelocitiesResult->begin( ) ) % 3 ], 1e-5, 1e-5 ) ){
+    
+            results << "test_initializeIncrement (test 33) & False\n";
+            return 1;
+    
+        }
+
+    }
+
+    if ( !reader.microVelocitiesDefined( ) ){
+
+        results << "test_initializeIncrement (test 34) & False\n";
+        return 1;
+
+    }
+
     unsigned int dim = 3;
     const floatVector microStressesAnswer( dim * dim * reader.getMicroDensities( )->size( ) );
     const floatVector *microStressesResult = reader.getMicroStresses( );
@@ -609,7 +628,7 @@ int test_initializeIncrement( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( *microStressesResult, microStressesAnswer, 1e-5, 1e-1 ) ){ //NOTE: The tolerance is high because stresses can be large
 
         vectorTools::print( *microStressesResult );
-        results << "test_initializeIncrement (test 33) & False\n";
+        results << "test_initializeIncrement (test 35) & False\n";
         return 1;
 
     }

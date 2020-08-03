@@ -467,6 +467,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the micro velocities
+        error = extractMicroVelocities( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the micro velocities" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the micro accelerations
         error = extractMicroAccelerations( microIncrement );
 
@@ -948,7 +957,7 @@ namespace inputFileProcessor{
 
     errorOut inputFileProcessor::extractMicroAccelerations( const unsigned int &increment ){
         /*!
-         * Extract the node micro-body forces at the indicated increment
+         * Extract the node micro-accelerations at the indicated increment
          *
          * :param const unsigned int &increment: The current increment
          */
@@ -975,7 +984,9 @@ namespace inputFileProcessor{
                                   "Three micro-accelerations must be defined ( in order ) as we assume the coupling is 3D" );
 
         }
-        _microAccelerations = floatVector( 3 * _microVolumes.size( ) );
+
+        //Get the acceleration variable names
+        stringVector accelerationVariableNames( 3 );
         for ( auto aK  = accelerationKeys.begin( );  aK != accelerationKeys.end( ); aK++ ){
 
             //Get the variable name associated with this component
@@ -991,44 +1002,98 @@ namespace inputFileProcessor{
 
             }
             
-            std::string accelerationVariableName
+            accelerationVariableNames[ aK - accelerationKeys.begin( ) ]
                 = _config[ "microscale_definition" ][ "acceleration_variable_names" ][ *aK ].as< std::string >( );
 
-            //Extract the micro acceleration vector for the current component
-            floatVector microAccelerationComponent;
-            errorOut error =
-                _microscale->getSolutionData( increment, accelerationVariableName, "Node", microAccelerationComponent );
+        }
 
-            if ( error ){
+        //Extract the acceleration vector
+        errorOut error = _microscale->getSolutionVectorDataFromComponents( increment, accelerationVariableNames,
+                                                                           "Node", _microAccelerations );
 
-                errorOut result = new errorNode( "extractMicroAcceleration",
-                                                 "Error in the extraction of micro-acceleration component " + *aK +
-                                                 " with the name " + accelerationVariableName );
-                result->addNext( error );
-                return result;
+        if ( error ){
 
-            }
-
-            if ( 3 * microAccelerationComponent.size( ) != _microAccelerations.size( ) ){
-
-                return new errorNode( "extractMicroAccelerations",
-                                      "The acceleration vector for the micro accelerations associated with component " + *aK +
-                                      " is not of a consistent size with the acceleration vector" );
-
-            }
-
-            //Store the micro acceleration components in the acceleration vector
-            for ( auto a  = microAccelerationComponent.begin( );
-                       a != microAccelerationComponent.end( );
-                       a++ ){
-
-                _microAccelerations[ 3 * ( a - microAccelerationComponent.begin( ) ) + aK - accelerationKeys.begin( ) ] = *a;
-
-            }
+            errorOut result = new errorNode( "extractMicroAcceleration",
+                                             "Error in the extraction of the micro-acceleration components" );
+            result->addNext( error );
+            return result;
 
         }
 
         _microAccelerationFlag = true;
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMicroVelocities( const unsigned int &increment ){
+        /*!
+         * Extract the node micro-velocities at the indicated increment
+         *
+         * TODO: Move this and other vector / tensor extraction routines to a common function
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        //Check if the body force name has been defined
+        _microVelocityFlag = false;
+
+        stringVector velocityKeys = { "v1", "v2", "v3" };
+
+        if ( ( !_config[ "microscale_definition" ][ "velocity_variable_names" ] ) ||
+             ( _config[ "microscale_definition" ][ "velocity_variable_names" ][ "v1" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
+
+            _config [ "microscale_definition" ][ "velocity_variable_names" ][ "v1" ] = "NULL"; //Indicate that the velocity is assumed to be zero
+            _config [ "microscale_definition" ][ "velocity_variable_names" ][ "v2" ] = "NULL"; //Indicate that the velocity is assumed to be zero
+            _config [ "microscale_definition" ][ "velocity_variable_names" ][ "v3" ] = "NULL"; //Indicate that the velocity is assumed to be zero
+            _microVelocities = { 0., 0., 0. }; //Set the velocity to zero
+
+            return NULL;
+
+        }
+        if ( _config[ "microscale_definition" ][ "velocity_variable_names" ].size( ) != 3 ){
+
+            return new errorNode( "extractMicroVelocities",
+                                  "Three micro-velocities must be defined ( in order ) as we assume the coupling is 3D" );
+
+        }
+
+        //Get the velocity variable names
+        stringVector velocityVariableNames( 3 );
+        for ( auto vK  = velocityKeys.begin( );  vK != velocityKeys.end( ); vK++ ){
+
+            //Get the variable name associated with this component
+            if ( !_config[ "microscale_definition" ][ "velocity_variable_names" ][ *vK ].IsScalar( ) ){
+
+                return new errorNode( "extractMicroVelocities",
+                                      "The definition of microscale velocity component " + *vK +
+                                      " is either not defined in the input file or incorrectly defined.\n" +
+                                      "Under 'velocity_variable_names' three terms must be defined in the format\n"
+                                      "  v1: v1_variable_name\n" +
+                                      "  v2: v2_variable_name\n" +
+                                      "  v3: v3_variable_name\n" );
+
+            }
+            
+            velocityVariableNames[ vK - velocityKeys.begin( ) ]
+                = _config[ "microscale_definition" ][ "velocity_variable_names" ][ *vK ].as< std::string >( );
+
+        }
+
+        //Extract the velocity vector
+        errorOut error = _microscale->getSolutionVectorDataFromComponents( increment, velocityVariableNames,
+                                                                           "Node", _microVelocities );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroVelocity",
+                                             "Error in the extraction of the micro-velocity components" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        _microVelocityFlag = true;
 
         return NULL;
 
@@ -1468,6 +1533,14 @@ namespace inputFileProcessor{
          */
 
         return &_microBodyForces;
+    }
+
+    const floatVector* inputFileProcessor::getMicroVelocities( ){
+        /*!
+         * Get a pointer to the micro velocities
+         */
+
+        return &_microVelocities;
     }
 
     const floatVector* inputFileProcessor::getMicroAccelerations( ){
@@ -2072,6 +2145,14 @@ namespace inputFileProcessor{
          */
 
         return _microBodyForceFlag;
+    }
+
+    bool inputFileProcessor::microVelocitiesDefined( ){
+        /*!
+         * Get whether the micro-velocities has been defined
+         */
+
+        return _microVelocityFlag;
     }
 
     bool inputFileProcessor::microAccelerationDefined( ){

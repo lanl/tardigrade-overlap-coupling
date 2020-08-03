@@ -39,6 +39,10 @@ microscale_definition:
                 u1: disp_x
                 u2: disp_y
                 u3: disp_z
+        velocity_variable_names: #The names of the velocity attributes at the nodes
+                v1: uDot_1
+                v2: uDot_2
+                v3: uDot_3 
         acceleration_variable_names: #The names of the acceleration attributes at the nodes
                 a1: uDotDot_1
                 a2: uDotDot_2
