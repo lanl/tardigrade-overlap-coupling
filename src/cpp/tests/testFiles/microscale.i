@@ -52,14 +52,14 @@
 [Functions]
   [./front_bc]
     type  = ParsedFunction
-    value = 0.1*t
+    value = 1e-3*t
   [../]
 []
 
 [Materials]
   [./elasticity_tensor]
     type = ComputeIsotropicElasticityTensor
-    youngs_modulus = 68
+    youngs_modulus = 68e3
     poissons_ratio = 0.32
   [../]
   [./stress]
@@ -67,7 +67,7 @@
   [../]
   [./density]
     type = Density
-    density = 2000.
+    density = 2.
   [../]
 []
 
@@ -367,11 +367,11 @@
 #  type = Steady
   type = Transient
   num_steps = 1
-  dt        = 0.1
+  dt        = 1
   solve_type = 'PJFNK'
 #  solve_type = 'NEWTON'
-#  nl_rel_tol = 1e-8
-#  nl_abs_tol = 1e-8
+  nl_rel_tol = 1e-8
+  nl_abs_tol = 1e-8
 #  nl_max_its = 100
   #Terms for debugging
 #  petsc_options = '-ksp_monitor_true_residual -ksp_compute_singularvalues' 

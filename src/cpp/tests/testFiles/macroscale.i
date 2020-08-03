@@ -316,7 +316,7 @@
     u3     = disp_z
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     
   [../]
 
@@ -333,7 +333,7 @@
     u3     = disp_z
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     
   [../]
 
@@ -350,7 +350,7 @@
     u3     = disp_z
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     
   [../]
 
@@ -373,7 +373,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -401,7 +401,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -429,7 +429,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -457,7 +457,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -485,7 +485,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -513,7 +513,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -541,7 +541,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -569,7 +569,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -597,7 +597,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2000.
+    reference_density = 2.
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -1076,7 +1076,7 @@
 [Functions]
   [./back_bc]
     type  = ParsedFunction
-    value = -0.1*t
+    value = -1e-3*t
   [../]
 []
 
@@ -1112,8 +1112,8 @@
 
 [Executioner]
   type = Transient
-  num_steps = 10
-  dt        = 0.1
+  num_steps = 1
+  dt        = 1
   solve_type = 'PJFNK'
 #  solve_type = 'NEWTON'
   nl_rel_tol = 1e-8

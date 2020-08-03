@@ -106,7 +106,7 @@ int test_initializeFileInterfaces( std::ofstream &results ){
 
     floatVector resultMacroNodes, resultMicroNodes;
 
-    errorOut error = reader._macroscale->readMesh( 10, resultMacroNodes );
+    errorOut error = reader._macroscale->readMesh( 1, resultMacroNodes );
 
     if ( error ){
         error->print();
@@ -152,20 +152,21 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
-    errorOut error = reader.initializeIncrement( 1, 3 );
+    errorOut error = reader.initializeIncrement( 1, 1 );
     if ( error ){
         error->print( );
         results << "test_initializeIncrement & False\n";
         return 1;
     }
 
-    floatType resultAnswer = 2000.;
+    floatType resultAnswer = 2.;
 
     const floatVector *densityResult = reader.getMicroDensities( );
 
     for ( auto it = densityResult->begin( ); it != densityResult->end( ); it++ ){
 
-        if ( !vectorTools::fuzzyEquals( *it, resultAnswer ) ){
+        if ( !vectorTools::fuzzyEquals( *it, resultAnswer ) ){ //NOTE: Tolerance due to inertial effects
+            std::cout << *it << "\n";
             results << "test_initializeIncrement (test 1) & False\n";
             return 1;
         }
@@ -188,7 +189,7 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
-    floatVector answer = { 0., 0., 0.01 };
+    floatVector answer = { 0., 0., 0.001 };
 
     const floatVector *displacementResult = reader.getMicroDisplacements( );
 
@@ -196,7 +197,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
     for ( auto it = displacementResult->begin( ); it != displacementResult->end( ); it++ ){
 
-        if ( !vectorTools::fuzzyEquals( *it, answer[ itmp ] ) ){
+        if ( !vectorTools::fuzzyEquals( *it, answer[ itmp ] ) ){ //Note tolerance due to inertia term
 
             std::cout << it - displacementResult->begin( ) << "\n";
             std::cout << *it << "\n";
@@ -289,27 +290,28 @@ int test_initializeIncrement( std::ofstream &results ){
 
     const floatVector macroDisplacementsAnswer =
         {
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
-            0., 0., -0.03,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
+            0., 0., -0.001,
         };
 
     const floatVector *macroDisplacementsResult = reader.getMacroDisplacements( );
 
     if ( !vectorTools::fuzzyEquals( macroDisplacementsAnswer, *macroDisplacementsResult ) ){
+        vectorTools::print( *macroDisplacementsResult );
         results << "test_initializeIncrement (test 12) & False\n";
         return 1;
     }
@@ -529,22 +531,22 @@ int test_initializeIncrement( std::ofstream &results ){
 
     const floatVector macroDispDOFVectorAnswer =
         {
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.03, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         };
    
     if ( !vectorTools::fuzzyEquals( macroDispDOFVectorAnswer, *macroDispDOFVectorResult ) ){
@@ -598,7 +600,7 @@ int test_initializeIncrement( std::ofstream &results ){
     const floatVector microStressesAnswer( dim * dim * reader.getMicroDensities( )->size( ) );
     const floatVector *microStressesResult = reader.getMicroStresses( );
 
-    if ( !vectorTools::fuzzyEquals( *microStressesResult, microStressesAnswer ) ){
+    if ( !vectorTools::fuzzyEquals( *microStressesResult, microStressesAnswer, 1e-5, 1e-1 ) ){ //NOTE: The tolerance is high because stresses can be large
 
         vectorTools::print( *microStressesResult );
         results << "test_initializeIncrement (test 33) & False\n";

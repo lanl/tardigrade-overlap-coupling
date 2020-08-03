@@ -955,15 +955,36 @@ namespace inputFileProcessor{
 
         //Check if the body force name has been defined
         _microAccelerationFlag = false;
-        if ( ( !_config[ "microscale_definition" ][ "acceleration_variable_name" ] ) ||
-             ( _config[ "microscale_definition" ][ "acceleration_variable_name" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
 
-            _config [ "microscale_definition" ][ "acceleration_variable_name" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
+        stringVector accelerationKeys = { "a1", "a2", "a3" };
+
+        if ( ( !_config[ "microscale_definition" ][ "acceleration_variable_names" ] ) ||
+             ( _config[ "microscale_definition" ][ "acceleration_variable_names" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
+
+            _config [ "microscale_definition" ][ "acceleration_variable_names" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
             _microAccelerations = { 0., 0., 0. }; //Set the acceleration to zero
 
             return NULL;
 
         }
+        if ( !_config[ "microscale_definition" ][ "acceleration_variable_names" ].IsSequence( ) ){
+
+            return new errorNode( "extractMicroAccelerations",
+                                  "The micro-acclerations must be defined as a sequence of names corresponding to the different directions" );
+
+        }
+        if ( _config[ "microscale_definition" ][ "acceleration_variable_names" ].size( ) != 3 ){
+
+            return new errorNode( "extractMicroAccelerations",
+                                  "Three micro-accelerations must be defined ( in order ) as we assume the coupling is 3D" );
+
+        }
+        for ( auto aK  = accelerationKeys.begin( );  aK != accelerationKeys.end( ); aK++ ){
+
+            std::cout << *aK << "\n";
+
+        }
+        return new errorNode( "exteractMicroAccelerations", "derp" );
 
         //Extract the micro acceleration vector
         errorOut error =
