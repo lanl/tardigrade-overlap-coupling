@@ -14,7 +14,9 @@ typedef dataFileInterface::errorOut errorOut; //!Redefinition for a pointer to t
 typedef dataFileInterface::floatType floatType; //!Define the float values type.
 typedef dataFileInterface::floatVector floatVector; //! Define a vector of floats
 typedef dataFileInterface::floatMatrix floatMatrix; //!Define a matrix of floats
+typedef dataFileInterface::uIntType uIntType; //!Define the unsigned int type
 typedef dataFileInterface::uIntVector uIntVector; //!Define a vector of unsigned ints
+typedef dataFileInterface::stringVector stringVector; //!Define a vector of strings
 
 int test_XDMFDataFile_constructor( std::ofstream &results ){
     /*!
@@ -148,7 +150,7 @@ int test_XDMFDataFile_getNumIncrements( std::ofstream &results ){
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
 
-    unsigned int numIncrementsAnswer = 11;
+    unsigned int numIncrementsAnswer = 2;
     unsigned int numIncrementsResult;
 
     errorOut error = xdf.getNumIncrements( numIncrementsResult );
@@ -252,7 +254,7 @@ int test_XDMFDataFile_getSetNames( std::ofstream &results ){
                                           "non_overlapped_elements", "free_elements", "ghost_elements" };
     std::vector< std::string > result;
 
-    errorOut error = xdf.getSetNames( 6, result );
+    errorOut error = xdf.getSetNames( 1, result );
 
     if ( error ){
         error->print( );
@@ -290,15 +292,15 @@ int test_XDMFDataFile_getSolutionData( std::ofstream &results ){
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
 
-    floatVector answer = { -0.01, -0.01, -0.01,
-                           -0.01, -0.01, -0.01,
-                           -0.01, -0.01, -0.01,
-                           -0.01, -0.01, -0.01,
-                           -0.01, -0.01, -0.01,
-                           -0.01 };
+    floatVector answer = { -0.001, -0.001, -0.001,
+                           -0.001, -0.001, -0.001,
+                           -0.001, -0.001, -0.001,
+                           -0.001, -0.001, -0.001,
+                           -0.001, -0.001, -0.001,
+                           -0.001 };
 
     floatVector result;
-    errorOut error = xdf.getSolutionData( 1.0, "disp_z", "Node", result );
+    errorOut error = xdf.getSolutionData( 1, "disp_z", "Node", result );
 
     if ( error ){
         error->print( );
@@ -495,6 +497,54 @@ int test_XDMFDataFile_getNumDomainNodes( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_getSolutionVectorDataFromComponents( std::ofstream &results ){
+    /*!
+     * Test the extraction of vector solution data from a file where the 
+     * components are separated.
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    floatVector answer = { 0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001,
+                           0., 0., -0.001 };
+
+    floatVector result;
+    stringVector componentNames = { "disp_x", "disp_y", "disp_z" };
+    errorOut error = xdf.getSolutionVectorDataFromComponents( 1, componentNames, "Node", result );
+
+    if ( error ){
+        error->print( );
+        results << "test_XDMFDataFile_getSolutionVectorDataFromComponents & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( answer, result ) ){
+        results << "test_XDMFDataFile_getSolutionVectorDataFromComponents (test 1) & False\n";
+        return 1;
+    }
+
+
+    results << "test_XDMFDataFile_getSolutionVectorDataFromComponents & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -515,6 +565,7 @@ int main(){
     test_XDMFDataFile_getNumNodes( results );
     test_XDMFDataFile_getSetNames( results );
     test_XDMFDataFile_getSolutionData( results );
+    test_XDMFDataFile_getSolutionVectorDataFromComponents( results );
     test_XDMFDataFile_getMeshData( results );
     test_XDMFDataFile_getMeshData2( results );
 

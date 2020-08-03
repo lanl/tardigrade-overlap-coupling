@@ -192,12 +192,12 @@ namespace dataFileInterface{
         return new errorNode( "getDomainNodes", "The getNumDomainNodes function is not defined" );
     }
 
-    errorOut dataFileBase::getSetNames( const uIntType increment, std::vector< std::string > &setNames ){
+    errorOut dataFileBase::getSetNames( const uIntType increment, stringVector &setNames ){
         /*!
          * Get the set names from the provided domain at the current increment
          *
          * :param const uIntType increment: The increment at which to get the sets
-         * :param std::vector< std::string > &setNames: The names of the sets
+         * :param stringVector &setNames: The names of the sets
          */
 
         ( void ) increment;
@@ -225,6 +225,74 @@ namespace dataFileInterface{
         ( void ) data;
 
         return new errorNode( "getSolutionData", "The getSolutionData function is not defined" );
+    }
+
+    errorOut dataFileBase::getSolutionVectorDataFromComponents( const uIntType increment,
+                                                                const stringVector &componentNames,
+                                                                const std::string &dataCenter, floatVector &data ){
+        /*!
+         * Extract solution vector ( and tensor ) data from a file where the components are saved individually
+         *
+         * :param const uIntType increment: The increment at which to get the data
+         * :param const stringVector &componentNames: The name of the data's components
+         * :param const std::string &dataCenter: The type of the data. This will either be "Node" or "Cell"
+         * :param floatVector &data: The output data vector
+         */
+
+        unsigned int nComponents = componentNames.size( );
+
+        //Check the component names vector
+        if ( nComponents == 0 ){
+
+            data.clear( );
+            return NULL;
+
+        }
+
+        unsigned int nDataPoints = 0;
+        errorOut error = NULL;
+
+        //Loop over the component names
+        floatVector componentData;
+
+        for ( auto cN = componentNames.begin( ); cN != componentNames.end( ); cN++ ){
+
+            error = getSolutionData( increment, *cN, dataCenter, componentData );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "getSolutionVectorDataFromComponents",
+                                                 "Error in the extraction of component " + *cN );
+                result->addNext( error );
+                return result;
+
+            }
+
+            if ( ( cN - componentNames.begin( ) ) == 0 ){
+
+                data.clear( );
+                nDataPoints = componentData.size( );
+                data = floatVector( nComponents * nDataPoints );
+
+            }
+
+            if ( componentData.size( ) != nDataPoints ){
+
+                return new errorNode( "getSolutionVectorDataFromComponents",
+                                      "The component " + *cN + " does not have a consistent size with preceeding components" );
+
+            }
+
+            for ( auto c = componentData.begin( ); c != componentData.end( ); c++ ){
+
+                data[ ( c - componentData.begin( ) ) * nComponents + cN - componentNames.begin( ) ] = *c;
+
+            } 
+
+        }
+       
+       return NULL;
+
     }
 
     errorOut dataFileBase::getMeshData( const uIntType increment,
@@ -649,12 +717,12 @@ namespace dataFileInterface{
 
     }
 
-    errorOut XDMFDataFile::getSetNames( const uIntType increment, std::vector< std::string > &setNames ){
+    errorOut XDMFDataFile::getSetNames( const uIntType increment, stringVector &setNames ){
         /*!
          * Get the set names from the provided domain at the current increment
          *
          * :param const uIntType increment: The increment at which to get the sets
-         * :param std::vector< std::string > &setNames: The names of the sets
+         * :param stringVector &setNames: The names of the sets
          */
 
         //Get the grid
@@ -667,7 +735,7 @@ namespace dataFileInterface{
         }
 
         //Get the sets from the grid
-        setNames = std::vector< std::string >( grid->getNumberSets( ) );
+        setNames = stringVector( grid->getNumberSets( ) );
 
         for ( uIntType i = 0; i < setNames.size(); i++ ){
 

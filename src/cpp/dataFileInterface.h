@@ -38,6 +38,7 @@ namespace dataFileInterface{
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
     typedef unsigned int uIntType;
     typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
+    typedef std::vector< std::string > stringVector; //!Define a vector of strings
 
     //XDMF Cell Node Counts
 
@@ -96,9 +97,13 @@ namespace dataFileInterface{
                                              uIntVector &domainNodes ); //Required overload
             virtual errorOut getNumDomainNodes( const uIntType increment, const std::string domainName,
                                                 uIntType &numDomainNodes ); //Required overload
-            virtual errorOut getSetNames( const uIntType increment, std::vector< std::string > &setNames ); //Required overload
+            virtual errorOut getSetNames( const uIntType increment, stringVector &setNames ); //Required overload
             virtual errorOut getSolutionData( const uIntType increment, const std::string &dataName, const std::string &dataType,
                                               floatVector &data ); //Required overload
+            virtual errorOut getSolutionVectorDataFromComponents( const uIntType increment,
+                                                                  const stringVector &componentNames,
+                                                                  const std::string &dataType, floatVector &data ); //Probably doesn't need to be overloaded
+
             virtual errorOut getMeshData( const uIntType increment,
                                           floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
                                           uIntType &cellCounts ); //Required overload
@@ -137,7 +142,7 @@ namespace dataFileInterface{
                                      uIntVector &domainNodes );
             errorOut getNumDomainNodes( const uIntType increment, const std::string domainName,
                                         uIntType &numDomainNodes );
-            errorOut getSetNames( const uIntType increment, std::vector< std::string > &setNames );
+            errorOut getSetNames( const uIntType increment, stringVector &setNames );
             errorOut getSolutionData( const uIntType increment, const std::string &dataName, const std::string &dataType,
                                       floatVector &data );
             errorOut getMeshData( const uIntType increment,
