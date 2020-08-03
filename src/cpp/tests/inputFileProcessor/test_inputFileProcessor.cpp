@@ -571,18 +571,24 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector microAccelerationsAnswer = { 0., 0., 0. };
+    const floatVector microAccelerationsAnswer = { 0., 0., 0.004 };
     const floatVector *microAccelerationsResult = reader.getMicroAccelerations( );
 
-    if ( !vectorTools::fuzzyEquals( *microAccelerationsResult, microAccelerationsAnswer ) ){
+    for ( auto mAR = microAccelerationsResult->begin( ); mAR != microAccelerationsResult->end( ); mAR++ ){
 
-        vectorTools::print( *microAccelerationsResult );
-        results << "test_initializeIncrement (test 30) & False\n";
-        return 1;
+        if ( !vectorTools::fuzzyEquals( *mAR, microAccelerationsAnswer[ ( mAR - microAccelerationsResult->begin( ) ) % 3 ], 1e-5, 1e-5 ) ){
+    
+            std::cout << "result: " << *mAR << "\n";
+            std::cout << "answer: " << microAccelerationsAnswer[ ( mAR - microAccelerationsResult->begin( ) ) % 3 ] << "\n";
+            std::cout << "error:  " << *mAR - microAccelerationsAnswer[ ( mAR - microAccelerationsResult->begin( ) ) % 3 ] << "\n";
+            results << "test_initializeIncrement (test 30) & False\n";
+            return 1;
+    
+        }
 
     }
 
-    if ( reader.microAccelerationDefined( ) ){
+    if ( !reader.microAccelerationDefined( ) ){
 
         results << "test_initializeIncrement (test 31) & False\n";
         return 1;

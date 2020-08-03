@@ -39,6 +39,10 @@ microscale_definition:
                 u1: disp_x
                 u2: disp_y
                 u3: disp_z
+        acceleration_variable_names: #The names of the acceleration attributes at the nodes
+                a1: uDotDot_1
+                a2: uDotDot_2
+                a3: uDotDot_3 
         stress_variable_names: #The names of the stress attributes at the nodes
                 s11: s11
                 s12: s12

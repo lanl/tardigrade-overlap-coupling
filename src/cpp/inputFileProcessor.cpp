@@ -959,18 +959,14 @@ namespace inputFileProcessor{
         stringVector accelerationKeys = { "a1", "a2", "a3" };
 
         if ( ( !_config[ "microscale_definition" ][ "acceleration_variable_names" ] ) ||
-             ( _config[ "microscale_definition" ][ "acceleration_variable_names" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
+             ( _config[ "microscale_definition" ][ "acceleration_variable_names" ][ "a1" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
 
-            _config [ "microscale_definition" ][ "acceleration_variable_names" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
+            _config [ "microscale_definition" ][ "acceleration_variable_names" ][ "a1" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
+            _config [ "microscale_definition" ][ "acceleration_variable_names" ][ "a2" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
+            _config [ "microscale_definition" ][ "acceleration_variable_names" ][ "a3" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
             _microAccelerations = { 0., 0., 0. }; //Set the acceleration to zero
 
             return NULL;
-
-        }
-        if ( !_config[ "microscale_definition" ][ "acceleration_variable_names" ].IsSequence( ) ){
-
-            return new errorNode( "extractMicroAccelerations",
-                                  "The micro-acclerations must be defined as a sequence of names corresponding to the different directions" );
 
         }
         if ( _config[ "microscale_definition" ][ "acceleration_variable_names" ].size( ) != 3 ){
@@ -979,24 +975,56 @@ namespace inputFileProcessor{
                                   "Three micro-accelerations must be defined ( in order ) as we assume the coupling is 3D" );
 
         }
+        _microAccelerations = floatVector( 3 * _microVolumes.size( ) );
         for ( auto aK  = accelerationKeys.begin( );  aK != accelerationKeys.end( ); aK++ ){
 
-            std::cout << *aK << "\n";
+            //Get the variable name associated with this component
+            if ( !_config[ "microscale_definition" ][ "acceleration_variable_names" ][ *aK ].IsScalar( ) ){
 
-        }
-        return new errorNode( "exteractMicroAccelerations", "derp" );
+                return new errorNode( "extractMicroAccelerations",
+                                      "The definition of microscale acceleration component " + *aK +
+                                      " is either not defined in the input file or incorrectly defined.\n" +
+                                      "Under 'acceleration_variable_names' three terms must be defined in the format\n"
+                                      "  a1: a1_variable_name\n" +
+                                      "  a2: a2_variable_name\n" +
+                                      "  a3: a3_variable_name\n" );
 
-        //Extract the micro acceleration vector
-        errorOut error =
-            _microscale->getSolutionData( increment,
-                                          _config[ "microscale_definition" ][ "acceleration_variable_name" ].as< std::string > ( ),
-                                          "Node", _microAccelerations );
+            }
+            
+            std::string accelerationVariableName
+                = _config[ "microscale_definition" ][ "acceleration_variable_names" ][ *aK ].as< std::string >( );
 
-        if ( error ){
+            //Extract the micro acceleration vector for the current component
+            floatVector microAccelerationComponent;
+            errorOut error =
+                _microscale->getSolutionData( increment, accelerationVariableName, "Node", microAccelerationComponent );
 
-            errorOut result = new errorNode( "extractMicroAccelerations", "Error in extraction of the micro accelerations" );
-            result->addNext( error );
-            return result;
+            if ( error ){
+
+                errorOut result = new errorNode( "extractMicroAcceleration",
+                                                 "Error in the extraction of micro-acceleration component " + *aK +
+                                                 " with the name " + accelerationVariableName );
+                result->addNext( error );
+                return result;
+
+            }
+
+            if ( 3 * microAccelerationComponent.size( ) != _microAccelerations.size( ) ){
+
+                return new errorNode( "extractMicroAccelerations",
+                                      "The acceleration vector for the micro accelerations associated with component " + *aK +
+                                      " is not of a consistent size with the acceleration vector" );
+
+            }
+
+            //Store the micro acceleration components in the acceleration vector
+            for ( auto a  = microAccelerationComponent.begin( );
+                       a != microAccelerationComponent.end( );
+                       a++ ){
+
+                _microAccelerations[ 3 * ( a - microAccelerationComponent.begin( ) ) + aK - accelerationKeys.begin( ) ] = *a;
+
+            }
 
         }
 
