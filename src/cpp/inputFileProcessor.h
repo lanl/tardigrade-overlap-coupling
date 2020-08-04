@@ -77,6 +77,7 @@ namespace inputFileProcessor{
             const floatVector* getMicroAccelerations( );
             const floatVector* getMicroStresses( );
             const floatVector* getMicroInternalForces( );
+            const floatVector* getMicroInertialForces( );
 
             const floatVector* getMacroDisplacements( );
             const floatVector* getMacroDispDOFVector( );
@@ -126,6 +127,7 @@ namespace inputFileProcessor{
 
             bool microBodyForceDefined( );
             bool microInternalForceDefined( );
+            bool microInertialForceDefined( );
             bool microVelocitiesDefined( );
             bool microAccelerationDefined( );
             bool macroVelocitiesDefined( );
@@ -221,8 +223,10 @@ namespace inputFileProcessor{
             floatVector _microAccelerations;
             floatVector _microStresses;
             floatVector _microInternalForces;
+            floatVector _microInertialForces;
             bool _microBodyForceFlag = false;
             bool _microInternalForceFlag = false;
+            bool _microInertialForceFlag = false;
             bool _microVelocityFlag = false;
             bool _microAccelerationFlag = false;
 

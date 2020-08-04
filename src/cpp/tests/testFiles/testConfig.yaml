@@ -87,6 +87,10 @@ microscale_definition:
                 F1: FInternal_1
                 F2: FInternal_2
                 F3: FInternal_3
+        inertial_force_variable_names: #The names of the inertial force attributes at the nodes
+                F1: FInertial_1
+                F2: FInertial_2
+                F3: FInertial_3
         node_id_variable_name: NODEID
         cell_id_variable_name: ELEMID
         volume_surface_node_pairs: #Defines the nodesets that represent the volumes and surface of the averaging domains

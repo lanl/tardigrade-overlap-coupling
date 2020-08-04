@@ -503,6 +503,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the micro inertial forces
+        error = extractMicroInertialForces( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the micro inertial forces" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the macro displacements
         error = extractMacroDisplacements( macroIncrement );
 
@@ -1473,12 +1482,11 @@ namespace inputFileProcessor{
         if ( error ){
 
             errorOut result = new errorNode( "extractMicroInternalForces",
-                                             "Error in the extraction of the macro velocities" );
+                                             "Error in the extraction of the micro internal forces" );
             result->addNext( error );
             return result;
 
         }
-        
 
         return NULL;
     }
@@ -1490,6 +1498,30 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The increment at which to extract the vector
          */
 
+        stringVector variableKeys =
+            {
+                "F1", "F2", "F3"
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "inertial_force_variable_names";
+        YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _microInertialForceFlag, _microInertialForces );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroInertialForces",
+                                             "Error in the extraction of the macro inertial forces" );
+            result->addNext( error );
+            return result;
+
+        }
 
 
         return NULL;
@@ -1883,6 +1915,14 @@ namespace inputFileProcessor{
          */
 
         return &_microInternalForces;
+    }
+
+    const floatVector* inputFileProcessor::getMicroInertialForces( ){
+        /*!
+         * Get a pointer to the micro inertial forces
+         */
+
+        return &_microInertialForces;
     }
 
     const floatVector* inputFileProcessor::getMicroVolumes( ){
@@ -2479,6 +2519,14 @@ namespace inputFileProcessor{
          */
 
         return _microInternalForceFlag;
+    }
+
+    bool inputFileProcessor::microInertialForceDefined( ){
+        /*!
+         * Get whether the micro inertial force has been defined
+         */
+
+        return _microInertialForceFlag;
     }
 
     bool inputFileProcessor::microVelocitiesDefined( ){
