@@ -29,6 +29,32 @@ macroscale_definition:
                 phi31: phi_zx
                 phi32: phi_zy
                 phi33: phi_zz
+        velocity_variable_names: #The names of the velocity attributes at the nodes
+                v1: uDot_1
+                v2: uDot_2
+                v3: uDot_3
+                phiDot11: phiDot_11
+                phiDot12: phiDot_12
+                phiDot13: phiDot_13
+                phiDot21: phiDot_21
+                phiDot22: phiDot_22
+                phiDot23: phiDot_23
+                phiDot31: phiDot_31
+                phiDot32: phiDot_32
+                phiDot33: phiDot_33
+        acceleration_variable_names: #The names of the velocity attributes at the nodes
+                a1: uDotDot_1
+                a2: uDotDot_2
+                a3: uDotDot_3
+                phiDotDot11: phiDotDot_11
+                phiDotDot12: phiDotDot_12
+                phiDotDot13: phiDotDot_13
+                phiDotDot21: phiDotDot_21
+                phiDotDot22: phiDotDot_22
+                phiDotDot23: phiDotDot_23
+                phiDotDot31: phiDotDot_31
+                phiDotDot32: phiDotDot_32
+                phiDotDot33: phiDotDot_33
 
 microscale_definition:
         filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/microscale_xdmf.xdmf

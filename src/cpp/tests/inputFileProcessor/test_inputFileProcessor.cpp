@@ -633,6 +633,51 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatVector macroAccelerationsAnswer = { 0., 0., -0.004, 0., 0., 0., 0., 0., 0., 0., 0., 0. };
+    const floatVector *macroAccelerationsResult = reader.getMacroAccelerations( );
+
+    for ( auto mAR = macroAccelerationsResult->begin( ); mAR != macroAccelerationsResult->end( ); mAR++ ){
+
+        if ( !vectorTools::fuzzyEquals( *mAR, macroAccelerationsAnswer[ ( mAR - macroAccelerationsResult->begin( ) ) % 12 ], 1e-5, 1e-5 ) ){
+    
+            results << "test_initializeIncrement (test 36) & False\n";
+            return 1;
+    
+        }
+
+    }
+
+    if ( !reader.macroAccelerationDefined( ) ){
+
+        results << "test_initializeIncrement (test 37) & False\n";
+        return 1;
+
+    }
+
+    const floatVector macroVelocitiesAnswer = { 0., 0., -0.002, 0., 0., 0., 0., 0., 0., 0., 0., 0. };
+
+    const floatVector *macroVelocitiesResult = reader.getMacroVelocities( );
+
+    for ( auto mVR = macroVelocitiesResult->begin( ); mVR != macroVelocitiesResult->end( ); mVR++ ){
+
+        if ( !vectorTools::fuzzyEquals( *mVR, macroVelocitiesAnswer[ ( mVR - macroVelocitiesResult->begin( ) ) % 12 ], 1e-5, 1e-5 ) ){
+
+            std::cout << *mVR << "\n"; 
+            results << "test_initializeIncrement (test 38) & False\n";
+            return 1;
+    
+        }
+
+    }
+
+    if ( !reader.macroVelocitiesDefined( ) ){
+
+        results << "test_initializeIncrement (test 39) & False\n";
+        return 1;
+
+    }
+    
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

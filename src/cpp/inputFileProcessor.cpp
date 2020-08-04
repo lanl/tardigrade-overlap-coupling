@@ -521,14 +521,14 @@ namespace inputFileProcessor{
             return result;
         }
 
-//        //Extract the macro accelerations
-//        error = extractMacroAccelerations( macroIncrement );
-//
-//        if ( error ){
-//            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro accelerations" );
-//            result->addNext( error );
-//            return result;
-//        }
+        //Extract the macro accelerations
+        error = extractMacroAccelerations( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro accelerations" );
+            result->addNext( error );
+            return result;
+        }
 
         //Set the unique macro and micro nodes
         error = setMicroNodeIndexMappings( microIncrement );
@@ -1121,26 +1121,27 @@ namespace inputFileProcessor{
         /*!
          * Extract the node macro-velocities at the indicated increment
          *
-         * TODO: Move this and other vector / tensor extraction routines to a common function
-         *
          * :param const unsigned int &increment: The current increment
          */
 
         stringVector variableKeys =
             {
                 "v1", "v2", "v3",
-                "dotPhi11", "dotPhi12", "dotPhi13"
-                "dotPhi21", "dotPhi22", "dotPhi23"
-                "dotPhi31", "dotPhi32", "dotPhi33"
+                "phiDot11", "phiDot12", "phiDot13",
+                "phiDot21", "phiDot22", "phiDot23",
+                "phiDot31", "phiDot32", "phiDot33",
             };
 
         std::string dataType = "Node";
 
         bool populateWithNullOnUndefined = true;
 
-        YAML::Node configuration = _config[ "macroscale_definition" ][ "velocity_variable_names" ];
+        std::string configurationName = "velocity_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
 
-        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType, populateWithNullOnUndefined, configuration, _macroVelocityFlag, _macroVelocities );
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _macroVelocityFlag, _macroVelocities );
 
         if ( error ){
 
@@ -1155,11 +1156,51 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMacroAccelerations( const unsigned int &increment ){
+        /*!
+         * Extract the node macro-accelerations at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        stringVector variableKeys =
+            {
+                "a1", "a2", "a3",
+                "phiDotDot11", "phiDotDot12", "phiDotDot13",
+                "phiDotDot21", "phiDotDot22", "phiDotDot23",
+                "phiDotDot31", "phiDotDot32", "phiDotDot33",
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "acceleration_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _macroAccelerationFlag, _macroAccelerations );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroAccelerations",
+                                             "Error in the extraction of the macro accelerations" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
     errorOut inputFileProcessor::extractDataFileProperties( std::shared_ptr< dataFileInterface::dataFileBase > &dataFile,
                                                             const unsigned int &increment, const stringVector &variableKeys,
                                                             const std::string &dataType,
                                                             const bool &populateWithNullOnUndefined,
-                                                            YAML::Node configuration, bool &populatedFlag, floatVector &properties ){
+                                                            const std::string &configurationName,
+                                                            YAML::Node &configuration, bool &populatedFlag, floatVector &properties ){
         /*!
          * Extract properties from the datafile. The variableKeys are assumed to be scalar coefficients of some property.
          *
@@ -1169,7 +1210,8 @@ namespace inputFileProcessor{
          * :param const std::string &dataType: The type of data "Node" and "Cell" are currently supported
          * :param const bool &populateWithNullOnUndefined: If true and the variable definition is not found in the datafile
          *     the variableKeys will be set equal to "NULL". If false, an error will be raised
-         * :param YAML::Node configuration: The YAML Node which discribes the configuration. This node should be something like
+         * :param const std::string &configurationName: The name of the configuration node
+         * :param YAML::Node &configuration: The YAML Node which discribes the configuration. This node should be something like
          *     _config[ "macroscale_definition" ][ "velocity_variable_names" ] where the map from variableKeys to variable names
          *     is defined as key: name
          * :param bool &populatedFlag: A flag which is set to true if the output is populated from the datafile. False if it is
@@ -1179,7 +1221,6 @@ namespace inputFileProcessor{
 
         //Check if the variable property names have been defined
         populatedFlag = false;
-        std::string configurationName = configuration.as< std::string >( );
 
         if ( variableKeys.size( ) == 0 ){
 
@@ -1188,12 +1229,43 @@ namespace inputFileProcessor{
         }
 
         bool missingKey = false;
-        for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
+        if ( !configuration ){
 
-            if ( configuration[ *vK ].IsNull( ) ){
+            missingKey = true;
+
+        }
+        else{
+
+            if ( !configuration.IsScalar( ) ){
+
+                for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
+        
+                    if ( configuration[ *vK ].IsNull( ) ){
+        
+                        missingKey = true;
+                        break;
+        
+                    }
+        
+                }
+
+            }
+            else if ( configuration.IsSequence( ) ){
+
+                std::string output = "The configuration for " + configurationName + " is set as a sequence when it shouldn't be.\n";
+                output            += "The formation should be:\n";
+                output            += "  " + configurationName + ":\n";
+                for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
+
+                    output += "          " + *vK + ": " + *vK + "_variable_name\n";
+
+                }
+                
+
+            }
+            else{
 
                 missingKey = true;
-                break;
 
             }
 
@@ -1205,18 +1277,21 @@ namespace inputFileProcessor{
 
             if ( populateWithNullOnUndefined ){
 
+                configuration = YAML::Node( );
+
                 for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
-    
+   
                     configuration[ *vK ] = "NULL";
     
                 }
-    
+   
                 properties = floatVector( variableKeys.size( ), 0 ); //Set the properties to zero
+                return NULL;
 
             }
             else{
 
-                std::string output  = "The configuration is not fully defined\n";
+                std::string output  = "The configuration is not fully defined for " + configurationName + ".\n";
                 output             += "  The definition of the variable components should be performed as:\n";
                 output             += configurationName + ":\n";
                 for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
@@ -1233,7 +1308,7 @@ namespace inputFileProcessor{
         }
 
         //Get the velocity variable names
-        stringVector variableNames( 3 );
+        stringVector variableNames( variableKeys.size( ) );
         for ( auto vK  = variableKeys.begin( );  vK != variableKeys.end( ); vK++ ){
 
             //Get the variable name associated with this component
@@ -1241,7 +1316,7 @@ namespace inputFileProcessor{
 
                 std::string output  = "The definition of " + configurationName + " variable key " + *vK +
                                       " is either not defined in the input file or incorrectly defined.\n";
-                output             += "  The definition of the variable components should be performed as:\n";
+                output             += "The definition of the variable components should be performed as:\n";
                 output             += configurationName + ":\n";
                 for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
 
@@ -2340,6 +2415,22 @@ namespace inputFileProcessor{
         return _microAccelerationFlag;
     }
 
+    bool inputFileProcessor::macroVelocitiesDefined( ){
+        /*!
+         * Get whether the macro-velocities has been defined
+         */
+
+        return _macroVelocityFlag;
+    }
+
+    bool inputFileProcessor::macroAccelerationDefined( ){
+        /*!
+         * Get whether the macro-acceleration has been defined
+         */
+
+        return _macroAccelerationFlag;
+    }
+
     const floatVector* inputFileProcessor::getMicroDisplacements( ){
         /*!
          * Get the micro-displacements
@@ -2362,6 +2453,22 @@ namespace inputFileProcessor{
          */
 
         return &_macroDispDOFVector;
+    }
+
+    const floatVector* inputFileProcessor::getMacroVelocities( ){
+        /*!
+         * Get a pointer to the macro velocities
+         */
+
+        return &_macroVelocities;
+    }
+
+    const floatVector* inputFileProcessor::getMacroAccelerations( ){
+        /*!
+         * Get a pointer to the macro accelerations
+         */
+
+        return &_macroAccelerations;
     }
 
     const floatVector* inputFileProcessor::getMicroNodeReferencePositions( ){

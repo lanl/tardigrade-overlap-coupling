@@ -72,12 +72,15 @@ namespace inputFileProcessor{
             const floatVector* getMicroVolumes( );
             const floatVector* getMicroWeights( );
             const floatVector* getMicroDisplacements( );
-            const floatVector* getMacroDisplacements( );
-            const floatVector* getMacroDispDOFVector( );
             const floatVector* getMicroBodyForces( );
             const floatVector* getMicroVelocities( );
             const floatVector* getMicroAccelerations( );
             const floatVector* getMicroStresses( );
+
+            const floatVector* getMacroDisplacements( );
+            const floatVector* getMacroDispDOFVector( );
+            const floatVector* getMacroVelocities( );
+            const floatVector* getMacroAccelerations( );
 
             const floatVector* getMicroNodeReferencePositions( );
             const floatVector* getMacroNodeReferencePositions( );
@@ -123,6 +126,8 @@ namespace inputFileProcessor{
             bool microBodyForceDefined( );
             bool microVelocitiesDefined( );
             bool microAccelerationDefined( );
+            bool macroVelocitiesDefined( );
+            bool macroAccelerationDefined( );
 
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
@@ -161,8 +166,8 @@ namespace inputFileProcessor{
             errorOut extractDataFileProperties( std::shared_ptr< dataFileInterface::dataFileBase > &dataFile,
                                                 const unsigned int &increment, const stringVector &variableKeys,
                                                 const std::string &dataType,
-                                                const bool &populateWithNullOnUndefined,
-                                                YAML::Node configuration, bool &populatedFlag, floatVector &properties );
+                                                const bool &populateWithNullOnUndefined, const std::string &configurationName,
+                                                YAML::Node &configuration, bool &populatedFlag, floatVector &properties );
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroBodyForces( const unsigned int &increment );
@@ -176,6 +181,7 @@ namespace inputFileProcessor{
             errorOut extractMacroDisplacements( const unsigned int &increment );
             errorOut extractMacroDispDOFVector( const unsigned int &increment );
             errorOut extractMacroVelocities( const unsigned int &increment );
+            errorOut extractMacroAccelerations( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
 
             errorOut getUniqueNodesInDomains( const unsigned int &increment,
