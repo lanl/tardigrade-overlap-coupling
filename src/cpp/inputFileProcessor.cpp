@@ -1108,7 +1108,7 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        //Check if the body force name has been defined
+        //Check if the variable property names have been defined
         _microVelocityFlag = false;
 
         stringVector variableKeys =
@@ -1191,6 +1191,127 @@ namespace inputFileProcessor{
 
         return NULL;
 
+    }
+
+    errorOut inputFileProcessor::extractDataFileProperties( std::shared_ptr< dataFileInterface::dataFileBase > &dataFile,
+                                                            const unsigned int &increment, const stringVector &variableKeys,
+                                                            const std::string &dataType,
+                                                            const bool &populateWithNullOnUndefined,
+                                                            YAML::Node configuration, bool &populatedFlag, floatVector &properties ){
+        /*!
+         * Extract properties from the datafile. The variableKeys are assumed to be scalar coefficients of some property.
+         *
+         * :param std::shared_ptr< dataFileInterface::dataFileBase > &dataFile: The datafile to read the information from.
+         * :param const unsigned int &increment: The increment at which to extract the data
+         * :param const stringVector &variableKeys: The names of the coefficients to be extracted
+         * :param const std::string &dataType: The type of data "Node" and "Cell" are currently supported
+         * :param const bool &populateWithNullOnUndefined: If true and the variable definition is not found in the datafile
+         *     the variableKeys will be set equal to "NULL". If false, an error will be raised
+         * :param YAML::Node configuration: The YAML Node which discribes the configuration. This node should be something like
+         *     _config[ "macroscale_definition" ][ "velocity_variable_names" ] where the map from variableKeys to variable names
+         *     is defined as key: name
+         * :param bool &populatedFlag: A flag which is set to true if the output is populated from the datafile. False if it is
+         *     set to a zero vector the length of variableKeys ( the default )
+         * :param floatVector &properties: The properties vector extracted from the datafile
+         */
+
+        //Check if the variable property names have been defined
+        populatedFlag = false;
+        std::string configurationName = configuration.as< std::string >( );
+
+        if ( variableKeys.size( ) == 0 ){
+
+            return new errorNode( "extractDataFileProperties", "No variable keys have been defined" );
+
+        }
+
+        bool missingKey = false;
+        for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
+
+            if ( configuration[ *vK ].IsNull( ) ){
+
+                missingKey = true;
+                break;
+
+            }
+
+        }
+
+        if ( ( !configuration ) ||
+             ( missingKey ) ||
+             ( configuration[ variableKeys[ 0 ] ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
+
+            if ( populateWithNullOnUndefined ){
+
+                for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
+    
+                    configuration[ *vK ] = "NULL";
+    
+                }
+    
+                properties = floatVector( variableKeys.size( ), 0 ); //Set the properties to zero
+
+            }
+            else{
+
+                std::string output  = "The configuration is not fully defined\n";
+                output             += "  The definition of the variable components should be performed as:\n";
+                output             += configurationName + ":\n";
+                for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
+
+                    output += "          " + *vK + ": " + *vK + "_variable_name\n";
+
+                }
+                return new errorNode( "extractDataFileProperties", output );
+
+            }
+
+            return NULL;
+
+        }
+
+        //Get the velocity variable names
+        stringVector variableNames( 3 );
+        for ( auto vK  = variableKeys.begin( );  vK != variableKeys.end( ); vK++ ){
+
+            //Get the variable name associated with this component
+            if ( !configuration[ *vK ].IsScalar( ) ){
+
+                std::string output  = "The definition of " + configurationName + " variable key " + *vK +
+                                      " is either not defined in the input file or incorrectly defined.\n";
+                output             += "  The definition of the variable components should be performed as:\n";
+                output             += configurationName + ":\n";
+                for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
+
+                    output += "          " + *vK + ": " + *vK + "_variable_name\n";
+
+                }
+
+                return new errorNode( "extractDataFileProperties", output );
+
+            }
+            
+            variableNames[ vK - variableKeys.begin( ) ]
+                = configuration[ *vK ].as< std::string >( );
+
+        }
+
+        //Extract the velocity vector
+        errorOut error = dataFile->getSolutionVectorDataFromComponents( increment, variableNames,
+                                                                        dataType, properties );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractDataFileProperties",
+                                             "Error in the extraction of the datafile properties" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        populatedFlag = true;
+
+        return NULL;
     }
 
     errorOut inputFileProcessor::extractMicroStresses( const unsigned int &increment ){

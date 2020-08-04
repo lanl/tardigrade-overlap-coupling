@@ -158,6 +158,12 @@ namespace inputFileProcessor{
 
             errorOut checkVolumeReconstructionInitialization( );
 
+            errorOut extractDataFileProperties( std::shared_ptr< dataFileInterface::dataFileBase > &dataFile,
+                                                const unsigned int &increment, const stringVector &variableKeys,
+                                                const std::string &dataType,
+                                                const bool &populateWithNullOnUndefined,
+                                                YAML::Node configuration, bool &populatedFlag, floatVector &properties );
+
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroBodyForces( const unsigned int &increment );
             errorOut extractMicroVelocities( const unsigned int &increment );
