@@ -1108,9 +1108,6 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        //Check if the variable property names have been defined
-        _microVelocityFlag = false;
-
         stringVector variableKeys =
             {
                 "v1", "v2", "v3",
@@ -1119,75 +1116,22 @@ namespace inputFileProcessor{
                 "dotPhi31", "dotPhi32", "dotPhi33"
             };
 
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
         YAML::Node configuration = _config[ "macroscale_definition" ][ "velocity_variable_names" ];
 
-        if ( ( !configuration ) ||
-             ( configuration[ "v1" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
-
-            for ( auto vK = variableKeys.begin( ); vK != variableKeys.end( ); vK++ ){
-
-                configuration[ *vK ] = "NULL";
-
-            }
-
-            _macroVelocities = floatVector( variableKeys.size( ), 0 ); //Set the velocity to zero
-
-            return NULL;
-
-        }
-        if ( configuration.size( ) != 3 ){
-
-            return new errorNode( "extractMacroVelocities",
-                                  "Three macro-velocities must be defined ( in order ) as we assume the coupling is 3D" );
-
-        }
-
-        //Get the velocity variable names
-        stringVector variableNames( 3 );
-        for ( auto vK  = variableKeys.begin( );  vK != variableKeys.end( ); vK++ ){
-
-            //Get the variable name associated with this component
-            if ( !configuration[ *vK ].IsScalar( ) ){
-
-                return new errorNode( "extractMacroVelocities",
-                                      "The definition of macroscale velocity component " + *vK +
-                                      " is either not defined in the input file or incorrectly defined.\n" +
-                                      "Under 'velocity_variable_names' three terms must be defined in the format\n"
-                                      "  v1: v1_variable_name\n" +
-                                      "  v2: v2_variable_name\n" +
-                                      "  v3: v3_variable_name\n" +
-                                      "  dotPhi11: dotPhi11_variable_name\n" +
-                                      "  dotPhi12: dotPhi12_variable_name\n" +
-                                      "  dotPhi13: dotPhi13_variable_name\n" +
-                                      "  dotPhi21: dotPhi21_variable_name\n" +
-                                      "  dotPhi22: dotPhi22_variable_name\n" +
-                                      "  dotPhi23: dotPhi23_variable_name\n" +
-                                      "  dotPhi31: dotPhi31_variable_name\n" +
-                                      "  dotPhi32: dotPhi32_variable_name\n" +
-                                      "  dotPhi33: dotPhi33_variable_name\n"
-                                    );
-
-            }
-            
-            variableNames[ vK - variableKeys.begin( ) ]
-                = configuration[ *vK ].as< std::string >( );
-
-        }
-
-        //Extract the velocity vector
-        errorOut error = _macroscale->getSolutionVectorDataFromComponents( increment, variableNames,
-                                                                           "Node", _macroVelocities );
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType, populateWithNullOnUndefined, configuration, _macroVelocityFlag, _macroVelocities );
 
         if ( error ){
 
             errorOut result = new errorNode( "extractMacroVelocities",
-                                             "Error in the extraction of the macro-velocity components" );
+                                             "Error in the extraction of the macro velocities" );
             result->addNext( error );
             return result;
 
         }
-
-        _macroVelocityFlag = true;
 
         return NULL;
 
