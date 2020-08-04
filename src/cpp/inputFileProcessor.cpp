@@ -602,7 +602,10 @@ namespace inputFileProcessor{
                                                              _free_macro_cell_ids, _free_macro_cell_micro_domain_counts,
                                                              _free_macro_volume_sets,
                                                              _ghost_micro_volume_sets,
-                                                             _ghost_micro_surface_approximate_split_count );
+                                                             _ghost_micro_surface_approximate_split_count,
+                                                             _freeMacroMassPropertiesRequired,
+                                                             _freeMacroReferenceDensities,
+                                                             _freeMacroReferenceMomentsOfInertia );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the free macroscale domains" );
@@ -741,6 +744,45 @@ namespace inputFileProcessor{
          *     micro domain's surface into
          */
 
+        bool massPropertyDefinitionRequired = false;
+        floatVector density;
+        floatVector microInertia;
+
+        return checkCommonDomainConfiguration( domainConfig, macroCellIds, macroCellMicroDomainCounts,
+                                               macroVolumeNodesets, microVolumeNodesets,
+                                               microSurfaceDomainCount, massPropertyDefinitionRequired,
+                                               density, microInertia );
+
+    }
+
+    errorOut inputFileProcessor::checkCommonDomainConfiguration( YAML::Node domainConfig,
+                                                                 uIntVector &macroCellIds,
+                                                                 uIntVector &macroCellMicroDomainCounts,
+                                                                 stringVector &macroVolumeNodesets,
+                                                                 stringVector &microVolumeNodesets,
+                                                                 uIntVector &microSurfaceDomainCount,
+                                                                 const bool &massPropertyDefinitionRequired,
+                                                                 floatVector &density, floatVector &microInertia ){
+        /*!
+         * Extract common values in the configuration of a domain
+         *
+         * :param YAML::Node domainConfig: The configuration of a particular domain.
+         * :param uIntVector &macroCellIds: The macro-cell Ids corresponding to the domain
+         * :param uIntVector &macroCellMicroDomainCounts: The number of micro domains in each macro domain
+         * :param stringVector &macroVolumeNodesets: The nodeset names for the nodes in the
+         *     macro domains
+         * :param stringVector &microVolumeNodesets: The nodeset names for the nodes in the
+         *     micro domains
+         * :param uIntVector &microSurfaceDomainCount: The approximate number of subdomains to split the
+         *     micro domain's surface into
+         * :param const bool &massPropertyDefinitionRequired: Flag which indicates if the mass properties
+         *     must be defined for the element
+         * :param floatVector &density: The density of the element. Either a single value if it is constant
+         *     or multiple defined at each gauss point.
+         * :param floatVector &microInertia: The micro inertia of the element. Either a single symmetric matrix if it is 
+         *     constant or multiple if defined for each gauss point. 
+         */
+
         if ( ( !domainConfig.IsSequence() ) && ( !domainConfig.IsNull( ) ) ){
 
             return new errorNode( "checkCommonDomainConfiguration",
@@ -793,12 +835,15 @@ namespace inputFileProcessor{
             }
 
             indx2 = 1;
-            for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
+            for ( auto nodeset  = ( *domain )[ "micro_nodesets" ].begin( );
+                       nodeset != ( *domain )[ "micro_nodesets" ].end( );
+                       nodeset++ ){
 
                 if ( !( *nodeset )[ "name" ] ){
 
                     return new errorNode( "checkCommonDomainConfiguration",
-                                          "The keyword 'name' is not defined in micro-nodeset entry " + std::to_string( indx2 ) + " of domain entry " + std::to_string( indx ) + " is not defined" );
+                                          "The keyword 'name' is not defined in micro-nodeset entry " + std::to_string( indx2 ) +
+                                          " of domain entry " + std::to_string( indx ) + " is not defined" );
 
                 }
 
@@ -810,20 +855,73 @@ namespace inputFileProcessor{
                 else if ( !( *nodeset )[ "number_of_surface_microdomains" ].IsScalar( ) ){
 
                     return new errorNode( "checkCommonDomainConfiguration",
-                                          "Micro-nodeset 'number_of_surface_microdomains' in entry " + std::to_string( indx2 ) + " of domain entry " + std::to_string( indx ) + " must be a scalar integer" );
+                                          "Micro-nodeset 'number_of_surface_microdomains' in entry " + std::to_string( indx2 ) +
+                                          " of domain entry " + std::to_string( indx ) + " must be a scalar integer" );
 
                 }
 
                 if ( !( *nodeset )[ "name" ].IsScalar( ) ){
 
                     return new errorNode( "checkCommonDomainConfiguration",
-                                          "Micro-nodeset entry " + std::to_string( indx2 ) + " of domain entry " + std::to_string( indx ) + " is not a Scalar" );
+                                          "Micro-nodeset entry " + std::to_string( indx2 ) + " of domain entry " + 
+                                          std::to_string( indx ) + " is not a Scalar" );
 
                 }
 
                 nVolumeNodesets++;
                 indx2++;
 
+            }
+            
+            if ( massPropertyDefinitionRequired ){
+    
+                //Extract the reference Density
+                if ( !( *domain )[ "reference_density" ] ){
+
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "The reference density is required for the macro-domian in entry " + std::to_string( indx ) +
+                                          " but is not defined." );
+
+                }
+                if ( ( *domain )[ "reference_density" ].IsScalar( ) ){
+
+                    density.push_back( ( *domain )[ "reference_density" ].as< floatType >( ) );
+
+                }
+                else{
+
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "The reference density for the macro-domain entry " + std::to_string( indx ) +
+                                          " must be a scalar value" );
+
+                }
+
+                if ( !( *domain )[ "reference_moment_of_inertia" ] ){
+
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "The reference moment of inertia is required for the macro-domian in entry " +
+                                          std::to_string( indx ) + " but is not defined." );
+
+                }
+
+                for ( auto v  = ( *domain )[ "reference_moment_of_inertia" ].begin( );
+                           v != ( *domain )[ "reference_moment_of_inertia" ].end( );
+                           v++ ){
+
+                    if ( v->IsScalar( ) ){
+
+                        microInertia.push_back( v->as< floatType >( ) );
+
+                    }
+                    else{
+
+                        return new errorNode( "checkCommonDomainConfiguration",
+                                              "The micro-inertia must be constant over the free micromorphic element" );
+
+                    }
+
+                }
+    
             }
 
             indx++;
@@ -2884,6 +2982,16 @@ namespace inputFileProcessor{
          */
 
         return _config[ "coupling_initialization" ][ "use_reconstructed_mass_centers" ].as< bool >( );
+
+    }
+
+    const floatVector *getMacroReferenceDensities( ){
+        /*!
+         * Get the macro reference densities for the macro domains
+         */
+
+        return 
+        
 
     }
 

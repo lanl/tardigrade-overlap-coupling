@@ -119,6 +119,17 @@ namespace overlapCoupling{
 
         }
 
+        //Assemble the mass matrix for the free micromorphic domians
+        error = assembleFreeMicromorphicMassMatrix( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processIncrement", "Error in the assembly of the mass matrix for the free macro domains" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
     }
 
@@ -4392,6 +4403,80 @@ namespace overlapCoupling{
 
         return NULL;
 
+    }
+
+    errorOut overlapCoupling::assembleFreeMicromorphicMassMatrix( ){
+        /*!
+         * Assemble the micromorphic mass matrix for the free micromorphic domains.
+         * It is noted that while we are only processing the free micromorphic domains,
+         * there WILL be ghost nodes because even though a micromorphic domain may be
+         * marked as free, some of the nodes can ( and will in the current framework )
+         * be ghost.
+         */
+
+        //Set the displacement degrees of freedom for the element
+        const unsigned int nMacroDOF = _dim + _dim * _dim;
+
+        //Loop over the free micromorphic elements
+        for ( auto macroCellID  = _inputProcessor.getFreeMacroCellIds( )->begin( );
+                   macroCellID != _inputProcessor.getFreeMacroCellIds( )->end( );
+                   macroCellID++ ){
+
+            //Construct the macro-domain element
+            std::unique_ptr< elib::Element > &element;
+            errorOut error = buildMacroDomainElement( *macroCellID,
+                                                      *_inputProcessor.getMicroNodeReferencePositions( ),
+                                                      *_inputProcessor.getMicroDisplacements( ),
+                                                      *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                                      *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
+                                                      element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                                 "Error in the construction of the macro element " + std::to_string( *macroCell ) );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Get the degree of freedom values for the free macro-domain element
+            const floatVector* macroDispDOFVector = getMacroDispDOFVector( );
+            floatVector elementDOFVector( 0 );
+
+            for ( auto nodeID  = macroCellID->global_node_ids.begin( );
+                       nodeID != macroCellID->global_node_ids.end( );
+                       nodeID++ ){
+
+                elementDOFVector
+                    = vectorTools::appendVectors( { elementDOFVector, 
+                                                    floatVector( macroDispDOFVector.begin( ) + nMacroDOF * *nodeID,
+                                                                 macroDispDOFVector.begin( ) + nMacroDOF * ( ( *nodeID ) + 1 ) )
+                                                  } );
+
+            }
+
+            //Get the micromorphic densities in the reference configuration
+
+            //Get the micromorphic moments of inertia in the reference configuration
+            
+            error = formMicromorphicElementMassMatrix( element, elementDOFVector, momentsOfInerta, densities, 
+                                                       _inputProcessor.getMacroGlobalToLocalDOFMap( ), coefficients );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                                 "Error in the construction of the contributions of the macro element to " +
+                                                 "the free micromorphic mass matrix" );
+                result->addNext( error );
+                return result;
+
+            }
+
+
+        }
+
+        return NULL;
     }
 
 }

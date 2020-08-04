@@ -202,6 +202,8 @@ free_macroscale_domains:
                   - 
                     name: ghost_nodeset_volume_8
                     number_of_surface_microdomains: 6
+          reference_density: 2. #The density in the reference configuration. This is currently assumed to be constant over an element
+          reference_moment_of_inertia: [ 1e-5, 0, 0, 1e-5, 0, 1e-5 ] #The moment of inertia in the reference configuration. This is currently assumed to be constant over an element
 
 ghost_macroscale_domains:
         -

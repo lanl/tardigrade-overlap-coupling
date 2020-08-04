@@ -26,7 +26,8 @@ namespace inputFileProcessor{
     typedef unsigned int uIntType; //!Define the unsigned ints
     typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
     typedef std::vector< std::string > stringVector; //!Define a vector of strings
-    typedef std::unordered_map< uIntType, uIntType > DOFMap;
+    typedef std::unordered_map< uIntType, uIntType > DOFMap; //!Define a map between degrees of freedom
+    typedef std::vector< bool > boolVector; //!Define a vector of bool
 
     class dataFileReaderBase;
 
@@ -119,7 +120,10 @@ namespace inputFileProcessor{
 
             const DOFMap *getMicroGlobalToLocalDOFMap( ); 
 
-            const DOFMap *getMacroGlobalToLocalDOFMap( ); 
+            const DOFMap *getMacroGlobalToLocalDOFMap( );
+
+            const floatVector* getMacroReferenceDensities( );
+            const floatVector* getMacroReferenceMomentsOfInertia( ); 
 
             bool computeMicroShapeFunctions( );
 
@@ -164,6 +168,15 @@ namespace inputFileProcessor{
                                                      stringVector &microVolumeNodesets,
                                                      uIntVector &microSurfaceDomainCount );
 
+            errorOut checkCommonDomainConfiguration( YAML::Node domainConfig,
+                                                     uIntVector &macroCellIds,
+                                                     uIntVector &macroCellMicroDomainCounts,
+                                                     stringVector &macroVolumeNodesets,
+                                                     stringVector &microVolumeNodesets,
+                                                     uIntVector &microSurfaceDomainCount,
+                                                     const bool &massPropertyDefinitionRequired,
+                                                     floatVector &density, floatVector &microInertia );
+
             errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
                                                         stringVector &microSurfaceNodesets );
 
@@ -207,6 +220,9 @@ namespace inputFileProcessor{
             errorOut removeIndicesFromVector( std::vector< T > & v, Iter begin, Iter end );
 
             //Private Attributes
+            bool _freeMacroMassPropertiesRequired = true; //Flag indicating if the free macro-domain
+                                                          //mass properties are required. This *may*
+                                                          //be something to be set from the input file
             bool _increment_initialized = false;
             unsigned int _current_macroIncrement = 0;
             unsigned int _current_microIncrement = 0;
@@ -284,6 +300,9 @@ namespace inputFileProcessor{
             bool _computeMicroShapeFunctions = false;
 
             uIntType _defaultNumberOfMicroDomainSurfaceRegions = 6;
+
+            floatVector _freeMacroReferenceDensities;
+            floatVector _freeMacroReferenceMomentsOfInertia;
 
     };
 
