@@ -169,6 +169,7 @@ namespace inputFileProcessor{
 
             errorOut extractMacroDisplacements( const unsigned int &increment );
             errorOut extractMacroDispDOFVector( const unsigned int &increment );
+            errorOut extractMacroVelocities( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
 
             errorOut getUniqueNodesInDomains( const unsigned int &increment,
@@ -209,10 +210,14 @@ namespace inputFileProcessor{
 
             floatVector _macroDisplacements;
             floatVector _macroDispDOFVector;
+            floatVector _macroVelocities;
+            floatVector _macroAccelerations;
             floatVector _macroNodeReferencePositions;
             uIntVector  _macroNodeReferenceConnectivity;
             uIntVector  _macroNodeReferenceConnectivityCellIndices;
             unsigned int _macroCellCounts;
+            bool _macroVelocityFlag = false;
+            bool _macroAccelerationFlag = false;
 
             stringVector _non_overlapped_micro_surface_sets;
             stringVector _free_micro_surface_sets;
