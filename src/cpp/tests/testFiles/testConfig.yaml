@@ -68,6 +68,19 @@ macroscale_definition:
                 C31: CInternal_31
                 C32: CInternal_32
                 C33: CInternal_33
+        inertial_force_variable_names: #The names of the intertial force attributes at the nodes
+                F1: FInertial_1
+                F2: FInertial_2
+                F3: FInertial_3
+                C11: CInertial_11
+                C12: CInertial_12
+                C13: CInertial_13
+                C21: CInertial_21
+                C22: CInertial_22
+                C23: CInertial_23
+                C31: CInertial_31
+                C32: CInertial_32
+                C33: CInertial_33
 
 microscale_definition:
         filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/microscale_xdmf.xdmf

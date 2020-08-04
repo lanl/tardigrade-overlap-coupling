@@ -743,6 +743,28 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatVector macroInertialForcesAnswer = { 0., 0., 0. };
+    const floatVector *macroInertialForcesResult = reader.getMacroInertialForces( );
+
+    for ( auto mIFR = macroInertialForcesResult->begin( ); mIFR != macroInertialForcesResult->end( ); mIFR++ ){
+
+        if ( !vectorTools::fuzzyEquals( *mIFR, macroInertialForcesAnswer[ ( mIFR - macroInertialForcesResult->begin( ) ) % 3 ], 1e-5, 1e-4 ) ){
+
+            std::cout << mIFR - macroInertialForcesResult->begin( ) << ": " << *mIFR << "\n";
+            results << "test_initializeIncrement (test 46) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    if ( !reader.macroInertialForceDefined( ) ){
+
+        results << "test_initializeIncrement (test 47) & False\n";
+        return 1;
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

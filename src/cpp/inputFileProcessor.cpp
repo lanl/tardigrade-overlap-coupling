@@ -557,6 +557,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the macro inertial forces
+        error = extractMacroInertialForces( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro inertial forces" );
+            result->addNext( error );
+            return result;
+        }
+
         //Set the unique macro and micro nodes
         error = setMicroNodeIndexMappings( microIncrement );
 
@@ -1252,6 +1261,45 @@ namespace inputFileProcessor{
 
             errorOut result = new errorNode( "extractMacroInternalForces",
                                              "Error in the extraction of the macro internal forces" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroInertialForces( const unsigned int &increment ){
+        /*!
+         * Extract the node macro inertial forces at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        stringVector variableKeys =
+            {
+                "F1", "F2", "F3",
+                "C11", "C12", "C13",
+                "C21", "C22", "C23",
+                "C31", "C32", "C33"
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "inertial_force_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _macroInertialForceFlag, _macroInertialForces );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroInertialForces",
+                                             "Error in the extraction of the macro inertial forces" );
             result->addNext( error );
             return result;
 
@@ -2617,6 +2665,14 @@ namespace inputFileProcessor{
         return _macroInternalForceFlag;
     }
 
+    bool inputFileProcessor::macroInertialForceDefined( ){
+        /*!
+         * Get whether the macro inertial force has been defined
+         */
+
+        return _macroInertialForceFlag;
+    }
+
     const floatVector* inputFileProcessor::getMicroDisplacements( ){
         /*!
          * Get the micro-displacements
@@ -2663,6 +2719,14 @@ namespace inputFileProcessor{
          */
 
         return &_macroInternalForces;
+    }
+
+    const floatVector* inputFileProcessor::getMacroInertialForces( ){
+        /*!
+         * Get a pointer to the macro inertial forces
+         */
+
+        return &_macroInertialForces;
     }
 
     const floatVector* inputFileProcessor::getMicroNodeReferencePositions( ){

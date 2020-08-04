@@ -84,6 +84,7 @@ namespace inputFileProcessor{
             const floatVector* getMacroVelocities( );
             const floatVector* getMacroAccelerations( );
             const floatVector* getMacroInternalForces( );
+            const floatVector* getMacroInertialForces( );
 
             const floatVector* getMicroNodeReferencePositions( );
             const floatVector* getMacroNodeReferencePositions( );
@@ -134,6 +135,7 @@ namespace inputFileProcessor{
             bool macroVelocitiesDefined( );
             bool macroAccelerationDefined( );
             bool macroInternalForceDefined( );
+            bool macroInertialForceDefined( );
 
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
@@ -191,6 +193,7 @@ namespace inputFileProcessor{
             errorOut extractMacroVelocities( const unsigned int &increment );
             errorOut extractMacroAccelerations( const unsigned int &increment );
             errorOut extractMacroInternalForces( const unsigned int &increment );
+            errorOut extractMacroInertialForces( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
 
             errorOut getUniqueNodesInDomains( const unsigned int &increment,
@@ -238,6 +241,7 @@ namespace inputFileProcessor{
             floatVector _macroVelocities;
             floatVector _macroAccelerations;
             floatVector _macroInternalForces;
+            floatVector _macroInertialForces;
             floatVector _macroNodeReferencePositions;
             uIntVector  _macroNodeReferenceConnectivity;
             uIntVector  _macroNodeReferenceConnectivityCellIndices;
@@ -245,6 +249,7 @@ namespace inputFileProcessor{
             bool _macroVelocityFlag = false;
             bool _macroAccelerationFlag = false;
             bool _macroInternalForceFlag = false;
+            bool _macroInertialForceFlag = false;
 
             stringVector _non_overlapped_micro_surface_sets;
             stringVector _free_micro_surface_sets;
