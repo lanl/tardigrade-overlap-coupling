@@ -83,6 +83,7 @@ namespace inputFileProcessor{
             const floatVector* getMacroDispDOFVector( );
             const floatVector* getMacroVelocities( );
             const floatVector* getMacroAccelerations( );
+            const floatVector* getMacroInternalForces( );
 
             const floatVector* getMicroNodeReferencePositions( );
             const floatVector* getMacroNodeReferencePositions( );
@@ -132,6 +133,7 @@ namespace inputFileProcessor{
             bool microAccelerationDefined( );
             bool macroVelocitiesDefined( );
             bool macroAccelerationDefined( );
+            bool macroInternalForceDefined( );
 
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
@@ -188,6 +190,7 @@ namespace inputFileProcessor{
             errorOut extractMacroDispDOFVector( const unsigned int &increment );
             errorOut extractMacroVelocities( const unsigned int &increment );
             errorOut extractMacroAccelerations( const unsigned int &increment );
+            errorOut extractMacroInternalForces( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
 
             errorOut getUniqueNodesInDomains( const unsigned int &increment,
@@ -234,12 +237,14 @@ namespace inputFileProcessor{
             floatVector _macroDispDOFVector;
             floatVector _macroVelocities;
             floatVector _macroAccelerations;
+            floatVector _macroInternalForces;
             floatVector _macroNodeReferencePositions;
             uIntVector  _macroNodeReferenceConnectivity;
             uIntVector  _macroNodeReferenceConnectivityCellIndices;
             unsigned int _macroCellCounts;
             bool _macroVelocityFlag = false;
             bool _macroAccelerationFlag = false;
+            bool _macroInternalForceFlag = false;
 
             stringVector _non_overlapped_micro_surface_sets;
             stringVector _free_micro_surface_sets;

@@ -548,6 +548,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the macro internal forces
+        error = extractMacroInternalForces( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro internal forces" );
+            result->addNext( error );
+            return result;
+        }
+
         //Set the unique macro and micro nodes
         error = setMicroNodeIndexMappings( microIncrement );
 
@@ -1204,6 +1213,45 @@ namespace inputFileProcessor{
 
             errorOut result = new errorNode( "extractMacroAccelerations",
                                              "Error in the extraction of the macro accelerations" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroInternalForces( const unsigned int &increment ){
+        /*!
+         * Extract the node macro internal forces at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        stringVector variableKeys =
+            {
+                "F1", "F2", "F3",
+                "C11", "C12", "C13",
+                "C21", "C22", "C23",
+                "C31", "C32", "C33"
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "internal_force_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _macroInternalForceFlag, _macroInternalForces );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroInternalForces",
+                                             "Error in the extraction of the macro internal forces" );
             result->addNext( error );
             return result;
 
@@ -2561,6 +2609,14 @@ namespace inputFileProcessor{
         return _macroAccelerationFlag;
     }
 
+    bool inputFileProcessor::macroInternalForceDefined( ){
+        /*!
+         * Get whether the macro internal force has been defined
+         */
+
+        return _macroInternalForceFlag;
+    }
+
     const floatVector* inputFileProcessor::getMicroDisplacements( ){
         /*!
          * Get the micro-displacements
@@ -2599,6 +2655,14 @@ namespace inputFileProcessor{
          */
 
         return &_macroAccelerations;
+    }
+
+    const floatVector* inputFileProcessor::getMacroInternalForces( ){
+        /*!
+         * Get a pointer to the macro internal forces
+         */
+
+        return &_macroInternalForces;
     }
 
     const floatVector* inputFileProcessor::getMicroNodeReferencePositions( ){

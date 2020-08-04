@@ -55,6 +55,19 @@ macroscale_definition:
                 phiDotDot31: phiDotDot_31
                 phiDotDot32: phiDotDot_32
                 phiDotDot33: phiDotDot_33
+        internal_force_variable_names: #The names of the internal force attributes at the nodes
+                F1: FInternal_1
+                F2: FInternal_2
+                F3: FInternal_3
+                C11: CInternal_11
+                C12: CInternal_12
+                C13: CInternal_13
+                C21: CInternal_21
+                C22: CInternal_22
+                C23: CInternal_23
+                C31: CInternal_31
+                C32: CInternal_32
+                C33: CInternal_33
 
 microscale_definition:
         filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/microscale_xdmf.xdmf
