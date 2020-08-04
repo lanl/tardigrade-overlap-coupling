@@ -676,7 +676,51 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
 
     }
-    
+
+    const floatVector microInternalForcesAnswer = { 0., 0., 0. };
+    const floatVector *microInternalForcesResult = reader.getMicroInternalForces( );
+
+    for ( auto mIFR = microInternalForcesResult->begin( ); mIFR != microInternalForcesResult->end( ); mIFR++ ){
+
+        if ( !vectorTools::fuzzyEquals( *mIFR, microInternalForcesAnswer[ ( mIFR - microInternalForcesResult->begin( ) ) % 3 ], 1e-5, 1e-4 ) ){
+
+            std::cout << mIFR - microInternalForcesResult->begin( ) << ": " << *mIFR << "\n";
+            results << "test_initializeIncrement (test 40) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    if ( !reader.microInternalForceDefined( ) ){
+
+        results << "test_initializeIncrement (test 41) & False\n";
+        return 1;
+
+    }
+
+    const floatVector microInertialForcesAnswer = { 0., 0., 0. };
+    const floatVector *microInertialForcesResult = reader.getMicroInertialForces( );
+
+    for ( auto mIFR = microInertialForcesResult->begin( ); mIFR != microInertialForcesResult->end( ); mIFR++ ){
+
+        if ( !vectorTools::fuzzyEquals( *mIFR, microInertialForcesAnswer[ ( mIFR - microInertialForcesResult->begin( ) ) % 3 ], 1e-5, 1e-4 ) ){
+
+            std::cout << mIFR - microInertialForcesResult->begin( ) << ": " << *mIFR << "\n";
+            results << "test_initializeIncrement (test 42) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    if ( !reader.microInertialForceDefined( ) ){
+
+        results << "test_initializeIncrement (test 43) & False\n";
+        return 1;
+
+    }
+
 
     results << "test_initializeIncrement & True\n";
     return 0;
@@ -1295,17 +1339,17 @@ int main(){
     test_setConfigurationFile( results );
     test_initializeFileInterfaces( results );
     test_initializeIncrement( results );
-    test_getFreeMicroDomainNames( results );
-    test_getGhostMicroDomainNames( results );
-    test_getFreeMicroSurfaceNames( results );
-    test_getGhostMicroSurfaceNames( results );
-    test_getFreeMacroDomainNames( results );
-    test_getGhostMacroDomainNames( results );
-    test_getNonOverlappedMicroSurfaceNames( results );
-    test_getCouplingInitialization( results );
-    test_getVolumeReconstructionConfig( results );
-    test_getFreeMicroSurfaceApproximateSplitCount( results );
-    test_getGhostMicroSurfaceApproximateSplitCount( results );
+//    test_getFreeMicroDomainNames( results );
+//    test_getGhostMicroDomainNames( results );
+//    test_getFreeMicroSurfaceNames( results );
+//    test_getGhostMicroSurfaceNames( results );
+//    test_getFreeMacroDomainNames( results );
+//    test_getGhostMacroDomainNames( results );
+//    test_getNonOverlappedMicroSurfaceNames( results );
+//    test_getCouplingInitialization( results );
+//    test_getVolumeReconstructionConfig( results );
+//    test_getFreeMicroSurfaceApproximateSplitCount( results );
+//    test_getGhostMicroSurfaceApproximateSplitCount( results );
 
     //Close the results file
     results.close();

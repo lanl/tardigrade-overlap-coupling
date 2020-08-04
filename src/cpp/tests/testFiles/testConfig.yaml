@@ -83,6 +83,10 @@ microscale_definition:
                 s31: s31
                 s32: s32
                 s33: s33
+        internal_force_variable_names: #The names of the internal force attributes at the nodes
+                F1: FInternal_1
+                F2: FInternal_2
+                F3: FInternal_3
         node_id_variable_name: NODEID
         cell_id_variable_name: ELEMID
         volume_surface_node_pairs: #Defines the nodesets that represent the volumes and surface of the averaging domains

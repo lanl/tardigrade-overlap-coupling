@@ -494,6 +494,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the micro internal forces
+        error = extractMicroInternalForces( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the micro internal forces" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the macro displacements
         error = extractMacroDisplacements( macroIncrement );
 
@@ -1355,7 +1364,9 @@ namespace inputFileProcessor{
         /*!
          * Extract the micro-stresses at the indicated increment
          *
-         * :param const unsigne int &increment: The current increment
+         * TODO: Replace with the generalized output reader
+         *
+         * :param const unsigned int &increment: The current increment
          */
 
         if ( !_config[ "microscale_definition" ][ "stress_variable_names" ] ){
@@ -1436,6 +1447,55 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMicroInternalForces( const unsigned int &increment ){
+        /*!
+         * Extract the internal force vector for the micro nodes
+         *
+         * :param const unsigned int &increment: The increment at which to extract the vector
+         */
+
+        stringVector variableKeys =
+            {
+                "F1", "F2", "F3"
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "internal_force_variable_names";
+        YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _microInternalForceFlag, _microInternalForces );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroInternalForces",
+                                             "Error in the extraction of the macro velocities" );
+            result->addNext( error );
+            return result;
+
+        }
+        
+
+        return NULL;
+    }
+
+    errorOut inputFileProcessor::extractMicroInertialForces( const unsigned int &increment ){
+        /*!
+         * Extract the inertial force vector for the micro nodes
+         *
+         * :param const unsigned int &increment: The increment at which to extract the vector
+         */
+
+
+
+        return NULL;
+    }
+
+
     errorOut inputFileProcessor::extractMicroNodeVolumes( const unsigned int &increment ){
         /*!
          * Extract the node volumes for the micro domain at the indicated increment
@@ -1470,6 +1530,8 @@ namespace inputFileProcessor{
     errorOut inputFileProcessor::extractMicroDisplacements( const unsigned int &increment ){
         /*!
          * Extract the positions of the nodes in the micro domain.
+         *
+         * TODO: Replace with generalized form
          *
          * :param const unsigned int &increment: The current increment
          */
@@ -1557,6 +1619,8 @@ namespace inputFileProcessor{
         /*!
          * Extract the positions of the nodes in the macro domain.
          *
+         * TODO: Replace with generalized form
+         *
          * :param const unsigned int &increment: The current increment
          */
 
@@ -1642,6 +1706,8 @@ namespace inputFileProcessor{
     errorOut inputFileProcessor::extractMacroDispDOFVector( const unsigned int &increment ){
         /*!
          * Extract the displacement degrees of freedom of the nodes in the macro domain.
+         *
+         * TODO: Replace with generalized form
          *
          * :param const unsigned int &increment: The current increment
          */
@@ -1809,6 +1875,14 @@ namespace inputFileProcessor{
          */
 
         return &_microStresses;
+    }
+
+    const floatVector* inputFileProcessor::getMicroInternalForces( ){
+        /*!
+         * Get a pointer to the micro internal forces
+         */
+
+        return &_microInternalForces;
     }
 
     const floatVector* inputFileProcessor::getMicroVolumes( ){
@@ -2397,6 +2471,14 @@ namespace inputFileProcessor{
          */
 
         return _microBodyForceFlag;
+    }
+
+    bool inputFileProcessor::microInternalForceDefined( ){
+        /*!
+         * Get whether the micro internal force has been defined
+         */
+
+        return _microInternalForceFlag;
     }
 
     bool inputFileProcessor::microVelocitiesDefined( ){
