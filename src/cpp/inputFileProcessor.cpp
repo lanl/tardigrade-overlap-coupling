@@ -512,6 +512,24 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the macro velocities
+        error = extractMacroVelocities( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro velocities" );
+            result->addNext( error );
+            return result;
+        }
+
+//        //Extract the macro accelerations
+//        error = extractMacroAccelerations( macroIncrement );
+//
+//        if ( error ){
+//            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro accelerations" );
+//            result->addNext( error );
+//            return result;
+//        }
+
         //Set the unique macro and micro nodes
         error = setMicroNodeIndexMappings( microIncrement );
 
