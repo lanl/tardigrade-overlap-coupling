@@ -3861,7 +3861,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
                                              "Error in the computation of the shape functions" );
             result->addNext( error );
             return result;
@@ -3873,7 +3873,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
                                              "Error in the computation of the shape function gradients" );
             result->addNext( error );
             return result;
@@ -3885,7 +3885,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
                                              "Error in the computation of the jacobian" );
             result->addNext( error );
             return result;
@@ -3909,7 +3909,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
                                              "Error in the computation of the local gradient\n" );
             result->addNext( error );
             return result;
@@ -3923,7 +3923,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
                                              "Error in the interpolation of the degree of freedom values" );
             result->addNext( error );
             return result;
@@ -4417,13 +4417,40 @@ namespace overlapCoupling{
         //Set the displacement degrees of freedom for the element
         const unsigned int nMacroDOF = _dim + _dim * _dim;
 
+        //Get the micromorphic densities in the reference configuration
+        const std::unordered_map< uIntType, std::string > *macroReferenceDensityTypes = _inputProcessor.getMacroReferenceDensityTypes( );
+        const std::unordered_map< uIntType, floatVector > *macroReferenceDensities = _inputProcessor.getMacroReferenceDensities( );
+
+        //Get the micromorphic moments of inertia in the reference configuration
+        const std::unordered_map< uIntType, std::string > *macroReferenceMomentOfInertiaTypes
+            = _inputProcessor.getMacroReferenceMomentOfInertiaTypes( );
+        const std::unordered_map< uIntType, floatVector > *macroReferenceMomentsOfInertia
+            = _inputProcessor.getMacroReferenceMomentsOfInertia( );
+
+        //Initialize the coefficients vector
+        std::vector< DOFProjection::T > coefficients;
+
+        uIntType numCoefficients = 0;
+        for ( auto it = externalForcesAtNodes.begin( ); it != externalForcesAtNodes.end( ); it++ ){
+
+            //Get the number of quadrature points in the element
+            uIntType elementQuadraturePointCount = quadraturePointDensities[ it->first ].size( );
+
+            //Get the number of nodes in the element
+            uIntType elementNodeCount = it->second.size( ) / _dim;
+            numCoefficients += elementQuadraturePointCount * elementNodeCount * elementNodeCount * _dim * _dim * ( 1 + _dim * _dim );
+
+        }
+
+        coefficients.reserve( numCoefficients );
+
         //Loop over the free micromorphic elements
         for ( auto macroCellID  = _inputProcessor.getFreeMacroCellIds( )->begin( );
                    macroCellID != _inputProcessor.getFreeMacroCellIds( )->end( );
                    macroCellID++ ){
 
             //Construct the macro-domain element
-            std::unique_ptr< elib::Element > &element;
+            std::unique_ptr< elib::Element > element;
             errorOut error = buildMacroDomainElement( *macroCellID,
                                                       *_inputProcessor.getMicroNodeReferencePositions( ),
                                                       *_inputProcessor.getMicroDisplacements( ),
@@ -4434,40 +4461,116 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result = new errorNode( "assembleFreeMicromorphicMassMatrix",
-                                                 "Error in the construction of the macro element " + std::to_string( *macroCell ) );
+                                                 "Error in the construction of the macro element " + std::to_string( *macroCellID ) );
                 result->addNext( error );
                 return result;
 
             }
 
             //Get the degree of freedom values for the free macro-domain element
-            const floatVector* macroDispDOFVector = getMacroDispDOFVector( );
+            const floatVector* macroDispDOFVector = _inputProcessor.getMacroDispDOFVector( );
             floatVector elementDOFVector( 0 );
 
-            for ( auto nodeID  = macroCellID->global_node_ids.begin( );
-                       nodeID != macroCellID->global_node_ids.end( );
+            for ( auto nodeID  = element->global_node_ids.begin( );
+                       nodeID != element->global_node_ids.end( );
                        nodeID++ ){
 
                 elementDOFVector
                     = vectorTools::appendVectors( { elementDOFVector, 
-                                                    floatVector( macroDispDOFVector.begin( ) + nMacroDOF * *nodeID,
-                                                                 macroDispDOFVector.begin( ) + nMacroDOF * ( ( *nodeID ) + 1 ) )
+                                                    floatVector( macroDispDOFVector->begin( ) + nMacroDOF * *nodeID,
+                                                                 macroDispDOFVector->begin( ) + nMacroDOF * ( ( *nodeID ) + 1 ) )
                                                   } );
 
             }
 
-            //Get the micromorphic densities in the reference configuration
+            //Extract the density and moment of inertia in the reference configuration
+            auto densityType = macroReferenceDensityTypes->find( *macroCellID );
 
-            //Get the micromorphic moments of inertia in the reference configuration
+            if ( densityType == macroReferenceDensityTypes->end( ) ){
+
+                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                      "The macro cell with ID " + std::to_string( *macroCellID ) +
+                                      " was not found in the density type map" );
+
+            }
+
+            auto momentOfInertiaType = macroReferenceDensityTypes->find( *macroCellID );
+
+            if ( momentOfInertiaType == macroReferenceMomentOfInertiaTypes->end( ) ){
+
+                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                      "The macro cell with ID " + std::to_string( *macroCellID ) +
+                                      " was not found in the moment of inertia type map" );
+
+            }
+
+            if ( densityType->second.compare( "constant" ) != 0 ){
+
+                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                      "Only constant densities for the macro-scale are allowed currently. This is not true for macro cell ID " + std::to_string( *macroCellID ) );
+
+            }
+
+            if ( momentOfInertiaType->second.compare( "constant" ) != 0 ){
+
+                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                      "Only constant moments of inertia for the macro-scale are allowed currently. This is not true for macro cell ID " + std::to_string( *macroCellID ) );
+
+            }
+
+            auto macroDensities = macroReferenceDensities->find( *macroCellID );
+
+            if ( macroDensities == macroReferenceDensities->end( ) ){
+
+                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                      "Macro cell ID " + std::to_string( *macroCellID ) +
+                                      " is not in the macro reference density map" );
+
+            }
+
+            if ( macroDensities->second.size( ) != 1 ){
+
+                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                      "The macro densities for macro cell " + std::to_string( *macroCellID ) +
+                                      "Define " + std::to_string( macroDensities->second.size( ) ) +
+                                      " values when only 1 can be defined" );
+
+            }
+
+            auto macroMomentsOfInertia = macroReferenceMomentsOfInertia->find( *macroCellID );
+
+            if ( macroMomentsOfInertia == macroReferenceMomentsOfInertia->end( ) ){
+
+                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                      "Macro cell ID " + std::to_string( *macroCellID ) +
+                                      " is not in the macro reference moments of inertia map" );
+
+            }
+
+            if ( macroMomentsOfInertia->second.size( ) != _dim * _dim ){
+
+                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                      "The macro moments of inertia for macro cell " + std::to_string( *macroCellID ) +
+                                      "Define " + std::to_string( macroDensities->second.size( ) ) +
+                                      " values when only " + std::to_string( _dim * _dim ) + " can be defined" );
+
+            }
+
+
+            floatVector densities( element->qrule.size( ), macroDensities->second[ 0 ] );
+
+            floatVector momentsOfInertia
+                = vectorTools::appendVectors( floatMatrix( element->qrule.size( ), macroMomentsOfInertia->second ) );
             
-            error = formMicromorphicElementMassMatrix( element, elementDOFVector, momentsOfInerta, densities, 
+            error = formMicromorphicElementMassMatrix( element, elementDOFVector, momentsOfInertia, densities, 
                                                        _inputProcessor.getMacroGlobalToLocalDOFMap( ), coefficients );
 
             if ( error ){
 
-                errorOut result = new errorNode( "assembleFreeMicromorphicMassMatrix",
-                                                 "Error in the construction of the contributions of the macro element to " +
-                                                 "the free micromorphic mass matrix" );
+                std::string outstr  = "Error in the construction of the contributions of the macro element to ";
+                            outstr += "the free micromorphic mass matrix";
+
+                errorOut result = new errorNode( "assembleFreeMicromorphicMassMatrix", outstr );
                 result->addNext( error );
                 return result;
 
@@ -4475,6 +4578,10 @@ namespace overlapCoupling{
 
 
         }
+
+        const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
+        freeMicromorphicMassMatrix = SparseMatrix( nMacroDOF * freeMacroNodeIds->size( ), nMacroDOF * freeMacroNodeIds->size( ) );
+        freeMicromorphicMassMatrix.setFromTriplets( coefficients.begin( ), coefficients.end( ) );
 
         return NULL;
     }

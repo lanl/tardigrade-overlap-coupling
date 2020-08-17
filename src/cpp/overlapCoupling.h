@@ -267,6 +267,8 @@ namespace overlapCoupling{
             Eigen::MatrixXd homogenizedFINT;
             Eigen::MatrixXd homogenizedFEXT;
 
+            SparseMatrix freeMicromorphicMassMatrix;
+
     };
 
     errorOut MADOutlierDetection( const floatVector &x, uIntVector &outliers, const floatType threshold = 10,
