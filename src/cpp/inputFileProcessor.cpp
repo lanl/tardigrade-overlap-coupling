@@ -885,52 +885,54 @@ namespace inputFileProcessor{
                     //Extract the reference Density
                     try{
 
-                      if ( !( *domain )[ "reference_density" ] ){
-      
-                          return new errorNode( "checkCommonDomainConfiguration",
-                                                "The reference density is required for the macro-domian in entry " + std::to_string( indx ) +
-                                                " but is not defined." );
-      
-                      }
-                      if ( !( *domain )[ "reference_density" ][ "type" ] ){
-      
-                          std::string  outstr = "The type of the reference density must be defined.";
-                                      outstr += "  Acceptable types are:\n";
-                                      outstr += "    constant";
-                          return new errorNode( "checkCommonDomainConfiguration", outstr );
-      
-                      }
-  
-                      if ( ( *domain )[ "reference_density" ][ "type" ].as< std::string >( ).compare( "constant" ) == 0 ){
-      
-                          if ( !( *domain )[ "reference_density" ][ "value" ] ){
-      
-                              std::string  outstr = "The value of the reference density for macro domain " + std::to_string( indx ) + " is not defined";
-                                          outstr += "The format is:\n  value: floating_point_value";
-                              return new errorNode( "checkCommonDomainConfiguration", outstr );
-      
-                          }
-                          else{
-      
-                              densityTypes.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ),
-                                                    ( *domain )[ "reference_density" ][ "type" ].as< std::string >( ) ); 
-                              density.push_back( ( *domain )[ "reference_density" ][ "value" ].as< floatType >( ) );
-      
-                          }
-      
-                      }
-                      else{
-      
-                          std::string outstr  = "The reference density type for entry " + std::to_string( indx ) + " is not recognized.\n";
-                                      outstr += "  type: " + ( *domain )[ "reference_density" ][ "type" ].as< std::string >( );
-      
-                          return new errorNode( "checkCommonDomainConfiguration", outstr );
-      
-                      }
-                    }
-                    catch( std::exception &e ){
+                        if ( !( *domain )[ "reference_density" ] ){
+        
+                            return new errorNode( "checkCommonDomainConfiguration",
+                                                  "The reference density is required for the macro-domian in entry " + std::to_string( indx ) +
+                                                  " but is not defined." );
+        
+                        }
+                        if ( !( *domain )[ "reference_density" ][ "type" ] ){
+        
+                            std::string outstr  = "The type of the reference density must be defined.";
+                                        outstr += "  Acceptable types are:\n";
+                                        outstr += "    constant";
+                            return new errorNode( "checkCommonDomainConfiguration", outstr );
+        
+                        }
+    
+                        if ( ( *domain )[ "reference_density" ][ "type" ].as< std::string >( ).compare( "constant" ) == 0 ){
+        
+                            if ( !( *domain )[ "reference_density" ][ "value" ] ){
+        
+                                std::string  outstr = "The value of the reference density for macro domain " + std::to_string( indx ) + " is not defined";
+                                            outstr += "The format is:\n  value: floating_point_value";
+                                return new errorNode( "checkCommonDomainConfiguration", outstr );
+        
+                            }
+                            else{
+        
+                                densityTypes.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ),
+                                                      ( *domain )[ "reference_density" ][ "type" ].as< std::string >( ) ); 
+                                density.push_back( ( *domain )[ "reference_density" ][ "value" ].as< floatType >( ) );
+        
+                            }
+        
+                        }
+                        else{
+        
+                            std::string outstr  = "The reference density type for macro-domain " + std::to_string( indx ) + " is not recognized.\n";
+                                        outstr += "  type: " + ( *domain )[ "reference_density" ][ "type" ].as< std::string >( );
+        
+                            return new errorNode( "checkCommonDomainConfiguration", outstr );
+        
+                        }
 
-                        std::string outstr  = "Unexpected error when extracting the reference density of macro-domain " + std::to_string( indx ) + ".\n";
+                    }
+
+                    catch ( std::exception &e ){
+
+                        std::string outstr  = "Unexpected error encountered in the reference density definition of macro-domain " + std::to_string( indx ) + ".\n";
                                     outstr += "This is likely due to a problem in the YAML configuration file.\n";
                                     outstr += "The original error message was:\n";
                                     outstr += e.what( );
@@ -938,31 +940,46 @@ namespace inputFileProcessor{
                         return new errorNode( "checkCommonDomainConfiguration", outstr );
 
                     }
-    
-                    if ( !( *domain )[ "reference_moment_of_inertia" ] ){
-    
-                        return new errorNode( "checkCommonDomainConfiguration",
-                                              "The reference moment of inertia is required for the macro-domian in entry " +
-                                              std::to_string( indx ) + " but is not defined." );
-    
-                    }
-    
-                    for ( auto v  = ( *domain )[ "reference_moment_of_inertia" ].begin( );
-                               v != ( *domain )[ "reference_moment_of_inertia" ].end( );
-                               v++ ){
-    
-                        if ( v->IsScalar( ) ){
-    
-                            microInertia.push_back( v->as< floatType >( ) );
-    
-                        }
-                        else{
-    
+   
+                    try{
+
+                        if ( !( *domain )[ "reference_moment_of_inertia" ] ){
+        
                             return new errorNode( "checkCommonDomainConfiguration",
-                                                  "The micro-inertia must be constant over the free micromorphic element" );
-    
+                                                  "The reference moment of inertia is required for the macro-domian in entry " +
+                                                  std::to_string( indx ) + " but is not defined." );
+        
                         }
-    
+        
+                        for ( auto v  = ( *domain )[ "reference_moment_of_inertia" ].begin( );
+                                   v != ( *domain )[ "reference_moment_of_inertia" ].end( );
+                                   v++ ){
+        
+                            if ( v->IsScalar( ) ){
+        
+                                microInertia.push_back( v->as< floatType >( ) );
+        
+                            }
+                            else{
+        
+                                return new errorNode( "checkCommonDomainConfiguration",
+                                                      "The micro-inertia must be constant over the free micromorphic element" );
+        
+                            }
+        
+                        }
+
+                    }
+
+                    catch ( std::exception &e ){
+
+                        std::string outstr  = "Unexpected error encountered in the reference moment of inertia definition of macro-domain " + std::to_string( indx ) + ".\n";
+                                    outstr += "This is likely due to a problem in the YAML configuration file.\n";
+                                    outstr += "The original error message was:\n";
+                                    outstr += e.what( );
+
+                        return new errorNode( "checkCommonDomainConfiguration", outstr );
+
                     }
         
                 }
@@ -970,7 +987,7 @@ namespace inputFileProcessor{
             }
             catch( std::exception &e ){
 
-                std::string  outstr = "Unexpected error encountered when processing macro-domain " + std::to_string( indx ) + ".\nLikely a YAML formatting error.\n";
+                std::string outstr  = "Unexpected error encountered when processing macro-domain " + std::to_string( indx ) + ".\nLikely a YAML formatting error.\n";
                             outstr += "The original error message is:\n";
                             outstr += e.what( );
                 return new errorNode( "checkCommonDomainConfiguration", outstr );
