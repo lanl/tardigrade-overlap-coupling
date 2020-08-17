@@ -765,6 +765,67 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const std::string macroReferenceDensityTypesAnswer = "constant";
+    const floatVector macroReferenceDensitiesAnswer = { 2. };
+    const std::unordered_map< unsigned int, floatVector > *macroReferenceDensitiesResult = reader.getMacroReferenceDensities( );
+    const std::unordered_map< unsigned int, std::string > *macroReferenceDensityTypesResult = reader.getMacroReferenceDensityTypes( );
+
+    for ( auto mRDR = macroReferenceDensitiesResult->begin( ); mRDR != macroReferenceDensitiesResult->end( ); mRDR++ ){
+
+        if ( !vectorTools::fuzzyEquals( macroReferenceDensitiesAnswer, mRDR->second ) ){
+
+            results << "test_initializeIncrement (test 48) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    for ( auto mRDTR = macroReferenceDensityTypesResult->begin( ); mRDTR != macroReferenceDensityTypesResult->end( ); mRDTR++ ){
+
+        if ( macroReferenceDensityTypesAnswer.compare( mRDTR->second ) != 0 ){
+
+            results << "test_initializeIncrement (test 49) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    const std::string macroReferenceMomentOfInertiaTypesAnswer = "constant";
+    const floatVector macroReferenceMomentsOfInertiaAnswer = { 1e-5, 2e-5, 3e-5,
+                                                               2e-5, 4e-5, 5e-5,
+                                                               3e-5, 5e-5, 6e-5 };
+    const std::unordered_map< unsigned int, floatVector > *macroReferenceMomentsOfInertiaResult
+        = reader.getMacroReferenceMomentsOfInertia( );
+    const std::unordered_map< unsigned int, std::string > *macroReferenceMomentOfInertiaTypesResult
+        = reader.getMacroReferenceMomentOfInertiaTypes( );
+
+    for ( auto mRMIR  = macroReferenceMomentsOfInertiaResult->begin( );
+               mRMIR != macroReferenceMomentsOfInertiaResult->end( );
+               mRMIR++ ){
+
+        if ( !vectorTools::fuzzyEquals( macroReferenceMomentsOfInertiaAnswer, mRMIR->second ) ){
+
+            results << "test_initializeIncrement (test 50) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    for ( auto mRMITR  = macroReferenceMomentOfInertiaTypesResult->begin( );
+               mRMITR != macroReferenceMomentOfInertiaTypesResult->end( ); mRMITR++ ){
+
+        if ( macroReferenceMomentOfInertiaTypesAnswer.compare( mRMITR->second ) != 0 ){
+
+            results << "test_initializeIncrement (test 51) & False\n";
+            return 1;
+
+        }
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }
@@ -1382,17 +1443,17 @@ int main(){
     test_setConfigurationFile( results );
     test_initializeFileInterfaces( results );
     test_initializeIncrement( results );
-//    test_getFreeMicroDomainNames( results );
-//    test_getGhostMicroDomainNames( results );
-//    test_getFreeMicroSurfaceNames( results );
-//    test_getGhostMicroSurfaceNames( results );
-//    test_getFreeMacroDomainNames( results );
-//    test_getGhostMacroDomainNames( results );
-//    test_getNonOverlappedMicroSurfaceNames( results );
-//    test_getCouplingInitialization( results );
-//    test_getVolumeReconstructionConfig( results );
-//    test_getFreeMicroSurfaceApproximateSplitCount( results );
-//    test_getGhostMicroSurfaceApproximateSplitCount( results );
+    test_getFreeMicroDomainNames( results );
+    test_getGhostMicroDomainNames( results );
+    test_getFreeMicroSurfaceNames( results );
+    test_getGhostMicroSurfaceNames( results );
+    test_getFreeMacroDomainNames( results );
+    test_getGhostMacroDomainNames( results );
+    test_getNonOverlappedMicroSurfaceNames( results );
+    test_getCouplingInitialization( results );
+    test_getVolumeReconstructionConfig( results );
+    test_getFreeMicroSurfaceApproximateSplitCount( results );
+    test_getGhostMicroSurfaceApproximateSplitCount( results );
 
     //Close the results file
     results.close();
