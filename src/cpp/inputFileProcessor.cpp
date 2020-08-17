@@ -604,10 +604,10 @@ namespace inputFileProcessor{
                                                              _ghost_micro_volume_sets,
                                                              _ghost_micro_surface_approximate_split_count,
                                                              _freeMacroMassPropertiesRequired,
-                                                             _freeMacroReferenceDensityTypes,
-                                                             _freeMacroReferenceMomentsOfInertiaTypes,
-                                                             _freeMacroReferenceDensities,
-                                                             _freeMacroReferenceMomentsOfInertia );
+                                                             _macroReferenceDensityTypes,
+                                                             _macroReferenceMomentOfInertiaTypes,
+                                                             _macroReferenceDensities,
+                                                             _macroReferenceMomentsOfInertia );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the free macroscale domains" );
@@ -747,8 +747,8 @@ namespace inputFileProcessor{
          */
 
         bool massPropertyDefinitionRequired = false;
-        floatVector density;
-        floatVector microInertia;
+        std::unordered_map< unsigned int, floatVector > density;
+        std::unordered_map< unsigned int, floatVector > microInertia;
         std::unordered_map< unsigned int, std::string > densityTypes;
         std::unordered_map< unsigned int, std::string > microInertiaTypes;
 
@@ -768,7 +768,8 @@ namespace inputFileProcessor{
                                                                  const bool &massPropertyDefinitionRequired,
                                                                  std::unordered_map< unsigned int, std::string > &densityTypes,
                                                                  std::unordered_map< unsigned int, std::string > &microInertiaTypes,
-                                                                 floatVector &density, floatVector &microInertia ){
+                                                                 std::unordered_map< unsigned int, floatVector > &density,
+                                                                 std::unordered_map< unsigned int, floatVector > &microInertia ){
         /*!
          * Extract common values in the configuration of a domain
          *
@@ -787,9 +788,9 @@ namespace inputFileProcessor{
          *     Currently only constant is accepted
          * :param std::unordered_map< unsigned int, std::string > &microInertiaTypes: The types of the micro inertias
          *     Currently only constant is accepted
-         * :param floatVector &density: The density of the element. Either a single value if it is constant
+         * :param std::unordered_map< unsigned int, floatVector > &density: The density of the element. Either a single value if it is constant
          *     or multiple defined at each gauss point.
-         * :param floatVector &microInertia: The micro inertia of the element. Either a single symmetric matrix if it is 
+         * :param std::unordered_map< unsigned int, floatVector > &microInertia: The micro inertia of the element. Either a single symmetric matrix if it is 
          *     constant or multiple if defined for each gauss point. 
          */
 
@@ -918,8 +919,10 @@ namespace inputFileProcessor{
                             else{
         
                                 densityTypes.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ),
-                                                      ( *domain )[ "reference_density" ][ "type" ].as< std::string >( ) ); 
-                                density.push_back( ( *domain )[ "reference_density" ][ "value" ].as< floatType >( ) );
+                                                      ( *domain )[ "reference_density" ][ "type" ].as< std::string >( ) );
+                                
+                                floatVector tmp = { ( *domain )[ "reference_density" ][ "value" ].as< floatType >( ) };
+                                density.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ), tmp );
         
                             }
         
@@ -990,13 +993,14 @@ namespace inputFileProcessor{
                                                           std::to_string( indx ) + " and " + std::to_string( ncomponents ) );
 
                                 }
+                                floatVector tmp;
                                 for ( auto v  = ( *domain )[ "reference_moment_of_inertia" ][ "value" ].begin( );
                                            v != ( *domain )[ "reference_moment_of_inertia" ][ "value" ].end( );
                                            v++, vindex++ ){
                 
                                     if ( v->IsScalar( ) ){
                 
-                                        microInertia.push_back( v->as< floatType >( ) );
+                                        tmp.push_back( v->as< floatType >( ) );
                 
                                     }
                                     else{
@@ -1009,7 +1013,11 @@ namespace inputFileProcessor{
                 
                                 }
 
-                                        
+                                floatVector domainMicroInertia = { tmp[ 0 ], tmp[ 1 ], tmp[ 2 ],
+                                                                   tmp[ 1 ], tmp[ 3 ], tmp[ 4 ],
+                                                                   tmp[ 2 ], tmp[ 4 ], tmp[ 5 ] };
+                                microInertia.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ),
+                                                      domainMicroInertia ); 
                                 microInertiaTypes.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ),
                                                            ( *domain )[ "reference_moment_of_inertia" ][ "type" ].as< std::string >( ) );
         
@@ -3129,21 +3137,39 @@ namespace inputFileProcessor{
 
     }
 
-    const floatVector *inputFileProcessor::getFreeMacroReferenceDensities( ){
+    const std::unordered_map< unsigned int, floatVector > *inputFileProcessor::getMacroReferenceDensities( ){
         /*!
          * Get the macro reference densities for the macro domains
          */
 
-        return &_freeMacroReferenceDensities;
+        return &_macroReferenceDensities;
 
     }
 
-    const floatVector *inputFileProcessor::getFreeMacroReferenceMomentsOfInertia( ){
+    const std::unordered_map< unsigned int, floatVector > *inputFileProcessor::getMacroReferenceMomentsOfInertia( ){
         /*!
-         * Get the free macro reference moments of inertia
+         * Get the macro reference moments of inertia
          */
 
-        return &_freeMacroReferenceMomentsOfInertia;
+        return &_macroReferenceMomentsOfInertia;
+
+    }
+
+    const std::unordered_map< unsigned int, std::string > *inputFileProcessor::getMacroReferenceDensityTypes( ){
+        /*!
+         * Get the macro reference density types for the macro domains
+         */
+
+        return &_macroReferenceDensityTypes;
+
+    }
+
+    const std::unordered_map< unsigned int, std::string > *inputFileProcessor::getMacroReferenceMomentOfInertiaTypes( ){
+        /*!
+         * Get the macro reference moment of inertia types
+         */
+
+        return &_macroReferenceMomentOfInertiaTypes;
 
     }
 

@@ -123,8 +123,10 @@ namespace inputFileProcessor{
 
             const DOFMap *getMacroGlobalToLocalDOFMap( );
 
-            const floatVector* getFreeMacroReferenceDensities( );
-            const floatVector* getFreeMacroReferenceMomentsOfInertia( ); 
+            const std::unordered_map< unsigned int, floatVector >* getMacroReferenceDensities( );
+            const std::unordered_map< unsigned int, floatVector >* getMacroReferenceMomentsOfInertia( ); 
+            const std::unordered_map< unsigned int, std::string >* getMacroReferenceDensityTypes( );
+            const std::unordered_map< unsigned int, std::string >* getMacroReferenceMomentOfInertiaTypes( ); 
 
             bool computeMicroShapeFunctions( );
 
@@ -178,7 +180,8 @@ namespace inputFileProcessor{
                                                      const bool &massPropertyDefinitionRequired,
                                                      std::unordered_map< unsigned int, std::string > &densityTypes,
                                                      std::unordered_map< unsigned int, std::string > &microInertiaTypes,
-                                                     floatVector &density, floatVector &microInertia );
+                                                     std::unordered_map< unsigned int, floatVector > &density,
+                                                     std::unordered_map< unsigned int, floatVector > &microInertia );
 
             errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
                                                         stringVector &microSurfaceNodesets );
@@ -304,10 +307,10 @@ namespace inputFileProcessor{
 
             uIntType _defaultNumberOfMicroDomainSurfaceRegions = 6;
 
-            std::unordered_map< unsigned int, std::string > _freeMacroReferenceDensityTypes;
-            std::unordered_map< unsigned int, std::string > _freeMacroReferenceMomentsOfInertiaTypes;
-            floatVector _freeMacroReferenceDensities;
-            floatVector _freeMacroReferenceMomentsOfInertia;
+            std::unordered_map< unsigned int, std::string > _macroReferenceDensityTypes;
+            std::unordered_map< unsigned int, std::string > _macroReferenceMomentOfInertiaTypes;
+            std::unordered_map< unsigned int, floatVector > _macroReferenceDensities;
+            std::unordered_map< unsigned int, floatVector > _macroReferenceMomentsOfInertia;
 
     };
 
