@@ -604,6 +604,7 @@ namespace inputFileProcessor{
                                                              _ghost_micro_volume_sets,
                                                              _ghost_micro_surface_approximate_split_count,
                                                              _freeMacroMassPropertiesRequired,
+                                                             _freeMacroReferenceDensityTypes,
                                                              _freeMacroReferenceDensities,
                                                              _freeMacroReferenceMomentsOfInertia );
             if ( error ){
@@ -747,11 +748,12 @@ namespace inputFileProcessor{
         bool massPropertyDefinitionRequired = false;
         floatVector density;
         floatVector microInertia;
+        std::unordered_map< unsigned int, std::string > densityTypes;
 
         return checkCommonDomainConfiguration( domainConfig, macroCellIds, macroCellMicroDomainCounts,
                                                macroVolumeNodesets, microVolumeNodesets,
                                                microSurfaceDomainCount, massPropertyDefinitionRequired,
-                                               density, microInertia );
+                                               densityTypes, density, microInertia );
 
     }
 
@@ -762,6 +764,7 @@ namespace inputFileProcessor{
                                                                  stringVector &microVolumeNodesets,
                                                                  uIntVector &microSurfaceDomainCount,
                                                                  const bool &massPropertyDefinitionRequired,
+                                                                 std::unordered_map< unsigned int, std::string > &densityTypes,
                                                                  floatVector &density, floatVector &microInertia ){
         /*!
          * Extract common values in the configuration of a domain
@@ -777,6 +780,8 @@ namespace inputFileProcessor{
          *     micro domain's surface into
          * :param const bool &massPropertyDefinitionRequired: Flag which indicates if the mass properties
          *     must be defined for the element
+         * :param std::unordered_map< unsigned int, std::string > &densityTypes: The types of the densities
+         *     Currently only constant is accepted
          * :param floatVector &density: The density of the element. Either a single value if it is constant
          *     or multiple defined at each gauss point.
          * :param floatVector &microInertia: The micro inertia of the element. Either a single symmetric matrix if it is 
@@ -796,132 +801,180 @@ namespace inputFileProcessor{
         microVolumeNodesets.clear();
         for ( auto domain = domainConfig.begin( ); domain != domainConfig.end(); domain++ ){
 
-            if ( !( *domain )[ "macro_nodeset" ] ){
+            try {
 
-                return new errorNode( "checkCommonDomainConfiguration",
-                                      "The macro-nodeset is not defined in entry " + std::to_string( indx ) );
-
-            }
-            if ( !( *domain )[ "macro_cell" ].IsScalar( ) ){
-                return new errorNode( "checkCommonDomainConfiguration",
-                                      "'macro_cell' must be defined as the cell ( element ) corresponding with the nodeset. It is empty in entry " + std::to_string( indx ) );
-            }
-            if ( ( *domain )[ "macro_nodeset" ].IsNull( ) ){
-                return new errorNode( "checkCommonDomainConfiguration",
-                                      "'macro_nodeset' cannot be empty in entry " + std::to_string( indx ) );
-            }
-
-            if ( !( *domain )[ "macro_nodeset" ] ){
-                return new errorNode( "checkCommonDomainConfiguration",
-                                      "The macro-nodeset is not defined in entry " + std::to_string( indx ) );
-            }
-
-            if ( !( *domain )[ "macro_nodeset" ].IsScalar( ) ){
-                return new errorNode( "checkCommonDomainConfiguration",
-                                      "The macro-nodeset must be a scalar string value " + std::to_string( indx ) );
-            }
-
-            if ( !( *domain )[ "micro_nodesets" ] ){
-
-                return new errorNode( "checkCommonDomainConfiguration",
-                                      "The micro-nodeset is not defined in entry " + std::to_string( indx ) );
-
-            }
-            if ( !( *domain )[ "micro_nodesets" ].IsSequence( ) ){
-
-                return new errorNode( "checkCommonDomainConfiguration",
-                                      "The micro-nodesets are not defined as a sequence in entry " + std::to_string( indx ) ); 
-
-            }
-
-            indx2 = 1;
-            for ( auto nodeset  = ( *domain )[ "micro_nodesets" ].begin( );
-                       nodeset != ( *domain )[ "micro_nodesets" ].end( );
-                       nodeset++ ){
-
-                if ( !( *nodeset )[ "name" ] ){
-
-                    return new errorNode( "checkCommonDomainConfiguration",
-                                          "The keyword 'name' is not defined in micro-nodeset entry " + std::to_string( indx2 ) +
-                                          " of domain entry " + std::to_string( indx ) + " is not defined" );
-
-                }
-
-                if ( !( *nodeset )[ "number_of_surface_microdomains" ] ){
-                       
-                       ( *nodeset )[ "number_of_surface_microdomains" ] = _defaultNumberOfMicroDomainSurfaceRegions;
-
-                }
-                else if ( !( *nodeset )[ "number_of_surface_microdomains" ].IsScalar( ) ){
-
-                    return new errorNode( "checkCommonDomainConfiguration",
-                                          "Micro-nodeset 'number_of_surface_microdomains' in entry " + std::to_string( indx2 ) +
-                                          " of domain entry " + std::to_string( indx ) + " must be a scalar integer" );
-
-                }
-
-                if ( !( *nodeset )[ "name" ].IsScalar( ) ){
-
-                    return new errorNode( "checkCommonDomainConfiguration",
-                                          "Micro-nodeset entry " + std::to_string( indx2 ) + " of domain entry " + 
-                                          std::to_string( indx ) + " is not a Scalar" );
-
-                }
-
-                nVolumeNodesets++;
-                indx2++;
-
-            }
-            
-            if ( massPropertyDefinitionRequired ){
+                if ( !( *domain )[ "macro_nodeset" ] ){
     
-                //Extract the reference Density
-                if ( !( *domain )[ "reference_density" ] ){
-
                     return new errorNode( "checkCommonDomainConfiguration",
-                                          "The reference density is required for the macro-domian in entry " + std::to_string( indx ) +
-                                          " but is not defined." );
-
+                                          "The macro-nodeset is not defined in entry " + std::to_string( indx ) );
+    
                 }
-                if ( ( *domain )[ "reference_density" ].IsScalar( ) ){
-
-                    density.push_back( ( *domain )[ "reference_density" ].as< floatType >( ) );
-
-                }
-                else{
-
+                if ( !( *domain )[ "macro_cell" ].IsScalar( ) ){
                     return new errorNode( "checkCommonDomainConfiguration",
-                                          "The reference density for the macro-domain entry " + std::to_string( indx ) +
-                                          " must be a scalar value" );
-
+                                          "'macro_cell' must be defined as the cell ( element ) corresponding with the nodeset. It is empty in entry " + std::to_string( indx ) );
                 }
-
-                if ( !( *domain )[ "reference_moment_of_inertia" ] ){
-
+                if ( ( *domain )[ "macro_nodeset" ].IsNull( ) ){
                     return new errorNode( "checkCommonDomainConfiguration",
-                                          "The reference moment of inertia is required for the macro-domian in entry " +
-                                          std::to_string( indx ) + " but is not defined." );
-
+                                          "'macro_nodeset' cannot be empty in entry " + std::to_string( indx ) );
                 }
-
-                for ( auto v  = ( *domain )[ "reference_moment_of_inertia" ].begin( );
-                           v != ( *domain )[ "reference_moment_of_inertia" ].end( );
-                           v++ ){
-
-                    if ( v->IsScalar( ) ){
-
-                        microInertia.push_back( v->as< floatType >( ) );
-
-                    }
-                    else{
-
+    
+                if ( !( *domain )[ "macro_nodeset" ] ){
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "The macro-nodeset is not defined in entry " + std::to_string( indx ) );
+                }
+    
+                if ( !( *domain )[ "macro_nodeset" ].IsScalar( ) ){
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "The macro-nodeset must be a scalar string value " + std::to_string( indx ) );
+                }
+    
+                if ( !( *domain )[ "micro_nodesets" ] ){
+    
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "The micro-nodeset is not defined in entry " + std::to_string( indx ) );
+    
+                }
+                if ( !( *domain )[ "micro_nodesets" ].IsSequence( ) ){
+    
+                    return new errorNode( "checkCommonDomainConfiguration",
+                                          "The micro-nodesets are not defined as a sequence in entry " + std::to_string( indx ) ); 
+    
+                }
+    
+                indx2 = 1;
+                for ( auto nodeset  = ( *domain )[ "micro_nodesets" ].begin( );
+                           nodeset != ( *domain )[ "micro_nodesets" ].end( );
+                           nodeset++ ){
+    
+                    if ( !( *nodeset )[ "name" ] ){
+    
                         return new errorNode( "checkCommonDomainConfiguration",
-                                              "The micro-inertia must be constant over the free micromorphic element" );
+                                              "The keyword 'name' is not defined in micro-nodeset entry " + std::to_string( indx2 ) +
+                                              " of domain entry " + std::to_string( indx ) + " is not defined" );
+    
+                    }
+    
+                    if ( !( *nodeset )[ "number_of_surface_microdomains" ] ){
+                           
+                           ( *nodeset )[ "number_of_surface_microdomains" ] = _defaultNumberOfMicroDomainSurfaceRegions;
+    
+                    }
+                    else if ( !( *nodeset )[ "number_of_surface_microdomains" ].IsScalar( ) ){
+    
+                        return new errorNode( "checkCommonDomainConfiguration",
+                                              "Micro-nodeset 'number_of_surface_microdomains' in entry " + std::to_string( indx2 ) +
+                                              " of domain entry " + std::to_string( indx ) + " must be a scalar integer" );
+    
+                    }
+    
+                    if ( !( *nodeset )[ "name" ].IsScalar( ) ){
+    
+                        return new errorNode( "checkCommonDomainConfiguration",
+                                              "Micro-nodeset entry " + std::to_string( indx2 ) + " of domain entry " + 
+                                              std::to_string( indx ) + " is not a Scalar" );
+    
+                    }
+    
+                    nVolumeNodesets++;
+                    indx2++;
+    
+                }
+                
+                if ( massPropertyDefinitionRequired ){
+        
+                    //Extract the reference Density
+                    try{
+
+                      if ( !( *domain )[ "reference_density" ] ){
+      
+                          return new errorNode( "checkCommonDomainConfiguration",
+                                                "The reference density is required for the macro-domian in entry " + std::to_string( indx ) +
+                                                " but is not defined." );
+      
+                      }
+                      if ( !( *domain )[ "reference_density" ][ "type" ] ){
+      
+                          std::string  outstr = "The type of the reference density must be defined.";
+                                      outstr += "  Acceptable types are:\n";
+                                      outstr += "    constant";
+                          return new errorNode( "checkCommonDomainConfiguration", outstr );
+      
+                      }
+  
+                      if ( ( *domain )[ "reference_density" ][ "type" ].as< std::string >( ).compare( "constant" ) == 0 ){
+      
+                          if ( !( *domain )[ "reference_density" ][ "value" ] ){
+      
+                              std::string  outstr = "The value of the reference density for macro domain " + std::to_string( indx ) + " is not defined";
+                                          outstr += "The format is:\n  value: floating_point_value";
+                              return new errorNode( "checkCommonDomainConfiguration", outstr );
+      
+                          }
+                          else{
+      
+                              densityTypes.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ),
+                                                    ( *domain )[ "reference_density" ][ "type" ].as< std::string >( ) ); 
+                              density.push_back( ( *domain )[ "reference_density" ][ "value" ].as< floatType >( ) );
+      
+                          }
+      
+                      }
+                      else{
+      
+                          std::string outstr  = "The reference density type for entry " + std::to_string( indx ) + " is not recognized.\n";
+                                      outstr += "  type: " + ( *domain )[ "reference_density" ][ "type" ].as< std::string >( );
+      
+                          return new errorNode( "checkCommonDomainConfiguration", outstr );
+      
+                      }
+                    }
+                    catch( std::exception &e ){
+
+                        std::string outstr  = "Unexpected error when extracting the reference density of macro-domain " + std::to_string( indx ) + ".\n";
+                                    outstr += "This is likely due to a problem in the YAML configuration file.\n";
+                                    outstr += "The original error message was:\n";
+                                    outstr += e.what( );
+
+                        return new errorNode( "checkCommonDomainConfiguration", outstr );
 
                     }
-
-                }
     
+                    if ( !( *domain )[ "reference_moment_of_inertia" ] ){
+    
+                        return new errorNode( "checkCommonDomainConfiguration",
+                                              "The reference moment of inertia is required for the macro-domian in entry " +
+                                              std::to_string( indx ) + " but is not defined." );
+    
+                    }
+    
+                    for ( auto v  = ( *domain )[ "reference_moment_of_inertia" ].begin( );
+                               v != ( *domain )[ "reference_moment_of_inertia" ].end( );
+                               v++ ){
+    
+                        if ( v->IsScalar( ) ){
+    
+                            microInertia.push_back( v->as< floatType >( ) );
+    
+                        }
+                        else{
+    
+                            return new errorNode( "checkCommonDomainConfiguration",
+                                                  "The micro-inertia must be constant over the free micromorphic element" );
+    
+                        }
+    
+                    }
+        
+                }
+
+            }
+            catch( std::exception &e ){
+
+                std::string  outstr = "Unexpected error encountered when processing macro-domain " + std::to_string( indx ) + ".\nLikely a YAML formatting error.\n";
+                            outstr += "The original error message is:\n";
+                            outstr += e.what( );
+                return new errorNode( "checkCommonDomainConfiguration", outstr );
+
             }
 
             indx++;
@@ -2985,13 +3038,21 @@ namespace inputFileProcessor{
 
     }
 
-    const floatVector *getMacroReferenceDensities( ){
+    const floatVector *inputFileProcessor::getFreeMacroReferenceDensities( ){
         /*!
          * Get the macro reference densities for the macro domains
          */
 
-        return 
-        
+        return &_freeMacroReferenceDensities;
+
+    }
+
+    const floatVector *inputFileProcessor::getFreeMacroReferenceMomentsOfInertia( ){
+        /*!
+         * Get the free macro reference moments of inertia
+         */
+
+        return &_freeMacroReferenceMomentsOfInertia;
 
     }
 

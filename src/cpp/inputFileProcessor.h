@@ -13,6 +13,7 @@
 #include<error_tools.h>
 #include<yaml-cpp/yaml.h>
 #include<unordered_map>
+#include<exception>
 
 #include<dataFileInterface.h>
 
@@ -122,8 +123,8 @@ namespace inputFileProcessor{
 
             const DOFMap *getMacroGlobalToLocalDOFMap( );
 
-            const floatVector* getMacroReferenceDensities( );
-            const floatVector* getMacroReferenceMomentsOfInertia( ); 
+            const floatVector* getFreeMacroReferenceDensities( );
+            const floatVector* getFreeMacroReferenceMomentsOfInertia( ); 
 
             bool computeMicroShapeFunctions( );
 
@@ -175,6 +176,7 @@ namespace inputFileProcessor{
                                                      stringVector &microVolumeNodesets,
                                                      uIntVector &microSurfaceDomainCount,
                                                      const bool &massPropertyDefinitionRequired,
+                                                     std::unordered_map< unsigned int, std::string > &densityTypes,
                                                      floatVector &density, floatVector &microInertia );
 
             errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
@@ -301,6 +303,7 @@ namespace inputFileProcessor{
 
             uIntType _defaultNumberOfMicroDomainSurfaceRegions = 6;
 
+            std::unordered_map< unsigned int, std::string > _freeMacroReferenceDensityTypes;
             floatVector _freeMacroReferenceDensities;
             floatVector _freeMacroReferenceMomentsOfInertia;
 
