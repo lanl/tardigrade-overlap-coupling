@@ -177,6 +177,7 @@ namespace inputFileProcessor{
                                                      uIntVector &microSurfaceDomainCount,
                                                      const bool &massPropertyDefinitionRequired,
                                                      std::unordered_map< unsigned int, std::string > &densityTypes,
+                                                     std::unordered_map< unsigned int, std::string > &microInertiaTypes,
                                                      floatVector &density, floatVector &microInertia );
 
             errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
@@ -304,6 +305,7 @@ namespace inputFileProcessor{
             uIntType _defaultNumberOfMicroDomainSurfaceRegions = 6;
 
             std::unordered_map< unsigned int, std::string > _freeMacroReferenceDensityTypes;
+            std::unordered_map< unsigned int, std::string > _freeMacroReferenceMomentsOfInertiaTypes;
             floatVector _freeMacroReferenceDensities;
             floatVector _freeMacroReferenceMomentsOfInertia;
 

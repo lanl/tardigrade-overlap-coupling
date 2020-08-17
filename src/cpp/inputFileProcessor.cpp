@@ -605,6 +605,7 @@ namespace inputFileProcessor{
                                                              _ghost_micro_surface_approximate_split_count,
                                                              _freeMacroMassPropertiesRequired,
                                                              _freeMacroReferenceDensityTypes,
+                                                             _freeMacroReferenceMomentsOfInertiaTypes,
                                                              _freeMacroReferenceDensities,
                                                              _freeMacroReferenceMomentsOfInertia );
             if ( error ){
@@ -749,11 +750,12 @@ namespace inputFileProcessor{
         floatVector density;
         floatVector microInertia;
         std::unordered_map< unsigned int, std::string > densityTypes;
+        std::unordered_map< unsigned int, std::string > microInertiaTypes;
 
         return checkCommonDomainConfiguration( domainConfig, macroCellIds, macroCellMicroDomainCounts,
                                                macroVolumeNodesets, microVolumeNodesets,
                                                microSurfaceDomainCount, massPropertyDefinitionRequired,
-                                               densityTypes, density, microInertia );
+                                               densityTypes, microInertiaTypes, density, microInertia );
 
     }
 
@@ -765,6 +767,7 @@ namespace inputFileProcessor{
                                                                  uIntVector &microSurfaceDomainCount,
                                                                  const bool &massPropertyDefinitionRequired,
                                                                  std::unordered_map< unsigned int, std::string > &densityTypes,
+                                                                 std::unordered_map< unsigned int, std::string > &microInertiaTypes,
                                                                  floatVector &density, floatVector &microInertia ){
         /*!
          * Extract common values in the configuration of a domain
@@ -781,6 +784,8 @@ namespace inputFileProcessor{
          * :param const bool &massPropertyDefinitionRequired: Flag which indicates if the mass properties
          *     must be defined for the element
          * :param std::unordered_map< unsigned int, std::string > &densityTypes: The types of the densities
+         *     Currently only constant is accepted
+         * :param std::unordered_map< unsigned int, std::string > &microInertiaTypes: The types of the micro inertias
          *     Currently only constant is accepted
          * :param floatVector &density: The density of the element. Either a single value if it is constant
          *     or multiple defined at each gauss point.
@@ -950,24 +955,93 @@ namespace inputFileProcessor{
                                                   std::to_string( indx ) + " but is not defined." );
         
                         }
+
+                        if ( !( *domain )[ "reference_moment_of_inertia" ][ "type" ] ){
+
+                            return new errorNode( "checkCommonDomainConfiguration",
+                                                  "The reference moment of inertia type is required for the macro-domain in entry " +
+                                                  std::to_string( indx ) + " but is not defined." );
+
+                        }
+                        if ( ( *domain )[ "reference_moment_of_inertia" ][ "type" ].as< std::string >( ).compare( "constant" ) == 0 ){
         
-                        for ( auto v  = ( *domain )[ "reference_moment_of_inertia" ].begin( );
-                                   v != ( *domain )[ "reference_moment_of_inertia" ].end( );
-                                   v++ ){
+                            if ( !( *domain )[ "reference_moment_of_inertia" ][ "value" ] ){
         
-                            if ( v->IsScalar( ) ){
+                                std::string  outstr = "The values of the reference moment of inertia for macro domain " + std::to_string( indx ) + " are not defined";
+                                            outstr += "The format is:\n  value: [ I11, I12, I13, I22, I23, I33 ]";
+                                return new errorNode( "checkCommonDomainConfiguration", outstr );
         
-                                microInertia.push_back( v->as< floatType >( ) );
+                            }
+                            else if ( !( *domain )[ "reference_moment_of_inertia" ][ "value" ].IsSequence( ) ){
+        
+                                std::string  outstr = "The values of the reference moment of inertia for macro domain " + std::to_string( indx ) + " are not defined as a sequence";
+                                            outstr += "The format is:\n  value: [ I11, I12, I13, I22, I23, I33 ]";
+                                return new errorNode( "checkCommonDomainConfiguration", outstr );
         
                             }
                             else{
-        
-                                return new errorNode( "checkCommonDomainConfiguration",
-                                                      "The micro-inertia must be constant over the free micromorphic element" );
+
+                                uIntType vindex = 0;
+                                uIntType ncomponents =  ( *domain )[ "reference_moment_of_inertia" ][ "value" ].size( );
+                                if ( ncomponents != 6 ){ //Assuming 3D
+
+                                    return new errorNode( "checkCommonDomainConfiguration",
+                                                          "Six terms are required for the definition of a constant reference micro moment of inertia of macro-domain " +
+                                                          std::to_string( indx ) + " and " + std::to_string( ncomponents ) );
+
+                                }
+                                for ( auto v  = ( *domain )[ "reference_moment_of_inertia" ][ "value" ].begin( );
+                                           v != ( *domain )[ "reference_moment_of_inertia" ][ "value" ].end( );
+                                           v++, vindex++ ){
+                
+                                    if ( v->IsScalar( ) ){
+                
+                                        microInertia.push_back( v->as< floatType >( ) );
+                
+                                    }
+                                    else{
+                
+                                        return new errorNode( "checkCommonDomainConfiguration",
+                                                              "The micro-inertia entry " + std::to_string( vindex ) +
+                                                              " is not a scalar value" );
+                
+                                    }
+                
+                                }
+
+                                        
+                                microInertiaTypes.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ),
+                                                           ( *domain )[ "reference_moment_of_inertia" ][ "type" ].as< std::string >( ) );
         
                             }
         
                         }
+                        else{
+        
+                            std::string outstr  = "The reference density type for macro-domain " + std::to_string( indx ) + " is not recognized.\n";
+                                        outstr += "  type: " + ( *domain )[ "reference_density" ][ "type" ].as< std::string >( );
+        
+                            return new errorNode( "checkCommonDomainConfiguration", outstr );
+        
+                        }
+        
+//                        for ( auto v  = ( *domain )[ "reference_moment_of_inertia" ].begin( );
+//                                   v != ( *domain )[ "reference_moment_of_inertia" ].end( );
+//                                   v++ ){
+//        
+//                            if ( v->IsScalar( ) ){
+//        
+//                                microInertia.push_back( v->as< floatType >( ) );
+//        
+//                            }
+//                            else{
+//        
+//                                return new errorNode( "checkCommonDomainConfiguration",
+//                                                      "The micro-inertia must be constant over the free micromorphic element" );
+//        
+//                            }
+//        
+//                        }
 
                     }
 
