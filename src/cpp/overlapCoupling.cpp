@@ -4608,10 +4608,96 @@ namespace overlapCoupling{
         return NULL;
     }
 
-    errorOut overlapCoupling::assembleMacroMassMatrix( ){
+    errorOut overlapCoupling::assembleCouplingMassAndDampingMatrices( ){
         /*!
          * Assemble the mass matrix for the macro coupling equation
+         *
+         * It is assumed that ghost nodes cannot also be free or non-overlapped.
+         * It is also assumed that the micro-scale can be represented by a diagonal mass matrix.
          */
+
+        //Get the micro densities and volumes
+        const floatVector *microVolumes   = _inputProcessor.getMicroVolumes( );
+        const floatVector *microDensities = _inputProcessor.getMicroVolumes( );
+
+        //Get the global to local micro node mapping
+        const DOFMap *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
+
+        //Get the IDs of the ghost and free micro nodes
+        const uIntVector *ghostMicroNodeIDs = _inputProcessor.getGhostMicroNodeIds( );
+        const uIntVector *freeMicroNodeIDs = _inputProcessor.getFreeMicroNodeIds( );
+
+        //Determine the offset of the free micro nodes
+        const uIntType freeMicroOffset = freeMicroNodeIDs->size( );
+                
+        //Get the micro mass vectors
+        const floatVector ghostMicroMasses( ghostMicroNodeIDs->size( ), 0 );
+        const floatVector freeMicroMasses( ghostMicroNodeIDs->size( ), 0 );
+
+        //Assemble the free micro mass vector
+        for ( auto microID = freeMicroNodeIDs->begin( ); microID != freeMicroNodeIDs->end( ); microID++ ){
+
+            auto localMicroNodeIDMap = microGlobalToLocalDOFMap->find( *microID );
+
+            if ( localMicroNodeIDMap == microGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "assembleMacroMassAndDampingMatrices",
+                                      "Free micro node: " + std::to_string( *microID ) + " not found in global to local map\n" );
+
+            }
+
+            freeMicroMasses[ localMicroNodeIDMap->second ] = ( *microVolumes )[ *microID ] * ( *microDensities )[ *microID ];
+
+        }
+        //Assemble the ghost micro mass vector
+        for ( auto microID = ghostMicroNodeIDs->begin( ); microID != ghostMicroNodeIDs->end( ); microID++ ){
+
+            auto localMicroNodeIDMap = microGlobalToLocalDOFMap->find( *microID );
+
+            if ( localMicroNodeIDMap == microGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "assembleMacroMassAndDampingMatrices",
+                                      "Ghost micro node: " + std::to_string( *microID ) + " not found in global to local map\n" );
+
+            }
+
+            ghostMicroMasses[ localMicroNodeIDMap->second - freeMicroOffset ]
+                = ( *microVolumes )[ *microID ] * ( *microDensities )[ *microID ];
+
+        }
+
+        //Map the micro-mass vectors to Eigen Vectors
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _ghostMicroMasses( ghostMicroMasses.data(), ghostMicroMasses.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _freeMicroMasses( freeMicroMasses.data(), freeMicroMasses.size( ), 1 );
+
+        //Assemble the mass sub-matrices for the micro-projection equation
+
+        auto MQ = ( 1 - rhat ) * _freeMicroMasses.asDiagonal( );
+        auto MQhat = ( 1 - rhat ) * _ghostMicroMasses.asDiagonal( );
+
+        //Assemble Mass matrices for the micro projection equation
+        
+        auto MQQ = MQ + + BQhatQ.T( ) * MQhat * BQhatQ + BDhatQ.T( ) * MDhat * BDhatQ;
+        auto MQD = BQhatQ.T( ) * MQhat * BQhatD + BDhatQ.T( ) * MDhat * BDhatD;
+
+        //Assemble Mass matrices for the macro projection equation
+        
+        auto MDQ = BQhatD.T( ) * MQhat * BQhatD + BDhatD.T( ) * MDhat * BDhatQ;
+        auto MDD = MD + BQhatD.T( ) * MQhat * BQhatD + BDhatD.T( ) * MDhat * BDhatD;
+
+        //Assemble the damping matrices for the micro projection equation
+        auto CQQ = aQ * MQ + aQ * BQhatQ.T( ) * MQhat * BQhatQ + aD * BDhatQ.T( ) * MDhat * BDhatQ;
+        auto CQD = aQ * BQhatQ.T( ) * MQhat * BQhatD;
+
+        //Assemble the damping matrices for the macro projection equation
+        auto CDQ = BQhatD.T( ) * MQhat * BQhatD + BDhatD.T( ) * MDhat * BDhatQ;
+        auto CDD = MD + BQhatD.T( ) * MQhat * BQhatD + BDhatD.T( ) * MDhat * BDhatD;
+
+        //Assemble the full mass matrix
+        MASS =; 
+
+        //Assemble the full damping matrix
+        DAMPING =;
 
         return new errorNode( "assembleMacroMassMatrix", "Not implemented" );
     }
