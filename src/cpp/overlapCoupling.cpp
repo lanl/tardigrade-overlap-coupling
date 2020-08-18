@@ -130,23 +130,12 @@ namespace overlapCoupling{
 
         }
 
-        //Assemble the macro mass matrices
-        error = assembleMacroMassMatrix( );
+        //Assemble the coupling mass and damping matrices
+        error = assembleCouplingMassAndDampingMatrices( );
 
         if ( error ){
 
-            errorOut result = new errorNode( "processIncrement", "Error in the construction of the macro mass matrix" );
-            result->addNext( error );
-            return result;
-
-        }
-
-        //Assemble the micro mass matrices
-        error = assembleMicroMassMatrix( );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "processIncrement", "Error in the construction of the micro mass matrix" );
+            errorOut result = new errorNode( "processIncrement", "Error in the construction of the coupling mass and damping matrices" );
             result->addNext( error );
             return result;
 
@@ -4583,7 +4572,37 @@ namespace overlapCoupling{
 
             floatVector momentsOfInertia
                 = vectorTools::appendVectors( floatMatrix( element->qrule.size( ), macroMomentsOfInertia->second ) );
-            
+
+            //Construct the kinetic energy partitioning coefficient at each quadrature point
+            floatVector res;
+            error = constructKineticEnergyPartitioningCoefficient( macroCellID, element, res );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "assembleFreeMicromorphicMassMatrix",
+                                                 "Error in the construction of the kinetic energy partitoning coefficient for macro cell " + std::to_string( *macroCellID ) );
+                result->addNext( error );
+                return result;
+
+            }
+
+            for ( auto re = res.begin( ); re != res.end( ); re++ ){
+
+                unsigned int re_indx = re - res.begin( );
+
+                densities[ re_indx ] *= *re;
+
+                for ( auto mOI  = momentsOfInertia.begin( ) + _dim * _dim * re_indx;
+                           mOI != momentsOfInertia.begin( ) + _dim * _dim * ( re_indx + 1 );
+                           mOI++ ){
+
+                    unsigned int mOI_indx = mOI - momentsOfInertia.begin( );
+                    momentsOfInertia[ mOI_indx ] *= *re;
+
+                }
+
+            }
+
             error = formMicromorphicElementMassMatrix( element, elementDOFVector, momentsOfInertia, densities, 
                                                        _inputProcessor.getMacroGlobalToLocalDOFMap( ), coefficients );
 
@@ -4610,11 +4629,28 @@ namespace overlapCoupling{
 
     errorOut overlapCoupling::assembleCouplingMassAndDampingMatrices( ){
         /*!
-         * Assemble the mass matrix for the macro coupling equation
+         * Assemble the mass matrix for the coupling equations
          *
          * It is assumed that ghost nodes cannot also be free or non-overlapped.
-         * It is also assumed that the micro-scale can be represented by a diagonal mass matrix.
+         * It is assumed that free nodes cannot also be non-overlapped
+         * If a node is defined in multiple locations ( i.e. it is on the boundary ) then:
+         * For the micro-scale the order of preference is:
+         *     non-overlapped > free > ghost ( we assume the open window DNS is the best representation of the PDE )
+         * For the macro-scale the order of preference is:
+         *     ghost > free > non-overlapped ( we assume the micro-scale is the best representation of the PDE )
+         * It is also assumed that the micro-scale can be represented by a diagonal mass matrix while the 
+         * consistent mass matrix is used at the macro-scale.
          */
+
+        //Set the number of displacement degrees of freedom
+        uIntType nMacroDispDOF = _dim + _dim * _dim;
+
+        //Get the configuration of the coupling
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
+        floatType rhat = config[ "kinetic_energy_weighting_factor" ].as< floatType >( );
+        floatType qhat = config[ "potential_energy_weighting_factor" ].as< floatType >( );
+        floatType aQ = config[ "micro_proportionality_coefficient" ].as< floatType >( );
+        floatType aD = config[ "macro_proportionality_coefficient" ].as< floatType >( );
 
         //Get the micro densities and volumes
         const floatVector *microVolumes   = _inputProcessor.getMicroVolumes( );
@@ -4627,12 +4663,19 @@ namespace overlapCoupling{
         const uIntVector *ghostMicroNodeIDs = _inputProcessor.getGhostMicroNodeIds( );
         const uIntVector *freeMicroNodeIDs = _inputProcessor.getFreeMicroNodeIds( );
 
+        //Get the IDs of the ghost and free macro nodes
+        const uIntVector *ghostMacroNodeIDs = _inputProcessor.getGhostMacroNodeIds( );
+        const uIntVector *freeMacroNodeIDs = _inputProcessor.getFreeMacroNodeIds( );
+
         //Determine the offset of the free micro nodes
         const uIntType freeMicroOffset = freeMicroNodeIDs->size( );
+
+        //Determine the offset of the free macro nodes
+        const uIntType freeMacroOffset = freeMacroNodeIDs->size( );
                 
         //Get the micro mass vectors
-        const floatVector ghostMicroMasses( ghostMicroNodeIDs->size( ), 0 );
-        const floatVector freeMicroMasses( ghostMicroNodeIDs->size( ), 0 );
+        floatVector ghostMicroMasses( ghostMicroNodeIDs->size( ), 0 );
+        floatVector freeMicroMasses( ghostMicroNodeIDs->size( ), 0 );
 
         //Assemble the free micro mass vector
         for ( auto microID = freeMicroNodeIDs->begin( ); microID != freeMicroNodeIDs->end( ); microID++ ){
@@ -4666,48 +4709,100 @@ namespace overlapCoupling{
 
         }
 
-        //Map the micro-mass vectors to Eigen Vectors
-        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _ghostMicroMasses( ghostMicroMasses.data(), ghostMicroMasses.size( ), 1 );
-        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _freeMicroMasses( freeMicroMasses.data(), freeMicroMasses.size( ), 1 );
+        //Assemble the mass sub-matrices
+        std::vector< DOFProjection::T > c1;
+        std::vector< DOFProjection::T > c2;
 
-        //Assemble the mass sub-matrices for the micro-projection equation
+        c1.reserve( ghostMicroMasses.size( ) ); 
+        c2.reserve( freeMicroMasses.size( ) ); 
 
-        auto MQ = ( 1 - rhat ) * _freeMicroMasses.asDiagonal( );
-        auto MQhat = ( 1 - rhat ) * _ghostMicroMasses.asDiagonal( );
+        for ( auto m = ghostMicroMasses.begin( ); m != ghostMicroMasses.end( ); m++ ){
+            c1.push_back( DOFProjection::T( m - ghostMicroMasses.begin( ), m - ghostMicroMasses.end( ), ( 1 - rhat ) * ( *m ) ) );
+        }
 
+        for ( auto m = freeMicroMasses.begin( ); m != freeMicroMasses.end( ); m++ ){
+            c2.push_back( DOFProjection::T( m - freeMicroMasses.begin( ), m - freeMicroMasses.end( ), ( 1 - rhat ) * ( *m ) ) );
+        }
+
+        SparseMatrix MQ( freeMicroMasses.size( ), freeMicroMasses.size( ) );
+        MQ.setFromTriplets( c2.begin( ), c2.end( ) );
+
+        SparseMatrix MQhat( ghostMicroMasses.size( ), ghostMicroMasses.size( ) );
+        MQhat.setFromTriplets( c1.begin( ), c1.end( ) );
+
+        SparseMatrix MTildeDBreve = rhat * homogenizedMassMatrix + freeMicromorphicMassMatrix;
+        //Note: kinetic partitioning coefficient applied when the matrix was formed
+    
+        SparseMatrix MD    = MTildeDBreve.block( 0, 0, nMacroDispDOF * freeMacroOffset, nMacroDispDOF * freeMacroOffset );
+        SparseMatrix MDhat = MTildeDBreve.block( nMacroDispDOF * freeMacroOffset, nMacroDispDOF * freeMacroOffset,
+                                                 MTildeDBreve.rows( ), MTildeDBreve.cols( ) );
+
+        //Due to the restrictions in listed in the comment at the beginning of the function, MBar from Regueiro 2012
+        //is an empty matrix as we only handle the coupling domain here.
+       
+    
         //Assemble Mass matrices for the micro projection equation
-        
-        auto MQQ = MQ + + BQhatQ.T( ) * MQhat * BQhatQ + BDhatQ.T( ) * MDhat * BDhatQ;
-        auto MQD = BQhatQ.T( ) * MQhat * BQhatD + BDhatQ.T( ) * MDhat * BDhatD;
 
-        //Assemble Mass matrices for the macro projection equation
-        
-        auto MDQ = BQhatD.T( ) * MQhat * BQhatD + BDhatD.T( ) * MDhat * BDhatQ;
-        auto MDD = MD + BQhatD.T( ) * MQhat * BQhatD + BDhatD.T( ) * MDhat * BDhatD;
+        if ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ){
 
-        //Assemble the damping matrices for the micro projection equation
-        auto CQQ = aQ * MQ + aQ * BQhatQ.T( ) * MQhat * BQhatQ + aD * BDhatQ.T( ) * MDhat * BDhatQ;
-        auto CQD = aQ * BQhatQ.T( ) * MQhat * BQhatD;
+            auto MQQ  = MQ + _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatQ + _L2_BDhatQ.transpose( ) * MDhat * _L2_BDhatQ;
 
-        //Assemble the damping matrices for the macro projection equation
-        auto CDQ = BQhatD.T( ) * MQhat * BQhatD + BDhatD.T( ) * MDhat * BDhatQ;
-        auto CDD = MD + BQhatD.T( ) * MQhat * BQhatD + BDhatD.T( ) * MDhat * BDhatD;
+            auto MQD = _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatD + _L2_BDhatQ.transpose( ) * MDhat * _L2_BDhatD;
+    
+            //Assemble Mass matrices for the macro projection equation
+            
+            auto MDQ = _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatD + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatQ;
+
+            auto MDD = MD + _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatD + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatD;
+    
+            //Assemble the damping matrices for the micro projection equation
+            auto CQQ = aQ * MQ + aQ * _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatQ + aD * _L2_BDhatQ.transpose( ) * MDhat * _L2_BDhatQ;
+
+            auto CQD = aQ * _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatD;
+    
+            //Assemble the damping matrices for the macro projection equation
+            auto CDQ = aQ * _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatQ;
+            auto CDD = aD * MD + aQ * _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatD;
+
+        }
+        else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+
+            SparseMatrix MQQ  =  MQ + _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ + _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
+
+            SparseMatrix MQD = _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatD;
+    
+            //Assemble Mass matrices for the macro projection equation
+            
+            SparseMatrix MDQ = _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatQ;
+
+            SparseMatrix MDD = MD + _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatD;
+    
+            //Assemble the damping matrices for the micro projection equation
+            SparseMatrix CQQ = aQ * MQ + aQ * _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ +
+                               aD * _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
+
+            SparseMatrix CQD = aQ * _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD;
+    
+            //Assemble the damping matrices for the macro projection equation
+            SparseMatrix CDQ = aQ * _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatQ;
+            SparseMatrix CDD = aD * MD + aQ * _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD;
+
+        }
+        else{
+
+            return new errorNode( "assembleMacroMassAndDampingMatrices",
+                                  "The projection type " + config[ "projection_type" ].as< std::string >( ) +
+                                  " is not recognized" );
+
+        }
 
         //Assemble the full mass matrix
-        MASS =; 
+//        MASS =; 
 
         //Assemble the full damping matrix
-        DAMPING =;
+//        DAMPING =;
 
         return new errorNode( "assembleMacroMassMatrix", "Not implemented" );
-    }
-
-    errorOut overlapCoupling::assembleMicroMassMatrix( ){
-        /*!
-         * Assemble the mass matrix for the micro coupling equation
-         */
-
-        return new errorNode( "assembleMicroMassMatrix", "Not implemented" );
     }
 
 }

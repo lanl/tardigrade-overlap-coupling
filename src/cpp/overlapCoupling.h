@@ -216,9 +216,7 @@ namespace overlapCoupling{
 
             errorOut assembleFreeMicromorphicMassMatrix( );
 
-            errorOut assembleMacroMassMatrix( );
-
-            errorOut assembleMicroMassMatrix( );
+            errorOut assembleCouplingMassAndDampingMatrices( );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;
@@ -271,7 +269,10 @@ namespace overlapCoupling{
             Eigen::MatrixXd homogenizedFINT;
             Eigen::MatrixXd homogenizedFEXT;
 
+            //The values of the macro-domains
             SparseMatrix freeMicromorphicMassMatrix;
+            std::unordered_map< uIntType, floatType > macroKineticPartitioningCoefficient;
+
 
     };
 
