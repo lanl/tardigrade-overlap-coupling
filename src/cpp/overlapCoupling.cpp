@@ -130,6 +130,28 @@ namespace overlapCoupling{
 
         }
 
+        //Assemble the macro mass matrices
+        error = assembleMacroMassMatrix( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processIncrement", "Error in the construction of the macro mass matrix" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Assemble the micro mass matrices
+        error = assembleMicroMassMatrix( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processIncrement", "Error in the construction of the micro mass matrix" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
     }
 
@@ -4579,11 +4601,27 @@ namespace overlapCoupling{
 
         }
 
-        const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
-        freeMicromorphicMassMatrix = SparseMatrix( nMacroDOF * freeMacroNodeIds->size( ), nMacroDOF * freeMacroNodeIds->size( ) );
+        const DOFMap *nodeIDToIndex = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+        freeMicromorphicMassMatrix = SparseMatrix( nMacroDOF * nodeIDToIndex->size( ), nMacroDOF * nodeIDToIndex->size( ) );
         freeMicromorphicMassMatrix.setFromTriplets( coefficients.begin( ), coefficients.end( ) );
 
         return NULL;
+    }
+
+    errorOut overlapCoupling::assembleMacroMassMatrix( ){
+        /*!
+         * Assemble the mass matrix for the macro coupling equation
+         */
+
+        return new errorNode( "assembleMacroMassMatrix", "Not implemented" );
+    }
+
+    errorOut overlapCoupling::assembleMicroMassMatrix( ){
+        /*!
+         * Assemble the mass matrix for the micro coupling equation
+         */
+
+        return new errorNode( "assembleMicroMassMatrix", "Not implemented" );
     }
 
 }

@@ -215,6 +215,10 @@ namespace overlapCoupling{
             errorOut assembleHomogenizedExternalForceVector( );
 
             errorOut assembleFreeMicromorphicMassMatrix( );
+
+            errorOut assembleMacroMassMatrix( );
+
+            errorOut assembleMicroMassMatrix( );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;
