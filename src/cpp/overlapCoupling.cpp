@@ -4748,7 +4748,6 @@ namespace overlapCoupling{
         SparseMatrix MTildeDBreve = rhat * homogenizedMassMatrix + freeMicromorphicMassMatrix;
         //Note: kinetic partitioning coefficient applied when the matrix was formed
     
-        std::cout << nMacroDispDOF * nFreeMacroNodes << "\n";
         SparseMatrix MD    = MTildeDBreve.block( 0, 0, nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes );
         SparseMatrix MDhat = MTildeDBreve.block( nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes,
                                                  nMacroDispDOF * nGhostMacroNodes, nMacroDispDOF * nGhostMacroNodes );
@@ -4804,7 +4803,8 @@ namespace overlapCoupling{
             MQQ += _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ;
             MQQ += _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
 
-            SparseMatrix MQD = _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatD; //TODO: Verify error in Reguiero 2012 for first term second projection matrix
+            SparseMatrix MQD = _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD;
+            MQD += _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatD;
     
             //Assemble Mass matrices for the macro projection equation
             
@@ -4873,9 +4873,6 @@ namespace overlapCoupling{
 
             }
 
-            std::cout << "_DP_MASS.nonZeros( ): " << _DP_MASS.nonZeros( ) << "\n";
-            std::cout << "_DP_DAMPING.nonZeros( ): " << _DP_DAMPING.nonZeros( ) << "\n";
-
         }
         else{
 
@@ -4885,13 +4882,8 @@ namespace overlapCoupling{
 
         }
 
-        //Assemble the full mass matrix
-//        MASS =; 
+        return NULL;
 
-        //Assemble the full damping matrix
-//        DAMPING =;
-
-        return new errorNode( "assembleMacroMassMatrix", "Not implemented" );
     }
 
     errorOut overlapCoupling::constructKineticEnergyPartitioningCoefficient( const uIntType &macroCellID,
