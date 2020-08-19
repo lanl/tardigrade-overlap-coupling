@@ -1232,6 +1232,74 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
+    if ( couplingInitialization[ "macro_internal_force_sign" ] ){
+
+        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "macro_internal_force_sign" ].as< floatType >( ), -1. ) ){
+
+            results << "test_getCouplingInitialization (test 19) & False\n";
+            return 1;
+
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 20) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "macro_external_force_sign" ] ){
+
+        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "macro_external_force_sign" ].as< floatType >( ), 1. ) ){
+
+            results << "test_getCouplingInitialization (test 21) & False\n";
+            return 1;
+
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 22) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "micro_internal_force_sign" ] ){
+
+        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "micro_internal_force_sign" ].as< floatType >( ), 1. ) ){
+
+            results << "test_getCouplingInitialization (test 23) & False\n";
+            return 1;
+
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 24) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "micro_external_force_sign" ] ){
+
+        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "micro_external_force_sign" ].as< floatType >( ), 1. ) ){
+
+            results << "test_getCouplingInitialization (test 25) & False\n";
+            return 1;
+
+        }
+
+    }
+    else{
+
+        results << "test_getCouplingInitialization (test 26) & False\n";
+        return 1;
+
+    }
+
     results << "test_getCouplingInitialization & True\n";
     return 0;
 
