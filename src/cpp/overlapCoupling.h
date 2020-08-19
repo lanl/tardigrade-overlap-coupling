@@ -42,6 +42,7 @@ namespace overlapCoupling{
          */
 
         public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
             //Constructors
             overlapCoupling( );
@@ -278,6 +279,11 @@ namespace overlapCoupling{
             SparseMatrix freeMicromorphicMassMatrix;
             std::unordered_map< uIntType, floatType > macroKineticPartitioningCoefficient;
 
+            Eigen::MatrixXd _L2_MASS;
+            Eigen::MatrixXd _L2_DAMPING;
+
+            SparseMatrix _DP_MASS;
+            SparseMatrix _DP_DAMPING;
 
     };
 

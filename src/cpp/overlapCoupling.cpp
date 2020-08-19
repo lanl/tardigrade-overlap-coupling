@@ -4648,7 +4648,6 @@ namespace overlapCoupling{
         //Get the configuration of the coupling
         const YAML::Node config = _inputProcessor.getCouplingInitialization( );
         floatType rhat = config[ "kinetic_energy_weighting_factor" ].as< floatType >( );
-        floatType qhat = config[ "potential_energy_weighting_factor" ].as< floatType >( );
         floatType aQ = config[ "micro_proportionality_coefficient" ].as< floatType >( );
         floatType aD = config[ "macro_proportionality_coefficient" ].as< floatType >( );
 
@@ -4743,24 +4742,16 @@ namespace overlapCoupling{
 
         SparseMatrix MQ( _dim * freeMicroMasses.size( ), _dim * freeMicroMasses.size( ) );
         MQ.setFromTriplets( c2.begin( ), c2.end( ) );
-        std::cout << "MQ rows x cols: " << MQ.rows( ) << " x " << MQ.cols( ) << "\n";
 
         SparseMatrix MQhat( _dim * ghostMicroMasses.size( ), _dim * ghostMicroMasses.size( ) );
         MQhat.setFromTriplets( c1.begin( ), c1.end( ) );
-        std::cout << "MQhat rows x cols: " << MQhat.rows( ) << " x " << MQhat.cols( ) << "\n";
-
-        std::cout << "homogenizedMassMatrix " << homogenizedMassMatrix.rows( ) << " x " << homogenizedMassMatrix.cols( ) << "\n";
-        std::cout << "freeMicromorphicMassMatrix " << freeMicromorphicMassMatrix.rows( ) << " x " << freeMicromorphicMassMatrix.cols( ) << "\n";
         SparseMatrix MTildeDBreve = rhat * homogenizedMassMatrix + freeMicromorphicMassMatrix;
         //Note: kinetic partitioning coefficient applied when the matrix was formed
-        std::cout << "MTildeDBreve " << MTildeDBreve.rows( ) << " x " << MTildeDBreve.cols( ) << "\n";
     
         std::cout << nMacroDispDOF * nFreeMacroNodes << "\n";
         SparseMatrix MD    = MTildeDBreve.block( 0, 0, nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes );
-        std::cout << "MD " << MD.rows( ) << " x " << MD.cols( ) << "\n";
         SparseMatrix MDhat = MTildeDBreve.block( nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes,
                                                  nMacroDispDOF * nGhostMacroNodes, nMacroDispDOF * nGhostMacroNodes );
-        std::cout << "MDhat " << MDhat.rows( ) << " x " << MDhat.cols( ) << "\n";
 
         //Due to the restrictions in listed in the comment at the beginning of the function, MBar from Regueiro 2012
         //is an empty matrix as we only handle the coupling domain here.
@@ -4770,13 +4761,15 @@ namespace overlapCoupling{
 
         if ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ){
 
+            //TODO: Improve efficiency
+
             auto MQQ  = MQ + _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatQ + _L2_BDhatQ.transpose( ) * MDhat * _L2_BDhatQ;
 
             auto MQD = _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatD + _L2_BDhatQ.transpose( ) * MDhat * _L2_BDhatD;
     
             //Assemble Mass matrices for the macro projection equation
             
-            auto MDQ = _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatD + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatQ;
+            auto MDQ = _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatQ + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatQ; //TODO: Verify error in Regueiro 2012 for first term second projection matrix
 
             auto MDD = MD + _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatD + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatD;
     
@@ -4789,37 +4782,99 @@ namespace overlapCoupling{
             auto CDQ = aQ * _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatQ;
             auto CDD = aD * MD + aQ * _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatD;
 
+            //Assemble the full mass matrix
+            _L2_MASS = Eigen::MatrixXd( MQQ.rows( ) + MDQ.rows( ), MQQ.cols( ) + MQD.cols( ) );
+            _L2_MASS.topLeftCorner(     MQQ.rows( ), MQQ.cols( ) ) = MQQ;
+            _L2_MASS.topRightCorner(    MQD.rows( ), MQD.cols( ) ) = MQD;
+            _L2_MASS.bottomLeftCorner(  MDQ.rows( ), MDQ.cols( ) ) = MDQ;
+            _L2_MASS.bottomRightCorner( MDD.rows( ), MDD.cols( ) ) = MDD;
+
+            //Assemble the full damping matrix
+            _L2_DAMPING = Eigen::MatrixXd( CQQ.rows( ) + CDQ.rows( ), CQQ.cols( ) + CQD.cols( ) );
+            _L2_DAMPING.topLeftCorner(     CQQ.rows( ), CQQ.cols( ) ) = CQQ;
+            _L2_DAMPING.topRightCorner(    CQD.rows( ), CQD.cols( ) ) = CQD;
+            _L2_DAMPING.bottomLeftCorner(  CDQ.rows( ), CDQ.cols( ) ) = CDQ;
+            _L2_DAMPING.bottomRightCorner( CDD.rows( ), CDD.cols( ) ) = CDD;
+
         }
         else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
 
-            std::cout << "MQQ:\n";
-            SparseMatrix MQQ  =  MQ + _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ + _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
-            std::cout << "MQQ nonZeros: " << MQQ.nonZeros( ) << "\n";
+            std::cout << "ASSEMBLING MASS BLOCK MATRICES\n";
+            SparseMatrix MQQ  =  MQ;
+            MQQ += _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ;
+            MQQ += _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
 
-            std::cout << "MQD:\n";
             SparseMatrix MQD = _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatD; //TODO: Verify error in Reguiero 2012 for first term second projection matrix
     
             //Assemble Mass matrices for the macro projection equation
             
-            std::cout << "MDQ:\n";
-            SparseMatrix MDQ = _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatQ + _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatQ; //TODO: Verify error in Reguiero 2012 for first term second projection matrix
+            SparseMatrix MDQ = _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatQ;
+            MDQ += _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatQ; //TODO: Verify error in Reguiero 2012 for first term second projection matrix
 
-            std::cout << "MDD:\n";
-            SparseMatrix MDD = MD + _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatD;
+            SparseMatrix MDD = MD;
+            MDD += _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD;
+            MDD += _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatD;
+
+            std::cout << "ASSEMBLING DAMPING BLOCK MATRICES\n";
     
             //Assemble the damping matrices for the micro projection equation
-            std::cout << "CQQ\n";
-            SparseMatrix CQQ = aQ * MQ + aQ * _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ +
-                               aD * _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
+            SparseMatrix CQQ = aQ * MQ;
+            CQQ += aQ * _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ;
+            CQQ += aD * _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
 
-            std::cout << "CQD\n";
             SparseMatrix CQD = aQ * _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD;
     
             //Assemble the damping matrices for the macro projection equation
-            std::cout << "CDQ\n";
             SparseMatrix CDQ = aQ * _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatQ;
-            std::cout << "CDD\n";
-            SparseMatrix CDD = aD * MD + aQ * _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD;
+            SparseMatrix CDD = aD * MD;
+            CDD += aQ * _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD;
+
+            //Assemble the full mass and damping matrices
+            std::cout << "ASSEMBLING FULL MASS AND DAMPING MATRICES\n";
+            _DP_MASS    = SparseMatrix( MQQ.rows( ) + MDQ.rows( ), MQQ.cols( ) + MQD.cols( ) );
+            _DP_DAMPING = SparseMatrix( CQQ.rows( ) + CDQ.rows( ), CQQ.cols( ) + CQD.cols( ) );
+
+            //The sparse matrices are in column major format so we loop over the columns to assemble the matrix
+            _DP_MASS.reserve( MQQ.nonZeros( ) + MQD.nonZeros( ) + MDQ.nonZeros( ) + MDD.nonZeros( ) );
+            _DP_DAMPING.reserve( CQQ.nonZeros( ) + CQD.nonZeros( ) + CDQ.nonZeros( ) + CDD.nonZeros( ) );
+            for ( uIntType c = 0; c < MQQ.cols( ); ++c ){
+
+                //Add terms to the mass matrix
+                _DP_MASS.startVec( c );
+                for ( SparseMatrix::InnerIterator itMQQ( MQQ, c ); itMQQ; ++itMQQ )
+                    _DP_MASS.insertBack( itMQQ.row( ), c ) = itMQQ.value( );
+                for ( SparseMatrix::InnerIterator itMDQ( MDQ, c ); itMDQ; ++itMDQ )
+                    _DP_MASS.insertBack( itMDQ.row( ) + MQQ.rows( ), c ) = itMDQ.value( );
+
+                //Add terms to the damping matrix
+                _DP_DAMPING.startVec( c );
+                for ( SparseMatrix::InnerIterator itCQQ( CQQ, c ); itCQQ; ++itCQQ )
+                    _DP_DAMPING.insertBack( itCQQ.row( ), c ) = itCQQ.value( );
+                for ( SparseMatrix::InnerIterator itCDQ( CDQ, c ); itCDQ; ++itCDQ )
+                    _DP_DAMPING.insertBack( itCDQ.row( ) + CQQ.rows( ), c ) = itCDQ.value( );
+
+            }
+
+            for ( uIntType c = 0; c < MDD.cols( ); ++c ){
+
+                //Add terms to the mass matrix
+                _DP_MASS.startVec( c + MQQ.cols( ) );
+                for ( SparseMatrix::InnerIterator itMQD( MQD, c ); itMQD; ++itMQD )
+                    _DP_MASS.insertBack( itMQD.row( ), c + MQQ.cols( ) ) = itMQD.value( );
+                for ( SparseMatrix::InnerIterator itMDD( MDD, c ); itMDD; ++itMDD )
+                    _DP_MASS.insertBack( itMDD.row( ) + MQD.rows( ), c + MDQ.cols( ) ) = itMDD.value( );
+
+                //Add terms to the damping matrix
+                _DP_DAMPING.startVec( c + CQQ.cols( ) );
+                for ( SparseMatrix::InnerIterator itCQD( CQD, c ); itCQD; ++itCQD )
+                    _DP_DAMPING.insertBack( itCQD.row( ), c + CQQ.cols( ) ) = itCQD.value( );
+                for ( SparseMatrix::InnerIterator itCDD( CDD, c ); itCDD; ++itCDD )
+                    _DP_DAMPING.insertBack( itCDD.row( ) + CQD.rows( ), c + CDQ.cols( ) ) = itCDD.value( );
+
+            }
+
+            std::cout << "_DP_MASS.nonZeros( ): " << _DP_MASS.nonZeros( ) << "\n";
+            std::cout << "_DP_DAMPING.nonZeros( ): " << _DP_DAMPING.nonZeros( ) << "\n";
 
         }
         else{
