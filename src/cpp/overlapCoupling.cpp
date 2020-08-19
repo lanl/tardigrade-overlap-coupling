@@ -4967,4 +4967,62 @@ namespace overlapCoupling{
 
     }
 
+    errorOut overlapCoupling::assembleCouplingForceVector( ){
+        /*!
+         * Assemble the force vector. In Regueiro 2012, the external forces are on the right hand side
+         * and the internal forces are on the left. I will call the, "force vector," the external forces
+         * minus the internal forces. This is distinct from the LHS vector which will include the inertial
+         * and damping forces from the previous increment.
+         *
+         * I also note that, unless we re-compute the micromorphic internal forces, it is not clear how
+         * to get the element-wise contributions for the assembly of the vector. Consequently, we will do
+         * an approximate scheme to handle the potential energy weighting factor.
+         */
+
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
+        floatType qhat = config[ "potential_energy_weighting_factor" ].as< floatType >( );
+
+        //Get the maps from the global to the local degrees of freedom
+        const DOFMap *microGlobalToLocalDOFMap = getMicroGlobalToLocalDOFMap( );
+        const DOFMap *macroGlobalToLocalDOFMap = getMacroGlobalToLocalDOFMap( );
+
+        const floatVector *microInternalForces = _inputProcessor.getMicroInernalForces( );
+
+        //Assemble the micro internal forces
+        floatVector FintQhat( _dim * ghostMicroNodeIDs->size( ) );
+        floatVector FintQ( _dim * freeMicroNodeIDs->size( ) );
+
+        //Assemble the micro external forces
+        floatVector FextQhat( _dim * ghostMicroNodeIDs->size( ) );
+        floatVector FextQ( _dim * freeMicroNodeIDs->size( ) );
+
+        //Assemble the macro internal forces
+        floatVector FintDhat( nMacroNodeForces * ghostMacroNodeIDs->size( ) );
+        floatVector FintD( nMacroNodeForces * freeMacroNodeIDs->size( ) );
+        
+        //Assemble the macro external forces
+        floatVector FextDhat( nMacroNodeForces * ghostMacroNodeIDs->size( ) );
+        floatVector FextD( nMacroNodeForces * freeMacroNodeIDs->size( ) );
+
+        //Assemble the micro force vector
+        Eigen::MatrixXd _FQ  = _FextQ;
+        _FQ += BQhatQ.transpose( ) * _FextQhat;
+        _FQ -= _FintQ;
+        _FQ -= BQhatQ.transpose( ) * _FintQhat;
+        _FQ -= BDhatQ.transpose( ) * _FintDhat;
+
+        //Assemble the macro force vector
+        Eigen::MatrixXd _FD  = _FextD;
+        _FD += BDhatD.transpose( ) * _FextDhat;
+        _FD -= _FintD;
+        _FD -= BQhatD.transpose( ) * _FintQhat;
+        _FD -= BDhatD.transpose( ) * _FintDhat;
+
+        //Assemble the full force vector
+        _FORCE = Eigen::MatrixXd( _FQ.rows( ) + _FD.rows( ), 1 );
+        _FORCE << _FQ << _FD;
+
+        return errorNode( "assembleCouplingForceVector", "Not implemented" );
+    }
+
 }

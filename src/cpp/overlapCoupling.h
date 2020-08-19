@@ -219,6 +219,8 @@ namespace overlapCoupling{
 
             errorOut assembleCouplingMassAndDampingMatrices( );
 
+            errorOut assembleCouplingForceVector( );
+
             errorOut constructKineticEnergyPartitioningCoefficient( const uIntType &macroCellID,
                                                                     const std::unique_ptr< elib::Element > &element,
                                                                     floatVector &res );
