@@ -2418,6 +2418,30 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config[ "coupling_initialization" ][ "macro_internal_force_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "macro_internal_force_sign" ] = -1; //Default to -1
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "macro_external_force_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "macro_external_force_sign" ] = 1; //Default to 1
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "micro_internal_force_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "micro_internal_force_sign" ] = 1; //Default to 1
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "micro_external_force_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "micro_external_force_sign" ] = 1; //Default to 1
+
+        }
+
         return NULL;
 
     }
