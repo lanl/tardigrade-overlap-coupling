@@ -217,6 +217,11 @@ namespace overlapCoupling{
             errorOut assembleFreeMicromorphicMassMatrix( );
 
             errorOut assembleCouplingMassAndDampingMatrices( );
+
+            errorOut constructKineticEnergyPartitioningCoefficient( const uIntType &macroCellID,
+                                                                    const std::unique_ptr< elib::Element > &element,
+                                                                    floatVector &res );
+                                                                    
                                                                    
             //The interpolation matrix
             SparseMatrix _N;

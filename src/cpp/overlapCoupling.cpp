@@ -4463,8 +4463,8 @@ namespace overlapCoupling{
             //Construct the macro-domain element
             std::unique_ptr< elib::Element > element;
             errorOut error = buildMacroDomainElement( *macroCellID,
-                                                      *_inputProcessor.getMicroNodeReferencePositions( ),
-                                                      *_inputProcessor.getMicroDisplacements( ),
+                                                      *_inputProcessor.getMacroNodeReferencePositions( ),
+                                                      *_inputProcessor.getMacroDisplacements( ),
                                                       *_inputProcessor.getMacroNodeReferenceConnectivity( ),
                                                       *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
                                                       element );
@@ -4575,7 +4575,7 @@ namespace overlapCoupling{
 
             //Construct the kinetic energy partitioning coefficient at each quadrature point
             floatVector res;
-            error = constructKineticEnergyPartitioningCoefficient( macroCellID, element, res );
+            error = constructKineticEnergyPartitioningCoefficient( *macroCellID, element, res );
 
             if ( error ){
 
@@ -4668,10 +4668,11 @@ namespace overlapCoupling{
         const uIntVector *freeMacroNodeIDs = _inputProcessor.getFreeMacroNodeIds( );
 
         //Determine the offset of the free micro nodes
-        const uIntType freeMicroOffset = freeMicroNodeIDs->size( );
+        const uIntType nFreeMicroNodes = freeMicroNodeIDs->size( );
 
         //Determine the offset of the free macro nodes
-        const uIntType freeMacroOffset = freeMacroNodeIDs->size( );
+        const uIntType nFreeMacroNodes = freeMacroNodeIDs->size( );
+        const uIntType nGhostMacroNodes = ghostMacroNodeIDs->size( );
                 
         //Get the micro mass vectors
         floatVector ghostMicroMasses( ghostMicroNodeIDs->size( ), 0 );
@@ -4704,7 +4705,7 @@ namespace overlapCoupling{
 
             }
 
-            ghostMicroMasses[ localMicroNodeIDMap->second - freeMicroOffset ]
+            ghostMicroMasses[ localMicroNodeIDMap->second - nFreeMicroNodes ]
                 = ( *microVolumes )[ *microID ] * ( *microDensities )[ *microID ];
 
         }
@@ -4713,29 +4714,53 @@ namespace overlapCoupling{
         std::vector< DOFProjection::T > c1;
         std::vector< DOFProjection::T > c2;
 
-        c1.reserve( ghostMicroMasses.size( ) ); 
-        c2.reserve( freeMicroMasses.size( ) ); 
+        c1.reserve( _dim * ghostMicroMasses.size( ) ); 
+        c2.reserve( _dim * freeMicroMasses.size( ) ); 
 
-        for ( auto m = ghostMicroMasses.begin( ); m != ghostMicroMasses.end( ); m++ ){
-            c1.push_back( DOFProjection::T( m - ghostMicroMasses.begin( ), m - ghostMicroMasses.end( ), ( 1 - rhat ) * ( *m ) ) );
+        uIntType mIndex = 0;
+
+        for ( auto m = ghostMicroMasses.begin( ); m != ghostMicroMasses.end( ); m++, mIndex++ ){
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                c1.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
+
+            }
+
         }
 
-        for ( auto m = freeMicroMasses.begin( ); m != freeMicroMasses.end( ); m++ ){
-            c2.push_back( DOFProjection::T( m - freeMicroMasses.begin( ), m - freeMicroMasses.end( ), ( 1 - rhat ) * ( *m ) ) );
+        mIndex = 0;
+
+        for ( auto m = freeMicroMasses.begin( ); m != freeMicroMasses.end( ); m++, mIndex++ ){
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                c2.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
+
+            }
+
         }
 
-        SparseMatrix MQ( freeMicroMasses.size( ), freeMicroMasses.size( ) );
+        SparseMatrix MQ( _dim * freeMicroMasses.size( ), _dim * freeMicroMasses.size( ) );
         MQ.setFromTriplets( c2.begin( ), c2.end( ) );
+        std::cout << "MQ rows x cols: " << MQ.rows( ) << " x " << MQ.cols( ) << "\n";
 
-        SparseMatrix MQhat( ghostMicroMasses.size( ), ghostMicroMasses.size( ) );
+        SparseMatrix MQhat( _dim * ghostMicroMasses.size( ), _dim * ghostMicroMasses.size( ) );
         MQhat.setFromTriplets( c1.begin( ), c1.end( ) );
+        std::cout << "MQhat rows x cols: " << MQhat.rows( ) << " x " << MQhat.cols( ) << "\n";
 
+        std::cout << "homogenizedMassMatrix " << homogenizedMassMatrix.rows( ) << " x " << homogenizedMassMatrix.cols( ) << "\n";
+        std::cout << "freeMicromorphicMassMatrix " << freeMicromorphicMassMatrix.rows( ) << " x " << freeMicromorphicMassMatrix.cols( ) << "\n";
         SparseMatrix MTildeDBreve = rhat * homogenizedMassMatrix + freeMicromorphicMassMatrix;
         //Note: kinetic partitioning coefficient applied when the matrix was formed
+        std::cout << "MTildeDBreve " << MTildeDBreve.rows( ) << " x " << MTildeDBreve.cols( ) << "\n";
     
-        SparseMatrix MD    = MTildeDBreve.block( 0, 0, nMacroDispDOF * freeMacroOffset, nMacroDispDOF * freeMacroOffset );
-        SparseMatrix MDhat = MTildeDBreve.block( nMacroDispDOF * freeMacroOffset, nMacroDispDOF * freeMacroOffset,
-                                                 MTildeDBreve.rows( ), MTildeDBreve.cols( ) );
+        std::cout << nMacroDispDOF * nFreeMacroNodes << "\n";
+        SparseMatrix MD    = MTildeDBreve.block( 0, 0, nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes );
+        std::cout << "MD " << MD.rows( ) << " x " << MD.cols( ) << "\n";
+        SparseMatrix MDhat = MTildeDBreve.block( nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes,
+                                                 nMacroDispDOF * nGhostMacroNodes, nMacroDispDOF * nGhostMacroNodes );
+        std::cout << "MDhat " << MDhat.rows( ) << " x " << MDhat.cols( ) << "\n";
 
         //Due to the restrictions in listed in the comment at the beginning of the function, MBar from Regueiro 2012
         //is an empty matrix as we only handle the coupling domain here.
@@ -4767,24 +4792,33 @@ namespace overlapCoupling{
         }
         else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
 
+            std::cout << "MQQ:\n";
             SparseMatrix MQQ  =  MQ + _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ + _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
+            std::cout << "MQQ nonZeros: " << MQQ.nonZeros( ) << "\n";
 
-            SparseMatrix MQD = _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatD;
+            std::cout << "MQD:\n";
+            SparseMatrix MQD = _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatD; //TODO: Verify error in Reguiero 2012 for first term second projection matrix
     
             //Assemble Mass matrices for the macro projection equation
             
-            SparseMatrix MDQ = _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatQ;
+            std::cout << "MDQ:\n";
+            SparseMatrix MDQ = _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatQ + _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatQ; //TODO: Verify error in Reguiero 2012 for first term second projection matrix
 
+            std::cout << "MDD:\n";
             SparseMatrix MDD = MD + _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD + _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatD;
     
             //Assemble the damping matrices for the micro projection equation
+            std::cout << "CQQ\n";
             SparseMatrix CQQ = aQ * MQ + aQ * _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ +
                                aD * _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
 
+            std::cout << "CQD\n";
             SparseMatrix CQD = aQ * _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD;
     
             //Assemble the damping matrices for the macro projection equation
+            std::cout << "CDQ\n";
             SparseMatrix CDQ = aQ * _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatQ;
+            std::cout << "CDD\n";
             SparseMatrix CDD = aD * MD + aQ * _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD;
 
         }
@@ -4803,6 +4837,87 @@ namespace overlapCoupling{
 //        DAMPING =;
 
         return new errorNode( "assembleMacroMassMatrix", "Not implemented" );
+    }
+
+    errorOut overlapCoupling::constructKineticEnergyPartitioningCoefficient( const uIntType &macroCellID,
+                                                                             const std::unique_ptr< elib::Element > &element,
+                                                                             floatVector &res ){
+        /*!
+         * Construct the kinetic energy partitioning coefficient
+         *
+         * :param const uIntType &uIntType: The macro cell's ID number
+         * :param const std::unique_ptr< elib::Element > &element: The FEA representation of the macro-scale element
+         * :param floatVector &res: The collection of re values at each element quadrature point
+         */
+
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
+
+        std::string strategy = config[ "kinetic_energy_partitioning_coefficient" ][ "type" ].as< std::string >( );
+
+        if ( strategy.compare( "volume_fraction" ) == 0 ){
+
+            //Compute the volume of the element
+            
+            floatType elementVolume = 0;
+            floatMatrix jacobian;
+            
+            for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+                //Get the Jacobian of transformation
+                errorOut error = element->get_local_gradient( element->nodes, qpt->first, jacobian );
+
+                if ( error ){
+ 
+                    errorOut result = new errorNode( "computeHomogenizedStresses",
+                                                     "Error in the computation of the local gradient\n" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                elementVolume += vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
+
+            }
+
+            auto microDomainVolumes = homogenizedVolumes.find( macroCellID );
+            if ( microDomainVolumes == homogenizedVolumes.end( ) ){
+
+                return new errorNode( "constructKineticEnergyPartitioningCoefficient",
+                                      "The macro cell " + std::to_string( macroCellID ) +
+                                      " is not found in the homogenized volumes map" );
+
+            }
+
+            floatType microDomainVolume = 0;
+
+            for ( auto microVolume  = microDomainVolumes->second.begin( );
+                       microVolume != microDomainVolumes->second.end( );
+                       microVolume++ ){
+
+                microDomainVolume += *microVolume;
+
+            }
+
+            if ( elementVolume < _absoluteTolerance ){
+
+                res = floatVector( element->qrule.size( ), 0 );
+
+            }
+            else{
+
+                res = floatVector( element->qrule.size( ), std::fmax( ( elementVolume - microDomainVolume ) / elementVolume, 0 ) );
+
+            }
+
+        }
+        else{
+
+            return new errorNode( "constructKineticEnergyPartitioningCoefficient", "Configuration strategy " + strategy + " not recognized" );
+
+        }
+
+        return NULL;
+
     }
 
 }
