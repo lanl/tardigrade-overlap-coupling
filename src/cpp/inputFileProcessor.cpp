@@ -503,7 +503,7 @@ namespace inputFileProcessor{
             return result;
         }
 
-        if ( _extractPreviousVelocitiesAndAccelerations ){
+        if ( _extractPreviousDOFValues ){
 
             bool tmpFlag;
             uIntType previousMicroIncrement = _config[ "coupling_initialization" ][ "previous_micro_increment" ].as< uIntType >( );
@@ -600,7 +600,7 @@ namespace inputFileProcessor{
             return result;
         }
 
-        if ( _extractPreviousVelocitiesAndAccelerations ){
+        if ( _extractPreviousDOFValues ){
 
             bool tmpFlag;
             uIntType previousMacroIncrement = _config[ "coupling_initialization" ][ "previous_macro_increment" ].as< uIntType >( );
@@ -2600,7 +2600,7 @@ namespace inputFileProcessor{
          * Get a pointer to the previous micro displacements
          */
 
-        if ( _extractPreviousVelocitiesAndAccelerations ){
+        if ( _extractPreviousDOFValues ){
 
             return &_previousMicroDisplacements;
 
@@ -2617,7 +2617,7 @@ namespace inputFileProcessor{
          * Get a pointer to the previous micro velocities
          */
 
-        if ( _extractPreviousVelocitiesAndAccelerations ){
+        if ( _extractPreviousDOFValues ){
 
             return &_previousMicroVelocities;
 
@@ -2634,7 +2634,7 @@ namespace inputFileProcessor{
          * Get a pointer to the micro accelerations
          */
 
-        if ( _extractPreviousVelocitiesAndAccelerations ){
+        if ( _extractPreviousDOFValues ){
 
             return &_previousMicroAccelerations;
 
@@ -2752,13 +2752,13 @@ namespace inputFileProcessor{
         return _config[ "coupling_initialization" ];
     }
 
-    bool inputFileProcessor::extractPreviousVelocitiesAndAccelerations( ){
+    bool inputFileProcessor::extractPreviousDOFValues( ){
         /*!
          * Get the flag for if the previous accelerations and velocities were
          * supposed to have been extracted.
          */
 
-        return _extractPreviousVelocitiesAndAccelerations;
+        return _extractPreviousDOFValues;
 
     }
 
@@ -2863,44 +2863,44 @@ namespace inputFileProcessor{
 
         }
 
-        if ( _config[ "coupling_initialization" ][ "extract_previous_values_of_velocity_and_acceleration" ] ){
+        if ( _config[ "coupling_initialization" ][ "extract_previous_dof_values" ] ){
 
-            if ( !_config[ "coupling_initialization" ][ "extract_previous_values_of_velocity_and_acceleration" ].IsScalar( ) ){
+            if ( !_config[ "coupling_initialization" ][ "extract_previous_dof_values" ].IsScalar( ) ){
 
-                return new errorNode( "'extract_previous_values_of_velocity_and_acceleration' must be a boolean value" );
-
-            }
-            else if ( _config[ "coupling_initialization" ][ "extract_previous_values_of_velocity_and_acceleration" ].as< bool >( ) ){
-
-                _extractPreviousVelocitiesAndAccelerations = true;
+                return new errorNode( "'extract_previous_dof_values' must be a boolean value" );
 
             }
+            else if ( _config[ "coupling_initialization" ][ "extract_previous_dof_values" ].as< bool >( ) ){
 
-            if ( _extractPreviousVelocitiesAndAccelerations ){
+                _extractPreviousDOFValues = true;
+
+            }
+
+            if ( _extractPreviousDOFValues ){
 
                 if ( !_config[ "coupling_initialization" ][ "previous_micro_increment" ] ){
 
                     return new errorNode( "checkCouplingInitialization",
-                                          "'previous_micro_increment' is not defined in 'coupling_initialization' when the user has requested that the previous values of velocity and acceleration are extracted" );
+                                          "'previous_micro_increment' is not defined in 'coupling_initialization' when the user has requested that the previous values of the degrees of freedom are extracted" );
 
                 }
                 else if(  !_config[ "coupling_initialization" ][ "previous_micro_increment" ].IsScalar( ) ){
 
                     return new errorNode( "checkCouplingInitialization",
-                                          "'previous_micro_increment' must be defined as a scalar integer value indicating the increment ( i.e. timestep number ) which defines the previous velocity and accelerations at the micro scale" );
+                                          "'previous_micro_increment' must be defined as a scalar integer value indicating the increment ( i.e. timestep number ) which defines the previous dof values at the micro scale" );
 
                 }
 
                 if ( !_config[ "coupling_initialization" ][ "previous_macro_increment" ] ){
 
                     return new errorNode( "checkCouplingInitialization",
-                                          "'previous_macro_increment' is not defined in 'coupling_initialization' when the user has requested that the previous values of velocity and acceleration are extracted" );
+                                          "'previous_macro_increment' is not defined in 'coupling_initialization' when the user has requested that the previous dof values are extracted" );
 
                 }
                 else if(  !_config[ "coupling_initialization" ][ "previous_macro_increment" ].IsScalar( ) ){
 
                     return new errorNode( "checkCouplingInitialization",
-                                          "'previous_macro_increment' must be defined as a scalar integer value indicating the increment ( i.e. timestep number ) which defines the last converged velocity and accelerations at the macro scale" );
+                                          "'previous_macro_increment' must be defined as a scalar integer value indicating the increment ( i.e. timestep number ) which defines the last converged dof values at the macro scale" );
 
                 }
 
@@ -2909,7 +2909,7 @@ namespace inputFileProcessor{
         }
         else{
 
-            _config[ "coupling_initialization" ][ "extract_previous_values_of_velocity_and_acceleration" ] = false;
+            _config[ "coupling_initialization" ][ "extract_previous_dof_values" ] = false;
 
         }
 
@@ -3483,6 +3483,26 @@ namespace inputFileProcessor{
 
     }
 
+    const floatVector* inputFileProcessor::getPreviousMacroDispDOFVector( ){
+        /*!
+         * Get a pointer to the previous macro values of the displacement degrees of freedom
+         *
+         * If extraction of those values as not requested, the current macro displacement degrees of freedom will be returned
+         */
+
+        if ( _extractPreviousDOFValues ){
+
+            return &_previousMacroDispDOFVector;
+
+        }
+        else{
+
+            return &_macroDispDOFVector;
+
+        }
+
+    }
+
     const floatVector* inputFileProcessor::getPreviousMacroVelocities( ){
         /*!
          * Get a pointer to the previous macro velocities
@@ -3490,7 +3510,7 @@ namespace inputFileProcessor{
          * If extraction of those values as not requested, the current macro velocities will be returned
          */
 
-        if ( _extractPreviousVelocitiesAndAccelerations ){
+        if ( _extractPreviousDOFValues ){
 
             return &_previousMacroVelocities;
 
@@ -3510,7 +3530,7 @@ namespace inputFileProcessor{
          * If extraction of those values as not requested, the current macro accelerations will be returned
          */
 
-        if ( _extractPreviousVelocitiesAndAccelerations ){
+        if ( _extractPreviousDOFValues ){
 
             return &_previousMacroAccelerations;
 

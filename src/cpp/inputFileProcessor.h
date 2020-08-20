@@ -155,7 +155,7 @@ namespace inputFileProcessor{
             bool macroInternalForceDefined( );
             bool macroExternalForceDefined( );
             bool macroInertialForceDefined( );
-            bool extractPreviousVelocitiesAndAccelerations( );
+            bool extractPreviousDOFValues( );
 
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
@@ -335,7 +335,7 @@ namespace inputFileProcessor{
 
             uIntType _defaultNumberOfMicroDomainSurfaceRegions = 6;
 
-            bool _extractPreviousVelocitiesAndAccelerations = false;
+            bool _extractPreviousDOFValues = false;
 
             floatVector _previousMicroDisplacements;
             floatVector _previousMacroDispDOFVector;

@@ -885,6 +885,25 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatVector previousMicroDisplacementsAnswer = { 0., 0., 0. };
+    const floatVector *previousMicroDisplacementsResult = reader.getPreviousMicroDisplacements( );
+
+    for ( auto v  = previousMicroDisplacementsResult->begin( );
+               v != previousMicroDisplacementsResult->end( );
+               v++ ){
+
+        uIntType indx = v - previousMicroDisplacementsResult->begin( );
+
+        if ( !vectorTools::fuzzyEquals( previousMicroDisplacementsAnswer[ indx % 3 ], *v, 1e-5, 1e-5 ) ){
+
+            std::cout << *v << "\n";
+            results << "test_initializeIncrement (test 58) & False\n";
+            return 1;
+
+        }
+
+    }
+
     const floatVector previousMicroVelocitiesAnswer = { 0., 0., 0. };
     const floatVector *previousMicroVelocitiesResult = reader.getPreviousMicroVelocities( );
 
@@ -897,7 +916,7 @@ int test_initializeIncrement( std::ofstream &results ){
         if ( !vectorTools::fuzzyEquals( previousMicroVelocitiesAnswer[ indx % 3 ], *v, 1e-5, 1e-5 ) ){
 
             std::cout << *v << "\n";
-            results << "test_initializeIncrement (test 58) & False\n";
+            results << "test_initializeIncrement (test 59) & False\n";
             return 1;
 
         }
@@ -916,7 +935,26 @@ int test_initializeIncrement( std::ofstream &results ){
         if ( !vectorTools::fuzzyEquals( previousMicroAccelerationsAnswer[ indx % 3 ], *v, 1e-5, 1e-5 ) ){
 
             std::cout << *v << "\n";
-            results << "test_initializeIncrement (test 59) & False\n";
+            results << "test_initializeIncrement (test 60) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    const floatVector previousMacroDispDOFVectorAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
+    const floatVector *previousMacroDispDOFVectorResult = reader.getPreviousMacroDispDOFVector( );
+
+    for ( auto v  = previousMacroDispDOFVectorResult->begin( );
+               v != previousMacroDispDOFVectorResult->end( );
+               v++ ){
+
+        uIntType indx = v - previousMacroDispDOFVectorResult->begin( );
+
+        if ( !vectorTools::fuzzyEquals( previousMacroDispDOFVectorAnswer[ indx % 12 ], *v, 1e-5, 1e-5 ) ){
+
+            std::cout << *v << "\n";
+            results << "test_initializeIncrement (test 61) & False\n";
             return 1;
 
         }
@@ -935,7 +973,7 @@ int test_initializeIncrement( std::ofstream &results ){
         if ( !vectorTools::fuzzyEquals( previousMacroVelocitiesAnswer[ indx % 12 ], *v, 1e-5, 1e-5 ) ){
 
             std::cout << *v << "\n";
-            results << "test_initializeIncrement (test 60) & False\n";
+            results << "test_initializeIncrement (test 62) & False\n";
             return 1;
 
         }
@@ -954,16 +992,16 @@ int test_initializeIncrement( std::ofstream &results ){
         if ( !vectorTools::fuzzyEquals( previousMacroAccelerationsAnswer[ indx % 12 ], *v, 1e-5, 1e-5 ) ){
 
             std::cout << *v << "\n";
-            results << "test_initializeIncrement (test 61) & False\n";
+            results << "test_initializeIncrement (test 63) & False\n";
             return 1;
 
         }
 
     }
 
-    if ( !reader.extractPreviousVelocitiesAndAccelerations( ) ){
+    if ( !reader.extractPreviousDOFValues( ) ){
 
-        results << "test_initializeIncrement (test 62) & False\n";
+        results << "test_initializeIncrement (test 64) & False\n";
         return 1;
 
     }
