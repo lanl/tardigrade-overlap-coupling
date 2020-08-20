@@ -153,6 +153,7 @@ namespace inputFileProcessor{
             bool macroInternalForceDefined( );
             bool macroExternalForceDefined( );
             bool macroInertialForceDefined( );
+            bool extractPreviousVelocitiesAndAccelerations( );
 
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );

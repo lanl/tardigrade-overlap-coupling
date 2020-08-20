@@ -2735,6 +2735,16 @@ namespace inputFileProcessor{
         return _config[ "coupling_initialization" ];
     }
 
+    bool inputFileProcessor::extractPreviousVelocitiesAndAccelerations( ){
+        /*!
+         * Get the flag for if the previous accelerations and velocities were
+         * supposed to have been extracted.
+         */
+
+        return _extractPreviousVelocitiesAndAccelerations;
+
+    }
+
     errorOut inputFileProcessor::checkCouplingInitialization( ){
         /*!
          * Check the coupling initialization

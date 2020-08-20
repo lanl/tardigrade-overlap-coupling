@@ -961,6 +961,13 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    if ( reader.extractPreviousVelocitiesAndAccelerations( ) ){
+
+        results << "test_initializeIncrement (test 62) & False\n";
+        return 1;
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }
