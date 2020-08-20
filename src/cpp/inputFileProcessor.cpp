@@ -467,6 +467,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the micro surface tractions
+        error = extractMicroSurfaceTractions( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the micro surface tractions" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the micro velocities
         error = extractMicroVelocities( microIncrement );
 
@@ -1267,6 +1276,43 @@ namespace inputFileProcessor{
         return NULL;
 
     }
+
+    errorOut inputFileProcessor::extractMicroSurfaceTractions( const unsigned int &increment ){
+        /*!
+         * Extract the node micro-surface tractions at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        stringVector variableKeys =
+            {
+                "T1", "T2", "T3",
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "surface_traction_variable_names";
+        YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _microSurfaceTractionFlag, _microSurfaceTractions );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroSurfaceTractions",
+                                             "Error in the extraction of the macro velocities" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
 
     errorOut inputFileProcessor::extractMicroAccelerations( const unsigned int &increment ){
         /*!
@@ -2279,6 +2325,14 @@ namespace inputFileProcessor{
         return &_microBodyForces;
     }
 
+    const floatVector* inputFileProcessor::getMicroSurfaceTractions( ){
+        /*!
+         * Get a pointer to the micro surface tractions
+         */
+
+        return &_microSurfaceTractions;
+    }
+
     const floatVector* inputFileProcessor::getMicroVelocities( ){
         /*!
          * Get a pointer to the micro velocities
@@ -2929,6 +2983,14 @@ namespace inputFileProcessor{
          */
 
         return _microBodyForceFlag;
+    }
+
+    bool inputFileProcessor::microSurfaceTractionDefined( ){
+        /*!
+         * Get whether the micro-body force has been defined
+         */
+
+        return _microSurfaceTractionFlag;
     }
 
     bool inputFileProcessor::microInternalForceDefined( ){

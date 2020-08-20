@@ -75,6 +75,7 @@ namespace inputFileProcessor{
             const floatVector* getMicroWeights( );
             const floatVector* getMicroDisplacements( );
             const floatVector* getMicroBodyForces( );
+            const floatVector* getMicroSurfaceTractions( );
             const floatVector* getMicroVelocities( );
             const floatVector* getMicroAccelerations( );
             const floatVector* getMicroStresses( );
@@ -136,6 +137,7 @@ namespace inputFileProcessor{
             YAML::Node getVolumeReconstructionConfig( );
 
             bool microBodyForceDefined( );
+            bool microSurfaceTractionDefined( );
             bool microInternalForceDefined( );
             bool microInertialForceDefined( );
             bool microVelocitiesDefined( );
@@ -200,6 +202,7 @@ namespace inputFileProcessor{
 
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroBodyForces( const unsigned int &increment );
+            errorOut extractMicroSurfaceTractions( const unsigned int &increment );
             errorOut extractMicroVelocities( const unsigned int &increment );
             errorOut extractMicroAccelerations( const unsigned int &increment );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
@@ -250,12 +253,14 @@ namespace inputFileProcessor{
             unsigned int _microCellCounts;
 
             floatVector _microBodyForces;
+            floatVector _microSurfaceTractions;
             floatVector _microVelocities;
             floatVector _microAccelerations;
             floatVector _microStresses;
             floatVector _microInternalForces;
             floatVector _microInertialForces;
             bool _microBodyForceFlag = false;
+            bool _microSurfaceTractionFlag = false;
             bool _microInternalForceFlag = false;
             bool _microInertialForceFlag = false;
             bool _microVelocityFlag = false;
