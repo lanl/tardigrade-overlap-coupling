@@ -557,6 +557,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the macro external forces
+        error = extractMacroExternalForces( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro external forces" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the macro inertial forces
         error = extractMacroInertialForces( macroIncrement );
 
@@ -1520,6 +1529,45 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMacroExternalForces( const unsigned int &increment ){
+        /*!
+         * Extract the node macro internal forces at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        stringVector variableKeys =
+            {
+                "F1", "F2", "F3",
+                "C11", "C12", "C13",
+                "C21", "C22", "C23",
+                "C31", "C32", "C33"
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "external_force_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _macroExternalForceFlag, _macroExternalForces );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroExternalForces",
+                                             "Error in the extraction of the macro external forces" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
     errorOut inputFileProcessor::extractMacroInertialForces( const unsigned int &increment ){
         /*!
          * Extract the node macro inertial forces at the indicated increment
@@ -1576,7 +1624,7 @@ namespace inputFileProcessor{
          *     the variableKeys will be set equal to "NULL". If false, an error will be raised
          * :param const std::string &configurationName: The name of the configuration node
          * :param YAML::Node &configuration: The YAML Node which discribes the configuration. This node should be something like
-         *     _config[ "macroscale_definition" ][ "velocity_variable_names" ] where the map from variableKeys to variable names
+         *     _config[ "macroscale_definition" ][ "variable_names" ] where the map from variableKeys to variable names
          *     is defined as key: name
          * :param bool &populatedFlag: A flag which is set to true if the output is populated from the datafile. False if it is
          *     set to a zero vector the length of variableKeys ( the default )
@@ -1671,7 +1719,7 @@ namespace inputFileProcessor{
 
         }
 
-        //Get the velocity variable names
+        //Get the variable names
         stringVector variableNames( variableKeys.size( ) );
         for ( auto vK  = variableKeys.begin( );  vK != variableKeys.end( ); vK++ ){
 
@@ -2939,6 +2987,14 @@ namespace inputFileProcessor{
         return _macroInternalForceFlag;
     }
 
+    bool inputFileProcessor::macroExternalForceDefined( ){
+        /*!
+         * Get whether the macro external force has been defined
+         */
+
+        return _macroExternalForceFlag;
+    }
+
     bool inputFileProcessor::macroInertialForceDefined( ){
         /*!
          * Get whether the macro inertial force has been defined
@@ -2993,6 +3049,14 @@ namespace inputFileProcessor{
          */
 
         return &_macroInternalForces;
+    }
+
+    const floatVector* inputFileProcessor::getMacroExternalForces( ){
+        /*!
+         * Get a pointer to the macro internal forces
+         */
+
+        return &_macroExternalForces;
     }
 
     const floatVector* inputFileProcessor::getMacroInertialForces( ){

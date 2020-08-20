@@ -721,12 +721,12 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector macroInternalForcesAnswer = { 0., 0., 0. };
+    const floatVector macroInternalForcesAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
     const floatVector *macroInternalForcesResult = reader.getMacroInternalForces( );
 
     for ( auto mIFR = macroInternalForcesResult->begin( ); mIFR != macroInternalForcesResult->end( ); mIFR++ ){
 
-        if ( !vectorTools::fuzzyEquals( *mIFR, macroInternalForcesAnswer[ ( mIFR - macroInternalForcesResult->begin( ) ) % 3 ], 1e-5, 1e-4 ) ){
+        if ( !vectorTools::fuzzyEquals( *mIFR, macroInternalForcesAnswer[ ( mIFR - macroInternalForcesResult->begin( ) ) % 12 ], 1e-5, 1e-4 ) ){
 
             std::cout << mIFR - macroInternalForcesResult->begin( ) << ": " << *mIFR << "\n";
             results << "test_initializeIncrement (test 44) & False\n";
@@ -743,12 +743,12 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector macroInertialForcesAnswer = { 0., 0., 0. };
+    const floatVector macroInertialForcesAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
     const floatVector *macroInertialForcesResult = reader.getMacroInertialForces( );
 
     for ( auto mIFR = macroInertialForcesResult->begin( ); mIFR != macroInertialForcesResult->end( ); mIFR++ ){
 
-        if ( !vectorTools::fuzzyEquals( *mIFR, macroInertialForcesAnswer[ ( mIFR - macroInertialForcesResult->begin( ) ) % 3 ], 1e-5, 1e-4 ) ){
+        if ( !vectorTools::fuzzyEquals( *mIFR, macroInertialForcesAnswer[ ( mIFR - macroInertialForcesResult->begin( ) ) % 12 ], 1e-5, 1e-4 ) ){
 
             std::cout << mIFR - macroInertialForcesResult->begin( ) << ": " << *mIFR << "\n";
             results << "test_initializeIncrement (test 46) & False\n";
@@ -823,6 +823,28 @@ int test_initializeIncrement( std::ofstream &results ){
             return 1;
 
         }
+
+    }
+
+    const floatVector macroExternalForcesAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
+    const floatVector *macroExternalForcesResult = reader.getMacroExternalForces( );
+
+    for ( auto mIFR = macroExternalForcesResult->begin( ); mIFR != macroExternalForcesResult->end( ); mIFR++ ){
+
+        if ( !vectorTools::fuzzyEquals( *mIFR, macroExternalForcesAnswer[ ( mIFR - macroExternalForcesResult->begin( ) ) % 12 ], 1e-5, 1e-4 ) ){
+
+            std::cout << mIFR - macroExternalForcesResult->begin( ) << ": " << *mIFR << "\n";
+            results << "test_initializeIncrement (test 52) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    if ( reader.macroExternalForceDefined( ) ){
+
+        results << "test_initializeIncrement (test 53) & False\n";
+        return 1;
 
     }
 

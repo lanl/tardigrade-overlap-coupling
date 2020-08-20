@@ -86,6 +86,7 @@ namespace inputFileProcessor{
             const floatVector* getMacroVelocities( );
             const floatVector* getMacroAccelerations( );
             const floatVector* getMacroInternalForces( );
+            const floatVector* getMacroExternalForces( );
             const floatVector* getMacroInertialForces( );
 
             const floatVector* getMicroNodeReferencePositions( );
@@ -142,6 +143,7 @@ namespace inputFileProcessor{
             bool macroVelocitiesDefined( );
             bool macroAccelerationDefined( );
             bool macroInternalForceDefined( );
+            bool macroExternalForceDefined( );
             bool macroInertialForceDefined( );
 
             //Core initialization routines
@@ -212,6 +214,7 @@ namespace inputFileProcessor{
             errorOut extractMacroVelocities( const unsigned int &increment );
             errorOut extractMacroAccelerations( const unsigned int &increment );
             errorOut extractMacroInternalForces( const unsigned int &increment );
+            errorOut extractMacroExternalForces( const unsigned int &increment );
             errorOut extractMacroInertialForces( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
 
@@ -263,6 +266,7 @@ namespace inputFileProcessor{
             floatVector _macroVelocities;
             floatVector _macroAccelerations;
             floatVector _macroInternalForces;
+            floatVector _macroExternalForces;
             floatVector _macroInertialForces;
             floatVector _macroNodeReferencePositions;
             uIntVector  _macroNodeReferenceConnectivity;
@@ -271,6 +275,7 @@ namespace inputFileProcessor{
             bool _macroVelocityFlag = false;
             bool _macroAccelerationFlag = false;
             bool _macroInternalForceFlag = false;
+            bool _macroExternalForceFlag = false;
             bool _macroInertialForceFlag = false;
 
             stringVector _non_overlapped_micro_surface_sets;
