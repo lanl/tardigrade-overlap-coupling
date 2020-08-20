@@ -866,6 +866,24 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatVector microExternalForcesAnswer = { 0., 0., 0. };
+    const floatVector *microExternalForcesResult = reader.getMicroExternalForces( );
+
+    if ( !vectorTools::fuzzyEquals( *microExternalForcesResult, microExternalForcesAnswer ) ){
+
+        vectorTools::print( *microExternalForcesResult );
+        results << "test_initializeIncrement (test 56) & False\n";
+        return 1;
+
+    }
+
+    if ( reader.microExternalForceDefined( ) ){
+
+        results << "test_initializeIncrement (test 57) & False\n";
+        return 1;
+
+    }
+
 
     results << "test_initializeIncrement & True\n";
     return 0;

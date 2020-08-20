@@ -76,6 +76,7 @@ namespace inputFileProcessor{
             const floatVector* getMicroDisplacements( );
             const floatVector* getMicroBodyForces( );
             const floatVector* getMicroSurfaceTractions( );
+            const floatVector* getMicroExternalForces( );
             const floatVector* getMicroVelocities( );
             const floatVector* getMicroAccelerations( );
             const floatVector* getMicroStresses( );
@@ -138,6 +139,7 @@ namespace inputFileProcessor{
 
             bool microBodyForceDefined( );
             bool microSurfaceTractionDefined( );
+            bool microExternalForceDefined( );
             bool microInternalForceDefined( );
             bool microInertialForceDefined( );
             bool microVelocitiesDefined( );
@@ -203,6 +205,7 @@ namespace inputFileProcessor{
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroBodyForces( const unsigned int &increment );
             errorOut extractMicroSurfaceTractions( const unsigned int &increment );
+            errorOut extractMicroExternalForces( const unsigned int &increment );
             errorOut extractMicroVelocities( const unsigned int &increment );
             errorOut extractMicroAccelerations( const unsigned int &increment );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
@@ -254,6 +257,7 @@ namespace inputFileProcessor{
 
             floatVector _microBodyForces;
             floatVector _microSurfaceTractions;
+            floatVector _microExternalForces;
             floatVector _microVelocities;
             floatVector _microAccelerations;
             floatVector _microStresses;
@@ -261,6 +265,7 @@ namespace inputFileProcessor{
             floatVector _microInertialForces;
             bool _microBodyForceFlag = false;
             bool _microSurfaceTractionFlag = false;
+            bool _microExternalForceFlag = false;
             bool _microInternalForceFlag = false;
             bool _microInertialForceFlag = false;
             bool _microVelocityFlag = false;

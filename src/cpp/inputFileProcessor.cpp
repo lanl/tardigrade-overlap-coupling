@@ -476,6 +476,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the micro external forces
+        error = extractMicroExternalForces( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the micro external forces" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the micro velocities
         error = extractMicroVelocities( microIncrement );
 
@@ -1245,33 +1254,37 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        //Check if the body force name has been defined
-        _microBodyForceFlag = false;
-        if ( ( !_config[ "microscale_definition" ][ "body_force_variable_name" ] ) ||
-             ( _config[ "microscale_definition" ][ "body_force_variable_name" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
+        stringVector variableKeys =
+            {
+                "F1", "F2", "F3",
+            };
 
-            _config [ "microscale_definition" ][ "body_force_variable_name" ] = "NULL"; //Indicate that the body force is assumed to be zero
-            _microBodyForces = { 0., 0., 0. }; //Set the body force to zero
+        std::string dataType = "Node";
 
-            return NULL;
+        bool populateWithNullOnUndefined = true;
 
-        }
+        std::string configurationName = "body_force_variable_names";
+        YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
 
-        //Extract the micro body force vector
-        errorOut error =
-            _microscale->getSolutionData( increment,
-                                          _config[ "microscale_definition" ][ "body_force_variable_name" ].as< std::string > ( ),
-                                          "Node", _microBodyForces );
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _microBodyForceFlag, _microBodyForces );
 
         if ( error ){
 
-            errorOut result = new errorNode( "extractMicroBodyForce", "Error in extraction of the micro body forces" );
+            errorOut result = new errorNode( "extractMicroBodyForces",
+                                             "Error in the extraction of the micro body forces" );
             result->addNext( error );
             return result;
 
         }
 
-        _microBodyForceFlag = true;
+        floatType _sign = _config[ "coupling_initialization" ][ "micro_body_force_sign" ].as< floatType >( );
+        if ( ( _microSurfaceTractionFlag ) && !vectorTools::fuzzyEquals( _sign, 1. ) ){
+
+            _microBodyForces *= _sign;
+
+        }
 
         return NULL;
 
@@ -1303,9 +1316,16 @@ namespace inputFileProcessor{
         if ( error ){
 
             errorOut result = new errorNode( "extractMicroSurfaceTractions",
-                                             "Error in the extraction of the macro velocities" );
+                                             "Error in the extraction of the micro surface tractions" );
             result->addNext( error );
             return result;
+
+        }
+
+        floatType _sign = _config[ "coupling_initialization" ][ "micro_surface_traction_sign" ].as< floatType >( );
+        if ( ( _microSurfaceTractionFlag ) && !vectorTools::fuzzyEquals( _sign, 1. ) ){
+
+            _microSurfaceTractions *= _sign;
 
         }
 
@@ -1313,6 +1333,69 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMicroExternalForces( const unsigned int &increment ){
+        /*!
+         * Extract the node micro external forces at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        stringVector variableKeys =
+            {
+                "F1", "F2", "F3",
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "external_force_variable_names";
+        YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _microExternalForceFlag, _microExternalForces );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroSurfaceTractions",
+                                             "Error in the extraction of the macro velocities" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        if ( !_microExternalForceFlag ){
+
+            if( _microSurfaceTractionFlag && _microBodyForceFlag ){
+
+                _microExternalForces = _microSurfaceTractions + _microBodyForces;
+                _microExternalForceFlag = true;
+
+            }
+            else if ( _microSurfaceTractionFlag ){
+
+                _microExternalForces = _microSurfaceTractions;
+                _microExternalForceFlag = true;
+
+            }
+            else if ( _microBodyForceFlag ){
+
+                _microExternalForces = _microBodyForces;
+                _microExternalForceFlag = true;
+
+            }
+
+        }
+        else{
+
+            _microExternalForces *= _config[ "coupling_initialization" ][ "micro_external_force_sign" ].as< floatType >( );
+
+        }
+
+        return NULL;
+
+    }
 
     errorOut inputFileProcessor::extractMicroAccelerations( const unsigned int &increment ){
         /*!
@@ -1610,6 +1693,13 @@ namespace inputFileProcessor{
 
         }
 
+        floatType _sign = _config[ "coupling_initialization" ][ "macro_external_force_sign" ].as< floatType >( );
+        if ( _macroExternalForceFlag && !vectorTools::fuzzyEquals( _sign, 1. ) ){
+
+            _macroExternalForces *= _sign;
+
+        }
+
         return NULL;
 
     }
@@ -1646,6 +1736,13 @@ namespace inputFileProcessor{
                                              "Error in the extraction of the macro inertial forces" );
             result->addNext( error );
             return result;
+
+        }
+
+        floatType _sign = _config[ "coupling_initialization" ][ "macro_internal_force_sign" ].as< floatType >( );
+        if ( _macroInternalForceFlag && !vectorTools::fuzzyEquals( _sign, 1. ) ){
+
+            _macroInternalForces *= _sign;
 
         }
 
@@ -2333,6 +2430,14 @@ namespace inputFileProcessor{
         return &_microSurfaceTractions;
     }
 
+    const floatVector* inputFileProcessor::getMicroExternalForces( ){
+        /*!
+         * Get a pointer to the micro body forces
+         */
+
+        return &_microExternalForces;
+    }
+
     const floatVector* inputFileProcessor::getMicroVelocities( ){
         /*!
          * Get a pointer to the micro velocities
@@ -2535,6 +2640,18 @@ namespace inputFileProcessor{
         if ( !_config[ "coupling_initialization" ][ "micro_internal_force_sign" ] ){
 
             _config[ "coupling_initialization" ][ "micro_internal_force_sign" ] = 1; //Default to 1
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "micro_body_force_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "micro_body_force_sign" ] = 1; //Default to 1
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "micro_surface_traction_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "micro_surface_traction_sign" ] = 1; //Default to 1
 
         }
 
@@ -2991,6 +3108,14 @@ namespace inputFileProcessor{
          */
 
         return _microSurfaceTractionFlag;
+    }
+
+    bool inputFileProcessor::microExternalForceDefined( ){
+        /*!
+         * Get whether the micro external force has been defined
+         */
+
+        return _microExternalForceFlag;
     }
 
     bool inputFileProcessor::microInternalForceDefined( ){
