@@ -10,6 +10,9 @@ coupling_initialization:
         kinetic_energy_weighting_factor: 0.5 #The weighting factor for the kinetic energy between length-scales. ( rhat in Regueiro 2012 )
         kinetic_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( rtilde in Regueiro 2012 )
                 type: volume_fraction #The type of partitioning. Currently only "volume_fraction" is available
+        extract_previous_values_of_velocity_and_acceleration: true #Flag indicating if the previously converged accelerations and velocities should be extracted or if the current increment's should be used. If true, previous_macro_increment and previous_micro_increment must be defined with the increment to be used indicated
+        previous_micro_increment: 0
+        previous_macro_increment: 0
 
 macroscale_definition:
         filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/macroscale_xdmf.xdmf

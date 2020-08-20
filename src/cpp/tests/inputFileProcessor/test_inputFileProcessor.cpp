@@ -885,7 +885,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector previousMicroVelocitiesAnswer = { 0., 0., 0.002 };
+    const floatVector previousMicroVelocitiesAnswer = { 0., 0., 0. };
     const floatVector *previousMicroVelocitiesResult = reader.getPreviousMicroVelocities( );
 
     for ( auto v  = previousMicroVelocitiesResult->begin( );
@@ -904,7 +904,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector previousMicroAccelerationsAnswer = { 0., 0., 0.004 };
+    const floatVector previousMicroAccelerationsAnswer = { 0., 0., 0.0 };
     const floatVector *previousMicroAccelerationsResult = reader.getPreviousMicroAccelerations( );
 
     for ( auto v  = previousMicroAccelerationsResult->begin( );
@@ -923,7 +923,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector previousMacroVelocitiesAnswer = { 0., 0., -0.002, 0., 0., 0., 0., 0., 0., 0., 0., 0. };
+    const floatVector previousMacroVelocitiesAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
     const floatVector *previousMacroVelocitiesResult = reader.getPreviousMacroVelocities( );
 
     for ( auto v  = previousMacroVelocitiesResult->begin( );
@@ -942,7 +942,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector previousMacroAccelerationsAnswer = { 0., 0., -0.004, 0., 0., 0., 0., 0., 0., 0., 0., 0. };
+    const floatVector previousMacroAccelerationsAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
     const floatVector *previousMacroAccelerationsResult = reader.getPreviousMacroAccelerations( );
 
     for ( auto v  = previousMacroAccelerationsResult->begin( );
@@ -961,7 +961,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    if ( reader.extractPreviousVelocitiesAndAccelerations( ) ){
+    if ( !reader.extractPreviousVelocitiesAndAccelerations( ) ){
 
         results << "test_initializeIncrement (test 62) & False\n";
         return 1;
