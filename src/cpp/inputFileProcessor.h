@@ -79,6 +79,7 @@ namespace inputFileProcessor{
             const floatVector* getMicroExternalForces( );
             const floatVector* getMicroVelocities( );
             const floatVector* getMicroAccelerations( );
+            const floatVector* getPreviousMicroDisplacements( );
             const floatVector* getPreviousMicroVelocities( );
             const floatVector* getPreviousMicroAccelerations( );
             const floatVector* getMicroStresses( );
@@ -89,6 +90,7 @@ namespace inputFileProcessor{
             const floatVector* getMacroDispDOFVector( );
             const floatVector* getMacroVelocities( );
             const floatVector* getMacroAccelerations( );
+            const floatVector* getPreviousMacroDispDOFVector( );
             const floatVector* getPreviousMacroVelocities( );
             const floatVector* getPreviousMacroAccelerations( );
             const floatVector* getMacroInternalForces( );
@@ -217,6 +219,7 @@ namespace inputFileProcessor{
             errorOut extractMicroAccelerations( const unsigned int &increment, bool &flag, floatVector &microAccelerations );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
             errorOut extractMicroDisplacements( const unsigned int &increment );
+            errorOut extractMicroDisplacements( const unsigned int &increment, bool &flag, floatVector &microDisplacements );
             errorOut extractMicroStresses( const unsigned int &increment );
             errorOut extractMicroInternalForces( const unsigned int &increment );
             errorOut extractMicroInertialForces( const unsigned int &increment );
@@ -224,6 +227,7 @@ namespace inputFileProcessor{
 
             errorOut extractMacroDisplacements( const unsigned int &increment );
             errorOut extractMacroDispDOFVector( const unsigned int &increment );
+            errorOut extractMacroDispDOFVector( const unsigned int &increment, bool &flag, floatVector &macroDispDOFVector );
             errorOut extractMacroVelocities( const unsigned int &increment );
             errorOut extractMacroVelocities( const unsigned int &increment, bool &flag, floatVector &macroVelocities );
             errorOut extractMacroAccelerations( const unsigned int &increment );
@@ -332,6 +336,9 @@ namespace inputFileProcessor{
             uIntType _defaultNumberOfMicroDomainSurfaceRegions = 6;
 
             bool _extractPreviousVelocitiesAndAccelerations = false;
+
+            floatVector _previousMicroDisplacements;
+            floatVector _previousMacroDispDOFVector;
 
             floatVector _previousMicroVelocities;
             floatVector _previousMacroVelocities;
