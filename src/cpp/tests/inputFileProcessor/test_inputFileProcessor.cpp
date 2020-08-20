@@ -12,6 +12,7 @@ typedef inputFileProcessor::errorOut errorOut; //!Redefinition for a pointer to 
 typedef inputFileProcessor::floatType floatType; //!Define the float values type.
 typedef inputFileProcessor::floatVector floatVector; //! Define a vector of floats
 typedef inputFileProcessor::floatMatrix floatMatrix; //!Define a matrix of floats
+typedef inputFileProcessor::uIntType uIntType; //!Define an unsigned integer type
 typedef inputFileProcessor::uIntVector uIntVector; //!Define a vector of unsigned ints
 typedef inputFileProcessor::stringVector stringVector; //!Define a vector of strings
 typedef inputFileProcessor::DOFMap DOFMap; //!Define the map between DOF values
@@ -884,6 +885,81 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatVector previousMicroVelocitiesAnswer = { 0., 0., 0.002 };
+    const floatVector *previousMicroVelocitiesResult = reader.getPreviousMicroVelocities( );
+
+    for ( auto v  = previousMicroVelocitiesResult->begin( );
+               v != previousMicroVelocitiesResult->end( );
+               v++ ){
+
+        uIntType indx = v - previousMicroVelocitiesResult->begin( );
+
+        if ( !vectorTools::fuzzyEquals( previousMicroVelocitiesAnswer[ indx % 3 ], *v, 1e-5, 1e-5 ) ){
+
+            std::cout << *v << "\n";
+            results << "test_initializeIncrement (test 58) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    const floatVector previousMicroAccelerationsAnswer = { 0., 0., 0.004 };
+    const floatVector *previousMicroAccelerationsResult = reader.getPreviousMicroAccelerations( );
+
+    for ( auto v  = previousMicroAccelerationsResult->begin( );
+               v != previousMicroAccelerationsResult->end( );
+               v++ ){
+
+        uIntType indx = v - previousMicroAccelerationsResult->begin( );
+
+        if ( !vectorTools::fuzzyEquals( previousMicroAccelerationsAnswer[ indx % 3 ], *v, 1e-5, 1e-5 ) ){
+
+            std::cout << *v << "\n";
+            results << "test_initializeIncrement (test 59) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    const floatVector previousMacroVelocitiesAnswer = { 0., 0., -0.002, 0., 0., 0., 0., 0., 0., 0., 0., 0. };
+    const floatVector *previousMacroVelocitiesResult = reader.getPreviousMacroVelocities( );
+
+    for ( auto v  = previousMacroVelocitiesResult->begin( );
+               v != previousMacroVelocitiesResult->end( );
+               v++ ){
+
+        uIntType indx = v - previousMacroVelocitiesResult->begin( );
+
+        if ( !vectorTools::fuzzyEquals( previousMacroVelocitiesAnswer[ indx % 12 ], *v, 1e-5, 1e-5 ) ){
+
+            std::cout << *v << "\n";
+            results << "test_initializeIncrement (test 60) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    const floatVector previousMacroAccelerationsAnswer = { 0., 0., -0.004, 0., 0., 0., 0., 0., 0., 0., 0., 0. };
+    const floatVector *previousMacroAccelerationsResult = reader.getPreviousMacroAccelerations( );
+
+    for ( auto v  = previousMacroAccelerationsResult->begin( );
+               v != previousMacroAccelerationsResult->end( );
+               v++ ){
+
+        uIntType indx = v - previousMacroAccelerationsResult->begin( );
+
+        if ( !vectorTools::fuzzyEquals( previousMacroAccelerationsAnswer[ indx % 12 ], *v, 1e-5, 1e-5 ) ){
+
+            std::cout << *v << "\n";
+            results << "test_initializeIncrement (test 61) & False\n";
+            return 1;
+
+        }
+
+    }
 
     results << "test_initializeIncrement & True\n";
     return 0;

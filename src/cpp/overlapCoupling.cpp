@@ -141,6 +141,17 @@ namespace overlapCoupling{
 
         }
 
+        //Assemble the coupling force vector
+        error = assembleCouplingForceVector( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processIncrement", "Error in the construction of the coupling force vector" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
     }
 
@@ -4977,52 +4988,454 @@ namespace overlapCoupling{
          * I also note that, unless we re-compute the micromorphic internal forces, it is not clear how
          * to get the element-wise contributions for the assembly of the vector. Consequently, we will do
          * an approximate scheme to handle the potential energy weighting factor.
+         *
+         * Note: If the signs in either the macro ( or micro ) scales are flipped, this can be accounted
+         * for by using the keywords in the coupling initialization section of the configuration file. The
+         * value in "( )" is the default value.
+         *
+         *     macro_internal_force_sign: ( -1 )
+         *     macro_external_force_sign: ( 1 )
+         *     micro_internal_force_sign: ( 1 )
+         *     micro_external_force_sign: ( 1 )
          */
 
         const YAML::Node config = _inputProcessor.getCouplingInitialization( );
         floatType qhat = config[ "potential_energy_weighting_factor" ].as< floatType >( );
+        std::string projection_type = config[ "projection_type" ].as< std::string >( );
+
+        const uIntType nMacroNodeForces = _dim + _dim * _dim;
 
         //Get the maps from the global to the local degrees of freedom
-        const DOFMap *microGlobalToLocalDOFMap = getMicroGlobalToLocalDOFMap( );
-        const DOFMap *macroGlobalToLocalDOFMap = getMacroGlobalToLocalDOFMap( );
+        const DOFMap *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
+        const DOFMap *macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
 
-        const floatVector *microInternalForces = _inputProcessor.getMicroInernalForces( );
+        //Get the free and ghost node ids
+        const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
+        const uIntVector *ghostMacroNodeIds = _inputProcessor.getGhostMacroNodeIds( );
 
-        //Assemble the micro internal forces
-        floatVector FintQhat( _dim * ghostMicroNodeIDs->size( ) );
-        floatVector FintQ( _dim * freeMicroNodeIDs->size( ) );
+        const uIntVector *freeMicroNodeIds = _inputProcessor.getFreeMicroNodeIds( );
+        const uIntVector *ghostMicroNodeIds = _inputProcessor.getGhostMicroNodeIds( );
 
-        //Assemble the micro external forces
-        floatVector FextQhat( _dim * ghostMicroNodeIDs->size( ) );
-        floatVector FextQ( _dim * freeMicroNodeIDs->size( ) );
+        const uIntType nFreeMicroNodes = freeMicroNodeIds->size( );
+        const uIntType nFreeMacroNodes = freeMacroNodeIds->size( );
 
-        //Assemble the macro internal forces
-        floatVector FintDhat( nMacroNodeForces * ghostMacroNodeIDs->size( ) );
-        floatVector FintD( nMacroNodeForces * freeMacroNodeIDs->size( ) );
+        //Extract the internal and external forces
+        const floatVector *microInternalForces = _inputProcessor.getMicroInternalForces( );
+        const floatVector *macroInternalForces = _inputProcessor.getMacroInternalForces( );
+
+        const floatVector *microExternalForces = _inputProcessor.getMicroExternalForces( );
+        const floatVector *macroExternalForces = _inputProcessor.getMacroExternalForces( );
+
+        //Assemble the micro internal and external forces
+        floatVector FintQhat( _dim * ghostMicroNodeIds->size( ), 0 );
+        floatVector FextQhat( _dim * ghostMicroNodeIds->size( ), 0 );
+        for ( auto microID  = ghostMicroNodeIds->begin( );
+                   microID != ghostMicroNodeIds->end( );
+                   microID++ ){
+
+            //Get the local ID
+            auto idMap = microGlobalToLocalDOFMap->find( *microID );
+
+            if ( idMap == microGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "assembleCouplingForceVector",
+                                      "ghost micro node " + std::to_string( *microID ) +
+                                      " is not found in the local to global DOF map" );
+
+            }
+
+            if ( idMap->second < nFreeMicroNodes ){
+
+                return new errorNode( "assembleCouplingForceVector", "The local index is smaller than the number of free micro nodes" );
+
+            }
+
+            if ( ( _dim * ( idMap->second - nFreeMicroNodes ) + _dim ) > FintQhat.size( ) ){
+
+                return new errorNode( "assembleCouplingForceVector", "Local index is larger than the force vector" );
+
+            }
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                if ( _inputProcessor.microInternalForceDefined( ) ){
+
+                    FintQhat[ _dim * ( idMap->second - nFreeMicroNodes ) + i ]
+                        = ( 1 - qhat ) * ( *microInternalForces )[ _dim * ( *microID ) + i ];
+
+                }
+
+                if ( _inputProcessor.microExternalForceDefined( ) ){
+
+                    FextQhat[ _dim * ( idMap->second - nFreeMicroNodes ) + i ]
+                        = ( 1 - qhat ) * ( *microExternalForces )[ _dim * ( *microID ) + i ];
+
+                }
+
+            }
+
+        }
+
+        floatVector FintQ( _dim * freeMicroNodeIds->size( ), 0 );
+        floatVector FextQ( _dim * freeMicroNodeIds->size( ), 0 );
+        for ( auto microID  = freeMicroNodeIds->begin( );
+                   microID != freeMicroNodeIds->end( );
+                   microID++ ){
+
+            //Get the local ID
+            auto idMap = microGlobalToLocalDOFMap->find( *microID );
+
+            if ( idMap == microGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "assembleCouplingForceVector",
+                                      "free micro node " + std::to_string( *microID ) +
+                                      " is not found in the local to global DOF map" );
+
+            }
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                if ( _inputProcessor.microInternalForceDefined( ) ){
+
+                    FintQ[ _dim * idMap->second + i ]
+                        = ( 1 - qhat ) * ( *microInternalForces )[ _dim * ( *microID ) + i ];
+
+                }
+
+                if ( _inputProcessor.microExternalForceDefined( ) ){
+
+                    FextQ[ _dim * idMap->second + i ]
+                        = ( 1 - qhat ) * ( *microExternalForces )[ _dim * ( *microID ) + i ];
+
+                }
+
+            }
+
+        }
+
+        //Compute the potential energy partitioning coefficients
+        std::unordered_map< uIntType, floatType > qes;
+        errorOut error = constructPotentialEnergyPartitioningCoefficient( qes );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "assembleCouplingForceVector",
+                                             "Error in the construction of the potential energy partitioning coefficients" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Assemble the macro internal and external forces
+        floatVector FintDhat( nMacroNodeForces * ghostMacroNodeIds->size( ), 0 );
+        floatVector FextDhat( nMacroNodeForces * ghostMacroNodeIds->size( ), 0 );
+        for ( auto nodeID = ghostMacroNodeIds->begin( ); nodeID != ghostMacroNodeIds->end( ); nodeID++ ){
+
+            //Get the local ID
+            auto idMap = macroGlobalToLocalDOFMap->find( *nodeID );
+
+            if ( idMap == microGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "assembleCouplingForceVector",
+                                      "ghost macro node " + std::to_string( *nodeID ) +
+                                      " is not found in the local to global DOF map" );
+
+            }
+
+            auto nodeQes = qes.find( *nodeID );
+
+            if ( idMap->second < nFreeMacroNodes ){
+
+                return new errorNode( "assembleCouplingForceVector",
+                                      "ghost macro node " + std::to_string( *nodeID ) +
+                                      " has a local position not consistent with the number of free macro nodes" );
+
+            }
+
+            if ( ( nMacroNodeForces * ( idMap->second - nFreeMacroNodes ) + nMacroNodeForces ) > FintDhat.size( ) ){
+
+                return new errorNode( "assembleCouplingForceVector",
+                                      "ghost macro node " + std::to_string( *nodeID ) +
+                                      " has a local position larger than allocated in the coupling force vector" );
+
+            }
+
+            for ( unsigned int i = 0; i < nMacroNodeForces; i++ ){
+
+                FintDhat[ nMacroNodeForces * ( idMap->second - nFreeMacroNodes ) + i ]
+                    = qhat * homogenizedFINT( nMacroNodeForces * idMap->second + i );
+                FextDhat[ nMacroNodeForces * ( idMap->second - nFreeMacroNodes ) + i ]
+                    = qhat * homogenizedFEXT( nMacroNodeForces * idMap->second + i );
+
+                if ( nodeQes != qes.end( ) ){
+
+                    if ( _inputProcessor.macroInternalForceDefined( ) ){
+
+                        FintDhat[ nMacroNodeForces * ( idMap->second - nFreeMacroNodes ) + i ]
+                            += nodeQes->second * ( *macroInternalForces )[ nMacroNodeForces * idMap->first + i ];
+
+                    }
+
+                    if ( _inputProcessor.macroExternalForceDefined( ) ){
+
+                        FintDhat[ nMacroNodeForces * ( idMap->second - nFreeMacroNodes ) + i ]
+                            += nodeQes->second * ( *macroExternalForces )[ nMacroNodeForces * idMap->first + i ];
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        floatVector FintD( nMacroNodeForces * freeMacroNodeIds->size( ), 0 );
+        floatVector FextD( nMacroNodeForces * freeMacroNodeIds->size( ), 0 );
+        for ( auto nodeID = freeMacroNodeIds->begin( ); nodeID != freeMacroNodeIds->end( ); nodeID++ ){
+
+            //Get the local ID
+            auto idMap = macroGlobalToLocalDOFMap->find( *nodeID );
+
+            if ( idMap == microGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "assembleCouplingForceVector",
+                                      "free macro node " + std::to_string( *nodeID ) +
+                                      " is not found in the local to global DOF map" );
+
+            }
+
+            auto nodeQes = qes.find( *nodeID );
+
+            for ( unsigned int i = 0; i < nMacroNodeForces; i++ ){
+
+                FintD[ nMacroNodeForces * idMap->second + i ]
+                    = qhat * homogenizedFINT( nMacroNodeForces * idMap->second + i );
+                FextD[ nMacroNodeForces * idMap->second + i ]
+                    = qhat * homogenizedFEXT( nMacroNodeForces * idMap->second + i );
+
+                if ( nodeQes != qes.end( ) ){
+
+                    if ( _inputProcessor.macroInternalForceDefined( ) ){
+
+                        FintD[ nMacroNodeForces * idMap->second + i ]
+                            += nodeQes->second * ( *macroInternalForces )[ nMacroNodeForces * idMap->first + i ];
+
+                    }
+
+                    if ( _inputProcessor.macroExternalForceDefined( ) ){
+
+                        FextD[ nMacroNodeForces * idMap->second + i ]
+                            += nodeQes->second * ( *macroExternalForces )[ nMacroNodeForces * idMap->first + i ];
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        //Map the forces to Eigen Vectors to allow for easy computation
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _FintQ( FintQ.data(), FintQ.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _FextQ( FextQ.data(), FextQ.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _FintD( FintD.data(), FintD.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _FextD( FextD.data(), FextD.size( ), 1 );
+
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _FintQhat( FintQhat.data(), FintQhat.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _FextQhat( FextQhat.data(), FextQhat.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _FintDhat( FintDhat.data(), FintDhat.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _FextDhat( FextDhat.data(), FextDhat.size( ), 1 );
+
+        //Initialize the force vectors
+        Eigen::MatrixXd _FQ, _FD;
+
         
-        //Assemble the macro external forces
-        floatVector FextDhat( nMacroNodeForces * ghostMacroNodeIDs->size( ) );
-        floatVector FextD( nMacroNodeForces * freeMacroNodeIDs->size( ) );
 
-        //Assemble the micro force vector
-        Eigen::MatrixXd _FQ  = _FextQ;
-        _FQ += BQhatQ.transpose( ) * _FextQhat;
-        _FQ -= _FintQ;
-        _FQ -= BQhatQ.transpose( ) * _FintQhat;
-        _FQ -= BDhatQ.transpose( ) * _FintDhat;
+        if ( projection_type.compare( "l2_projection" ) == 0 ){
 
-        //Assemble the macro force vector
-        Eigen::MatrixXd _FD  = _FextD;
-        _FD += BDhatD.transpose( ) * _FextDhat;
-        _FD -= _FintD;
-        _FD -= BQhatD.transpose( ) * _FintQhat;
-        _FD -= BDhatD.transpose( ) * _FintDhat;
+            //Assemble the micro force vector
+            _FQ  = _FextQ;
+            _FQ += _L2_BQhatQ.transpose( ) * _FextQhat;
+            _FQ -= _FintQ;
+            _FQ -= _L2_BQhatQ.transpose( ) * _FintQhat;
+            _FQ -= _L2_BDhatQ.transpose( ) * _FintDhat;
+    
+            //Assemble the macro force vector
+            _FD  = _FextD;
+            _FD += _L2_BDhatD.transpose( ) * _FextDhat;
+            _FD -= _FintD;
+            _FD -= _L2_BQhatD.transpose( ) * _FintQhat;
+            _FD -= _L2_BDhatD.transpose( ) * _FintDhat;
+
+        }
+        else if ( projection_type.compare( "direct_projection" ) == 0 ){
+
+            //Assemble the micro force vector
+            _FQ  = _FextQ;
+            _FQ += _DP_BQhatQ.transpose( ) * _FextQhat;
+            _FQ -= _FintQ;
+            _FQ -= _DP_BQhatQ.transpose( ) * _FintQhat;
+            _FQ -= _DP_BDhatQ.transpose( ) * _FintDhat;
+    
+            //Assemble the macro force vector
+            _FD  = _FextD;
+            _FD += _DP_BDhatD.transpose( ) * _FextDhat;
+            _FD -= _FintD;
+            _FD -= _DP_BQhatD.transpose( ) * _FintQhat;
+            _FD -= _DP_BDhatD.transpose( ) * _FintDhat;
+
+        }
+        else{
+
+            return new errorNode( "assembleCouplingForceVector",
+                                  "The projection type: " + projection_type + " is not recognized" );
+
+        }
 
         //Assemble the full force vector
         _FORCE = Eigen::MatrixXd( _FQ.rows( ) + _FD.rows( ), 1 );
-        _FORCE << _FQ << _FD;
+        _FORCE << _FQ, _FD;
 
-        return errorNode( "assembleCouplingForceVector", "Not implemented" );
+        return NULL;
     }
 
+    errorOut overlapCoupling::constructPotentialEnergyPartitioningCoefficient( std::unordered_map< uIntType, floatType > &qes ){
+        /*!
+         * Construct the potential energy partitioning coefficient ( qe in Regueiro 2012 )
+         *
+         * Currently only volume_fraction is implemented
+         *
+         * :param std::unordered_map< uIntType, floatType > &qes: The potential energy partitioning coefficents
+         *     at the free nodes in the free macro cells.
+         */
+
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
+        std::string strategy = config[ "potential_energy_partitioning_coefficient" ][ "type" ].as< std::string >( );
+
+        if ( strategy.compare( "volume_fraction" ) == 0 ){
+
+            const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
+            const uIntVector *ghostMacroNodeIds = _inputProcessor.getGhostMacroNodeIds( );
+            const uIntVector *freeMacroCellIds = _inputProcessor.getFreeMacroCellIds( );
+    
+            //Compute the volumes of the overlaped macro domains
+            std::unordered_map< uIntType, floatType > macroCellNodeTotalVolumes;
+            macroCellNodeTotalVolumes.reserve( freeMacroNodeIds->size( ) + ghostMacroNodeIds->size( ) );
+    
+            qes.reserve( freeMacroNodeIds->size( ) );
+    
+            for ( auto macroCellID  = freeMacroCellIds->begin( );
+                       macroCellID != freeMacroCellIds->end( );
+                       macroCellID++ ){
+    
+                //Construct the macro-domain element
+                std::unique_ptr< elib::Element > element;
+                errorOut error = buildMacroDomainElement( *macroCellID,
+                                                          *_inputProcessor.getMacroNodeReferencePositions( ),
+                                                          *_inputProcessor.getMacroDisplacements( ),
+                                                          *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                                          *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
+                                                          element );
+    
+                if ( error ){
+    
+                    errorOut result = new errorNode( "assembleCouplingForceVector",
+                                                     "Error in the construction of the macro element " + std::to_string( *macroCellID ) );
+                    result->addNext( error );
+                    return result;
+    
+                }
+    
+                //Compute the volume of the macro element
+                floatType elementVolume = 0;
+                floatMatrix jacobian;
+                
+                for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+    
+                    //Get the Jacobian of transformation
+                    errorOut error = element->get_local_gradient( element->nodes, qpt->first, jacobian );
+    
+                    if ( error ){
+     
+                        errorOut result = new errorNode( "assembleCouplingForceVector",
+                                                         "Error in the computation of the local gradient\n" );
+                        result->addNext( error );
+                        return result;
+    
+                    }
+    
+                    elementVolume += vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
+    
+                }
+    
+                //Compute the volumes of the overlapped micro domains for the macro cell
+                auto microDomainVolumes = homogenizedVolumes.find( *macroCellID );
+                if ( microDomainVolumes == homogenizedVolumes.end( ) ){
+    
+                    return new errorNode( "assembleCouplingForceVector",
+                                          "The macro cell " + std::to_string( *macroCellID ) +
+                                          " is not found in the homogenized volumes map" );
+    
+                }
+    
+                floatType microDomainVolume = 0;
+    
+                for ( auto microVolume  = microDomainVolumes->second.begin( );
+                           microVolume != microDomainVolumes->second.end( );
+                           microVolume++ ){
+    
+                    microDomainVolume += *microVolume;
+    
+                }
+    
+                //Determine the amount of the macro element which is non-overlapped
+                floatType openMacroVolume;
+                if ( elementVolume < _absoluteTolerance ){
+                    openMacroVolume = 0;
+                }
+                else{
+                    openMacroVolume = std::fmax( elementVolume - microDomainVolume, 0. );
+                }
+    
+                //Store the contributions of the open macro volume and element volume to the element's free nodes
+                for ( auto nodeID  = element->global_node_ids.begin( );
+                           nodeID != element->global_node_ids.end( );
+                           nodeID++ ){
+    
+                    //Store the contribution to the nodes
+                    if ( qes.find( *nodeID ) != qes.end( ) ){
+    
+                        qes[ *nodeID ] += openMacroVolume;
+                        macroCellNodeTotalVolumes[ *nodeID ] += elementVolume;
+    
+                    }
+                    else{
+
+                        qes.emplace( *nodeID, openMacroVolume );
+                        macroCellNodeTotalVolumes[ *nodeID ] += elementVolume;
+
+                    }
+    
+                }
+    
+            }
+    
+            for ( auto nodeID  = macroCellNodeTotalVolumes.begin( );
+                       nodeID != macroCellNodeTotalVolumes.end( );
+                       nodeID++ ){
+    
+                qes[ nodeID->first ] /= nodeID->second;
+    
+            }
+
+        }
+        else{
+
+            return new errorNode( "assembleCouplingForceVector",
+                                  "The potential energy partitioning strategy: " + strategy + " is not recognized." );
+
+        }
+
+        return NULL;
+    }
 }

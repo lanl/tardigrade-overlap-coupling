@@ -224,6 +224,8 @@ namespace overlapCoupling{
             errorOut constructKineticEnergyPartitioningCoefficient( const uIntType &macroCellID,
                                                                     const std::unique_ptr< elib::Element > &element,
                                                                     floatVector &res );
+
+            errorOut constructPotentialEnergyPartitioningCoefficient( std::unordered_map< uIntType, floatType > &ques );
                                                                     
                                                                    
             //The interpolation matrix
@@ -286,6 +288,8 @@ namespace overlapCoupling{
 
             SparseMatrix _DP_MASS;
             SparseMatrix _DP_DAMPING;
+
+            Eigen::MatrixXd _FORCE;
 
     };
 

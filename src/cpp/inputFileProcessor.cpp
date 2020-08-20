@@ -503,6 +503,31 @@ namespace inputFileProcessor{
             return result;
         }
 
+        if ( _extractPreviousVelocitiesAndAccelerations ){
+
+            bool tmpFlag;
+            uIntType previousMicroIncrement = _config[ "coupling_initialization" ][ "previous_micro_increment" ].as< uIntType >( );
+
+            //Extract the micro velocities
+            error = extractMicroVelocities( previousMicroIncrement, tmpFlag, _previousMicroVelocities );
+    
+            if ( error ){
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous micro velocities" );
+                result->addNext( error );
+                return result;
+            }
+    
+            //Extract the micro accelerations
+            error = extractMicroAccelerations( previousMicroIncrement, tmpFlag, _previousMicroAccelerations );
+    
+            if ( error ){
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous micro accelerations" );
+                result->addNext( error );
+                return result;
+            }
+
+        }
+
         //Extract the micro stresses
         error = extractMicroStresses( microIncrement );
 
@@ -564,6 +589,31 @@ namespace inputFileProcessor{
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro accelerations" );
             result->addNext( error );
             return result;
+        }
+
+        if ( _extractPreviousVelocitiesAndAccelerations ){
+
+            bool tmpFlag;
+            uIntType previousMacroIncrement = _config[ "coupling_initialization" ][ "previous_macro_increment" ].as< uIntType >( );
+
+            //Extract the macro velocities
+            error = extractMacroVelocities( previousMacroIncrement, tmpFlag, _previousMacroVelocities );
+    
+            if ( error ){
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro velocities" );
+                result->addNext( error );
+                return result;
+            }
+    
+            //Extract the macro accelerations
+            error = extractMacroAccelerations( previousMacroIncrement, tmpFlag, _previousMacroAccelerations );
+    
+            if ( error ){
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro accelerations" );
+                result->addNext( error );
+                return result;
+            }
+
         }
 
         //Extract the macro internal forces
@@ -1404,65 +1454,68 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        //Check if the body force name has been defined
-        _microAccelerationFlag = false;
+        stringVector variableKeys =
+            {
+                "a1", "a2", "a3",
+            };
 
-        stringVector accelerationKeys = { "a1", "a2", "a3" };
+        std::string dataType = "Node";
 
-        if ( ( !_config[ "microscale_definition" ][ "acceleration_variable_names" ] ) ||
-             ( _config[ "microscale_definition" ][ "acceleration_variable_names" ][ "a1" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
+        bool populateWithNullOnUndefined = true;
 
-            _config [ "microscale_definition" ][ "acceleration_variable_names" ][ "a1" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
-            _config [ "microscale_definition" ][ "acceleration_variable_names" ][ "a2" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
-            _config [ "microscale_definition" ][ "acceleration_variable_names" ][ "a3" ] = "NULL"; //Indicate that the acceleration is assumed to be zero
-            _microAccelerations = { 0., 0., 0. }; //Set the acceleration to zero
+        std::string configurationName = "acceleration_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
 
-            return NULL;
-
-        }
-        if ( _config[ "microscale_definition" ][ "acceleration_variable_names" ].size( ) != 3 ){
-
-            return new errorNode( "extractMicroAccelerations",
-                                  "Three micro-accelerations must be defined ( in order ) as we assume the coupling is 3D" );
-
-        }
-
-        //Get the acceleration variable names
-        stringVector accelerationVariableNames( 3 );
-        for ( auto aK  = accelerationKeys.begin( );  aK != accelerationKeys.end( ); aK++ ){
-
-            //Get the variable name associated with this component
-            if ( !_config[ "microscale_definition" ][ "acceleration_variable_names" ][ *aK ].IsScalar( ) ){
-
-                return new errorNode( "extractMicroAccelerations",
-                                      "The definition of microscale acceleration component " + *aK +
-                                      " is either not defined in the input file or incorrectly defined.\n" +
-                                      "Under 'acceleration_variable_names' three terms must be defined in the format\n"
-                                      "  a1: a1_variable_name\n" +
-                                      "  a2: a2_variable_name\n" +
-                                      "  a3: a3_variable_name\n" );
-
-            }
-            
-            accelerationVariableNames[ aK - accelerationKeys.begin( ) ]
-                = _config[ "microscale_definition" ][ "acceleration_variable_names" ][ *aK ].as< std::string >( );
-
-        }
-
-        //Extract the acceleration vector
-        errorOut error = _microscale->getSolutionVectorDataFromComponents( increment, accelerationVariableNames,
-                                                                           "Node", _microAccelerations );
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _microAccelerationFlag, _microAccelerations );
 
         if ( error ){
 
-            errorOut result = new errorNode( "extractMicroAcceleration",
-                                             "Error in the extraction of the micro-acceleration components" );
+            errorOut result = new errorNode( "extractMicroAccelerations",
+                                             "Error in the extraction of the micro accelerations" );
             result->addNext( error );
             return result;
 
         }
 
-        _microAccelerationFlag = true;
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMicroAccelerations( const unsigned int &increment, bool &flag, floatVector &microAccelerations ){
+        /*!
+         * Extract the node micro-accelerations at the indicated increment
+         *
+         * :param const unsigned int &increment: The increment at which to make the extraction
+         * :param floatVector &flag: The flag to indicate if the accelerations were defined in the file
+         * :param floatVector &microAccelerations: The vector to store the micro-accelerations in
+         */
+
+        stringVector variableKeys =
+            {
+                "a1", "a2", "a3",
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "acceleration_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, flag, microAccelerations );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroAccelerations",
+                                             "Error in the extraction of the micro accelerations" );
+            result->addNext( error );
+            return result;
+
+        }
 
         return NULL;
 
@@ -1477,65 +1530,70 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        //Check if the body force name has been defined
-        _microVelocityFlag = false;
+        stringVector variableKeys =
+            {
+                "v1", "v2", "v3",
+            };
 
-        stringVector velocityKeys = { "v1", "v2", "v3" };
+        std::string dataType = "Node";
 
-        if ( ( !_config[ "microscale_definition" ][ "velocity_variable_names" ] ) ||
-             ( _config[ "microscale_definition" ][ "velocity_variable_names" ][ "v1" ].as< std::string >( ).compare( "NULL" ) == 0 ) ){
+        bool populateWithNullOnUndefined = true;
 
-            _config [ "microscale_definition" ][ "velocity_variable_names" ][ "v1" ] = "NULL"; //Indicate that the velocity is assumed to be zero
-            _config [ "microscale_definition" ][ "velocity_variable_names" ][ "v2" ] = "NULL"; //Indicate that the velocity is assumed to be zero
-            _config [ "microscale_definition" ][ "velocity_variable_names" ][ "v3" ] = "NULL"; //Indicate that the velocity is assumed to be zero
-            _microVelocities = { 0., 0., 0. }; //Set the velocity to zero
+        std::string configurationName = "velocity_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
 
-            return NULL;
-
-        }
-        if ( _config[ "microscale_definition" ][ "velocity_variable_names" ].size( ) != 3 ){
-
-            return new errorNode( "extractMicroVelocities",
-                                  "Three micro-velocities must be defined ( in order ) as we assume the coupling is 3D" );
-
-        }
-
-        //Get the velocity variable names
-        stringVector velocityVariableNames( 3 );
-        for ( auto vK  = velocityKeys.begin( );  vK != velocityKeys.end( ); vK++ ){
-
-            //Get the variable name associated with this component
-            if ( !_config[ "microscale_definition" ][ "velocity_variable_names" ][ *vK ].IsScalar( ) ){
-
-                return new errorNode( "extractMicroVelocities",
-                                      "The definition of microscale velocity component " + *vK +
-                                      " is either not defined in the input file or incorrectly defined.\n" +
-                                      "Under 'velocity_variable_names' three terms must be defined in the format\n"
-                                      "  v1: v1_variable_name\n" +
-                                      "  v2: v2_variable_name\n" +
-                                      "  v3: v3_variable_name\n" );
-
-            }
-            
-            velocityVariableNames[ vK - velocityKeys.begin( ) ]
-                = _config[ "microscale_definition" ][ "velocity_variable_names" ][ *vK ].as< std::string >( );
-
-        }
-
-        //Extract the velocity vector
-        errorOut error = _microscale->getSolutionVectorDataFromComponents( increment, velocityVariableNames,
-                                                                           "Node", _microVelocities );
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _microVelocityFlag, _microVelocities );
 
         if ( error ){
 
             errorOut result = new errorNode( "extractMicroVelocities",
-                                             "Error in the extraction of the micro-velocity components" );
+                                             "Error in the extraction of the micro velocities" );
             result->addNext( error );
             return result;
 
         }
 
-        _microVelocityFlag = true;
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMicroVelocities( const unsigned int &increment, bool &flag, floatVector &microVelocities ){
+        /*!
+         * Extract the node micro-velocities at the indicated increment
+         *
+         * TODO: Move this and other vector / tensor extraction routines to a common function
+         *
+         * :param const unsigned int &increment: The current increment
+         * :param bool &flag: The flag to indicate if the values are defined in the input file
+         * :param floatVector &microVelocities: The vector to store the velocities in
+         */
+
+        stringVector variableKeys =
+            {
+                "v1", "v2", "v3",
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "velocity_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, flag, microVelocities );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMicroVelocities",
+                                             "Error in the extraction of the micro velocities" );
+            result->addNext( error );
+            return result;
+
+        }
 
         return NULL;
 
@@ -1580,6 +1638,48 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMacroVelocities( const unsigned int &increment, bool &flag, floatVector &macroVelocities ){
+        /*!
+         * Extract the node macro-velocities at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         * :param bool &flag: The flag indicating if the values are defined in the file
+         * :param floatVector &macroVelocities: The vector to store the values in
+         */
+
+        stringVector variableKeys =
+            {
+                "v1", "v2", "v3",
+                "phiDot11", "phiDot12", "phiDot13",
+                "phiDot21", "phiDot22", "phiDot23",
+                "phiDot31", "phiDot32", "phiDot33",
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "velocity_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, flag, macroVelocities );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroVelocities",
+                                             "Error in the extraction of the macro velocities" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
+
     errorOut inputFileProcessor::extractMacroAccelerations( const unsigned int &increment ){
         /*!
          * Extract the node macro-accelerations at the indicated increment
@@ -1605,6 +1705,47 @@ namespace inputFileProcessor{
         errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
                                                                         configuration, _macroAccelerationFlag, _macroAccelerations );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroAccelerations",
+                                             "Error in the extraction of the macro accelerations" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroAccelerations( const unsigned int &increment, bool &flag, floatVector &macroAccelerations ){
+        /*!
+         * Extract the node macro-accelerations at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         * :param bool &flag: The flag indicating if the values are defined in the file
+         * :param floatVector &macroAccelerations: The vector to store the values in
+         */
+
+        stringVector variableKeys =
+            {
+                "a1", "a2", "a3",
+                "phiDotDot11", "phiDotDot12", "phiDotDot13",
+                "phiDotDot21", "phiDotDot22", "phiDotDot23",
+                "phiDotDot31", "phiDotDot32", "phiDotDot33",
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "acceleration_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, flag, macroAccelerations );
 
         if ( error ){
 
@@ -2454,6 +2595,40 @@ namespace inputFileProcessor{
         return &_microAccelerations;
     }
 
+    const floatVector* inputFileProcessor::getPreviousMicroVelocities( ){
+        /*!
+         * Get a pointer to the previous micro velocities
+         */
+
+        if ( _extractPreviousVelocitiesAndAccelerations ){
+
+            return &_previousMicroVelocities;
+
+        }
+        else{
+
+            return &_microVelocities;
+
+        }
+    }
+
+    const floatVector* inputFileProcessor::getPreviousMicroAccelerations( ){
+        /*!
+         * Get a pointer to the micro accelerations
+         */
+
+        if ( _extractPreviousVelocitiesAndAccelerations ){
+
+            return &_previousMicroAccelerations;
+
+        }
+        else{
+
+            return &_microAccelerations;
+
+        }
+    }
+
     const floatVector* inputFileProcessor::getMicroStresses( ){
         /*!
          * Get a pointer to the micro stresses
@@ -2658,6 +2833,56 @@ namespace inputFileProcessor{
         if ( !_config[ "coupling_initialization" ][ "micro_external_force_sign" ] ){
 
             _config[ "coupling_initialization" ][ "micro_external_force_sign" ] = 1; //Default to 1
+
+        }
+
+        if ( _config[ "coupling_initialization" ][ "extract_previous_values_of_velocity_and_acceleration" ] ){
+
+            if ( !_config[ "coupling_initialization" ][ "extract_previous_values_of_velocity_and_acceleration" ].IsScalar( ) ){
+
+                return new errorNode( "'extract_previous_values_of_velocity_and_acceleration' must be a boolean value" );
+
+            }
+            else if ( _config[ "coupling_initialization" ][ "extract_previous_values_of_velocity_and_acceleration" ].as< bool >( ) ){
+
+                _extractPreviousVelocitiesAndAccelerations = true;
+
+            }
+
+            if ( _extractPreviousVelocitiesAndAccelerations ){
+
+                if ( !_config[ "coupling_initialization" ][ "previous_micro_increment" ] ){
+
+                    return new errorNode( "checkCouplingInitialization",
+                                          "'previous_micro_increment' is not defined in 'coupling_initialization' when the user has requested that the previous values of velocity and acceleration are extracted" );
+
+                }
+                else if(  !_config[ "coupling_initialization" ][ "previous_micro_increment" ].IsScalar( ) ){
+
+                    return new errorNode( "checkCouplingInitialization",
+                                          "'previous_micro_increment' must be defined as a scalar integer value indicating the increment ( i.e. timestep number ) which defines the previous velocity and accelerations at the micro scale" );
+
+                }
+
+                if ( !_config[ "coupling_initialization" ][ "previous_macro_increment" ] ){
+
+                    return new errorNode( "checkCouplingInitialization",
+                                          "'previous_macro_increment' is not defined in 'coupling_initialization' when the user has requested that the previous values of velocity and acceleration are extracted" );
+
+                }
+                else if(  !_config[ "coupling_initialization" ][ "previous_macro_increment" ].IsScalar( ) ){
+
+                    return new errorNode( "checkCouplingInitialization",
+                                          "'previous_macro_increment' must be defined as a scalar integer value indicating the increment ( i.e. timestep number ) which defines the last converged velocity and accelerations at the macro scale" );
+
+                }
+
+            }
+
+        }
+        else{
+
+            _config[ "coupling_initialization" ][ "extract_previous_values_of_velocity_and_acceleration" ] = false;
 
         }
 
@@ -3228,6 +3453,47 @@ namespace inputFileProcessor{
          */
 
         return &_macroAccelerations;
+
+    }
+
+    const floatVector* inputFileProcessor::getPreviousMacroVelocities( ){
+        /*!
+         * Get a pointer to the previous macro velocities
+         *
+         * If extraction of those values as not requested, the current macro velocities will be returned
+         */
+
+        if ( _extractPreviousVelocitiesAndAccelerations ){
+
+            return &_previousMacroVelocities;
+
+        }
+        else{
+
+            return &_macroVelocities;
+
+        }
+
+    }
+
+    const floatVector* inputFileProcessor::getPreviousMacroAccelerations( ){
+        /*!
+         * Get a pointer to the previous macro accelerations
+         *
+         * If extraction of those values as not requested, the current macro accelerations will be returned
+         */
+
+        if ( _extractPreviousVelocitiesAndAccelerations ){
+
+            return &_previousMacroAccelerations;
+
+        }
+        else{
+
+            return &_macroAccelerations;
+
+        }
+
     }
 
     const floatVector* inputFileProcessor::getMacroInternalForces( ){
