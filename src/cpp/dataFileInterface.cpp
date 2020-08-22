@@ -117,7 +117,21 @@ namespace dataFileInterface{
     }
 
     //Virtual functions to be overloaded
-    
+
+    errorOut dataFileBase::getIncrementTime( const uIntType &increment, floatType &time ){
+        /*!
+         * Get the increment time from the datafile
+         *
+         * :param const uIntType &increment: The increment at which to extract the time
+         * :param floatType &time: The time associated with the increment
+         */
+
+        ( void ) increment;
+        ( void ) time;
+        return new errorNode( "getIncrementTime", "The getIncrementTime function is not defined" );
+            
+    }
+
     errorOut dataFileBase::getNumIncrements( uIntType &numIncrements ){
         /*!
          * Get the number of increments from the datafile.
@@ -875,6 +889,43 @@ namespace dataFileInterface{
         error = connectivityToCellIndices( cellCounts, connectivity, connectivityCellIndices );
 
         return NULL;
+    }
+
+    errorOut XDMFDataFile::getIncrementTime( const uIntType &increment, floatType &time ){
+        /*!
+         * Get the increment time from the datafile
+         *
+         * :param const uIntType &increment: The increment at which to extract the time
+         * :param floatType &time: The time associated with the increment
+         */
+
+        //Check the number of increments
+        uIntType numIncrements;
+        errorOut error = getNumIncrements( numIncrements );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "getIncrementTime", "Error in the extraction of the increment count" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        error = getUnstructuredGrid( increment, grid );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "getIncrementTime", "Error in the extraction of the grid" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        time = grid->getTime( )->getValue( );
+
+        return NULL;
+            
     }
 
 }

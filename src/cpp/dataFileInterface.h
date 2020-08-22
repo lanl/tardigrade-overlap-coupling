@@ -90,6 +90,7 @@ namespace dataFileInterface{
             std::shared_ptr<dataFileBase> create( const std::string &type );
 
             //File read interface functions
+            virtual errorOut getIncrementTime( const uIntType &increment, floatType &time ); //Required overload
             virtual errorOut getNumIncrements( uIntType &numIncrements ); //Required overload
             virtual errorOut getNumNodes( const uIntType increment, uIntType &numNodes ); //Required overload
             virtual errorOut readMesh( const uIntType increment, floatVector &nodalPositions ); //Required overload
@@ -135,6 +136,7 @@ namespace dataFileInterface{
             XDMFDataFile( const YAML::Node &configuration );
 
             //Overloads
+            errorOut getIncrementTime( const uIntType &increment, floatType &time );
             errorOut getNumIncrements( uIntType &numIncrements );
             errorOut getNumNodes( const uIntType increment, uIntType &numNodes );
             errorOut readMesh( const uIntType increment, floatVector &nodalPositions );

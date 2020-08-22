@@ -545,6 +545,57 @@ int test_XDMFDataFile_getSolutionVectorDataFromComponents( std::ofstream &result
     return 0;
 }
 
+int test_XDMFDataFile_getIncrementTime( std::ofstream &results ){
+    /*!
+     * Test the extraction of the timestamp for a given increment
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    floatType answer1 = 0.;
+    floatType result;
+    errorOut error = xdf.getIncrementTime( 0, result );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_getIncrementTime & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( result, answer1 ) ){
+
+        results << "test_XDMFDataFile_getIncrementTime (test 1) & False\n";
+        return 1;
+
+    }
+
+    floatType answer2 = 1;
+    error = xdf.getIncrementTime( 1, result );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_getIncrementTime & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( result, answer2 ) ){
+
+        results << "test_XDMFDataFile_getIncrementTime (test 1) & False\n";
+        return 1;
+
+    }
+
+    results << "test_XDMFDataFile_getIncrementTime & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -568,6 +619,7 @@ int main(){
     test_XDMFDataFile_getSolutionVectorDataFromComponents( results );
     test_XDMFDataFile_getMeshData( results );
     test_XDMFDataFile_getMeshData2( results );
+    test_XDMFDataFile_getIncrementTime( results );
 
     //Close the results file
     results.close();
