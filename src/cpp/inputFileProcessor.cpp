@@ -2968,29 +2968,26 @@ namespace inputFileProcessor{
 
         if ( _config[ "coupling_initialization" ][ "update_displacement" ] ){
 
-            if ( _config[ "coupling_initialization" ][ "update_displacement" ].as< bool >( ) ){
+            if ( !_config[ "coupling_initialization" ][ "extract_previous_dof_values" ].as< bool > ( ) ){
 
-                if ( !_config[ "coupling_initialization" ][ "extract_previous_dof_values" ].as< bool > ( ) ){
+                if ( !_config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ] ){
 
-                    if ( !_config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ] ){
-
-                        return new errorNode( "checkCouplingInitialization",
-                                              "If the previous DOF values are not to be extracted and the displacement is to be updated, 'Dt' must be defined under 'update_displacement'" );
-
-                    }
-                    else{
-
-                        _Dt = _config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ].as< floatType >( );
-
-                    }
+                    return new errorNode( "checkCouplingInitialization",
+                                          "If the previous DOF values are not to be extracted and the displacement is to be updated, 'Dt' must be defined under 'update_displacement'" );
 
                 }
-                else if ( _config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ] ){
+                else{
 
-                    std::cerr << "Dt is specified when the previous increment has been indicated. The Dt in the input file will be ignored";
-                    _config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ] = "NULL";
+                    _Dt = _config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ].as< floatType >( );
 
                 }
+
+            }
+            else if ( _config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ] ){
+
+                std::cerr << "WARNING: Dt is specified when the previous increment has been indicated.\n";
+                std::cerr << "         The Dt in the input file will be ignored\n";
+                _config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ] = "NULL";
 
             }
 
