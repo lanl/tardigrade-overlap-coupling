@@ -189,7 +189,7 @@ namespace overlapCoupling{
                                                                                   const unsigned int &microIncrement,
                                                                                   const std::string &domainName,
                                                                                   const uIntVector &macroNodes );
-            errorOut projectDegreesOfFreedom( );
+            errorOut projectDegreesOfFreedom( const bool useUpdatedFreeDOF = false );
 
             errorOut homogenizeMicroScale( const unsigned int &microIncrement );
 
@@ -221,11 +221,13 @@ namespace overlapCoupling{
 
             errorOut assembleCouplingForceVector( );
 
+            errorOut solveFreeDisplacement( const bool updateGhostDOF );
+
             errorOut constructKineticEnergyPartitioningCoefficient( const uIntType &macroCellID,
                                                                     const std::unique_ptr< elib::Element > &element,
                                                                     floatVector &res );
 
-            errorOut constructPotentialEnergyPartitioningCoefficient( std::unordered_map< uIntType, floatType > &ques );
+            errorOut constructPotentialEnergyPartitioningCoefficient( std::unordered_map< uIntType, floatType > &qes );
                                                                     
                                                                    
             //The interpolation matrix
@@ -290,6 +292,10 @@ namespace overlapCoupling{
             SparseMatrix _DP_DAMPING;
 
             Eigen::MatrixXd _FORCE;
+
+            floatVector _updatedFreeMicroDispDOFValues;
+            floatVector _updatedFreeMacroDispDOFValues;
+            bool _freeDOFValuesUpdated;
 
     };
 

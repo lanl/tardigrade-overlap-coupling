@@ -152,6 +152,17 @@ namespace overlapCoupling{
 
         }
 
+        //Solve for the free displacements
+        error = solveFreeDisplacement( true );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processIncrement", "Error when solving for the free displacements" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
     }
 
@@ -1539,10 +1550,13 @@ namespace overlapCoupling{
 
     }
 
-    errorOut overlapCoupling::projectDegreesOfFreedom( ){
+    errorOut overlapCoupling::projectDegreesOfFreedom( const bool useUpdatedFreeDOF ){
         /*!
          * Project the degrees of freedom of the ghost nodes
          * for the current increment
+         *
+         * :const bool useUpdatedFreeDOF: A flag indicating if the free displacements vectors to be
+         *     used should be the updated values or the values from the input file
          */
 
         //Get the displacement vectors
@@ -1561,44 +1575,60 @@ namespace overlapCoupling{
         unsigned int nMicroDispDOF = _dim;
 
         //Assemble the free displacements
-        floatVector freeMacroDisplacements( nMacroDispDOF * freeMacroNodeIds->size( ) );
-        floatVector freeMicroDisplacements( nMicroDispDOF * freeMicroNodeIds->size( ) );
+        floatVector *freeMacroDisplacements;
+        floatVector *freeMicroDisplacements;
 
-        for ( auto it = freeMacroNodeIds->begin( ); it != freeMacroNodeIds->end( ); it++ ){
+        if ( useUpdatedFreeDOF ){
 
-            auto map = _inputProcessor.getMacroGlobalToLocalDOFMap( )->find( *it );
-
-            if ( map == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
-
-                return new errorNode( "projectDegreesOfFreedom",
-                                      "Global degree of freedom '" + std::to_string( *it ) + "' not found in degree of freedom map" );
-
-            }
-
-            //Set the macro displacements
-            for ( unsigned int i = 0; i < nMacroDispDOF; i++ ){
-
-                freeMacroDisplacements[ nMacroDispDOF * ( map->second ) + i ]
-                    = ( *macroDispDOFVector )[ nMacroDispDOF * map->first + i ];
-
-            }
+            freeMicroDisplacements = &_updatedFreeMicroDispDOFValues;
+            freeMacroDisplacements = &_updatedFreeMacroDispDOFValues;
 
         }
+        else{
 
-        for ( auto it = freeMicroNodeIds->begin( ); it != freeMicroNodeIds->end( ); it++ ){
+            freeMacroDisplacements = new floatVector( nMacroDispDOF * freeMacroNodeIds->size( ) );
+            freeMicroDisplacements = new floatVector( nMicroDispDOF * freeMicroNodeIds->size( ) );
+    
+            for ( auto it = freeMacroNodeIds->begin( ); it != freeMacroNodeIds->end( ); it++ ){
+    
+                auto map = _inputProcessor.getMacroGlobalToLocalDOFMap( )->find( *it );
+    
+                if ( map == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
+   
+                    delete freeMacroDisplacements;
+                    delete freeMicroDisplacements;
 
-            for ( unsigned int i = 0; i < nMicroDispDOF; i++ ){
-
-                freeMicroDisplacements[ nMicroDispDOF * ( it - freeMicroNodeIds->begin( ) ) + i ]
-                    = ( *microDisplacements )[ nMicroDispDOF * ( *it ) + i ];
-
+                    return new errorNode( "projectDegreesOfFreedom",
+                                          "Global degree of freedom '" + std::to_string( *it ) + "' not found in degree of freedom map" );
+    
+                }
+    
+                //Set the macro displacements
+                for ( unsigned int i = 0; i < nMacroDispDOF; i++ ){
+    
+                    ( *freeMacroDisplacements )[ nMacroDispDOF * ( map->second ) + i ]
+                        = ( *macroDispDOFVector )[ nMacroDispDOF * map->first + i ];
+    
+                }
+    
+            }
+    
+            for ( auto it = freeMicroNodeIds->begin( ); it != freeMicroNodeIds->end( ); it++ ){
+    
+                for ( unsigned int i = 0; i < nMicroDispDOF; i++ ){
+    
+                    ( *freeMicroDisplacements )[ nMicroDispDOF * ( it - freeMicroNodeIds->begin( ) ) + i ]
+                        = ( *microDisplacements )[ nMicroDispDOF * ( *it ) + i ];
+    
+                }
+    
             }
 
         }
 
         //Map the macro and micro free displacements to Eigen matrices
-        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > Q( freeMicroDisplacements.data(), freeMicroDisplacements.size( ), 1 );
-        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > D( freeMacroDisplacements.data(), freeMacroDisplacements.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > Q( freeMicroDisplacements->data(), freeMicroDisplacements->size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > D( freeMacroDisplacements->data(), freeMacroDisplacements->size( ), 1 );
 
         //Map the output vectors to Eigen matrices
         _projected_ghost_macro_displacement.clear( );
@@ -1629,8 +1659,18 @@ namespace overlapCoupling{
         }
         else{
 
+            delete freeMacroDisplacements;
+            delete freeMicroDisplacements;
+
             return new errorNode( "projectDegreesOfFreedom",
                                   "'projection_type' '" + config[ "projection_type" ].as< std::string >( ) + "' is not recognized" );
+
+        }
+
+        if ( !useUpdatedFreeDOF ){
+
+            delete freeMacroDisplacements;
+            delete freeMicroDisplacements;
 
         }
 
@@ -5433,6 +5473,226 @@ namespace overlapCoupling{
 
             return new errorNode( "assembleCouplingForceVector",
                                   "The potential energy partitioning strategy: " + strategy + " is not recognized." );
+
+        }
+
+        return NULL;
+    }
+
+    errorOut overlapCoupling::solveFreeDisplacement( const bool updateGhostDOF ){
+        /*!
+         * Solve for the free displacement. This is done using the Newmark-Beta method ( from Wikipedia ):
+         *
+         * u_{ n + 1 } = u_n + \Delta t * \dot{ u }_n + \frac{ \Delta t^2 }{ 2 }\left( \left( 1 - 2 \beta \right) \ddot{ u }_n + 2 \beta \ddot{ u }_{n+1 } \right)
+         * \dot{ u }_{ n + 1 } = \dot{ u }_n + ( 1 - \gamma ) \Delta t \ddot{ u }_n + \gamma \Delta t \ddot{ u }_{n + 1}
+         * M \ddot{ u }_{n + 1} + C \dot{ u }_{n + 1} + f^{int}\left( u_{n + 1} \right) = f^{ext}_{n+1}
+         *
+         * Where the Explicit central difference scheme is obtained by letting $\gamma = 0.5$ and $\beta = 0$
+         *
+         * and
+         *
+         * Average constant acceleration is obtained by setting $\gamma = 0.5$ and $\beta = 0.25$
+         *
+         * NOTE: The current implementation cannot do implicit solves here but it does solve for what the
+         * displacement values *should* be given the current values of the force vectors and those can be
+         * used to construct residual equations. It is hoped that Jacobian Free Newton Krylov will be 
+         * capable of solving the coupled PDEs without having to explicitly form the Jacobian.
+         *
+         * :param const bool updateGhostDOF: A flag for whether the ghost degrees of freedom should be updated as well
+         */
+
+        //Set the configuration
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
+
+        std::string projection_type = config[ "projection_type" ].as< std::string >( );
+        const floatType gamma = config[ "Newmark-beta_parameters" ][ "gamma" ].as< floatType >( );
+        const floatType beta = config[ "Newmark-beta_parameters" ][ "beta" ].as< floatType >( );
+
+        //Get the timestep
+        const floatType dt = _inputProcessor.getTimestep( );
+
+        //Set the number of displacement degrees of freedom for each scale
+        const uIntType nMicroDispDOF = _dim;
+        const uIntType nMacroDispDOF = _dim + _dim * _dim;
+
+        //Get the maps from the global to the local degrees of freedom
+        const DOFMap *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
+        const DOFMap *macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+        //Get the free degree of freedom values at both scale
+        const uIntVector *freeMicroNodeIds = _inputProcessor.getFreeMicroNodeIds( );
+        const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
+
+        const uIntType microOffset = nMicroDispDOF * freeMicroNodeIds->size( );
+
+        //Get the previous values of the degrees of freedom and their velocities and accelerations
+        const floatVector *previousMicroDispDOFVector = _inputProcessor.getPreviousMicroDisplacements( );
+        const floatVector *previousMicroVelocities    = _inputProcessor.getPreviousMicroVelocities( );
+        const floatVector *previousMicroAccelerations = _inputProcessor.getPreviousMicroAccelerations( );
+
+        const floatVector *previousMacroDispDOFVector = _inputProcessor.getPreviousMacroDispDOFVector( );
+        const floatVector *previousMacroVelocities    = _inputProcessor.getPreviousMacroVelocities( );
+        const floatVector *previousMacroAccelerations = _inputProcessor.getPreviousMacroAccelerations( );
+
+        //Set the degree of freedom vectors
+        //To try and save some memory, we will overwrite DOF and DotDOF as the integrated values become available
+        floatVector       FreeDOF( nMicroDispDOF * ( freeMicroNodeIds->size( ) + freeMacroNodeIds->size( ) ), 0 );
+        floatVector        DotDOF( nMicroDispDOF * ( freeMicroNodeIds->size( ) + freeMacroNodeIds->size( ) ), 0 );
+        floatVector   DotDotDOF_t( nMicroDispDOF * ( freeMicroNodeIds->size( ) + freeMacroNodeIds->size( ) ), 0 );
+        floatVector DotDotDOF_tp1( nMicroDispDOF * ( freeMicroNodeIds->size( ) + freeMacroNodeIds->size( ) ), 0 );
+
+        //Extract the micro points
+        for ( auto nodeId = freeMicroNodeIds->begin( ); nodeId != freeMicroNodeIds->end( ); nodeId++ ){
+
+            //Find the map from global to local node ids
+            auto indexMap = microGlobalToLocalDOFMap->find( *nodeId );
+
+            if ( indexMap == microGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "solveFreeDisplacement",
+                                      "Micro node " + std::to_string( *nodeId ) + " not found in global to local map" );
+
+            }
+
+            if ( nMicroDispDOF * indexMap->first > previousMicroDispDOFVector->size( ) ){
+
+                return new errorNode( "solveFreeDisplacement",
+                                      "The micro index " + std::to_string( indexMap->first ) +
+                                      " is too large for the micro DOF vector" );
+
+            }
+
+            //Extract the micro points
+            for ( unsigned int i = 0; i < nMicroDispDOF; i++ ){
+
+                FreeDOF[ nMicroDispDOF * indexMap->second + i ]
+                    = ( *previousMicroDispDOFVector )[ nMicroDispDOF * indexMap->first + i ];
+
+                if ( _inputProcessor.microVelocitiesDefined( ) ){
+
+                    DotDOF[ nMicroDispDOF * indexMap->second + i ]
+                        = ( *previousMicroVelocities )[ nMicroDispDOF * indexMap->first + i ];
+
+                }
+
+                if ( _inputProcessor.microAccelerationDefined( ) ){
+
+                    DotDotDOF_t[ nMicroDispDOF * indexMap->second + i ]
+                        = ( *previousMicroAccelerations )[ nMicroDispDOF * indexMap->first + i ];
+
+                }
+
+            }
+
+        }
+
+        //Extract macro points
+        for ( auto nodeId = freeMacroNodeIds->begin( ); nodeId != freeMacroNodeIds->end( ); nodeId++ ){
+
+            //Find the map from global to local node ids
+            auto indexMap = macroGlobalToLocalDOFMap->find( *nodeId );
+
+            if ( indexMap == macroGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "solveFreeDisplacement",
+                                      "Macro node " + std::to_string( *nodeId ) + " not found in global to local map" );
+
+            }
+
+            if ( nMacroDispDOF * indexMap->first > previousMacroDispDOFVector->size( ) ){
+
+                return new errorNode( "solveFreeDisplacement",
+                                      "The macro index " + std::to_string( indexMap->first ) +
+                                      " is too large for the macro DOF vector" );
+
+            }
+
+            //Extract the macro points
+            for ( unsigned int i = 0; i < nMacroDispDOF; i++ ){
+
+                FreeDOF[ nMacroDispDOF * indexMap->second + i + microOffset ]
+                    = ( *previousMacroDispDOFVector )[ nMacroDispDOF * indexMap->first + i ];
+
+                if ( _inputProcessor.macroVelocitiesDefined( ) ){
+
+                    DotDOF[ nMacroDispDOF * indexMap->second + i + microOffset ]
+                        = ( *previousMacroVelocities )[ nMacroDispDOF * indexMap->first + i ];
+
+                }
+
+                if ( _inputProcessor.macroAccelerationDefined( ) ){
+
+                    DotDotDOF_t[ nMicroDispDOF * indexMap->second + i + microOffset ]
+                        = ( *previousMacroAccelerations )[ nMacroDispDOF * indexMap->first + i ];
+
+                }
+
+            }
+
+        }
+
+        //Map the vectors to Eigen matrices
+        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _DOF( FreeDOF.data(), FreeDOF.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _DotDOF( DotDOF.data(), DotDOF.size( ), 1 );
+        Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _DotDotDOF_t( DotDotDOF_t.data(), DotDotDOF_t.size( ), 1 );
+        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _DotDotDOF_tp1( DotDotDOF_tp1.data(), DotDotDOF_tp1.size( ), 1 );
+
+        //Instantiate the QR solver
+        std::cout << "Performing QR decomposition of the Free DOF LHS matrix\n";
+
+        Eigen::MatrixXd RHS;
+        if ( projection_type.compare( "l2_projection" ) ){
+
+            Eigen::MatrixXd LHS;
+            LHS = _L2_MASS;
+            LHS += gamma * dt * _L2_DAMPING;
+
+            RHS = _FORCE;
+            RHS -= _L2_DAMPING * ( _DotDOF + ( 1 - gamma ) * dt * _DotDotDOF_t );
+
+            _DotDotDOF_tp1 = LHS.colPivHouseholderQr( ).solve( RHS );
+        }
+        else if ( projection_type.compare( "direct_projection" ) ){
+
+            SparseMatrix LHS;
+            LHS = _DP_MASS;
+            LHS += gamma * dt * _DP_DAMPING;
+            LHS.makeCompressed( );
+
+            RHS = _FORCE;
+            RHS -= _DP_DAMPING * ( _DotDOF + ( 1 - gamma ) * dt * _DotDotDOF_t );
+
+            Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
+            solver.compute( LHS );
+            _DotDotDOF_tp1 = solver.solve( RHS );
+
+        }
+        else{
+
+            return new errorNode( "solveFreeDisplacement", "Projection type " + projection_type + " not recognized" );
+
+        }
+
+        //Update the free degrees of freedom
+        _DOF += dt * _DotDOF + 0.5 * ( dt * dt ) * ( ( 1 - 2 * beta ) * _DotDotDOF_t + 2 * beta * _DotDotDOF_tp1 );
+
+        //Store the free degrees of freedom
+        _updatedFreeMicroDispDOFValues = floatVector( FreeDOF.begin( ), FreeDOF.begin( ) + microOffset );
+        _updatedFreeMacroDispDOFValues = floatVector( FreeDOF.begin( ) + microOffset, FreeDOF.end( ) );
+        _freeDOFValuesUpdated = true;
+
+        if ( updateGhostDOF ){
+
+            errorOut error = projectDegreesOfFreedom( updateGhostDOF );
+
+            if ( error ){
+    
+                errorOut result = new errorNode( "solveFreeDisplacement",
+                                                 "Error in the projection of the ghost degrees of freedom" );
+                result->addNext( error );
+                return result;
+    
+            }            
 
         }
 
