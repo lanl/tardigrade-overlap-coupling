@@ -1578,6 +1578,8 @@ namespace overlapCoupling{
         floatVector *freeMacroDisplacements;
         floatVector *freeMicroDisplacements;
 
+        floatVector store1, store2;
+
         if ( useUpdatedFreeDOF ){
 
             freeMicroDisplacements = &_updatedFreeMicroDispDOFValues;
@@ -1586,17 +1588,17 @@ namespace overlapCoupling{
         }
         else{
 
-            freeMacroDisplacements = new floatVector( nMacroDispDOF * freeMacroNodeIds->size( ) );
-            freeMicroDisplacements = new floatVector( nMicroDispDOF * freeMicroNodeIds->size( ) );
+            store1.resize( nMacroDispDOF * freeMacroNodeIds->size( ) );
+            store2.resize( nMicroDispDOF * freeMicroNodeIds->size( ) );
+
+            freeMacroDisplacements = &store1;
+            freeMicroDisplacements = &store2;
     
             for ( auto it = freeMacroNodeIds->begin( ); it != freeMacroNodeIds->end( ); it++ ){
     
                 auto map = _inputProcessor.getMacroGlobalToLocalDOFMap( )->find( *it );
     
                 if ( map == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
-   
-                    delete freeMacroDisplacements;
-                    delete freeMicroDisplacements;
 
                     return new errorNode( "projectDegreesOfFreedom",
                                           "Global degree of freedom '" + std::to_string( *it ) + "' not found in degree of freedom map" );
@@ -1659,18 +1661,8 @@ namespace overlapCoupling{
         }
         else{
 
-            delete freeMacroDisplacements;
-            delete freeMicroDisplacements;
-
             return new errorNode( "projectDegreesOfFreedom",
                                   "'projection_type' '" + config[ "projection_type" ].as< std::string >( ) + "' is not recognized" );
-
-        }
-
-        if ( !useUpdatedFreeDOF ){
-
-            delete freeMacroDisplacements;
-            delete freeMicroDisplacements;
 
         }
 
@@ -5505,8 +5497,8 @@ namespace overlapCoupling{
         const YAML::Node config = _inputProcessor.getCouplingInitialization( );
 
         std::string projection_type = config[ "projection_type" ].as< std::string >( );
-        const floatType gamma = config[ "Newmark-beta_parameters" ][ "gamma" ].as< floatType >( );
-        const floatType beta = config[ "Newmark-beta_parameters" ][ "beta" ].as< floatType >( );
+        const floatType gamma = *_inputProcessor.getNewmarkGamma( );
+        const floatType beta = *_inputProcessor.getNewmarkBeta( );
 
         //Get the timestep
         const floatType *dt = _inputProcessor.getDt( );
@@ -5536,10 +5528,10 @@ namespace overlapCoupling{
 
         //Set the degree of freedom vectors
         //To try and save some memory, we will overwrite DOF and DotDOF as the integrated values become available
-        floatVector       FreeDOF( nMicroDispDOF * ( freeMicroNodeIds->size( ) + freeMacroNodeIds->size( ) ), 0 );
-        floatVector        DotDOF( nMicroDispDOF * ( freeMicroNodeIds->size( ) + freeMacroNodeIds->size( ) ), 0 );
-        floatVector   DotDotDOF_t( nMicroDispDOF * ( freeMicroNodeIds->size( ) + freeMacroNodeIds->size( ) ), 0 );
-        floatVector DotDotDOF_tp1( nMicroDispDOF * ( freeMicroNodeIds->size( ) + freeMacroNodeIds->size( ) ), 0 );
+        floatVector       FreeDOF( nMicroDispDOF * freeMicroNodeIds->size( ) + nMacroDispDOF * freeMacroNodeIds->size( ), 0 );
+        floatVector        DotDOF( nMicroDispDOF * freeMicroNodeIds->size( ) + nMacroDispDOF * freeMacroNodeIds->size( ), 0 );
+        floatVector   DotDotDOF_t( nMicroDispDOF * freeMicroNodeIds->size( ) + nMacroDispDOF * freeMacroNodeIds->size( ), 0 );
+        floatVector DotDotDOF_tp1( nMicroDispDOF * freeMicroNodeIds->size( ) + nMacroDispDOF * freeMacroNodeIds->size( ), 0 );
 
         //Extract the micro points
         for ( auto nodeId = freeMicroNodeIds->begin( ); nodeId != freeMicroNodeIds->end( ); nodeId++ ){
@@ -5641,7 +5633,7 @@ namespace overlapCoupling{
         std::cout << "Performing QR decomposition of the Free DOF LHS matrix\n";
 
         Eigen::MatrixXd RHS;
-        if ( projection_type.compare( "l2_projection" ) ){
+        if ( projection_type.compare( "l2_projection" ) == 0 ){
 
             Eigen::MatrixXd LHS;
             LHS = _L2_MASS;
@@ -5652,9 +5644,9 @@ namespace overlapCoupling{
 
             _DotDotDOF_tp1 = LHS.colPivHouseholderQr( ).solve( RHS );
         }
-        else if ( projection_type.compare( "direct_projection" ) ){
+        else if ( projection_type.compare( "direct_projection" ) == 0 ){
 
-            SparseMatrix LHS;
+            SparseMatrix LHS( _DP_MASS.rows( ), _DP_MASS.cols( ) );
             LHS = _DP_MASS;
             LHS += gamma * ( *dt ) * _DP_DAMPING;
             LHS.makeCompressed( );
