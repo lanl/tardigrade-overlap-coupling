@@ -2991,6 +2991,20 @@ namespace inputFileProcessor{
 
             }
 
+            if ( !_config[ "coupling_initialization" ][ "update_displacement" ][ "Newmark-beta_parameters" ][ "gamma" ] ){
+
+                _config[ "coupling_initialization" ][ "update_displacement" ][ "Newmark-beta_parameters" ][ "gamma" ] = 0.5;
+                _newmarkGamma = 0.5;
+
+            }
+
+            if ( !_config[ "coupling_initialization" ][ "update_displacement" ][ "Newmark-beta_parameters" ][ "beta" ] ){
+
+                _config[ "coupling_initialization" ][ "update_displacement" ][ "Newmark-beta_parameters" ][ "beta" ] = 0.25;
+                _newmarkBeta = 0.25;
+
+            }
+
         }
         else{
 
@@ -3946,6 +3960,22 @@ namespace inputFileProcessor{
          */
 
         return &_Dt;
+    }
+
+    const floatType* inputFileProcessor::getNewmarkGamma( ){
+        /*!
+         * Get the gamma parameter for the Newmark beta method
+         */
+
+        return &_newmarkGamma;
+    }
+
+    const floatType* inputFileProcessor::getNewmarkBeta( ){
+        /*!
+         * Get the beta parameter for the Newmark beta method
+         */
+
+        return &_newmarkBeta;
     }
 
 }

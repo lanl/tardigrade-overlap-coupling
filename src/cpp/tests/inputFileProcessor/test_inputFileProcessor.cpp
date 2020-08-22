@@ -1036,6 +1036,23 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatType newmarkGammaAnswer = 0.50;
+    const floatType newmarkBetaAnswer  = 0.25;
+
+    if ( !vectorTools::fuzzyEquals( newmarkGammaAnswer, *reader.getNewmarkGamma( ) ) ){
+
+        results << "test_initializeIncrement (test 67) & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( newmarkBetaAnswer, *reader.getNewmarkBeta( ) ) ){
+
+        results << "test_initializeIncrement (test 68) & False\n";
+        return 1;
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

@@ -100,6 +100,8 @@ namespace inputFileProcessor{
             const floatVector* getMacroInertialForces( );
 
             const floatType* getDt( );
+            const floatType* getNewmarkGamma( );
+            const floatType* getNewmarkBeta( );
 
             const floatVector* getMicroNodeReferencePositions( );
             const floatVector* getMacroNodeReferencePositions( );
@@ -268,6 +270,8 @@ namespace inputFileProcessor{
             YAML::Node _volumeReconstructionConfig;
 
             floatType   _Dt;
+            floatType   _newmarkGamma;
+            floatType   _newmarkBeta;
 
             floatType   _previousMicroTime;
             floatType   _microTime;
