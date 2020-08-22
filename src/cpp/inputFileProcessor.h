@@ -70,6 +70,7 @@ namespace inputFileProcessor{
             errorOut setConfigurationFilename( const std::string &configurationFilename );
             errorOut getError( ){ return _error; }
 
+            const floatType*   getMicroTime( );
             const floatVector* getMicroDensities( );
             const floatVector* getMicroVolumes( );
             const floatVector* getMicroWeights( );
@@ -86,6 +87,7 @@ namespace inputFileProcessor{
             const floatVector* getMicroInternalForces( );
             const floatVector* getMicroInertialForces( );
 
+            const floatType*   getMacroTime( );
             const floatVector* getMacroDisplacements( );
             const floatVector* getMacroDispDOFVector( );
             const floatVector* getMacroVelocities( );
@@ -96,6 +98,8 @@ namespace inputFileProcessor{
             const floatVector* getMacroInternalForces( );
             const floatVector* getMacroExternalForces( );
             const floatVector* getMacroInertialForces( );
+
+            const floatType* getDt( );
 
             const floatVector* getMicroNodeReferencePositions( );
             const floatVector* getMacroNodeReferencePositions( );
@@ -209,6 +213,8 @@ namespace inputFileProcessor{
                                                 const bool &populateWithNullOnUndefined, const std::string &configurationName,
                                                 YAML::Node &configuration, bool &populatedFlag, floatVector &properties );
 
+            errorOut extractMicroTime( const unsigned int &increment );
+            errorOut extractMicroTime( const unsigned int &increment, floatType &microTime );
             errorOut extractMicroNodeDensities( const unsigned int &increment );
             errorOut extractMicroBodyForces( const unsigned int &increment );
             errorOut extractMicroSurfaceTractions( const unsigned int &increment );
@@ -225,6 +231,8 @@ namespace inputFileProcessor{
             errorOut extractMicroInertialForces( const unsigned int &increment );
             errorOut extractReferenceMicroMeshData( const unsigned int &increment );
 
+            errorOut extractMacroTime( const unsigned int &increment );
+            errorOut extractMacroTime( const unsigned int &increment, floatType &macroTime );
             errorOut extractMacroDisplacements( const unsigned int &increment );
             errorOut extractMacroDispDOFVector( const unsigned int &increment );
             errorOut extractMacroDispDOFVector( const unsigned int &increment, bool &flag, floatVector &macroDispDOFVector );
@@ -259,6 +267,10 @@ namespace inputFileProcessor{
             YAML::Node _config;
             YAML::Node _volumeReconstructionConfig;
 
+            floatType   _Dt;
+
+            floatType   _previousMicroTime;
+            floatType   _microTime;
             floatVector _microDomainWeights;
             floatVector _microDensities;
             floatVector _microVolumes;
@@ -284,6 +296,8 @@ namespace inputFileProcessor{
             bool _microVelocityFlag = false;
             bool _microAccelerationFlag = false;
 
+            floatType   _previousMacroTime;
+            floatType   _macroTime;
             floatVector _macroDisplacements;
             floatVector _macroDispDOFVector;
             floatVector _macroVelocities;

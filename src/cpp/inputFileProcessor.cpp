@@ -413,6 +413,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the timestamp of the micro domain at the indicated increment
+        error = extractMicroTime( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the micro timestamp" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the densities of the micro-nodes
         error = extractMicroNodeDensities( microIncrement );
 
@@ -508,6 +517,15 @@ namespace inputFileProcessor{
             bool tmpFlag;
             uIntType previousMicroIncrement = _config[ "coupling_initialization" ][ "previous_micro_increment" ].as< uIntType >( );
 
+            //Extract the previous time
+            error = extractMicroTime( previousMicroIncrement, _previousMicroTime );
+
+            if ( error ){
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous micro time" );
+                result->addNext( error );
+                return result;
+            }
+
             //Extract the micro displacements
             error = extractMicroDisplacements( previousMicroIncrement, tmpFlag, _previousMicroDisplacements );
     
@@ -564,6 +582,15 @@ namespace inputFileProcessor{
             return result;
         }
 
+        //Extract the timestamp of the macro domain at the indicated increment
+        error = extractMacroTime( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro timestamp" );
+            result->addNext( error );
+            return result;
+        }
+
         //Extract the macro displacements
         error = extractMacroDisplacements( macroIncrement );
 
@@ -604,6 +631,24 @@ namespace inputFileProcessor{
 
             bool tmpFlag;
             uIntType previousMacroIncrement = _config[ "coupling_initialization" ][ "previous_macro_increment" ].as< uIntType >( );
+
+            //Extract the previous time
+            error = extractMacroTime( previousMacroIncrement, _previousMacroTime );
+
+            if ( error ){
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous micro time" );
+                result->addNext( error );
+                return result;
+            }
+
+            if ( !vectorTools::fuzzyEquals( _microTime - _previousMicroTime, _macroTime - _previousMacroTime ) ){
+
+                return new errorNode( "initializeIncrement",
+                                      "The change in time between increments for the macro-scale and micro-scale is not consistent" );
+
+            }
+
+            _Dt = _macroTime - _previousMacroTime;
 
             //Extract the macro displacements
             error = extractMacroDispDOFVector( previousMacroIncrement, tmpFlag, _previousMacroDispDOFVector );
@@ -2547,6 +2592,14 @@ namespace inputFileProcessor{
 
     }
 
+    const floatType* inputFileProcessor::getMicroTime( ){
+        /*!
+         * Get the timestamp of the micro increment
+         */
+
+        return &_microTime;
+    }
+
     const floatVector* inputFileProcessor::getMicroDensities( ){
         /*!
          * Get a pointer to the density
@@ -2910,6 +2963,41 @@ namespace inputFileProcessor{
         else{
 
             _config[ "coupling_initialization" ][ "extract_previous_dof_values" ] = false;
+
+        }
+
+        if ( _config[ "coupling_initialization" ][ "update_displacement" ] ){
+
+            if ( _config[ "coupling_initialization" ][ "update_displacement" ].as< bool >( ) ){
+
+                if ( !_config[ "coupling_initialization" ][ "extract_previous_dof_values" ].as< bool > ( ) ){
+
+                    if ( !_config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ] ){
+
+                        return new errorNode( "checkCouplingInitialization",
+                                              "If the previous DOF values are not to be extracted and the displacement is to be updated, 'Dt' must be defined under 'update_displacement'" );
+
+                    }
+                    else{
+
+                        _Dt = _config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ].as< floatType >( );
+
+                    }
+
+                }
+                else if ( _config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ] ){
+
+                    std::cerr << "Dt is specified when the previous increment has been indicated. The Dt in the input file will be ignored";
+                    _config[ "coupling_initialization" ][ "update_displacement" ][ "Dt" ] = "NULL";
+
+                }
+
+            }
+
+        }
+        else{
+
+            _config[ "coupling_initialization" ][ "update_displacement" ] = false;
 
         }
 
@@ -3322,6 +3410,92 @@ namespace inputFileProcessor{
         return NULL;
     }
 
+    errorOut inputFileProcessor::extractMicroTime( const unsigned int &increment ){
+        /*!
+         * Extract the timestamp of the micro increment
+         *
+         * :param const unsigned int &increment: The increment at which to extract the time
+         */
+
+        errorOut error = _microscale->getIncrementTime( increment, _microTime );
+
+        if ( error ){
+            errorOut result = new errorNode( "extractMicroTime",
+                                             "Error in the extraction of the micro domain's time at increment " +
+                                             std::to_string( increment ) );
+            result->addNext( error );
+            return result;
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMicroTime( const unsigned int &increment, floatType &microTime ){
+        /*!
+         * Extract the timestamp of the micro increment
+         *
+         * :param const unsigned int &increment: The increment at which to extract the time
+         * :param floatType m&icroTime: The variable to store the micro time in
+         */
+
+        errorOut error = _microscale->getIncrementTime( increment, microTime );
+
+        if ( error ){
+            errorOut result = new errorNode( "extractMicroTime",
+                                             "Error in the extraction of the micro domain's time at increment " +
+                                             std::to_string( increment ) );
+            result->addNext( error );
+            return result;
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroTime( const unsigned int &increment ){
+        /*!
+         * Extract the timestamp of the macro increment
+         *
+         * :param const unsigned int &increment: The increment at which to extract the time
+         */
+
+        errorOut error = _macroscale->getIncrementTime( increment, _macroTime );
+
+        if ( error ){
+            errorOut result = new errorNode( "extractMacroTime",
+                                             "Error in the extraction of the macro domain's time at increment " +
+                                             std::to_string( increment ) );
+            result->addNext( error );
+            return result;
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroTime( const unsigned int &increment, floatType &macroTime ){
+        /*!
+         * Extract the timestamp of the macro increment
+         *
+         * :param const unsigned int &increment: The increment at which to extract the time
+         * :param floatType &macroTime: The variable to store the macro time in
+         */
+
+        errorOut error = _macroscale->getIncrementTime( increment, macroTime );
+
+        if ( error ){
+            errorOut result = new errorNode( "extractMacroTime",
+                                             "Error in the extraction of the macro domain's time at increment " +
+                                             std::to_string( increment ) );
+            result->addNext( error );
+            return result;
+        }
+
+        return NULL;
+
+    }
+
     errorOut inputFileProcessor::checkVolumeReconstructionInitialization( ){
         /*!
          * Check the initialization of the volume reconstruction
@@ -3448,6 +3622,14 @@ namespace inputFileProcessor{
          */
 
         return &_microDisplacements;
+    }
+
+    const floatType* inputFileProcessor::getMacroTime( ){
+        /*!
+         * Get the timestamp of the macro increment
+         */
+
+        return &_macroTime;
     }
 
     const floatVector* inputFileProcessor::getMacroDisplacements( ){
@@ -3759,6 +3941,14 @@ namespace inputFileProcessor{
 
         return &_macroReferenceMomentOfInertiaTypes;
 
+    }
+
+    const floatType* inputFileProcessor::getDt( ){
+        /*!
+         * Get the change in time for the DOF update
+         */
+
+        return &_Dt;
     }
 
 }

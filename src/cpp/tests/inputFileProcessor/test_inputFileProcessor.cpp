@@ -1006,6 +1006,36 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatType microTimeAnswer = 1.;
+    const floatType* microTimeResult = reader.getMicroTime( );
+
+    if ( !vectorTools::fuzzyEquals( microTimeAnswer, *microTimeResult ) ){
+
+        results << "test_initializeIncrement (test 64) & False\n";
+        return 1;
+
+    }
+
+    const floatType macroTimeAnswer = 1.;
+    const floatType* macroTimeResult = reader.getMacroTime( );
+
+    if ( !vectorTools::fuzzyEquals( macroTimeAnswer, *macroTimeResult ) ){
+
+        results << "test_initializeIncrement (test 65) & False\n";
+        return 1;
+
+    }
+
+    const floatType DtAnswer = 1.;
+    const floatType* DtResult = reader.getDt( );
+
+    if ( !vectorTools::fuzzyEquals( DtAnswer, *DtResult ) ){
+
+        results << "test_initializeIncrement (test 66) & False\n";
+        return 1;
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }
