@@ -5509,7 +5509,7 @@ namespace overlapCoupling{
         const floatType beta = config[ "Newmark-beta_parameters" ][ "beta" ].as< floatType >( );
 
         //Get the timestep
-        const floatType dt = _inputProcessor.getTimestep( );
+        const floatType *dt = _inputProcessor.getDt( );
 
         //Set the number of displacement degrees of freedom for each scale
         const uIntType nMicroDispDOF = _dim;
@@ -5645,10 +5645,10 @@ namespace overlapCoupling{
 
             Eigen::MatrixXd LHS;
             LHS = _L2_MASS;
-            LHS += gamma * dt * _L2_DAMPING;
+            LHS += gamma * ( *dt ) * _L2_DAMPING;
 
             RHS = _FORCE;
-            RHS -= _L2_DAMPING * ( _DotDOF + ( 1 - gamma ) * dt * _DotDotDOF_t );
+            RHS -= _L2_DAMPING * ( _DotDOF + ( 1 - gamma ) * ( *dt ) * _DotDotDOF_t );
 
             _DotDotDOF_tp1 = LHS.colPivHouseholderQr( ).solve( RHS );
         }
@@ -5656,11 +5656,11 @@ namespace overlapCoupling{
 
             SparseMatrix LHS;
             LHS = _DP_MASS;
-            LHS += gamma * dt * _DP_DAMPING;
+            LHS += gamma * ( *dt ) * _DP_DAMPING;
             LHS.makeCompressed( );
 
             RHS = _FORCE;
-            RHS -= _DP_DAMPING * ( _DotDOF + ( 1 - gamma ) * dt * _DotDotDOF_t );
+            RHS -= _DP_DAMPING * ( _DotDOF + ( 1 - gamma ) * ( *dt ) * _DotDotDOF_t );
 
             Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
             solver.compute( LHS );
@@ -5674,7 +5674,7 @@ namespace overlapCoupling{
         }
 
         //Update the free degrees of freedom
-        _DOF += dt * _DotDOF + 0.5 * ( dt * dt ) * ( ( 1 - 2 * beta ) * _DotDotDOF_t + 2 * beta * _DotDotDOF_tp1 );
+        _DOF += ( *dt ) * _DotDOF + 0.5 * ( ( *dt ) * ( *dt ) ) * ( ( 1 - 2 * beta ) * _DotDotDOF_t + 2 * beta * _DotDotDOF_tp1 );
 
         //Store the free degrees of freedom
         _updatedFreeMicroDispDOFValues = floatVector( FreeDOF.begin( ), FreeDOF.begin( ) + microOffset );
