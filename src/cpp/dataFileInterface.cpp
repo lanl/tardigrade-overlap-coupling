@@ -173,37 +173,37 @@ namespace dataFileInterface{
         return new errorNode( "readMesh", "The readMesh function is not defined" );
     }
 
-    errorOut dataFileBase::getDomainNodes( const uIntType increment, const std::string domainName, uIntVector &domainNodes ){
+    errorOut dataFileBase::getSubDomainNodes( const uIntType increment, const std::string subDomainName, uIntVector &domainNodes ){
         /*!
-         * Get the nodes in the provided domain.
+         * Get the nodes in the provided sub-domain ( node set ).
          *
          * :param const uIntType increment: The increment at which to get the domain values
-         * :param const std::string domainName: The name of the domain to be extracted.
+         * :param const std::string subDomainName: The name of the sub-domain to be extracted.
          * :param uIntVector &domainNodes: The nodes located in the domain.
          */
 
         ( void ) increment;
-        ( void ) domainName;
+        ( void ) subDomainName;
         ( void ) domainNodes;
 
-        return new errorNode( "getDomainNodes", "The getDomainNodes function is not defined" );
+        return new errorNode( "getSubDomainNodes", "The getSubDomainNodes function is not defined" );
     }
 
-    errorOut dataFileBase::getNumDomainNodes( const uIntType increment, const std::string domainName,
-                                              uIntType &numDomainNodes ){
+    errorOut dataFileBase::getNumSubDomainNodes( const uIntType increment, const std::string subDomainName,
+                                              uIntType &numSubDomainNodes ){
         /*!
-         * Get the number of nodes in the provided domain.
+         * Get the number of nodes in the provided sub-domain.
          *
          * :param const uIntType increment: The increment at which to get the domain's node count
-         * :param const std::string domainName: The name of the domain to be interrogated.
-         * :param uIntType numDomainNodes: The number of nodes in the domain
+         * :param const std::string subDomainName: The name of the sub-domain to be interrogated.
+         * :param uIntType numSubDomainNodes: The number of nodes in the domain
          */
 
         ( void ) increment;
-        ( void ) domainName;
-        ( void ) numDomainNodes;
+        ( void ) subDomainName;
+        ( void ) numSubDomainNodes;
 
-        return new errorNode( "getDomainNodes", "The getNumDomainNodes function is not defined" );
+        return new errorNode( "getNumSubDomainNodes", "The getNumSubDomainNodes function is not defined" );
     }
 
     errorOut dataFileBase::getSetNames( const uIntType increment, stringVector &setNames ){
@@ -505,13 +505,18 @@ namespace dataFileInterface{
         return new errorNode( "writeSolutionData", "Not implemented" );
     }
 
-    errorOut dataFileBase::addRootCollection( uIntType &collectionNumber ){
+    errorOut dataFileBase::addRootCollection( const std::string &collectionName, const std::string &collectionDescription,
+                                              uIntType &collectionNumber ){
         /*!
          * Add another collection to the root
          *
+         * :param const std::string &collectionName: The name of the collection
+         * :param const std::string &collectionDescription: The description of the collection
          * :param uIntType &collectionNumber: The number of the new collection
          */
 
+        ( void ) collectionName;
+        ( void ) collectionDescription;
         ( void ) collectionNumber;
 
         return new errorNode( "addRootCollection", "Not implemented" );
@@ -836,12 +841,12 @@ namespace dataFileInterface{
         
     }
 
-    errorOut XDMFDataFile::getDomainNodes( const uIntType increment, const std::string domainName, uIntVector &domainNodes ){
+    errorOut XDMFDataFile::getSubDomainNodes( const uIntType increment, const std::string subDomainName, uIntVector &domainNodes ){
         /*!
-         * Get the nodes in the given domain
+         * Get the nodes in the given sub-domain
          *
          * :param const uIntType increment: The time increment at which to get the domain's nodes
-         * :param const std::string domainName: The name of the domain
+         * :param const std::string subDomainName: The name of the sub-domain
          * :param uIntVector &domainNodes: The nodes located in the domain
          */
 
@@ -849,15 +854,15 @@ namespace dataFileInterface{
         shared_ptr< XdmfUnstructuredGrid > grid;
         errorOut error = getUnstructuredGrid( increment, grid );
         if ( error ){
-            errorOut result = new errorNode( "getDomainNodes", "Error in extraction of the grid" );
+            errorOut result = new errorNode( "getSubDomainNodes", "Error in extraction of the grid" );
             result->addNext( error );
             return result;
         }
 
         //Get the set
-        shared_ptr< XdmfSet > set = grid->getSet( domainName );
+        shared_ptr< XdmfSet > set = grid->getSet( subDomainName );
         if ( !set ){
-            return new errorNode( "getDomainNodes", "No domain of name " + domainName + " found" );
+            return new errorNode( "getSubDomainNodes", "No domain of name " + subDomainName + " found" );
         }
 
         //Required for HDF5 files
@@ -875,39 +880,39 @@ namespace dataFileInterface{
         //TODO: Add more ability to extract the nodes from non-cell entities
         else{
 
-            return new errorNode( "getDomainNodes", "The set type is not recognized. It must be Node" );
+            return new errorNode( "getSubDomainNodes", "The set type is not recognized. It must be Node" );
 
         }
 
         return NULL;
     }
 
-    errorOut XDMFDataFile::getNumDomainNodes( const uIntType increment, const std::string domainName,
-                                              uIntType &numDomainNodes ){
+    errorOut XDMFDataFile::getNumSubDomainNodes( const uIntType increment, const std::string subDomainName,
+                                              uIntType &numSubDomainNodes ){
         /*!
          * Get the number of nodes in the provided domain.
          *
          * :param const uIntType increment: The increment at which to get the domain's node count
-         * :param const std::string domainName: The name of the domain to be interrogated.
-         * :param uIntType numDomainNodes: The number of nodes in the domain
+         * :param const std::string subDomainName: The name of the domain to be interrogated.
+         * :param uIntType numSubDomainNodes: The number of nodes in the domain
          */
 
         //Get the grid
         shared_ptr< XdmfUnstructuredGrid > grid;
         errorOut error = getUnstructuredGrid( increment, grid );
         if ( error ){
-            errorOut result = new errorNode( "getDomainNodes", "Error in extraction of the grid" );
+            errorOut result = new errorNode( "getSubDomainNodes", "Error in extraction of the grid" );
             result->addNext( error );
             return result;
         }
 
         //Get the set
-        shared_ptr< XdmfSet > set = grid->getSet( domainName );
+        shared_ptr< XdmfSet > set = grid->getSet( subDomainName );
         if ( !set ){
-            return new errorNode( "getDomainNodes", "No domain of name " + domainName + " found" );
+            return new errorNode( "getSubDomainNodes", "No domain of name " + subDomainName + " found" );
         }
 
-        numDomainNodes = set->getSize( );
+        numSubDomainNodes = set->getSize( );
 
         return NULL;
 
@@ -1298,8 +1303,33 @@ namespace dataFileInterface{
         //Write out the data
         _domain->accept( _writer );
 
-        return new errorNode( "writeIncrementMeshData", "Not implemented" );
+        return NULL;
 
+    }
+
+    errorOut XDMFDataFile::addRootCollection( const std::string &collectionName, const std::string &collectionDescription,
+                                              uIntType &collectionNumber ){
+        /*!
+         * Add another collection to the root. This is currently assumed to be a temporal collection
+         *
+         * :param const std::string &collectionName: The name of the collection
+         * :param const std::string &collectionDescription: The description of the collection
+         * :param uIntType &collectionNumber: The number of the new collection
+         */
+
+        //Create the main temporal collection
+        shared_ptr< XdmfGridCollection > _gridHolder = XdmfGridCollection::New( );
+        _gridHolder->setType( XdmfGridCollectionType::Temporal( ) );
+        shared_ptr< XdmfInformation > _holderInfo
+            = XdmfInformation::New( collectionName, collectionDescription );
+        _gridHolder->insert( _holderInfo );
+        _domain->insert( _gridHolder );
+
+        _domain->accept( _writer );
+
+        collectionNumber = _domain->getNumberGridCollections( );
+
+        return NULL;
     }
 
 }

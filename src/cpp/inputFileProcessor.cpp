@@ -281,7 +281,7 @@ namespace inputFileProcessor{
         for ( auto setName = _free_micro_surface_sets.begin(); setName != _free_micro_surface_sets.end(); setName++ ){
 
             //Get the surface set
-            error = _microscale->getDomainNodes( increment, *setName, setNodes );
+            error = _microscale->getSubDomainNodes( increment, *setName, setNodes );
 
             if ( error ){
                 errorOut result = new errorNode( "setMicroNodeWeights",
@@ -303,7 +303,7 @@ namespace inputFileProcessor{
         for ( auto setName = _ghost_micro_surface_sets.begin(); setName != _ghost_micro_surface_sets.end(); setName++ ){
 
             //Get the surface set
-            error = _microscale->getDomainNodes( increment, *setName, setNodes );
+            error = _microscale->getSubDomainNodes( increment, *setName, setNodes );
 
             if ( error ){
                 errorOut result = new errorNode( "setMicroNodeWeights",
@@ -326,7 +326,7 @@ namespace inputFileProcessor{
               setName != _non_overlapped_micro_surface_sets.end(); setName++ ){
 
             //Get the surface set
-            error = _microscale->getDomainNodes( increment, *setName, setNodes );
+            error = _microscale->getSubDomainNodes( increment, *setName, setNodes );
 
             if ( error ){
                 errorOut result = new errorNode( "setMicroNodeWeights",
@@ -3039,7 +3039,7 @@ namespace inputFileProcessor{
                    domain != domainNames.end( );
                    domain++ ){
 
-            dataFile->getNumDomainNodes( increment, *domain, n );
+            dataFile->getNumSubDomainNodes( increment, *domain, n );
             approximateSize += n;
 
         }
@@ -3055,7 +3055,7 @@ namespace inputFileProcessor{
                    domain != domainNames.end( );
                    domain++ ){
 
-            error = dataFile->getDomainNodes( increment, *domain, nodes );
+            error = dataFile->getSubDomainNodes( increment, *domain, nodes );
 
             if ( error ){
 
@@ -3146,7 +3146,7 @@ namespace inputFileProcessor{
                    domain != _non_overlapped_micro_surface_sets.end( );
                    domain++ ){
 
-            _microscale->getNumDomainNodes( increment, *domain, n );
+            _microscale->getNumSubDomainNodes( increment, *domain, n );
             numNodes += n;
 
         }
@@ -3321,7 +3321,7 @@ namespace inputFileProcessor{
                    domain != _ghost_macro_volume_sets.end( );
                    domain++ ){
 
-            _macroscale->getNumDomainNodes( increment, *domain, n );
+            _macroscale->getNumSubDomainNodes( increment, *domain, n );
             numNodes += n;
 
         }

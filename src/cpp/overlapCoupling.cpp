@@ -300,7 +300,7 @@ namespace overlapCoupling{
                 nMicroDomains = ( *freeMacroCellMicroDomainCounts )[ cellIndex ];
 
                 //Get the macro-node set
-                error = _inputProcessor._macroscale->getDomainNodes( macroIncrement, ( *freeMacroDomainNames )[ cellIndex ], macroNodes );
+                error = _inputProcessor._macroscale->getSubDomainNodes( macroIncrement, ( *freeMacroDomainNames )[ cellIndex ], macroNodes );
 
                 if ( error ){
 
@@ -355,7 +355,7 @@ namespace overlapCoupling{
                 nMicroDomains = ( *ghostMacroCellMicroDomainCounts )[ cellIndex ];
 
                 //Get the macro-node set
-                error = _inputProcessor._macroscale->getDomainNodes( macroIncrement, ( *ghostMacroDomainNames )[ cellIndex ], macroNodes );
+                error = _inputProcessor._macroscale->getSubDomainNodes( macroIncrement, ( *ghostMacroDomainNames )[ cellIndex ], macroNodes );
 
                 if ( error ){
 
@@ -547,7 +547,7 @@ namespace overlapCoupling{
             nMicroDomains = ( *ghostMacroCellMicroDomainCounts )[ cellIndex ];
 
             //Get the macro-node set
-            error = _inputProcessor._macroscale->getDomainNodes( macroIncrement, ( *ghostMacroDomainNames )[ cellIndex ], macroNodes );
+            error = _inputProcessor._macroscale->getSubDomainNodes( macroIncrement, ( *ghostMacroDomainNames )[ cellIndex ], macroNodes );
 
             if ( error ){
 
@@ -670,7 +670,7 @@ namespace overlapCoupling{
 
         //Get the domain node ids
         uIntVector domainNodes;
-        error = _inputProcessor._microscale->getDomainNodes( microIncrement, domainName, domainNodes );
+        error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, domainName, domainNodes );
 
         if ( error ){
             errorOut result = new errorNode( "processDomainReference",
@@ -728,7 +728,7 @@ namespace overlapCoupling{
         //Get the domain's nodes
         uIntVector domainNodes;
 
-        errorOut error = _inputProcessor._microscale->getDomainNodes( microIncrement, domainName, domainNodes );
+        errorOut error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, domainName, domainNodes );
 
         if ( error ){
 
@@ -811,7 +811,7 @@ namespace overlapCoupling{
         //Get the domain's nodes
         uIntVector domainNodes;
 
-        error = _inputProcessor._microscale->getDomainNodes( microIncrement, domainName, domainNodes );
+        error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, domainName, domainNodes );
 
         if ( error ){
 
@@ -900,7 +900,7 @@ namespace overlapCoupling{
 
         for ( auto name = freeDomains->begin( ); name != freeDomains->end( ); name++ ){
 
-            error = _inputProcessor._microscale->getDomainNodes( microIncrement, *name, domainNodes );
+            error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, *name, domainNodes );
 
             if ( error ){
 
@@ -943,7 +943,7 @@ namespace overlapCoupling{
 
         for ( auto name = ghostDomains->begin( ); name != ghostDomains->end( ); name++ ){
 
-            error = _inputProcessor._microscale->getDomainNodes( microIncrement, *name, domainNodes );
+            error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, *name, domainNodes );
 
             if ( error ){
 
@@ -1779,7 +1779,7 @@ namespace overlapCoupling{
 
         //Get the domain node ids
         uIntVector domainNodes;
-        errorOut error = _inputProcessor._microscale->getDomainNodes( microIncrement, domainName, domainNodes );
+        errorOut error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, domainName, domainNodes );
 
         if ( error ){
 
@@ -2180,7 +2180,7 @@ namespace overlapCoupling{
          */
 
         //Get the domain node ids
-        errorOut error = _inputProcessor._microscale->getDomainNodes( microIncrement, microDomainName, microDomainNodes );
+        errorOut error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, microDomainName, microDomainNodes );
 
         if ( error ){
 

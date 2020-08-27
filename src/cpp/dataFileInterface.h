@@ -95,10 +95,10 @@ namespace dataFileInterface{
             virtual errorOut getNumIncrements( uIntType &numIncrements ); //Required overload
             virtual errorOut getNumNodes( const uIntType increment, uIntType &numNodes ); //Required overload
             virtual errorOut readMesh( const uIntType increment, floatVector &nodalPositions ); //Required overload
-            virtual errorOut getDomainNodes( const uIntType increment, const std::string domainName,
-                                             uIntVector &domainNodes ); //Required overload
-            virtual errorOut getNumDomainNodes( const uIntType increment, const std::string domainName,
-                                                uIntType &numDomainNodes ); //Required overload
+            virtual errorOut getSubDomainNodes( const uIntType increment, const std::string subDomainName,
+                                                uIntVector &domainNodes ); //Required overload
+            virtual errorOut getNumSubDomainNodes( const uIntType increment, const std::string subDomainName,
+                                                   uIntType &numDomainNodes ); //Required overload
             virtual errorOut getSetNames( const uIntType increment, stringVector &setNames ); //Required overload
             virtual errorOut getSolutionData( const uIntType increment, const std::string &dataName, const std::string &dataType,
                                               floatVector &data ); //Required overload
@@ -112,7 +112,10 @@ namespace dataFileInterface{
 
             virtual errorOut initializeIncrement( const floatType time, const uIntType &reference_increment,
                                                   const uIntType &collectionNumber, uIntType &increment );
-            virtual errorOut addRootCollection( uIntType &collectionNumber );
+
+            virtual errorOut addRootCollection( const std::string &collectionName, const std::string &collectionDescription,
+                                                uIntType &collectionNumber );
+
             virtual errorOut writeIncrementMeshData( const uIntType increment, const uIntType collectionNumber,
                                                      const uIntVector &nodeIds, const uIntMatrix &nodeSets,
                                                      const stringVector &nodeSetNames, const floatVector &nodePositions,
@@ -153,10 +156,10 @@ namespace dataFileInterface{
             errorOut getNumIncrements( uIntType &numIncrements );
             errorOut getNumNodes( const uIntType increment, uIntType &numNodes );
             errorOut readMesh( const uIntType increment, floatVector &nodalPositions );
-            errorOut getDomainNodes( const uIntType increment, const std::string domainName,
-                                     uIntVector &domainNodes );
-            errorOut getNumDomainNodes( const uIntType increment, const std::string domainName,
-                                        uIntType &numDomainNodes );
+            errorOut getSubDomainNodes( const uIntType increment, const std::string subDomainName,
+                                        uIntVector &domainNodes );
+            errorOut getNumSubDomainNodes( const uIntType increment, const std::string subDomainName,
+                                           uIntType &numDomainNodes );
             errorOut getSetNames( const uIntType increment, stringVector &setNames );
             errorOut getSolutionData( const uIntType increment, const std::string &dataName, const std::string &dataType,
                                       floatVector &data );
@@ -166,6 +169,8 @@ namespace dataFileInterface{
 
             errorOut initializeIncrement( const floatType time, const uIntType &reference_increment,
                                           const uIntType &collectionNumber, uIntType &increment );
+            errorOut addRootCollection( const std::string &collectionName, const std::string &collectionDescription,
+                                        uIntType &collectionNumber );
             errorOut writeIncrementMeshData( const uIntType increment, const uIntType collectionNumber, 
                                              const uIntVector &nodeIds, const uIntMatrix &nodeSets,
                                              const stringVector &nodeSetNames, const floatVector &nodePositions,

@@ -155,7 +155,7 @@ int test_overlapCoupling_getReferenceFreeMicroDomainMasses( std::ofstream &resul
     }
 
     floatVector referenceFreeMicroDomainMassesAnswer = { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
-    referenceFreeMicroDomainMassesAnswer *= 2000;
+    referenceFreeMicroDomainMassesAnswer *= 2;
 
     const floatVector *referenceFreeMicroDomainMassesResult = oc.getReferenceFreeMicroDomainMasses( );
 
@@ -196,7 +196,7 @@ int test_overlapCoupling_getReferenceGhostMicroDomainMasses( std::ofstream &resu
     }
 
     floatVector referenceGhostMicroDomainMassesAnswer = { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
-    referenceGhostMicroDomainMassesAnswer *= 2000;
+    referenceGhostMicroDomainMassesAnswer *= 2;
 
     const floatVector *referenceGhostMicroDomainMassesResult = oc.getReferenceGhostMicroDomainMasses( );
 
@@ -1105,19 +1105,19 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-//    test_overlapCoupling_constructor( results );
-//    test_overlapCoupling_initializeCoupling( results );
+    test_overlapCoupling_constructor( results );
+    test_overlapCoupling_initializeCoupling( results );
     test_overlapCoupling_processIncrement( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
-//    test_MADOutlierDetection( results );
-//    test_formMicromorphicElementMassMatrix( results );
-//    test_computeMicromorphicElementRequiredValues( results );
-//    test_computeMicromorphicElementInternalForceVector( results );
+    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+    test_MADOutlierDetection( results );
+    test_formMicromorphicElementMassMatrix( results );
+    test_computeMicromorphicElementRequiredValues( results );
+    test_computeMicromorphicElementInternalForceVector( results );
 
     //Close the results file
     results.close();
