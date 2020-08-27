@@ -444,7 +444,7 @@ namespace dataFileInterface{
         return;
     }
 
-    XDMFDataFile::XDMFDataFile( const YAML::Node &configuration ) : dataFileBase( configuration ){
+    XDMFDataFile::XDMFDataFile( YAML::Node configuration ) : dataFileBase( configuration ){
         /*!
          * The XDMFDataFile constructor with a YAML node
          *
@@ -454,6 +454,9 @@ namespace dataFileInterface{
         //Initialize Readmode if required
         if ( _mode.compare( "read" ) == 0 ){
             _initializeReadMode( );
+        }
+        if ( _mode.compare( "write" ) == 0 ){
+            _initializeWriteMode( configuration );
         }
         if ( _error ){
             return;
@@ -479,6 +482,95 @@ namespace dataFileInterface{
         catch( XdmfError &e ){
             _error = new errorNode( "XDMFDataFile", e.what() );
         }
+    }
+
+    void XDMFDataFile::_initializeWriteMode( YAML::Node &configuration ){
+        /*!
+         * Initialize the write mode for the XDMF file-type
+         *
+         * :param YAML::Node &configuration: The configuration file
+         */
+
+        //Try to extract configuration information
+
+        std::string domainName   = "DOMAIN";
+        std::string domainString = "Default domain name for micromorphic overlap coupling / filter output";
+
+
+        if ( configuration [ "domain_name" ] ){
+
+            try{
+
+                domainName = configuration[ "domain_name" ].as< std::string >( );
+
+            }
+            catch( std::exception &e ){
+
+                std::string output = "Error in YAML file for the output domain name: ";
+                output += e.what( );
+                _error = new errorNode( "XDMFDataFile", output );
+
+            }
+
+        }
+        else{
+
+            configuration [ "domain_name" ] = domainName;
+
+        }
+
+        if ( configuration [ "domain_string" ] ){
+
+            try{
+
+                domainName = configuration[ "domain_string" ].as< std::string >( );
+
+            }
+            catch( std::exception &e ){
+
+                std::string output = "Error in YAML file for the output domain string: ";
+                output += e.what( );
+                _error = new errorNode( "XDMFDataFile", output );
+
+            }
+
+        }
+        else{
+
+            configuration[ "domain_string" ] = domainString;
+
+        }
+
+        //Initialize the XDMF domain
+        _domain = XdmfDomain::New( );
+        shared_ptr< XdmfInformation > domaininfo = XdmfInformation::New( domainName, domainString );
+        _domain->insert( domaininfo );
+
+        //Create the main temporal collection
+        shared_ptr< XdmfGridCollection > _gridHolder = XdmfGridCollection::New( );
+        _gridHolder->setType( XdmfGridCollectionType::Temporal( ) );
+        shared_ptr< XdmfInformation > _holderInfo = XdmfInformation::New( "Main_Temporal_Collection", "The main temporal ( or iteration ) collection" );
+        _gridHolder->insert( _holderInfo );
+        _domain->insert( _gridHolder );
+
+        try{
+
+            shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+            heavyWriter->setReleaseData( true );
+            _writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+            _domain->accept( _writer );
+
+        }
+        catch( XdmfError &e ){
+
+            std::string output = "Error in forming the XDMF writer: ";
+            output += e.what( );
+            _error = new errorNode( "XDMFDataFile", output );
+
+        }
+
+        return;
+
     }
 
     errorOut XDMFDataFile::getNumIncrements( uIntType &numIncrements ){

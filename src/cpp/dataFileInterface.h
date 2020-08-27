@@ -133,7 +133,7 @@ namespace dataFileInterface{
         public:
             //Constructors
             XDMFDataFile( );
-            XDMFDataFile( const YAML::Node &configuration );
+            XDMFDataFile( YAML::Node configuration );
 
             //Overloads
             errorOut getIncrementTime( const uIntType &increment, floatType &time );
@@ -159,6 +159,7 @@ namespace dataFileInterface{
 
             //Functions
             void _initializeReadMode( );
+            void _initializeWriteMode( YAML::Node &configuration );
 
             errorOut getXDMFGridCollection( const uIntType gridCollectionNum,
                                             shared_ptr< XdmfGridCollection > &_gridHolder );
