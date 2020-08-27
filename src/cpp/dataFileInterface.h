@@ -122,9 +122,9 @@ namespace dataFileInterface{
                                                      const stringVector &nodeSetNames, const floatVector &nodePositions,
                                                      const uIntVector &elementIds, const uIntMatrix &elementSets,
                                                      const stringVector &elementSetNames, const uIntVector &connectivity ); //Required overload
-            virtual errorOut writeSolutionData( const uIntType increment, const uIntType collectionNumber,
-                                                const std::string &dataName, const std::string &dataType,
-                                                const floatVector &data );
+            virtual errorOut writeScalarSolutionData( const uIntType increment, const uIntType collectionNumber,
+                                                      const std::string &dataName, const std::string &dataType,
+                                                      const floatVector &data );
 
             errorOut _error;
             std::string _filename;
@@ -178,6 +178,9 @@ namespace dataFileInterface{
                                              const stringVector &nodeSetNames, const floatVector &nodePositions,
                                              const uIntVector &elementIds, const uIntMatrix &elementSets,
                                              const stringVector &elementSetNames, const uIntVector &connectivity );
+            errorOut writeScalarSolutionData( const uIntType increment, const uIntType collectionNumber,
+                                              const std::string &dataName, const std::string &dataType,
+                                              const floatVector &data );
 
         private:
             //Interface Attributes

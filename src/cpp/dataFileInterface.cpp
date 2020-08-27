@@ -501,9 +501,9 @@ namespace dataFileInterface{
         return new errorNode( "writeIncrementMeshData", "Not implemented" );
     }
 
-    errorOut dataFileBase::writeSolutionData( const uIntType increment, const uIntType collectionNumber,
-                                              const std::string &dataName, const std::string &dataType,
-                                              const floatVector &data ){
+    errorOut dataFileBase::writeScalarSolutionData( const uIntType increment, const uIntType collectionNumber,
+                                                    const std::string &dataName, const std::string &dataType,
+                                                    const floatVector &data ){
         /*!
          * Write the given increment's solution data to the file
          *
@@ -520,7 +520,7 @@ namespace dataFileInterface{
         ( void ) dataType;
         ( void ) data;
 
-        return new errorNode( "writeSolutionData", "Not implemented" );
+        return new errorNode( "writeScalarSolutionData", "Not implemented" );
     }
 
     errorOut dataFileBase::addRootCollection( const std::string &collectionName, const std::string &collectionDescription,
@@ -1189,7 +1189,7 @@ namespace dataFileInterface{
          * :param const uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
          */
 
-        if ( _domain->getGridCollection( 0 )->getNumberUnstructuredGrids( ) < increment ){
+        if ( _domain->getGridCollection( collectionNumber )->getNumberUnstructuredGrids( ) < increment ){
 
             return new errorNode( "writeIncrementMeshData",
                                   "The increment to write increment to ( " + std::to_string( increment ) +
@@ -1387,6 +1387,76 @@ namespace dataFileInterface{
 
             return new errorNode( "getNodeIds", outstr );
         }
+
+        return NULL;
+
+    }
+
+    errorOut XDMFDataFile::writeScalarSolutionData( const uIntType increment, const uIntType collectionNumber,
+                                                    const std::string &dataName, const std::string &dataType,
+                                                    const floatVector &data ){
+        /*!
+         * Write the given increment's solution data to the file
+         *
+         * :param const uIntType increment: The increment to write the solution data to
+         * :param const uInttype collectionNumber: The temporal collection to write the data to
+         * :param const std::string &dataName: The name of the data
+         * :param const std::string &dataType: The type of data ( "Node" or "Cell" )
+         * :param const floatVector &data: The data to write
+         */
+
+        if ( _domain->getNumberGridCollections( ) <= collectionNumber ){
+
+            return new errorNode( "writeScalarSolutionData",
+                                  "The collection number " + std::to_string( collectionNumber ) +
+                                  " is larger than the number of collections" );
+
+        }
+
+        if ( _domain->getGridCollection( collectionNumber )->getNumberUnstructuredGrids( ) <= increment ){
+
+            return new errorNode( "writeScalarSolutionData",
+                                  "The increment number " + std::to_string( increment ) +
+                                  " is larger than the number of increments defined in collection " +
+                                  std::to_string( collectionNumber ) );
+
+        }
+
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        _domain->getGridCollection( collectionNumber )->getUnstructuredGrid( increment );
+
+        shared_ptr< XdmfAttribute > solutionVector = XdmfAttribute::New( );
+        solutionVector->setType( XdmfAttributeType::Scalar( ) );
+        solutionVector->setName( dataName );
+
+        if ( dataType.compare( "Node" ) == 0 ){
+
+            solutionVector->setCenter( XdmfAttributeCenter::Node( ) );
+
+        }
+        else if ( dataType.compare( "Cell" ) == 0 ){
+
+            solutionVector->setCenter( XdmfAttributeCenter::Cell( ) );
+
+        }
+        else{
+
+            std::string outstr = "data type ";
+            outstr += dataType;
+            outstr += " is not recognized";
+            return new errorNode( "writeScalarSolutionData", outstr );
+
+        }
+
+        solutionVector->insert( 0, data.data( ), data.size( ), 1, 1 );
+
+        shared_ptr< XdmfInformation > solutionVectorInformation = XdmfInformation::New( dataName, "Quantity " + dataName );
+
+        solutionVector->insert( solutionVectorInformation );
+
+        grid->insert( solutionVector );
+
+        _domain->accept( _writer );
 
         return NULL;
 
