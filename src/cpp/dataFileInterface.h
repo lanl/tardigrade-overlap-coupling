@@ -38,6 +38,7 @@ namespace dataFileInterface{
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
     typedef unsigned int uIntType;
     typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
+    typedef std::vector< uIntVector > uIntMatrix; //!Define a matrix of unsigned ints
     typedef std::vector< std::string > stringVector; //!Define a vector of strings
 
     //XDMF Cell Node Counts
@@ -109,6 +110,17 @@ namespace dataFileInterface{
                                           floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
                                           uIntType &cellCounts ); //Required overload
 
+            virtual errorOut initializeIncrement( const floatType time, const uIntType &reference_increment, uIntType &increment );
+            virtual errorOut addRootCollection( uIntType &collectionNumber );
+            virtual errorOut writeIncrementMeshData( const uIntType increment, const uIntType collectionNumber,
+                                                     const uIntVector &nodeIds, const uIntMatrix &nodeSets,
+                                                     const stringVector &nodeSetNames, const floatVector &nodePositions,
+                                                     const uIntVector &elementIds, const uIntMatrix &elementSets,
+                                                     const stringVector &elementSetNames, const uIntVector &connectivity ); //Required overload
+            virtual errorOut writeSolutionData( const uIntType increment, const uIntType collectionNumber,
+                                                const std::string &dataName, const std::string &dataType,
+                                                const floatVector &data );
+
             errorOut _error;
             std::string _filename;
             std::string _mode;
@@ -151,11 +163,20 @@ namespace dataFileInterface{
                                   floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
                                   uIntType &cellCounts );
 
+            errorOut initializeIncrement( const floatType time, const uIntType &reference_increment, uIntType &increment );
+            errorOut writeIncrementMeshData( const uIntType increment, const uIntType collectionNumber, 
+                                             const uIntVector &nodeIds, const uIntMatrix &nodeSets,
+                                             const stringVector &nodeSetNames, const floatVector &nodePositions,
+                                             const uIntVector &elementIds, const uIntMatrix &elementSets,
+                                             const stringVector &elementSetNames, const uIntVector &connectivity );
+
         private:
             //Interface Attributes
             shared_ptr< XdmfReader > _reader;
             shared_ptr< XdmfWriter > _writer;
             shared_ptr< XdmfDomain > _domain;
+
+            uIntVector _increment_reference_grids;
 
             //Functions
             void _initializeReadMode( );

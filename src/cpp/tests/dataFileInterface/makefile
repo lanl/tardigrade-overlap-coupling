@@ -32,8 +32,6 @@ ifeq ($(METHOD),oprof)
 endif
 
 INC+=-I../..
-$(info $$LIB is [${LIB}])
-$(info $$INC is [${INC}])
 # Makefile rules
 all: $(EXECUTABLE)
 

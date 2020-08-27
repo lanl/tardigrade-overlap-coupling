@@ -427,6 +427,93 @@ namespace dataFileInterface{
         return NULL;
     }
 
+    errorOut dataFileBase::initializeIncrement( const floatType time, const uIntType &reference_increment, uIntType &increment ){
+        /*!
+         * Initialize a new increment
+         *
+         * :param const floatType time: The increment's time
+         * :param const uIntType &reference_increment: The reference increment for the current increment
+         * :param uIntType &increment: The initialized increment's number
+         */
+
+        ( void ) time;
+        ( void ) reference_increment;
+        ( void ) increment;
+
+        return new errorNode( "initializeIncrement", "Not implemented" );
+
+    }
+
+    errorOut dataFileBase::writeIncrementMeshData( const uIntType increment, const uIntType collectionNumber,
+                                                   const uIntVector &nodeIds, const uIntMatrix &nodeSets,
+                                                   const stringVector &nodeSetNames, const floatVector &nodePositions,
+                                                   const uIntVector &elementIds, const uIntMatrix &elementSets,
+                                                   const stringVector &elementSetNames, const uIntVector &connectivity ){
+        /*!
+         * Write the given increment's mesh data to the file.
+         *
+         * :param const uIntType increment: The increment at which to write the mesh data
+         * :param const uIntType collectionNumber: The collection number within which to write the mesh data
+         *     This is zero if only one "collection" of increments is available. If there are multiple 
+         *     collections of data which contain meshes which can be evolving over time there will be more.
+         * :param const uIntVector &nodeIds: The global node ids
+         * :param const uIntMatrix &nodeSets: The global node ids in the nodesets ( node set, global node ids )
+         * :param const stringVector &nodeSetNames: The names of the nodesets
+         * :param const floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
+         * :param const uIntVector &elementIds: The global Id numbers of the element
+         * :param const uIntMatrix &elementSets: The global element ids in the element sets ( element set, global element ids )
+         * :param const stringVector &elementSetNames: The names of the element sets
+         * :param const uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
+         */
+
+        ( void ) increment;
+        ( void ) collectionNumber;
+        ( void ) nodeIds;
+        ( void ) nodeSets;
+        ( void ) nodeSetNames;
+        ( void ) nodePositions;
+        ( void ) elementIds;
+        ( void ) elementSets;
+        ( void ) elementSetNames;
+        ( void ) connectivity;
+
+        return new errorNode( "writeIncrementMeshData", "Not implemented" );
+    }
+
+    errorOut dataFileBase::writeSolutionData( const uIntType increment, const uIntType collectionNumber,
+                                              const std::string &dataName, const std::string &dataType,
+                                              const floatVector &data ){
+        /*!
+         * Write the given increment's solution data to the file
+         *
+         * :param const uIntType increment: The increment to write the solution data to
+         * :param const uInttype collectionNumber: The temporal collection to write the data to
+         * :param const std::string &dataName: The name of the data
+         * :param const std::string &dataType: The type of data ( Node or Cell )
+         * :param const floatVector &data: The data to write
+         */
+
+        ( void ) increment;
+        ( void ) collectionNumber;
+        ( void ) dataName;
+        ( void ) dataType;
+        ( void ) data;
+
+        return new errorNode( "writeSolutionData", "Not implemented" );
+    }
+
+    errorOut dataFileBase::addRootCollection( uIntType &collectionNumber ){
+        /*!
+         * Add another collection to the root
+         *
+         * :param uIntType &collectionNumber: The number of the new collection
+         */
+
+        ( void ) collectionNumber;
+
+        return new errorNode( "addRootCollection", "Not implemented" );
+    }
+
     /*=========================================================================
     |                               XDMFDataFile                              |
     =========================================================================*/
@@ -930,7 +1017,7 @@ namespace dataFileInterface{
          * :param floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
          * :param uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
          *     Note the order that the elements appear in the vector are assumed to be their cell Ids starting at zero
-         * :param uIntVector &connectivityCellIndices: The indicices at which a new cell is defined in the connectivity vector.
+         * :param uIntVector &connectivityCellIndices: The indices at which a new cell is defined in the connectivity vector.
          * :param uIntType &cellCounts: The number of cells present.
          */
 
@@ -1018,6 +1105,193 @@ namespace dataFileInterface{
 
         return NULL;
             
+    }
+
+    errorOut XDMFDataFile::initializeIncrement( const floatType time, const uIntType &reference_increment, uIntType &increment ){
+        /*!
+         * Initialize a new increment
+         *
+         * :param const floatType time: The increment's time
+         * :param const uIntType &reference_increment: The reference increment for the current increment
+         * :param uIntType &increment: The initialized increment's number
+         */
+
+        //Initialize the grid
+        shared_ptr< XdmfUnstructuredGrid > grid = XdmfUnstructuredGrid::New( );
+
+        //Write the timestamp information
+        shared_ptr< XdmfTime > untime = XdmfTime::New( time );
+        shared_ptr< XdmfInformation > untimeinfo = XdmfInformation::New( "Time", "This is the current value of the timestep" );
+        untime->insert( untimeinfo );
+        grid->setTime( untime );
+
+        //Store the grid in the collection
+        shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( 0 ); //TODO: This should be verified to be general enough
+        collection->insert( grid );
+        _domain->accept( _writer );
+
+        //Set the reference increment
+        _increment_reference_grids.push_back( reference_increment );
+
+        increment  = _increment_reference_grids.size( ) - 1;
+
+        return NULL;
+    }
+
+    errorOut XDMFDataFile::writeIncrementMeshData( const uIntType increment, const uIntType collectionNumber,
+                                                   const uIntVector &nodeIds, const uIntMatrix &nodeSets,
+                                                   const stringVector &nodeSetNames, const floatVector &nodePositions,
+                                                   const uIntVector &elementIds, const uIntMatrix &elementSets,
+                                                   const stringVector &elementSetNames, const uIntVector &connectivity ){
+        /*!
+         * Write the given increment's mesh data to the file. ( only works for 3D data )
+         *
+         * :param const uIntType increment: The increment at which to write the mesh data
+         * :param const uIntType collectionNumber: The collection number to store the increment in
+         * :param const uIntVector &nodeIds: The global node ids
+         * :param const uIntMatrix &nodeSets: The global node ids of the nodesets ( n sets, n nodes in set )
+         * :param const stringVector &nodeSetNames: The names of the nodesets
+         * :param const floatVector &nodePositions: The node positions in the format [ x1, y1, z1, x2, y2, z2, ... ]
+         * :param const uIntVector &elementIds: The global element id numbers
+         * :param const uIntMatrix &elementSets: The global element ids in the element sets ( element set, global element ids )
+         * :param const stringVector &elementSetNames: The names of the element sets
+         * :param const uIntVector &connectivity: The connectivity description in XDMF format [ element_type_1, ..., element_type_2, ..., ]
+         */
+
+        if ( _domain->getGridCollection( 0 )->getNumberUnstructuredGrids( ) < increment ){
+
+            return new errorNode( "writeIncrementMeshData",
+                                  "The increment to write increment to ( " + std::to_string( increment ) +
+                                  " ) is not defined in the XDMF data file" );
+
+        }
+
+        if ( _increment_reference_grids.size( ) <= increment ){
+
+            return new errorNode( "writeIncrementMeshData",
+                                  "The increment to write increment to ( " + std::to_string( increment ) +
+                                  " ) is larger than the increment reference grids vector can allow" );
+
+        }
+
+        if ( nodeSets.size( ) != nodeSetNames.size( ) ){
+
+            return new errorNode( "writeIncrementMeshData",
+                                  "The size of the node sets vector and the node set names vector are not the same size" );
+
+        }
+
+        const uIntType _reference_increment = _increment_reference_grids[ increment ];
+
+        //Construct the output grid
+        shared_ptr< XdmfUnstructuredGrid > grid = _domain->getGridCollection( collectionNumber )->getUnstructuredGrid( increment );
+
+        //If the reference increment is not the current increment, we don't need to write out the mesh
+        //but can point to the old mesh
+
+        if ( _reference_increment != increment ){
+
+            //Point the new grid to the current reference gitd's geometry, topology, and ids
+            shared_ptr< XdmfUnstructuredGrid > reference_grid
+                = _domain->getGridCollection( 0 )->getUnstructuredGrid( _reference_increment );
+
+            //Reference the geometry and topology to the previous grid
+            grid->setGeometry( reference_grid->getGeometry( ) );
+            grid->setTopology( reference_grid->getTopology( ) );
+
+            //Get the Node and Element ID references
+            grid->insert( reference_grid->getAttribute( "NODEID" ) );
+            grid->insert( reference_grid->getAttribute( "ELEMID" ) );
+
+            //Get the nodesets
+            for ( unsigned int i = 0; i < reference_grid->getNumberSets( ); i++ ){
+                grid->insert( reference_grid->getSet( i ) );
+            }
+
+            //Write the grid to the file
+            shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber ); //TODO: This should be verified to be general enough
+            collection->insert( grid );
+            _domain->accept( _writer );
+
+        }
+
+        //Save the node id information
+        shared_ptr< XdmfAttribute > _nodeIds = XdmfAttribute::New( );
+        _nodeIds->setType( XdmfAttributeType::GlobalId( ) );
+        _nodeIds->setCenter( XdmfAttributeCenter::Node( ) );
+        _nodeIds->setName( "NODEID" );
+        _nodeIds->insert( 0, nodeIds.data( ), nodeIds.size( ), 1, 1 );
+        shared_ptr< XdmfInformation > nodeIdsInfo = XdmfInformation::New( "ID", "The nodal IDs" );
+        _nodeIds->insert( nodeIdsInfo );
+        grid->insert( _nodeIds );
+
+        //Save the nodesets
+        std::vector< shared_ptr< XdmfSet > > XdmfNodeSets( nodeSets.size( ) );
+
+        for ( auto it = nodeSets.begin( ); it != nodeSets.end( ); it++ ){
+
+            unsigned int index = it - nodeSets.begin( );
+
+            XdmfNodeSets[ index ] = XdmfSet::New( );
+            XdmfNodeSets[ index ]->setType( XdmfSetType::Node( ) );
+            XdmfNodeSets[ index ]->setName( nodeSetNames[ index ] );
+            XdmfNodeSets[ index ]->insert( 0, nodeSets[ index ].data( ), nodeSets[ index ].size( ), 1, 1 );
+            grid->insert( XdmfNodeSets[ index ] );
+
+        }
+
+        //Save the nodal coordinates
+        shared_ptr< XdmfGeometry > nodeGeometry = XdmfGeometry::New( );
+        nodeGeometry->setType( XdmfGeometryType::XYZ( ) );
+        nodeGeometry->setName( "Coordinates" );
+        nodeGeometry->insert( 0, nodePositions.data( ), nodePositions.size( ), 1, 1 );
+        shared_ptr< XdmfInformation > nodeGeometryInfo = XdmfInformation::New( "Coordinates", "Coordinates of the nodes in x1, y1, z1, x2, ... format " );
+        nodeGeometry->insert( nodeGeometryInfo );
+        grid->setGeometry( nodeGeometry );
+
+        //Set the topology
+        shared_ptr< XdmfTopology > topology = XdmfTopology::New( );
+        topology->setType( XdmfTopologyType::Mixed( ) );
+        topology->setName( "Topology" );
+        topology->insert( 0, connectivity.data( ), connectivity.size( ), 1, 1 );
+        grid->setTopology( topology );
+
+        //Set the element ID numbers
+        shared_ptr< XdmfAttribute > _elementIds = XdmfAttribute::New( );
+        _elementIds->setType( XdmfAttributeType::GlobalId( ) );
+        _elementIds->setCenter( XdmfAttributeCenter::Cell( ) );
+        _elementIds->setName( "ELEMID" );
+        _elementIds->insert( 0, elementIds.data( ), elementIds.size( ), 1, 1 );
+        shared_ptr< XdmfInformation > elementIdsInfo = XdmfInformation::New( "ID", "The element IDs" );
+        _elementIds->insert( elementIdsInfo );
+        grid->insert( _elementIds );
+
+        //Save the element sets
+        std::vector< shared_ptr< XdmfSet > > XdmfElementSets( elementSets.size( ) );
+
+        for ( auto it = elementSets.begin( ); it != elementSets.end( ); it++ ){
+
+            unsigned int index = it - elementSets.begin( );
+
+            XdmfElementSets[ index ] = XdmfSet::New( );
+            XdmfElementSets[ index ]->setType( XdmfSetType::Cell( ) );
+            XdmfElementSets[ index ]->setName( elementSetNames[ index ] );
+            XdmfElementSets[ index ]->insert( 0, elementSets[ index ].data( ), elementSets[ index ].size( ), 1, 1 );
+            grid->insert( XdmfElementSets[ index ] );
+
+        }
+
+        //Write to the output file
+        
+        shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber );
+
+        collection->insert( grid );
+
+        //Write out the data
+        _domain->accept( _writer );
+
+        return new errorNode( "writeIncrementMeshData", "Not implemented" );
+
     }
 
 }
