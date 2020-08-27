@@ -8,3 +8,7 @@ filetest1:
 filetest2:
         filename_: path_to_file
         mode: some_other_mode
+
+filetest3:
+        filename: test_output
+        mode: write

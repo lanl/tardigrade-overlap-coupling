@@ -89,6 +89,31 @@ int test_XDMFDataFile_constructor( std::ofstream &results ){
         return 1;
     }
 
+    std::remove( "test_output.xdmf" );
+    std::remove( "test_output.h5" );
+
+    df = dataFileInterface::dataFileBase( yf[ "filetest3" ] ).create( "XDMF" );
+
+    if ( df->_error ){
+        results << "test_XDMFDataFile_constructor & False\n";
+        return 1;
+    }
+
+    std::ifstream infile( "test_output.xdmf" );
+    if ( !infile.good( ) ){
+        results << "test_XDMFDataFile_constructor (test 7) & False\n";
+        return 1;
+    }
+
+    infile = std::ifstream( "test_output.h5" );
+    if ( !infile.good( ) ){
+        results << "test_XDMFDataFile_constructor (test 8) & False\n";
+        return 1;
+    }
+
+    std::remove( "test_output.xdmf" );
+    std::remove( "test_output.h5" );
+
     results << "test_XDMFDataFile_constructor & True\n";
     return 0;
 }

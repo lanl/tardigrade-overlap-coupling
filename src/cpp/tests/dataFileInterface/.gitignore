@@ -1,3 +1,4 @@
 *.o
 results.tex
 test_dataFileInterface
+test_output*

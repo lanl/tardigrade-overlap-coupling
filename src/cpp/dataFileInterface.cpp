@@ -451,19 +451,19 @@ namespace dataFileInterface{
          * :param const YAML::Node &configuration: The YAML configuration file for the XDMFDataFile object
          */
 
-        //Initialize Readmode if required
+        //Initialize read or write mode if required
         if ( _mode.compare( "read" ) == 0 ){
             _initializeReadMode( );
-        }
-        if ( _mode.compare( "write" ) == 0 ){
-            _initializeWriteMode( configuration );
-        }
-        if ( _error ){
             return;
         }
-        
-        //Initialize Writemode if required
-        //TODO: Implement this
+        else if ( _mode.compare( "write" ) == 0 ){
+            _initializeWriteMode( configuration );
+            return;
+        }
+        else{
+            _error = new errorNode( "XDMFDataFile", "The data file mode " + _mode + " is not recognized" );
+            return;
+        }
 
     }
 
