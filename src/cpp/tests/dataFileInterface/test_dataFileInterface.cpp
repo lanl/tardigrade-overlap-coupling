@@ -668,6 +668,9 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
                                       4, 15, 12, 10, 11,
                                       4, 10, 8, 9, 11 };
 
+    uIntVector cellIndicesAnswer = { 0, 32, 64 };
+    uIntType cellCountsAnswer = 3;
+
     uIntType increment;
     uIntType collectionNumber = 0;
 
@@ -696,7 +699,7 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
     }
 
     //Read in the mesh data to determine if things have been stored correctly
-    YAML::Node af = YAML::Load( "mode: read\nfilename: test_output.xdmf" );
+    YAML::Node af = YAML::Load( "mode: read\nfilename: test_output.xdmf\ncell_id_variable_name: ELEMID\n" );
     dataFileInterface::XDMFDataFile xdf_result( af );
 
     if ( xdf_result._error ){
@@ -724,7 +727,7 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
 
     //Check if the mesh information is stored correctly
     uIntVector nodeIdsResult;
-    error = xdf_result.getSubDomainNodes( increment, "DOMAIN", nodeIdsResult );
+    error = xdf_result.getNodeIds( increment, "NODEID", nodeIdsResult );
 
     if ( error ){
 
@@ -739,6 +742,52 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
         return 1;
 
     }
+
+    floatVector nodePositionsResult;
+    uIntVector connectivityResult;
+    uIntVector cellIndicesResult;
+    uIntType cellCountsResult;
+
+    error = xdf_result.getMeshData( increment, nodePositionsResult, connectivityResult, cellIndicesResult, cellCountsResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_writeIncrementMeshData & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( nodePositionsAnswer, nodePositionsResult ) ){
+
+        results << "test_writeIncrementMeshData (test 3) & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) ){
+
+        results << "test_writeIncrementMeshData (test 4) & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( cellIndicesAnswer, cellIndicesResult ) ){
+
+        vectorTools::print( cellIndicesAnswer );
+        vectorTools::print( cellIndicesResult );
+        results << "test_writeIncrementMeshData (test 5) & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( cellCountsAnswer, cellCountsResult ) ){
+
+        results << "test_writeIncrementMeshData (test 6) & False\n";
+        return 1;
+
+    }
+
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
