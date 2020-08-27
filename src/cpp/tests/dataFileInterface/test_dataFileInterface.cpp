@@ -126,7 +126,7 @@ int test_XDMFDataFile_readMesh( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector nodePositionsAnswer = { 1, 0, 1,
                                         1, 0, 0,
@@ -147,7 +147,7 @@ int test_XDMFDataFile_readMesh( std::ofstream &results ){
 
     floatVector nodePositionsResult;
 
-    errorOut error = xdf.readMesh( 1, nodePositionsResult );
+    errorOut error = xdmf.readMesh( 1, nodePositionsResult );
 
     if ( error ){
         error->print( );
@@ -173,12 +173,12 @@ int test_XDMFDataFile_getNumIncrements( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     unsigned int numIncrementsAnswer = 2;
     unsigned int numIncrementsResult;
 
-    errorOut error = xdf.getNumIncrements( numIncrementsResult );
+    errorOut error = xdmf.getNumIncrements( numIncrementsResult );
     
     if ( error ){
         error->print( );
@@ -203,13 +203,13 @@ int test_XDMFDataFile_getSubDomainNodes( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     uIntVector domainNodesAnswer = { 2, 3, 6, 7, 8, 10, 12, 13 };
 
     uIntVector domainNodesResult;
     std::string domainName = "left";
-    errorOut error = xdf.getSubDomainNodes( 0, domainName, domainNodesResult );
+    errorOut error = xdmf.getSubDomainNodes( 0, domainName, domainNodesResult );
 
     if ( error ){
         error->print( );
@@ -223,7 +223,7 @@ int test_XDMFDataFile_getSubDomainNodes( std::ofstream &results ){
     }
 
     domainName = "free";
-    error = xdf.getSubDomainNodes( 0, domainName, domainNodesResult );
+    error = xdmf.getSubDomainNodes( 0, domainName, domainNodesResult );
 
     if ( !error ){
         results << "test_XDMFDataFile_getSubDomainNodes (test 2) & False\n";
@@ -242,12 +242,12 @@ int test_XDMFDataFile_getNumNodes( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     unsigned int answer = 16;
     unsigned int result;
 
-    errorOut error = xdf.getNumNodes( 0, result );
+    errorOut error = xdmf.getNumNodes( 0, result );
 
     if ( error ){
         error->print( );
@@ -272,14 +272,14 @@ int test_XDMFDataFile_getSetNames( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     std::vector< std::string > answer = { "free_nodes", "ghost_nodes",
                                           "left", "right", "bottom", "top", "back", "front",
                                           "non_overlapped_elements", "free_elements", "ghost_elements" };
     std::vector< std::string > result;
 
-    errorOut error = xdf.getSetNames( 1, result );
+    errorOut error = xdmf.getSetNames( 1, result );
 
     if ( error ){
         error->print( );
@@ -315,7 +315,7 @@ int test_XDMFDataFile_getSolutionData( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector answer = { -0.001, -0.001, -0.001,
                            -0.001, -0.001, -0.001,
@@ -325,7 +325,7 @@ int test_XDMFDataFile_getSolutionData( std::ofstream &results ){
                            -0.001 };
 
     floatVector result;
-    errorOut error = xdf.getSolutionData( 1, "disp_z", "Node", result );
+    errorOut error = xdmf.getSolutionData( 1, "disp_z", "Node", result );
 
     if ( error ){
         error->print( );
@@ -351,7 +351,7 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig_polyhedron.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector nodePositionAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
                                        0, 0, 1, 1, 1, 1, 1, 1, 0,
@@ -390,7 +390,7 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
     uIntVector connectivityResult, connectivityCellIndicesResult;
     unsigned int cellCountResult;
 
-    errorOut error = xdf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
+    errorOut error = xdmf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
 
     if ( error ){
         error->print( );
@@ -430,7 +430,7 @@ int test_XDMFDataFile_getMeshData2( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector nodePositionAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
                                        0, 0, 1, 1, 1, 1, 1, 1, 0,
@@ -451,7 +451,7 @@ int test_XDMFDataFile_getMeshData2( std::ofstream &results ){
     uIntVector connectivityResult, connectivityCellIndicesResult;
     unsigned int cellCountResult;
 
-    errorOut error = xdf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
+    errorOut error = xdmf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
 
     if ( error ){
         error->print( );
@@ -491,13 +491,13 @@ int test_XDMFDataFile_getNumSubDomainNodes( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     unsigned int numSubDomainNodesAnswer = 8;
 
     unsigned int numSubDomainNodesResult;
     std::string domainName = "left";
-    errorOut error = xdf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult );
+    errorOut error = xdmf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult );
 
     if ( error ){
         error->print( );
@@ -511,7 +511,7 @@ int test_XDMFDataFile_getNumSubDomainNodes( std::ofstream &results ){
     }
 
     domainName = "free";
-    error = xdf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult );
+    error = xdmf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult );
 
     if ( !error ){
         results << "test_XDMFDataFile_getNumSubDomainNodes (test 2) & False\n";
@@ -531,7 +531,7 @@ int test_XDMFDataFile_getSolutionVectorDataFromComponents( std::ofstream &result
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector answer = { 0., 0., -0.001,
                            0., 0., -0.001,
@@ -552,7 +552,7 @@ int test_XDMFDataFile_getSolutionVectorDataFromComponents( std::ofstream &result
 
     floatVector result;
     stringVector componentNames = { "disp_x", "disp_y", "disp_z" };
-    errorOut error = xdf.getSolutionVectorDataFromComponents( 1, componentNames, "Node", result );
+    errorOut error = xdmf.getSolutionVectorDataFromComponents( 1, componentNames, "Node", result );
 
     if ( error ){
         error->print( );
@@ -578,11 +578,11 @@ int test_XDMFDataFile_getIncrementTime( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatType answer1 = 0.;
     floatType result;
-    errorOut error = xdf.getIncrementTime( 0, result );
+    errorOut error = xdmf.getIncrementTime( 0, result );
 
     if ( error ){
 
@@ -600,7 +600,7 @@ int test_XDMFDataFile_getIncrementTime( std::ofstream &results ){
     }
 
     floatType answer2 = 1;
-    error = xdf.getIncrementTime( 1, result );
+    error = xdmf.getIncrementTime( 1, result );
 
     if ( error ){
 
@@ -629,7 +629,7 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
      */
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest3" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
 
     floatType timeAnswer = 0.0;
 
@@ -674,7 +674,7 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
     uIntType increment;
     uIntType collectionNumber = 0;
 
-    errorOut error = xdf.initializeIncrement( timeAnswer, reference_increment, collectionNumber, increment );
+    errorOut error = xdmf.initializeIncrement( timeAnswer, reference_increment, collectionNumber, increment );
 
     if ( error ){
 
@@ -687,7 +687,7 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    error = xdf.writeIncrementMeshData( increment, collectionNumber, nodeIdsAnswer, { { } }, { { } }, nodePositionsAnswer,
+    error = xdmf.writeIncrementMeshData( increment, collectionNumber, nodeIdsAnswer, { { } }, { { } }, nodePositionsAnswer,
                                         elementIdsAnswer, { { } }, { { } }, connectivityAnswer );
 
     if ( error ){
@@ -700,11 +700,11 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
 
     //Read in the mesh data to determine if things have been stored correctly
     YAML::Node af = YAML::Load( "mode: read\nfilename: test_output.xdmf\ncell_id_variable_name: ELEMID\n" );
-    dataFileInterface::XDMFDataFile xdf_result( af );
+    dataFileInterface::XDMFDataFile xdmf_result( af );
 
-    if ( xdf_result._error ){
+    if ( xdmf_result._error ){
 
-        xdf_result._error->print( );
+        xdmf_result._error->print( );
         results << "test_writeIncrementMeshData & False\n";
         return 1;
 
@@ -712,7 +712,7 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
 
     //Check if the timestep was stored correctly
     floatType scalarResult;
-    error = xdf_result.getIncrementTime( increment, scalarResult );
+    error = xdmf_result.getIncrementTime( increment, scalarResult );
 
     if ( error ){
         error->print( );
@@ -727,7 +727,7 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
 
     //Check if the mesh information is stored correctly
     uIntVector nodeIdsResult;
-    error = xdf_result.getNodeIds( increment, "NODEID", nodeIdsResult );
+    error = xdmf_result.getNodeIds( increment, "NODEID", nodeIdsResult );
 
     if ( error ){
 
@@ -748,7 +748,7 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
     uIntVector cellIndicesResult;
     uIntType cellCountsResult;
 
-    error = xdf_result.getMeshData( increment, nodePositionsResult, connectivityResult, cellIndicesResult, cellCountsResult );
+    error = xdmf_result.getMeshData( increment, nodePositionsResult, connectivityResult, cellIndicesResult, cellCountsResult );
 
     if ( error ){
 
@@ -804,11 +804,11 @@ int test_XDMFDataFile_getNodeIds( std::ofstream &results ){
 
 
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
-    if ( xdf._error ){
+    if ( xdmf._error ){
 
-        xdf._error->print( );
+        xdmf._error->print( );
         results << "test_XDMFDataFile_getNodeIds & False\n";
         return 1;
     }
@@ -816,7 +816,7 @@ int test_XDMFDataFile_getNodeIds( std::ofstream &results ){
     uIntVector nodeIdAnswer = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 
     uIntVector nodeIdResult;
-    errorOut error = xdf.getNodeIds( 0, "NODEID", nodeIdResult );
+    errorOut error = xdmf.getNodeIds( 0, "NODEID", nodeIdResult );
 
     if ( error ){
 
@@ -838,6 +838,72 @@ int test_XDMFDataFile_getNodeIds( std::ofstream &results ){
     results << "test_XDMFDataFile_getNodeIds & True\n";
     return 0;
 
+}
+
+int test_XDMFDataFile_initializeIncrement( std::ofstream &results ){
+    /*!
+     * Initialize an increment in an output XDMF data file
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
+
+    std::remove( "test_output.xdmf" );
+    std::remove( "test_output.h5" );
+
+    if ( xdmf._error ){
+
+        xdmf._error->print( );
+        results << "test_XDMFDataFile_initializeIncrement & False\n";
+        return 1;
+    }
+
+    uIntType incrementAnswer1 = 0;
+    uIntType incrementResult;
+
+    errorOut error = xdmf.initializeIncrement( 0.0, 0, 0, incrementResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_initializeIncrement & False\n";
+        return 1;
+
+    }
+
+    if ( incrementResult != incrementAnswer1 ){
+
+        results << "test_XDMFDataFile_initializeIncrement (test 1) & False\n";
+        return 1;
+
+    }
+
+    uIntType incrementAnswer2 = 1;
+
+    error = xdmf.initializeIncrement( 0.1, 0, 0, incrementResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_initializeIncrement & False\n";
+        return 1;
+
+    }
+
+    if ( incrementResult != incrementAnswer2 ){
+
+        results << "test_XDMFDataFile_initializeIncrement (test 2) & False\n";
+        return 1;
+
+    }
+
+    std::remove( "test_output.xdmf" );
+    std::remove( "test_output.h5" );
+
+    results << "test_XDMFDataFile_initializeIncrement & True\n";
+    return 0;
 }
 
 int main(){
@@ -866,6 +932,7 @@ int main(){
     test_XDMFDataFile_getMeshData2( results );
     test_XDMFDataFile_getIncrementTime( results );
 
+    test_XDMFDataFile_initializeIncrement( results );
     test_XDMFDataFile_writeIncrementMeshData( results );
 
     //Close the results file
