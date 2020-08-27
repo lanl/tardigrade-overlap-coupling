@@ -173,6 +173,24 @@ namespace dataFileInterface{
         return new errorNode( "readMesh", "The readMesh function is not defined" );
     }
 
+    errorOut dataFileBase::getNodeIds( const uIntType increment, const std::string &nodeIdAttributeName, uIntVector &domainNodes ){
+        /*!
+         * Get the global node ids from the domain.
+         *
+         * TODO: Add specification of collection here ( and in other file reads )
+         *
+         * :param const uIntType increment: The increment at which to extract the data
+         * :param const std::string &nodeIdAttributeName: The name of the node-id attribute
+         * :param uIntVector &domainNodes: The nodes in the domain
+         */
+
+        ( void ) increment;
+        ( void ) domainNodes;
+        ( void ) nodeIdAttributeName;
+
+        return new errorNode( "getNodeIds", "Not implemented" );
+    }
+
     errorOut dataFileBase::getSubDomainNodes( const uIntType increment, const std::string subDomainName, uIntVector &domainNodes ){
         /*!
          * Get the nodes in the provided sub-domain ( node set ).
@@ -1331,5 +1349,47 @@ namespace dataFileInterface{
 
         return NULL;
     }
+
+    errorOut XDMFDataFile::getNodeIds( const uIntType increment, const std::string &nodeIdAttributeName, uIntVector &domainNodes ){
+        /*!
+         * Get the global node ids from the domain.
+         *
+         * TODO: Add specification of collection here ( and in other file reads )
+         *
+         * :param const uIntType increment: The increment at which to extract the data
+         * :param const std::string &nodeIdAttributeName: The name of the node id attribute
+         * :param uIntVector &domainNodes: The nodes in the domain
+         */
+
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        errorOut error = getUnstructuredGrid( increment, grid );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "getNodeIds", "Error in getting the unstructured grid" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        try{
+
+            shared_ptr< XdmfAttribute > _attribute = grid->getAttribute( nodeIdAttributeName );
+            _attribute->read( );
+            domainNodes.resize( _attribute->getSize( ) );
+            _attribute->getValues( 0, domainNodes.data(), _attribute->getSize( ), 1, 1 );
+
+        }
+        catch( XdmfError &e ){
+
+            std::string outstr = "Error in extraction of the node ids: ";
+            outstr += e.what( );
+
+            return new errorNode( "getNodeIds", outstr );
+        }
+
+        return NULL;
+    }
+
 
 }

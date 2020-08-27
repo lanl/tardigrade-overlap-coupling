@@ -195,7 +195,7 @@ int test_XDMFDataFile_getNumIncrements( std::ofstream &results ){
     return 0;
 }
 
-int test_XDMFDataFile_getDomainNodes( std::ofstream &results ){
+int test_XDMFDataFile_getSubDomainNodes( std::ofstream &results ){
     /*!
      * Get the nodes from a domain.
      *
@@ -209,28 +209,28 @@ int test_XDMFDataFile_getDomainNodes( std::ofstream &results ){
 
     uIntVector domainNodesResult;
     std::string domainName = "left";
-    errorOut error = xdf.getDomainNodes( 0, domainName, domainNodesResult );
+    errorOut error = xdf.getSubDomainNodes( 0, domainName, domainNodesResult );
 
     if ( error ){
         error->print( );
-        results << "test_XDMFDataFile_getDomainNodes & False\n";
+        results << "test_XDMFDataFile_getSubDomainNodes & False\n";
         return 1;
     }
 
     if ( !vectorTools::fuzzyEquals( domainNodesResult, domainNodesAnswer ) ){
-        results << "test_XDMFDataFile_getDomainNodes (test 1) & False\n";
+        results << "test_XDMFDataFile_getSubDomainNodes (test 1) & False\n";
         return 1;
     }
 
     domainName = "free";
-    error = xdf.getDomainNodes( 0, domainName, domainNodesResult );
+    error = xdf.getSubDomainNodes( 0, domainName, domainNodesResult );
 
     if ( !error ){
-        results << "test_XDMFDataFile_getDomainNodes (test 2) & False\n";
+        results << "test_XDMFDataFile_getSubDomainNodes (test 2) & False\n";
         return 1;
     }
 
-    results << "test_XDMFDataFile_getDomainNodes & True\n";
+    results << "test_XDMFDataFile_getSubDomainNodes & True\n";
     return 0;
 }
 
@@ -483,7 +483,7 @@ int test_XDMFDataFile_getMeshData2( std::ofstream &results ){
     return 0;
 }
 
-int test_XDMFDataFile_getNumDomainNodes( std::ofstream &results ){
+int test_XDMFDataFile_getNumSubDomainNodes( std::ofstream &results ){
     /*!
      * Test the determination of the number of nodes are in a given domain
      *
@@ -493,32 +493,32 @@ int test_XDMFDataFile_getNumDomainNodes( std::ofstream &results ){
     YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
 
-    unsigned int numDomainNodesAnswer = 8;
+    unsigned int numSubDomainNodesAnswer = 8;
 
-    unsigned int numDomainNodesResult;
+    unsigned int numSubDomainNodesResult;
     std::string domainName = "left";
-    errorOut error = xdf.getNumDomainNodes( 0, domainName, numDomainNodesResult );
+    errorOut error = xdf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult );
 
     if ( error ){
         error->print( );
-        results << "test_XDMFDataFile_getNumDomainNodes & False\n";
+        results << "test_XDMFDataFile_getNumSubDomainNodes & False\n";
         return 1;
     }
 
-    if ( !vectorTools::fuzzyEquals( numDomainNodesResult, numDomainNodesAnswer ) ){
-        results << "test_XDMFDataFile_getNumDomainNodes (test 1) & False\n";
+    if ( !vectorTools::fuzzyEquals( numSubDomainNodesResult, numSubDomainNodesAnswer ) ){
+        results << "test_XDMFDataFile_getNumSubDomainNodes (test 1) & False\n";
         return 1;
     }
 
     domainName = "free";
-    error = xdf.getNumDomainNodes( 0, domainName, numDomainNodesResult );
+    error = xdf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult );
 
     if ( !error ){
-        results << "test_XDMFDataFile_getNumDomainNodes (test 2) & False\n";
+        results << "test_XDMFDataFile_getNumSubDomainNodes (test 2) & False\n";
         return 1;
     }
 
-    results << "test_XDMFDataFile_getNumDomainNodes & True\n";
+    results << "test_XDMFDataFile_getNumSubDomainNodes & True\n";
     return 0;
 }
 
@@ -621,6 +621,176 @@ int test_XDMFDataFile_getIncrementTime( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
+    /*!
+     * Write the increment mesh data
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest3" ] );
+
+    floatType timeAnswer = 0.0;
+
+    uIntType reference_increment = 0;
+
+    uIntVector nodeIdsAnswer = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+    floatVector nodePositionsAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
+                                        0, 0, 1, 1, 1, 1, 1, 1, 0,
+                                        0, 1, 0, 0, 1, 1, 0, 1, 2,
+                                        1, 1, 2, 0, 0, 2, 1, 0, 2,
+                                        0, 0, 3, 0, 1, 3, 1, 1, 3,
+                                        1, 0, 3 };
+
+    uIntVector elementIdsAnswer = { 1, 2, 3 };
+
+    uIntVector connectivityAnswer = { 16, 6,
+                                      4, 0, 3, 2, 1,
+                                      4, 0, 1, 5, 4,
+                                      4, 1, 2, 6, 5,
+                                      4, 2, 3, 7, 6,
+                                      4, 3, 0, 4, 7,
+                                      4, 4, 5, 6, 7,
+                                      16, 6,
+                                      4, 8, 9, 4, 7,
+                                      4, 8, 7, 3, 10,
+                                      4, 7, 4, 0, 3,
+                                      4, 4, 9, 11, 0,
+                                      4, 9, 8, 10, 11,
+                                      4, 10, 3, 0, 11,
+                                      16, 6,
+                                      4, 12, 15, 14, 13,
+                                      4, 12, 13, 8, 10,
+                                      4, 13, 14, 9, 8,
+                                      4, 14, 15, 11, 9,
+                                      4, 15, 12, 10, 11,
+                                      4, 10, 8, 9, 11 };
+
+    uIntType increment;
+    uIntType collectionNumber = 0;
+
+    errorOut error = xdf.initializeIncrement( timeAnswer, reference_increment, collectionNumber, increment );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_writeIncrementMeshData & False\n";
+        return 1;
+
+    }
+
+    std::remove( "test_output.xdmf" );
+    std::remove( "test_output.h5" );
+
+    error = xdf.writeIncrementMeshData( increment, collectionNumber, nodeIdsAnswer, { { } }, { { } }, nodePositionsAnswer,
+                                        elementIdsAnswer, { { } }, { { } }, connectivityAnswer );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_writeIncrementMeshData & False\n";
+        return 1;
+
+    }
+
+    //Read in the mesh data to determine if things have been stored correctly
+    YAML::Node af = YAML::Load( "mode: read\nfilename: test_output.xdmf" );
+    dataFileInterface::XDMFDataFile xdf_result( af );
+
+    if ( xdf_result._error ){
+
+        xdf_result._error->print( );
+        results << "test_writeIncrementMeshData & False\n";
+        return 1;
+
+    }
+
+    //Check if the timestep was stored correctly
+    floatType scalarResult;
+    error = xdf_result.getIncrementTime( increment, scalarResult );
+
+    if ( error ){
+        error->print( );
+        results << "test_writeIncrementMeshData & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( scalarResult, 0.0 ) ){
+        results << "test_writeIncrementMeshData (test 1) & False\n";
+        return 1;
+    }
+
+    //Check if the mesh information is stored correctly
+    uIntVector nodeIdsResult;
+    error = xdf_result.getSubDomainNodes( increment, "DOMAIN", nodeIdsResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_writeIncrementMeshData & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( nodeIdsResult, nodeIdsAnswer ) ){
+
+        results << "test_writeIncrementMeshData (test 2) & False\n";
+        return 1;
+
+    }
+
+    std::remove( "test_output.xdmf" );
+    std::remove( "test_output.h5" );
+
+    results << "test_writeIncrementMeshData & True\n";
+    return 0;
+
+}
+
+int test_XDMFDataFile_getNodeIds( std::ofstream &results ){
+    /*!
+     * Extract the node ids from the domain
+     */
+
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdf( yf[ "filetest1" ] );
+
+    if ( xdf._error ){
+
+        xdf._error->print( );
+        results << "test_XDMFDataFile_getNodeIds & False\n";
+        return 1;
+    }
+
+    uIntVector nodeIdAnswer = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+    uIntVector nodeIdResult;
+    errorOut error = xdf.getNodeIds( 0, "NODEID", nodeIdResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_getNodeIds & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( nodeIdResult, nodeIdAnswer ) ){
+
+        vectorTools::print( nodeIdResult );
+        vectorTools::print( nodeIdAnswer );
+        results << "test_XDMFDataFile_getNodeIds (test 1) & False\n";
+        return 1;
+
+    }
+
+    results << "test_XDMFDataFile_getNodeIds & True\n";
+    return 0;
+
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -636,8 +806,9 @@ int main(){
     test_XDMFDataFile_constructor( results );
     test_XDMFDataFile_getNumIncrements( results );
     test_XDMFDataFile_readMesh( results );
-    test_XDMFDataFile_getNumDomainNodes( results );
-    test_XDMFDataFile_getDomainNodes( results );
+    test_XDMFDataFile_getNumSubDomainNodes( results );
+    test_XDMFDataFile_getNodeIds( results );
+    test_XDMFDataFile_getSubDomainNodes( results );
     test_XDMFDataFile_getNumNodes( results );
     test_XDMFDataFile_getSetNames( results );
     test_XDMFDataFile_getSolutionData( results );
@@ -645,6 +816,8 @@ int main(){
     test_XDMFDataFile_getMeshData( results );
     test_XDMFDataFile_getMeshData2( results );
     test_XDMFDataFile_getIncrementTime( results );
+
+    test_XDMFDataFile_writeIncrementMeshData( results );
 
     //Close the results file
     results.close();
