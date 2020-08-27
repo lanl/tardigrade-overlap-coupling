@@ -427,17 +427,20 @@ namespace dataFileInterface{
         return NULL;
     }
 
-    errorOut dataFileBase::initializeIncrement( const floatType time, const uIntType &reference_increment, uIntType &increment ){
+    errorOut dataFileBase::initializeIncrement( const floatType time, const uIntType &reference_increment,
+                                                const uIntType &collectionNumber, uIntType &increment ){
         /*!
          * Initialize a new increment
          *
          * :param const floatType time: The increment's time
          * :param const uIntType &reference_increment: The reference increment for the current increment
+         * :param const uIntType &collectionNumber: The collection number that the increment exists in
          * :param uIntType &increment: The initialized increment's number
          */
 
         ( void ) time;
         ( void ) reference_increment;
+        ( void ) collectionNumber;
         ( void ) increment;
 
         return new errorNode( "initializeIncrement", "Not implemented" );
@@ -1107,12 +1110,13 @@ namespace dataFileInterface{
             
     }
 
-    errorOut XDMFDataFile::initializeIncrement( const floatType time, const uIntType &reference_increment, uIntType &increment ){
+    errorOut XDMFDataFile::initializeIncrement( const floatType time, const uIntType &reference_increment, const uIntType &collectionNumber, uIntType &increment ){
         /*!
          * Initialize a new increment
          *
          * :param const floatType time: The increment's time
          * :param const uIntType &reference_increment: The reference increment for the current increment
+         * :param const uInttype &collectionNumber: The collection which contains the new increment
          * :param uIntType &increment: The initialized increment's number
          */
 
@@ -1126,7 +1130,11 @@ namespace dataFileInterface{
         grid->setTime( untime );
 
         //Store the grid in the collection
-        shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( 0 ); //TODO: This should be verified to be general enough
+        if ( _domain->getNumberGridCollections( ) <= collectionNumber ){
+            return new errorNode( "initializeIncrement",
+                                  "The collection number " + std::to_string( collectionNumber ) + " is out of range" );
+        }
+        shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber ); //TODO: This should be verified to be general enough
         collection->insert( grid );
         _domain->accept( _writer );
 

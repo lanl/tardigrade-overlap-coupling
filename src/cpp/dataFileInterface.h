@@ -110,7 +110,8 @@ namespace dataFileInterface{
                                           floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
                                           uIntType &cellCounts ); //Required overload
 
-            virtual errorOut initializeIncrement( const floatType time, const uIntType &reference_increment, uIntType &increment );
+            virtual errorOut initializeIncrement( const floatType time, const uIntType &reference_increment,
+                                                  const uIntType &collectionNumber, uIntType &increment );
             virtual errorOut addRootCollection( uIntType &collectionNumber );
             virtual errorOut writeIncrementMeshData( const uIntType increment, const uIntType collectionNumber,
                                                      const uIntVector &nodeIds, const uIntMatrix &nodeSets,
@@ -163,7 +164,8 @@ namespace dataFileInterface{
                                   floatVector &nodePositions, uIntVector &connectivity, uIntVector &connectivityCellIndices,
                                   uIntType &cellCounts );
 
-            errorOut initializeIncrement( const floatType time, const uIntType &reference_increment, uIntType &increment );
+            errorOut initializeIncrement( const floatType time, const uIntType &reference_increment,
+                                          const uIntType &collectionNumber, uIntType &increment );
             errorOut writeIncrementMeshData( const uIntType increment, const uIntType collectionNumber, 
                                              const uIntVector &nodeIds, const uIntMatrix &nodeSets,
                                              const stringVector &nodeSetNames, const floatVector &nodePositions,
