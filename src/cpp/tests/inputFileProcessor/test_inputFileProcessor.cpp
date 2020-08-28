@@ -1785,6 +1785,90 @@ int test_getGhostMicroSurfaceApproximateSplitCount( std::ostream &results ){
     return 0;
 }
 
+int test_outputReferenceInformation( std::ofstream &results ){
+    /*!
+     * Test whether the reference information should be output
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_outputReferenceInformation & False\n";
+        return 1;
+    }
+
+    if ( !reader.outputReferenceInformation( ) ){
+
+        results << "test_outputReferenceInformation (test 1) & False\n";
+        return 1;
+
+    }
+
+    results << "test_outputReferenceInformation & True\n";
+    return 1;
+
+}
+
+int test_outputHomogenizedInformation( std::ofstream &results ){
+    /*!
+     * Test whether the homogenized information should be output
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_outputHomogenizedInformation & False\n";
+        return 1;
+    }
+
+    if ( !reader.outputHomogenizedInformation( ) ){
+
+        results << "test_outputHomogenizedInformation (test 1) & False\n";
+        return 1;
+
+    }
+
+    results << "test_outputHomogenizedInformation & True\n";
+    return 1;
+
+}
+
+int test_outputUpdatedDOF( std::ofstream &results ){
+    /*!
+     * Test whether the updated degree of freedom information should be output
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    inputFileProcessor::inputFileProcessor reader( filename );
+
+    if ( reader.getError( ) ){
+        reader.getError( )->print( );
+        results << "test_outputUpdatedDOF & False\n";
+        return 1;
+    }
+
+    if ( !reader.outputUpdatedDOF( ) ){
+
+        results << "test_outputUpdatedDOF (test 1) & False\n";
+        return 1;
+
+    }
+
+    results << "test_outputUpdatedDOF & True\n";
+    return 1;
+
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -1812,6 +1896,9 @@ int main(){
     test_getVolumeReconstructionConfig( results );
     test_getFreeMicroSurfaceApproximateSplitCount( results );
     test_getGhostMicroSurfaceApproximateSplitCount( results );
+    test_outputReferenceInformation( results );
+    test_outputHomogenizedInformation( results );
+    test_outputUpdatedDOF( results );
 
     //Close the results file
     results.close();

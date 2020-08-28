@@ -172,6 +172,10 @@ namespace inputFileProcessor{
 
             bool useReconstructedMassCenters( );
 
+            bool outputReferenceInformation( );
+            bool outputHomogenizedInformation( );
+            bool outputUpdatedDOF( );
+
         private:
             //Private functions
             void initialize( );

@@ -4083,4 +4083,31 @@ namespace inputFileProcessor{
         return &_newmarkBeta;
     }
 
+    bool inputFileProcessor::outputReferenceInformation( ){
+        /*!
+         * Get a flag for whether the reference information should be output to a file
+         */
+
+        return _outputReferenceInformation;
+
+    }
+
+    bool inputFileProcessor::outputHomogenizedInformation( ){
+        /*!
+         * Get a flag for whether the homogenized information should be output to a file
+         */
+
+        return _outputHomogenizedInformation;
+
+    }
+
+    bool inputFileProcessor::outputUpdatedDOF( ){
+        /*!
+         * Get a flag for whether the updated DOF should be output to a file
+         */
+
+        return _outputUpdatedDOF;
+
+    }
+
 }
