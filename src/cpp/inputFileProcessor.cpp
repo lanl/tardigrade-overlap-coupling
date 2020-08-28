@@ -3021,6 +3021,21 @@ namespace inputFileProcessor{
             }
             _outputReferenceInformation = true;
 
+            //Check if the file is writable
+            std::string tmp = _config[ "coupling_initialization" ][ "output_reference_information" ][ "filename" ].as< std::string >( );
+            std::ofstream myfile;
+            myfile.open( tmp );
+
+            if ( !myfile.is_open( ) ){
+
+                std::remove( tmp.c_str( ) );
+                return new errorNode( "checkCouplingInitialization",
+                                      "The 'output_reference_information' filename cannot be opened" );
+
+            }
+
+            std::remove( tmp.c_str( ) );
+
         }
 
         if ( _config[ "coupling_initialization" ][ "output_homogenized_response" ] ){
@@ -3032,6 +3047,20 @@ namespace inputFileProcessor{
                 _config[ "coupling_initialization" ][ "output_homogenized_response" ][ "filename" ] = "homogenized_response";
 
             }
+
+            std::string tmp = _config[ "coupling_initialization" ][ "output_homogenized_response" ][ "filename" ].as< std::string >( );
+            std::ofstream myfile;
+            myfile.open( tmp );
+
+            if ( !myfile.is_open( ) ){
+
+                std::remove( tmp.c_str( ) );
+                return new errorNode( "checkCouplingInitialization",
+                                      "The 'output_homogenized_response' filename cannot be opened" );
+
+            }
+
+            std::remove( tmp.c_str( ) );
 
         }
 
@@ -3058,6 +3087,33 @@ namespace inputFileProcessor{
                 _config[ "coupling_initialization" ][ "output_updated_dof" ][ "microscale_filename" ] = "microscale_dof";
 
             }
+
+            std::string tmp = _config[ "coupling_initialization" ][ "output_updated_dof" ][ "macroscale_filename" ].as< std::string >( );
+            std::ofstream myfile;
+            myfile.open( tmp );
+
+            if ( !myfile.is_open( ) ){
+
+                std::remove( tmp.c_str( ) );
+                return new errorNode( "checkCouplingInitialization",
+                                      "The 'output_updated_dof' macroscale filename cannot be opened" );
+
+            }
+
+            std::remove( tmp.c_str( ) );
+
+            tmp = _config[ "coupling_initialization" ][ "output_updated_dof" ][ "microscale_filename" ].as< std::string >( );
+            myfile.open( tmp );
+
+            if ( !myfile.is_open( ) ){
+
+                std::remove( tmp.c_str( ) );
+                return new errorNode( "checkCouplingInitialization",
+                                      "The 'output_updated_dof' microscale filename cannot be opened" );
+
+            }
+
+            std::remove( tmp.c_str( ) );
 
         }
 
