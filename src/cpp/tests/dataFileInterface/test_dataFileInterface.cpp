@@ -847,11 +847,11 @@ int test_XDMFDataFile_initializeIncrement( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
-
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
 
     if ( xdmf._error ){
 
@@ -906,6 +906,51 @@ int test_XDMFDataFile_initializeIncrement( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_addRootCollection( std::ofstream &results ){
+    /*!
+     * Test adding a root collection to the datafile
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::remove( "test_output.xdmf" );
+    std::remove( "test_output.h5" );
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
+
+    if ( xdmf._error ){
+
+        xdmf._error->print( );
+        results << "test_XDMFDataFile_addRootCollection & False\n";
+        return 1;
+    }
+
+    uIntType collectionNumberResult;
+    errorOut error = xdmf.addRootCollection( "TEST", "Test collection info", collectionNumberResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_addRootCollection & False\n";
+        return 1;
+
+    }
+
+    if ( collectionNumberResult != 1 ){
+
+        results << "test_XDMFDataFile_addRootCollection (test 1) & False\n";
+        return 1;
+
+    }
+
+    std::remove( "test_output.xdmf" );
+    std::remove( "test_output.h5" );
+
+    results << "test_XDMFDataFile_addRootCollection & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -933,7 +978,8 @@ int main(){
     test_XDMFDataFile_getIncrementTime( results );
 
     test_XDMFDataFile_initializeIncrement( results );
-    test_XDMFDataFile_writeIncrementMeshData( results );
+    test_XDMFDataFile_addRootCollection( results );
+//    test_XDMFDataFile_writeIncrementMeshData( results );
 
     //Close the results file
     results.close();

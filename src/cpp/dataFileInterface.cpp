@@ -1345,7 +1345,7 @@ namespace dataFileInterface{
 
         _domain->accept( _writer );
 
-        collectionNumber = _domain->getNumberGridCollections( );
+        collectionNumber = _domain->getNumberGridCollections( ) - 1;
 
         return NULL;
     }
