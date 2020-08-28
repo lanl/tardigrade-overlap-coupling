@@ -3012,6 +3012,55 @@ namespace inputFileProcessor{
 
         }
 
+        if ( _config[ "coupling_initialization" ][ "output_reference_information" ] ){
+
+            if ( !_config[ "coupling_initialization" ][ "output_reference_information" ][ "filename" ] ){
+
+                _config[ "coupling_initialization" ][ "output_reference_information" ][ "filename" ] = "reference_information";
+
+            }
+            _outputReferenceInformation = true;
+
+        }
+
+        if ( _config[ "coupling_initialization" ][ "output_homogenized_response" ] ){
+
+            _outputHomogenizedInformation = true;
+
+            if ( !_config[ "coupling_initialization" ][ "output_homogenized_response" ][ "filename" ] ){
+
+                _config[ "coupling_initialization" ][ "output_homogenized_response" ][ "filename" ] = "homogenized_response";
+
+            }
+
+        }
+
+        if ( _config[ "coupling_initialization" ][ "output_updated_DOF" ] ){
+
+            if ( _config[ "coupling_initialization" ][ "update_displacement" ].IsScalar( ) &&
+                 !_config[ "coupling_initialization" ][ "update_displacement" ].as< bool >( ) ){
+
+                return new errorNode( "checkCouplingInitialization",
+                                      "If 'output_updated_dof' is enabled, then 'update_displacement' must be as well" );
+
+            }
+
+            _outputUpdatedDOF = true;
+
+            if ( !_config[ "coupling_initialization" ][ "output_updated_dof" ][ "macroscale_filename" ] ){
+
+                _config[ "coupling_initialization" ][ "output_updated_dof" ][ "macroscale_filename" ] = "macroscale_dof";
+
+            }
+
+            if ( !_config[ "coupling_initialization" ][ "output_updated_dof" ][ "microscale_filename" ] ){
+
+                _config[ "coupling_initialization" ][ "output_updated_dof" ][ "microscale_filename" ] = "microscale_dof";
+
+            }
+
+        }
+
         return NULL;
 
     }

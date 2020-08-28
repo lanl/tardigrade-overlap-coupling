@@ -357,7 +357,7 @@ int test_initializeIncrement( std::ofstream &results ){
                surface != nonOverlappedMicroSurfaceNames->end( );
                surface++ ){
 
-        reader._microscale->getDomainNodes( 0, *surface, nodes );
+        reader._microscale->getSubDomainNodes( 0, *surface, nodes );
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
@@ -375,7 +375,7 @@ int test_initializeIncrement( std::ofstream &results ){
                domain != freeMicroDomainNames->end( );
                domain++ ){
 
-        reader._microscale->getDomainNodes( 0, *domain, nodes );
+        reader._microscale->getSubDomainNodes( 0, *domain, nodes );
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
@@ -397,7 +397,7 @@ int test_initializeIncrement( std::ofstream &results ){
                domain != ghostMicroDomainNames->end( );
                domain++ ){
 
-        reader._microscale->getDomainNodes( 0, *domain, nodes );
+        reader._microscale->getSubDomainNodes( 0, *domain, nodes );
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
@@ -422,7 +422,7 @@ int test_initializeIncrement( std::ofstream &results ){
                domain != ghostMacroDomainNames->end( );
                domain++ ){
 
-        reader._macroscale->getDomainNodes( 0, *domain, nodes );
+        reader._macroscale->getSubDomainNodes( 0, *domain, nodes );
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
@@ -442,7 +442,7 @@ int test_initializeIncrement( std::ofstream &results ){
                domain != freeMacroDomainNames->end( );
                domain++ ){
 
-        reader._macroscale->getDomainNodes( 0, *domain, nodes );
+        reader._macroscale->getSubDomainNodes( 0, *domain, nodes );
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
@@ -1523,6 +1523,69 @@ int test_getCouplingInitialization( std::ofstream &results ){
     else{
 
         results << "test_getCouplingInitialization (test 26) & False\n";
+        return 1;
+
+    }
+
+    if ( !couplingInitialization[ "extract_previous_dof_values" ].as< bool >( ) ){
+
+        results << "test_getCouplingInitialization (test 27) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "previous_micro_increment" ].as< uIntType >( ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 28) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "previous_macro_increment" ].as< uIntType >( ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 29) & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( couplingInitialization[ "update_displacement" ][ "Newmark-beta_parameters" ][ "beta" ].as< floatType >( ), 0.25 ) ){
+
+        results << "test_getCouplingInitialization (test 30) & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( couplingInitialization[ "update_displacement" ][ "Newmark-beta_parameters" ][ "gamma" ].as< floatType >( ), 0.5 ) ){
+
+        results << "test_getCouplingInitialization (test 31) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( ).compare( "reference_information" ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 32) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "output_homogenized_response" ][ "filename" ].as< std::string >( ).compare( "homogenized_response" ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 33) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "output_updated_dof" ][ "macroscale_filename" ].as< std::string >( ).compare( "macroscale_dof" ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 34) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "output_updated_dof" ][ "microscale_filename" ].as< std::string >( ).compare( "microscale_dof" ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 35) & False\n";
         return 1;
 
     }

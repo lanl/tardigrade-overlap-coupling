@@ -354,6 +354,9 @@ namespace inputFileProcessor{
             uIntType _defaultNumberOfMicroDomainSurfaceRegions = 6;
 
             bool _extractPreviousDOFValues = false;
+            bool _outputReferenceInformation = false;
+            bool _outputHomogenizedInformation = false;
+            bool _outputUpdatedDOF = false;
 
             floatVector _previousMicroDisplacements;
             floatVector _previousMacroDispDOFVector;
