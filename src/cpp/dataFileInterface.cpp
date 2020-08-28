@@ -561,7 +561,7 @@ namespace dataFileInterface{
         }
 
         errorOut error;
-        floatVector componentValues( dataNames.size( ) / data.size( ), 0 );
+        floatVector componentValues( data.size( ) / dataNames.size( ), 0 );
 
         for ( uIntType i = 0; i < dataNames.size( ); i++ ){
 
