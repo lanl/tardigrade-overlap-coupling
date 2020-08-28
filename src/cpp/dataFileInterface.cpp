@@ -1422,19 +1422,22 @@ namespace dataFileInterface{
 
         }
 
-        shared_ptr< XdmfUnstructuredGrid > grid;
-        _domain->getGridCollection( collectionNumber )->getUnstructuredGrid( increment );
+        shared_ptr< XdmfUnstructuredGrid > grid
+            = _domain->getGridCollection( collectionNumber )->getUnstructuredGrid( increment );
 
         shared_ptr< XdmfAttribute > solutionVector = XdmfAttribute::New( );
         solutionVector->setType( XdmfAttributeType::Scalar( ) );
         solutionVector->setName( dataName );
 
-        if ( dataType.compare( "Node" ) == 0 ){
+        std::string _dataType = dataType;
+        boost::algorithm::to_lower( _dataType );
+
+        if ( _dataType.compare( "node" ) == 0 ){
 
             solutionVector->setCenter( XdmfAttributeCenter::Node( ) );
 
         }
-        else if ( dataType.compare( "Cell" ) == 0 ){
+        else if ( _dataType.compare( "cell" ) == 0 ){
 
             solutionVector->setCenter( XdmfAttributeCenter::Cell( ) );
 

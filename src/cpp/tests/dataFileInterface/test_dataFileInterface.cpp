@@ -951,6 +951,158 @@ int test_XDMFDataFile_addRootCollection( std::ofstream &results ){
     return 0;
 }
 
+int test_XDMFDataFile_writeScalarSolutionData( std::ofstream &results ){
+    /*!
+     * Test writing a scalar solution data to the output file
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::remove( "test_output.xdmf" );
+    std::remove( "test_output.h5" );
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
+
+    if ( xdmf._error ){
+
+        xdmf._error->print( );
+        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
+        return 1;
+    }
+
+    uIntType increment;
+    uIntType collectionNumber = 0;
+    errorOut error = xdmf.initializeIncrement( 0.0, collectionNumber, collectionNumber, increment );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
+        return 1;
+
+    }
+
+    uIntVector nodeIds = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
+    floatVector nodePositions = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
+                                  0, 0, 1, 1, 1, 1, 1, 1, 0,
+                                  0, 1, 0, 0, 1, 1, 0, 1, 2,
+                                  1, 1, 2, 0, 0, 2, 1, 0, 2,
+                                  0, 0, 3, 0, 1, 3, 1, 1, 3,
+                                  1, 0, 3 };
+
+    uIntVector elementIds = { 1, 2, 3 };
+
+    uIntVector connectivity = { 16, 6,
+                                4, 0, 3, 2, 1,
+                                4, 0, 1, 5, 4,
+                                4, 1, 2, 6, 5,
+                                4, 2, 3, 7, 6,
+                                4, 3, 0, 4, 7,
+                                4, 4, 5, 6, 7,
+                                16, 6,
+                                4, 8, 9, 4, 7,
+                                4, 8, 7, 3, 10,
+                                4, 7, 4, 0, 3,
+                                4, 4, 9, 11, 0,
+                                4, 9, 8, 10, 11,
+                                4, 10, 3, 0, 11,
+                                16, 6,
+                                4, 12, 15, 14, 13,
+                                4, 12, 13, 8, 10,
+                                4, 13, 14, 9, 8,
+                                4, 14, 15, 11, 9,
+                                4, 15, 12, 10, 11,
+                                4, 10, 8, 9, 11 };
+
+    error = xdmf.writeIncrementMeshData( increment, collectionNumber, nodeIds, { { } }, { { } }, nodePositions,
+                                         elementIds, { { } }, { { } }, connectivity );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
+        return 1;
+
+    }
+
+    floatVector nodeDataAnswer = { 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5 };
+
+    error = xdmf.writeScalarSolutionData( increment, 0, "TEST_DATA", "NODE", nodeDataAnswer );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
+        return 1;
+
+    }
+
+    floatVector elementDataAnswer = { -1, -2, -3 };
+
+    error = xdmf.writeScalarSolutionData( increment, 0, "TEST_DATA_", "CeLl", elementDataAnswer );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
+        return 1;
+
+    }
+
+    //Read in the mesh data to determine if things have been stored correctly
+    YAML::Node af = YAML::Load( "mode: read\nfilename: test_output.xdmf\ncell_id_variable_name: ELEMID\n" );
+    dataFileInterface::XDMFDataFile xdmf_result( af );
+
+    if ( xdmf_result._error ){
+
+        xdmf_result._error->print( );
+        results << "test_writeIncrementMeshData & False\n";
+        return 1;
+
+    }
+
+    floatVector nodeDataResult;
+    error = xdmf_result.getSolutionData( increment, "TEST_DATA", "Node", nodeDataResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( nodeDataResult, nodeDataAnswer ) ){
+
+        results << "test_XDMFDataFile_writeScalarSolutionData (test 1) & False\n";
+        return 1;
+
+    }
+
+    floatVector elementDataResult;
+    error = xdmf_result.getSolutionData( increment, "TEST_DATA_", "Cell", elementDataResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( elementDataResult, elementDataAnswer ) ){
+
+        results << "test_XDMFDataFile_writeScalarSolutionData (test 2) & False\n";
+        return 1;
+
+    }
+
+    results << "test_XDMFDataFile_writeScalarSolutionData & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -979,7 +1131,8 @@ int main(){
 
     test_XDMFDataFile_initializeIncrement( results );
     test_XDMFDataFile_addRootCollection( results );
-//    test_XDMFDataFile_writeIncrementMeshData( results );
+    test_XDMFDataFile_writeIncrementMeshData( results );
+    test_XDMFDataFile_writeScalarSolutionData( results );
 
     //Close the results file
     results.close();
