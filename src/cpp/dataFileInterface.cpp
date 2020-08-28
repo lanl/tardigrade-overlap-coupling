@@ -510,7 +510,7 @@ namespace dataFileInterface{
          * :param const uIntType increment: The increment to write the solution data to
          * :param const uInttype collectionNumber: The temporal collection to write the data to
          * :param const std::string &dataName: The name of the data
-         * :param const std::string &dataType: The type of data ( Node or Cell )
+         * :param const std::string &dataType: The type of data ( "Node" or "Cell" )
          * :param const floatVector &data: The data to write
          */
 
@@ -538,6 +538,58 @@ namespace dataFileInterface{
         ( void ) collectionNumber;
 
         return new errorNode( "addRootCollection", "Not implemented" );
+    }
+
+    errorOut dataFileBase::writeSolutionData( const uIntType increment, const uIntType collectionNumber,
+                                              const stringVector &dataNames, const std::string &dataType,
+                                              const floatVector &data ){
+        /*!
+         * Write solution data to the file where the solution data is a vector of values.
+         *
+         * :param const uIntType increment: The increment to write to the file
+         * :param const uIntType collectionNumber: The collection to write to
+         * :param const stringVector &dataNames: The names of the data i.e. [ "v_1", "v_2", "v_3" ]
+         * :param const std::string &dataType: The type of data ( "Node" or "Cell" )
+         * :param const floatVector &data: The data to write, stored as [ v_11, v_12, v_13, v_21, v_22, v_23, v_31, v_32, v_33, v_41, ... ]
+         *     where the example is given to mimic the dataNames example
+         */
+
+        if ( ( data.size( ) % dataNames.size( ) ) != 0 ){
+
+            return new errorNode( "writeSolutionData", "The data and dataNames vectors don't have consistent sizes" );
+
+        }
+
+        errorOut error;
+        floatVector componentValues( dataNames.size( ) / data.size( ), 0 );
+
+        for ( uIntType i = 0; i < dataNames.size( ); i++ ){
+
+            //Extract the data values
+            uIntType indx = 0;
+            for ( uIntType j = i; j < data.size( ); j += dataNames.size( ), indx++ ){
+
+                componentValues[ indx ] = data[ j ];
+
+            }
+
+            error = writeScalarSolutionData( increment, collectionNumber, dataNames[ i ], dataType, componentValues );
+
+            if ( error ){
+
+                std::string outstr = "Error when writing ";
+                outstr += dataNames[ i ];
+                outstr += " to the output file\n";
+                errorOut result = new errorNode( "writeSolutionData", outstr );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+
+        return NULL;
+
     }
 
     /*=========================================================================

@@ -126,6 +126,10 @@ namespace dataFileInterface{
                                                       const std::string &dataName, const std::string &dataType,
                                                       const floatVector &data );
 
+            virtual errorOut writeSolutionData( const uIntType increment, const uIntType collectionNumber,
+                                                const stringVector &dataNames, const std::string &dataType,
+                                                const floatVector &data ); //Probably doesn't need to be overloaded
+
             errorOut _error;
             std::string _filename;
             std::string _mode;
