@@ -228,7 +228,8 @@ namespace overlapCoupling{
                                                                     floatVector &res );
 
             errorOut constructPotentialEnergyPartitioningCoefficient( std::unordered_map< uIntType, floatType > &qes );
-                                                                    
+
+            errorOut outputReferenceInformation( );            
                                                                    
             //The interpolation matrix
             SparseMatrix _N;

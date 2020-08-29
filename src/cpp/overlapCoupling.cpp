@@ -119,47 +119,53 @@ namespace overlapCoupling{
 
         }
 
-        //Assemble the mass matrix for the free micromorphic domians
-        error = assembleFreeMicromorphicMassMatrix( );
+        YAML::Node couplingConfiguration = _inputProcessor.getCouplingInitialization( );
 
-        if ( error ){
+        if ( !couplingConfiguration[ "update_displacement" ].IsScalar( ) ){
 
-            errorOut result = new errorNode( "processIncrement", "Error in the assembly of the mass matrix for the free macro domains" );
-            result->addNext( error );
-            return result;
-
-        }
-
-        //Assemble the coupling mass and damping matrices
-        error = assembleCouplingMassAndDampingMatrices( );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "processIncrement", "Error in the construction of the coupling mass and damping matrices" );
-            result->addNext( error );
-            return result;
-
-        }
-
-        //Assemble the coupling force vector
-        error = assembleCouplingForceVector( );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "processIncrement", "Error in the construction of the coupling force vector" );
-            result->addNext( error );
-            return result;
-
-        }
-
-        //Solve for the free displacements
-        error = solveFreeDisplacement( true );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "processIncrement", "Error when solving for the free displacements" );
-            result->addNext( error );
-            return result;
+            //Assemble the mass matrix for the free micromorphic domians
+            error = assembleFreeMicromorphicMassMatrix( );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "processIncrement", "Error in the assembly of the mass matrix for the free macro domains" );
+                result->addNext( error );
+                return result;
+    
+            }
+    
+            //Assemble the coupling mass and damping matrices
+            error = assembleCouplingMassAndDampingMatrices( );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "processIncrement", "Error in the construction of the coupling mass and damping matrices" );
+                result->addNext( error );
+                return result;
+    
+            }
+    
+            //Assemble the coupling force vector
+            error = assembleCouplingForceVector( );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "processIncrement", "Error in the construction of the coupling force vector" );
+                result->addNext( error );
+                return result;
+    
+            }
+    
+            //Solve for the free displacements
+            error = solveFreeDisplacement( true );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "processIncrement", "Error when solving for the free displacements" );
+                result->addNext( error );
+                return result;
+    
+            }
 
         }
 
@@ -215,6 +221,21 @@ namespace overlapCoupling{
             errorOut result = new errorNode( "initializeCoupling", "Error in initialization of the coupling" );
             result->addNext( error );
             return result;
+        }
+
+        //Save the reference state if required
+        if ( _inputProcessor.outputReferenceInformation( ) ){
+
+            error = outputReferenceInformation( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "initializeCoupling", "Error in the output of the reference information" );
+                result->addNext( error );
+                return result;
+
+            }
+
         }
 
         return NULL;
@@ -5689,5 +5710,94 @@ namespace overlapCoupling{
         }
 
         return NULL;
+
+    }
+
+    errorOut overlapCoupling::outputReferenceInformation( ){
+        /*!
+         * Output the reference information to file
+         *
+         * For now, I'm using a XDMF file which may, or may not, be the most 
+         * appropriate file type to use but it does allow me to store the 
+         * data in a binary file ( rather than ASCII ). I want to store the
+         * data in hdf5 ( which XDMF also does ) so the end result of doing
+         * this versus a custom approach is probably not a big deal.
+         */
+
+        //Get the coupling initialization
+        YAML::Node couplingInitialization = _inputProcessor.getCouplingInitialization( );
+
+        //Initialize the XDMF domain
+        shared_ptr< XdmfDomain > domain = XdmfDomain::New( );
+        std::string domainInfoDescription = "This is not a mesh-based XDMF file and should only be used ";
+        domainInfoDescription += "/ read by overlapCoupling and associated file readers";
+
+        shared_ptr< XdmfInformation > domainInformation = XdmfInformation::New( "REFERENCE_INFORMATION_DOMAIN", domainInfoDescription );
+        domain->insert( domainInformation );
+
+        //Save the projection matrices
+        shared_ptr< XdmfAttribute > BQhatQ = XdmfAttribute::New( );
+        shared_ptr< XdmfAttribute > BQhatD = XdmfAttribute::New( );
+        shared_ptr< XdmfAttribute > BDhatQ = XdmfAttribute::New( );
+        shared_ptr< XdmfAttribute > BDhatD = XdmfAttribute::New( );
+
+        std::string projectionType = couplingInitialization[ "projection_type" ].as< std::string >( );
+        if ( projectionType.compare( "l2_projection" ) == 0 ){
+
+            //Write the matrix type to the output file
+            shared_ptr< XdmfInformation > projectionType = XdmfInformation::New( "EIGEN_MATRIX_TYPE", "DENSE" );
+            domain->insert( projectionType );
+
+            //Write BQhatQ
+            shared_ptr< XdmfInformation > BQhatQ_info
+                = XdmfInformation::New( "BQhatQ_shape",
+                                        std::to_string( _L2_BQhatQ.rows( ) ) + "," + std::to_string( _L2_BQhatQ.cols( ) ) );
+            BQhatQ->insert( BQhatQ_info );
+            BQhatQ->insert( 0, _L2_BQhatQ.data( ), _L2_BQhatQ.size( ), 1, 1 );
+
+            //Write BQhatD
+            shared_ptr< XdmfInformation > BQhatD_info
+                = XdmfInformation::New( "BQhatD_shape",
+                                        std::to_string( _L2_BQhatD.rows( ) ) + "," + std::to_string( _L2_BQhatD.cols( ) ) );
+            BQhatQ->insert( BQhatD_info );
+            BQhatQ->insert( 0, _L2_BQhatD.data( ), _L2_BQhatD.size( ), 1, 1 );
+
+            //Write BDhatQ
+            shared_ptr< XdmfInformation > BDhatQ_info
+                = XdmfInformation::New( "BDhatQ_shape",
+                                        std::to_string( _L2_BDhatQ.rows( ) ) + "," + std::to_string( _L2_BDhatQ.cols( ) ) );
+            BQhatQ->insert( BDhatQ_info );
+            BQhatQ->insert( 0, _L2_BDhatQ.data( ), _L2_BDhatQ.size( ), 1, 1 );
+
+            //Write BDhatD
+            shared_ptr< XdmfInformation > BDhatD_info
+                = XdmfInformation::New( "BDhatD_shape",
+                                        std::to_string( _L2_BDhatD.rows( ) ) + "," + std::to_string( _L2_BDhatD.cols( ) ) );
+            BQhatQ->insert( BDhatD_info );
+            BQhatQ->insert( 0, _L2_BDhatD.data( ), _L2_BDhatD.size( ), 1, 1 );
+
+        }
+        else if ( projectionType.compare( "direct_projection" ) == 0 ){
+
+            //Write the matrix type to the output file
+            shared_ptr< XdmfInformation > projectionType = XdmfInformation::New( "EIGEN_MATRIX_TYPE", "SPARSE" );
+            domain->insert( projectionType );
+
+        }
+        else{
+            return new errorNode( "outputReferenceInformation",
+                                  "The projection type " + projectionType + " is not recognized" );
+        }
+
+        //Initialize the writer
+        std::string reference_filename
+            = couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( );
+
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( reference_filename + ".h5", true );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( reference_filename + ".xdmf", heavyWriter );
+        domain->accept( writer );
+
+        return new errorNode( "outputReferenceInformation", "OOOOOH NOOOOOO!" );
+
     }
 }
