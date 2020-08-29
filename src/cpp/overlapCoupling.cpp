@@ -5727,6 +5727,13 @@ namespace overlapCoupling{
         //Get the coupling initialization
         YAML::Node couplingInitialization = _inputProcessor.getCouplingInitialization( );
 
+        //Initialize the writer
+        std::string reference_filename
+            = couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( );
+
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( reference_filename + ".h5", true );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( reference_filename + ".xdmf", heavyWriter );
+
         //Initialize the XDMF domain
         shared_ptr< XdmfDomain > domain = XdmfDomain::New( );
         std::string domainInfoDescription = "This is not a mesh-based XDMF file and should only be used ";
@@ -5734,19 +5741,23 @@ namespace overlapCoupling{
 
         shared_ptr< XdmfInformation > domainInformation = XdmfInformation::New( "REFERENCE_INFORMATION_DOMAIN", domainInfoDescription );
         domain->insert( domainInformation );
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        domain->insert( grid );
 
         //Save the projection matrices
-        shared_ptr< XdmfAttribute > BQhatQ = XdmfAttribute::New( );
-        shared_ptr< XdmfAttribute > BQhatD = XdmfAttribute::New( );
-        shared_ptr< XdmfAttribute > BDhatQ = XdmfAttribute::New( );
-        shared_ptr< XdmfAttribute > BDhatD = XdmfAttribute::New( );
 
         std::string projectionType = couplingInitialization[ "projection_type" ].as< std::string >( );
         if ( projectionType.compare( "l2_projection" ) == 0 ){
 
+            //Initialize the projection matrix attributes
+            shared_ptr< XdmfAttribute > BQhatQ = XdmfAttribute::New( );
+            shared_ptr< XdmfAttribute > BQhatD = XdmfAttribute::New( );
+            shared_ptr< XdmfAttribute > BDhatQ = XdmfAttribute::New( );
+            shared_ptr< XdmfAttribute > BDhatD = XdmfAttribute::New( );
+
             //Write the matrix type to the output file
             shared_ptr< XdmfInformation > projectionType = XdmfInformation::New( "EIGEN_MATRIX_TYPE", "DENSE" );
-            domain->insert( projectionType );
+            grid->insert( projectionType );
 
             //Write BQhatQ
             shared_ptr< XdmfInformation > BQhatQ_info
@@ -5754,27 +5765,33 @@ namespace overlapCoupling{
                                         std::to_string( _L2_BQhatQ.rows( ) ) + "," + std::to_string( _L2_BQhatQ.cols( ) ) );
             BQhatQ->insert( BQhatQ_info );
             BQhatQ->insert( 0, _L2_BQhatQ.data( ), _L2_BQhatQ.size( ), 1, 1 );
+            grid->insert( BQhatQ );
 
             //Write BQhatD
             shared_ptr< XdmfInformation > BQhatD_info
                 = XdmfInformation::New( "BQhatD_shape",
                                         std::to_string( _L2_BQhatD.rows( ) ) + "," + std::to_string( _L2_BQhatD.cols( ) ) );
-            BQhatQ->insert( BQhatD_info );
-            BQhatQ->insert( 0, _L2_BQhatD.data( ), _L2_BQhatD.size( ), 1, 1 );
+            BQhatD->insert( BQhatD_info );
+            BQhatD->insert( 0, _L2_BQhatD.data( ), _L2_BQhatD.size( ), 1, 1 );
+            grid->insert( BQhatD );
 
             //Write BDhatQ
             shared_ptr< XdmfInformation > BDhatQ_info
                 = XdmfInformation::New( "BDhatQ_shape",
                                         std::to_string( _L2_BDhatQ.rows( ) ) + "," + std::to_string( _L2_BDhatQ.cols( ) ) );
-            BQhatQ->insert( BDhatQ_info );
-            BQhatQ->insert( 0, _L2_BDhatQ.data( ), _L2_BDhatQ.size( ), 1, 1 );
+            BDhatQ->insert( BDhatQ_info );
+            BDhatQ->insert( 0, _L2_BDhatQ.data( ), _L2_BDhatQ.size( ), 1, 1 );
+            grid->insert( BDhatQ );
 
             //Write BDhatD
             shared_ptr< XdmfInformation > BDhatD_info
                 = XdmfInformation::New( "BDhatD_shape",
                                         std::to_string( _L2_BDhatD.rows( ) ) + "," + std::to_string( _L2_BDhatD.cols( ) ) );
-            BQhatQ->insert( BDhatD_info );
-            BQhatQ->insert( 0, _L2_BDhatD.data( ), _L2_BDhatD.size( ), 1, 1 );
+            BDhatD->insert( BDhatD_info );
+            BDhatD->insert( 0, _L2_BDhatD.data( ), _L2_BDhatD.size( ), 1, 1 );
+            grid->insert( BDhatD );
+
+            domain->accept( writer );
 
         }
         else if ( projectionType.compare( "direct_projection" ) == 0 ){
@@ -5783,21 +5800,119 @@ namespace overlapCoupling{
             shared_ptr< XdmfInformation > projectionType = XdmfInformation::New( "EIGEN_MATRIX_TYPE", "SPARSE" );
             domain->insert( projectionType );
 
+            errorOut error;
+
+            //Write BQhatQ
+            error = writeSparseMatrixToXDMF( _DP_BQhatQ, "BQhatQ", writer, domain, grid );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out BQhatQ" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Write BQhatD
+            error = writeSparseMatrixToXDMF( _DP_BQhatD, "BQhatD", writer, domain, grid );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out BQhatD" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Write BDhatQ
+            error = writeSparseMatrixToXDMF( _DP_BDhatQ, "BDhatQ", writer, domain, grid );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out BDhatQ" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Write BDhatD
+            error = writeSparseMatrixToXDMF( _DP_BDhatD, "BDhatD", writer, domain, grid );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out BDhatD" );
+                result->addNext( error );
+                return result;
+
+            }
+
         }
         else{
             return new errorNode( "outputReferenceInformation",
                                   "The projection type " + projectionType + " is not recognized" );
         }
 
-        //Initialize the writer
-        std::string reference_filename
-            = couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( );
-
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( reference_filename + ".h5", true );
-        shared_ptr< XdmfWriter > writer = XdmfWriter::New( reference_filename + ".xdmf", heavyWriter );
-        domain->accept( writer );
-
         return new errorNode( "outputReferenceInformation", "OOOOOH NOOOOOO!" );
 
     }
+
+    errorOut writeSparseMatrixToXDMF( const SparseMatrix &A, const std::string matrixName,
+                                      shared_ptr< XdmfWriter > &writer, shared_ptr< XdmfDomain > &domain,
+                                      shared_ptr< XdmfUnstructuredGrid > &grid ){
+        /*!
+         * Write a sparse matrix to a XDMF file
+         */
+
+
+        shared_ptr< XdmfAttribute > _A;
+        shared_ptr< XdmfInformation > _A_info
+            = XdmfInformation::New( matrixName + "_shape",
+                                    std::to_string( A.rows( ) ) + "," + std::to_string( A.cols( ) ) );
+        _A->insert( _A_info );
+
+        uIntVector rowIndices, colIndices;
+        uIntType nonZeros = A.nonZeros( );
+        rowIndices.reserve( nonZeros );
+        colIndices.reserve( nonZeros );
+
+        floatVector values;
+        values.reserve( nonZeros );
+
+        for (int k=0; k < A.outerSize(); ++k) {
+
+            for (SparseMatrix::InnerIterator it(A,k); it; ++it){
+
+                rowIndices.push_back( it.row( ) );
+                colIndices.push_back( it.col( ) );
+                values.push_back( it.value( ) );
+
+            }
+
+        }
+
+        shared_ptr< XdmfAttribute > _A_rows = XdmfAttribute::New( );
+        _A_rows->setName( matrixName + "_rows" );
+        _A_rows->insert( 0, rowIndices.data( ), rowIndices.size( ), 1, 1 );
+        _A->insert( _A_rows );
+
+        shared_ptr< XdmfAttribute > _A_cols = XdmfAttribute::New( );
+        _A_cols->setName( matrixName + "_cols" );
+        _A_cols->insert( 0, colIndices.data( ), colIndices.size( ), 1, 1 );
+        _A->insert( _A_cols );
+
+        shared_ptr< XdmfAttribute > _A_values = XdmfAttribute::New( );
+        _A_values->setName( matrixName + "_values" );
+        _A_values->insert( 0, values.data( ), values.size( ), 1, 1 );
+        _A->insert( _A_values );
+
+        grid->insert( _A );
+
+        domain->accept( writer );
+        return NULL;
+    }
+
 }

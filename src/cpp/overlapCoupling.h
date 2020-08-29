@@ -329,6 +329,10 @@ namespace overlapCoupling{
                                                        floatType &J, floatType &Jxw,
                                                        floatVector &uQpt, floatVector &XiQpt );
 
+    errorOut writeSparseMatrixToXDMF( const SparseMatrix &A, const std::string matrixName,
+                                      shared_ptr< XdmfWriter > &writer, shared_ptr< XdmfDomain > &domain,
+                                      shared_ptr< XdmfUnstructuredGrid > &grid );
+
 }
 
 #endif
