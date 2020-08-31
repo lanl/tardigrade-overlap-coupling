@@ -706,24 +706,29 @@ namespace dataFileInterface{
 
         }
 
-        //Initialize the XDMF domain
-        _domain = XdmfDomain::New( );
-        shared_ptr< XdmfInformation > domaininfo = XdmfInformation::New( domainName, domainString );
-        _domain->insert( domaininfo );
+        if ( configuration [ "append_to_existing_file" ] ){
 
-        //Create the main temporal collection
-        shared_ptr< XdmfGridCollection > _gridHolder = XdmfGridCollection::New( );
-        _gridHolder->setType( XdmfGridCollectionType::Temporal( ) );
-        shared_ptr< XdmfInformation > _holderInfo = XdmfInformation::New( "Main_Temporal_Collection", "The main temporal ( or iteration ) collection" );
-        _gridHolder->insert( _holderInfo );
-        _domain->insert( _gridHolder );
+            try{
 
+                _append = configuration[ "append_to_existing_file" ].as< bool >( );
+
+            }
+            catch( std::exception &e ){
+
+                std::string output = "Error in YAML file for the append to existing file flag: ";
+                output += e.what( );
+                _error = new errorNode( "XDMFDataFile", output );
+
+            }
+
+        }
+
+        //Initialize the writer
         try{
 
             shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
             heavyWriter->setReleaseData( true );
             _writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
-            _domain->accept( _writer );
 
         }
         catch( XdmfError &e ){
@@ -731,6 +736,59 @@ namespace dataFileInterface{
             std::string output = "Error in forming the XDMF writer: ";
             output += e.what( );
             _error = new errorNode( "XDMFDataFile", output );
+
+        }
+
+        if ( _append ){
+
+            try{
+                //Try to read the domain in from the file ( if it exists )
+                std::cout << "Checking for existing XDMF file ( may throw XDMF warning )\n";
+                _reader = XdmfReader::New( );
+                _domain = shared_dynamic_cast<XdmfDomain>( _reader->read( _filename + ".xdmf" ) );
+
+                uIntType numIncrements;
+                _error = getNumIncrements( numIncrements );
+
+                if ( _error ){
+                    return;
+                }
+
+                _increment_reference_grids = uIntVector( numIncrements, 0 );
+            }
+            catch( XdmfError &e ){
+
+                //Initialize a new XDMF domain
+                _domain = XdmfDomain::New( );
+                shared_ptr< XdmfInformation > domaininfo = XdmfInformation::New( domainName, domainString );
+                _domain->insert( domaininfo );
+        
+                //Create the main temporal collection
+                shared_ptr< XdmfGridCollection > _gridHolder = XdmfGridCollection::New( );
+                _gridHolder->setType( XdmfGridCollectionType::Temporal( ) );
+                shared_ptr< XdmfInformation > _holderInfo
+                    = XdmfInformation::New( "Main_Temporal_Collection", "The main temporal ( or iteration ) collection" );
+                _gridHolder->insert( _holderInfo );
+                _domain->insert( _gridHolder );
+                _domain->accept( _writer );
+            }
+
+        }
+        else{
+
+            //Initialize a new XDMF domain
+            _domain = XdmfDomain::New( );
+            shared_ptr< XdmfInformation > domaininfo = XdmfInformation::New( domainName, domainString );
+            _domain->insert( domaininfo );
+        
+            //Create the main temporal collection
+            shared_ptr< XdmfGridCollection > _gridHolder = XdmfGridCollection::New( );
+            _gridHolder->setType( XdmfGridCollectionType::Temporal( ) );
+            shared_ptr< XdmfInformation > _holderInfo
+                = XdmfInformation::New( "Main_Temporal_Collection", "The main temporal ( or iteration ) collection" );
+            _gridHolder->insert( _holderInfo );
+            _domain->insert( _gridHolder );
+            _domain->accept( _writer );
 
         }
 
@@ -1257,13 +1315,6 @@ namespace dataFileInterface{
 
         }
 
-        if ( nodeSets.size( ) != nodeSetNames.size( ) ){
-
-            return new errorNode( "writeIncrementMeshData",
-                                  "The size of the node sets vector and the node set names vector are not the same size" );
-
-        }
-
         const uIntType _reference_increment = _increment_reference_grids[ increment ];
 
         //Construct the output grid
@@ -1271,7 +1322,7 @@ namespace dataFileInterface{
 
         //If the reference increment is not the current increment, we don't need to write out the mesh
         //but can point to the old mesh
-
+        
         if ( _reference_increment != increment ){
 
             //Point the new grid to the current reference gitd's geometry, topology, and ids
@@ -1293,8 +1344,16 @@ namespace dataFileInterface{
 
             //Write the grid to the file
             shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber ); //TODO: This should be verified to be general enough
-            collection->insert( grid );
             _domain->accept( _writer );
+
+            return NULL;
+
+        }
+
+        if ( nodeSets.size( ) != nodeSetNames.size( ) ){
+
+            return new errorNode( "writeIncrementMeshData",
+                                  "The size of the node sets vector and the node set names vector are not the same size" );
 
         }
 
@@ -1365,12 +1424,6 @@ namespace dataFileInterface{
         }
 
         //Write to the output file
-        
-        shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber );
-
-        collection->insert( grid );
-
-        //Write out the data
         _domain->accept( _writer );
 
         return NULL;

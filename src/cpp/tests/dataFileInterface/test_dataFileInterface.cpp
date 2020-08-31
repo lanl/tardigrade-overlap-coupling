@@ -1128,7 +1128,7 @@ int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
 
     uIntType increment;
     uIntType collectionNumber = 0;
-    errorOut error = xdmf.initializeIncrement( 0.0, collectionNumber, collectionNumber, increment );
+    errorOut error = xdmf.initializeIncrement( 0.0, 0, collectionNumber, increment );
 
     if ( error ){
 
@@ -1292,6 +1292,125 @@ int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
 
     }
 
+    dataFileInterface::XDMFDataFile xdmf2( yf[ "filetest3" ] );
+
+    error = xdmf2.initializeIncrement( 1.0, 0, collectionNumber, increment );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeSolutionData & False\n";
+        return 1;
+
+    }
+
+    if ( increment != 1 ){
+
+        results << "test_XDMFDataFile_writeSolutionData (test 3) & False\n";
+        return 1;
+
+    }
+
+    error = xdmf2.writeIncrementMeshData( increment, collectionNumber, { }, { { } }, { }, { }, { }, { { } }, { }, { } );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeSolutionData & False\n";
+        return 1;
+
+    }
+
+    floatVector nodeDataAnswer2 = nodeDataAnswer + 1.;
+
+    error = xdmf2.writeSolutionData( increment, 0, { "TEST_DATA_1", "TEST_DATA_2", "TEST_DATA_3" }, "NODE", nodeDataAnswer2 );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeSolutionData & False\n";
+        return 1;
+
+    }
+
+    floatVector elementDataAnswer2 = elementDataAnswer - 2.;
+
+    error = xdmf2.writeSolutionData( increment, 0, { "TEST_DATA_1_", "TEST_DATA_2_" }, "CeLl", elementDataAnswer2 );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeSolutionData & False\n";
+        return 1;
+
+    }
+
+    dataFileInterface::XDMFDataFile xdmf_result2( af );
+    
+    if ( xdmf_result2._error ){
+
+        xdmf_result2._error->print( );
+        results << "test_writeSolutionData & False\n";
+        return 1;
+
+    }
+
+    for ( uIntType i = 0; i < 3; i++ ){
+
+        floatVector nodeDataResult;
+        std::string name = "TEST_DATA_" + std::to_string( i + 1 );
+        error = xdmf_result2.getSolutionData( increment, name, "Node", nodeDataResult );
+    
+        if ( error ){
+    
+            error->print( );
+            results << "test_XDMFDataFile_writeSolutionData & False\n";
+            return 1;
+    
+        }
+    
+        uIntType indx = 0;
+        for ( unsigned int j = i; j < nodeDataAnswer.size( ); j += 3, indx++ ){
+
+            if ( !vectorTools::fuzzyEquals( nodeDataResult[ indx ], nodeDataAnswer2[ j ] ) ){
+    
+                results << "test_XDMFDataFile_writeSolutionData (test 4) & False\n";
+                return 1;
+    
+            }
+
+        }
+
+    }
+
+    for ( uIntType i = 0; i < 2; i++ ){
+
+        floatVector elementDataResult;
+        std::string name = "TEST_DATA_" + std::to_string( i + 1 ) + "_";
+        error = xdmf_result2.getSolutionData( increment, name, "Cell", elementDataResult );
+    
+        if ( error ){
+    
+            error->print( );
+            results << "test_XDMFDataFile_writeSolutionData & False\n";
+            return 1;
+    
+        }
+
+        uIntType indx = 0;
+        for ( unsigned int j = i; j < elementDataAnswer.size( ); j += 2, indx++ ){
+    
+            if ( !vectorTools::fuzzyEquals( elementDataResult[ indx ], elementDataAnswer2[ j ] ) ){
+      
+                results << "test_XDMFDataFile_writeSolutionData (test 5) & False\n";
+                return 1;
+        
+            }
+
+        }
+
+    }
+
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
@@ -1312,24 +1431,24 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-    test_XDMFDataFile_constructor( results );
-    test_XDMFDataFile_getNumIncrements( results );
-    test_XDMFDataFile_readMesh( results );
-    test_XDMFDataFile_getNumSubDomainNodes( results );
-    test_XDMFDataFile_getNodeIds( results );
-    test_XDMFDataFile_getSubDomainNodes( results );
-    test_XDMFDataFile_getNumNodes( results );
-    test_XDMFDataFile_getSetNames( results );
-    test_XDMFDataFile_getSolutionData( results );
-    test_XDMFDataFile_getSolutionVectorDataFromComponents( results );
-    test_XDMFDataFile_getMeshData( results );
-    test_XDMFDataFile_getMeshData2( results );
-    test_XDMFDataFile_getIncrementTime( results );
-
-    test_XDMFDataFile_initializeIncrement( results );
-    test_XDMFDataFile_addRootCollection( results );
-    test_XDMFDataFile_writeIncrementMeshData( results );
-    test_XDMFDataFile_writeScalarSolutionData( results );
+//    test_XDMFDataFile_constructor( results );
+//    test_XDMFDataFile_getNumIncrements( results );
+//    test_XDMFDataFile_readMesh( results );
+//    test_XDMFDataFile_getNumSubDomainNodes( results );
+//    test_XDMFDataFile_getNodeIds( results );
+//    test_XDMFDataFile_getSubDomainNodes( results );
+//    test_XDMFDataFile_getNumNodes( results );
+//    test_XDMFDataFile_getSetNames( results );
+//    test_XDMFDataFile_getSolutionData( results );
+//    test_XDMFDataFile_getSolutionVectorDataFromComponents( results );
+//    test_XDMFDataFile_getMeshData( results );
+//    test_XDMFDataFile_getMeshData2( results );
+//    test_XDMFDataFile_getIncrementTime( results );
+//
+//    test_XDMFDataFile_initializeIncrement( results );
+//    test_XDMFDataFile_addRootCollection( results );
+//    test_XDMFDataFile_writeIncrementMeshData( results );
+//    test_XDMFDataFile_writeScalarSolutionData( results );
     test_XDMFDataFile_writeSolutionData( results );
 
     //Close the results file

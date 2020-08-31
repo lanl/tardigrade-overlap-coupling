@@ -140,6 +140,8 @@ namespace dataFileInterface{
 
             errorOut connectivityToCellIndices( const uIntType &nCells, const uIntVector &connectivity,
                                                 uIntVector &connectivityCellIndices );
+
+            bool _append = true;
     };
 
     class XDMFDataFile : public dataFileBase{
