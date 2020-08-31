@@ -3072,7 +3072,7 @@ namespace inputFileProcessor{
 
         }
 
-        if ( _config[ "coupling_initialization" ][ "output_updated_DOF" ] ){
+        if ( _config[ "coupling_initialization" ][ "output_updated_dof" ] ){
 
             if ( _config[ "coupling_initialization" ][ "update_displacement" ].IsScalar( ) &&
                  !_config[ "coupling_initialization" ][ "update_displacement" ].as< bool >( ) ){
@@ -3122,6 +3122,11 @@ namespace inputFileProcessor{
             }
 
             std::remove( tmp.c_str( ) );
+
+        }
+        else{
+
+            _config[ "coupling_initialization" ][ "output_updated_dof" ] = false;
 
         }
 

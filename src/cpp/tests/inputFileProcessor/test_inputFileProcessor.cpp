@@ -1576,7 +1576,16 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
-    if ( couplingInitialization[ "output_updated_dof" ][ "macroscale_filename" ].as< std::string >( ).compare( "macroscale_dof" ) != 0 ){
+    if ( ( couplingInitialization[ "output_updated_dof" ] ) && ( !couplingInitialization[ "output_updated_dof" ].IsScalar( ) ) ){
+
+        if ( couplingInitialization[ "output_updated_dof" ][ "macroscale_filename" ].as< std::string >( ).compare( "macroscale_dof" ) != 0 ){
+    
+            results << "test_getCouplingInitialization (test 34) & False\n";
+            return 1;
+    
+        }
+    }
+    else{
 
         results << "test_getCouplingInitialization (test 34) & False\n";
         return 1;
