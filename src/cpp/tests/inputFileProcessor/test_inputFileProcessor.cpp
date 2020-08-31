@@ -1590,6 +1590,14 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
+    if ( couplingInitialization[ "reference_filename" ].as< std::string >( ).compare( "reference_information.xdmf" ) != 0 ){
+
+        std::cout << couplingInitialization[ "reference_filename" ].as< std::string >( ) << "\n";
+        results << "test_getCouplingInitialization (test 36) & False\n";
+        return 1;
+
+    }
+
     results << "test_getCouplingInitialization & True\n";
     return 0;
 

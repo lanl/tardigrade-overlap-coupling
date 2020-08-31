@@ -3036,6 +3036,8 @@ namespace inputFileProcessor{
 
             std::remove( tmp.c_str( ) );
 
+            _config[ "coupling_initialization" ][ "reference_filename" ] = "reference_information.xdmf";
+
         }
 
         if ( _config[ "coupling_initialization" ][ "output_homogenized_response" ] ){
