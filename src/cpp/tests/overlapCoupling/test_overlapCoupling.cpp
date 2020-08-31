@@ -1160,17 +1160,13 @@ int test_writeSparseMatrixToXDMF( std::ofstream &results ){
 
     }
 
-//    remove( h5_filename.c_str( ) );
-//    remove( xdmf_filename.c_str( ) );
+    remove( h5_filename.c_str( ) );
+    remove( xdmf_filename.c_str( ) );
 
     results << "test_writeSparseMatrixToXDMF & True\n";
     return 0;
 
 }
-
-//writeSparseMatrixToXDMF( const SparseMatrix &A, const std::string matrixName,
-//                                      shared_ptr< XdmfWriter > &writer, shared_ptr< XdmfDomain > &domain,
-//                                      shared_ptr< XdmfUnstructuredGrid > &grid )
 
 int main(){
     /*!
@@ -1184,19 +1180,19 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-//    test_overlapCoupling_constructor( results );
-//    test_overlapCoupling_initializeCoupling( results );
-//    test_overlapCoupling_processIncrement( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
-//    test_MADOutlierDetection( results );
-//    test_formMicromorphicElementMassMatrix( results );
-//    test_computeMicromorphicElementRequiredValues( results );
-//    test_computeMicromorphicElementInternalForceVector( results );
+    test_overlapCoupling_constructor( results );
+    test_overlapCoupling_initializeCoupling( results );
+    test_overlapCoupling_processIncrement( results );
+    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+    test_MADOutlierDetection( results );
+    test_formMicromorphicElementMassMatrix( results );
+    test_computeMicromorphicElementRequiredValues( results );
+    test_computeMicromorphicElementInternalForceVector( results );
     test_writeSparseMatrixToXDMF( results );
 
     //Close the results file

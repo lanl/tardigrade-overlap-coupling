@@ -193,6 +193,14 @@ namespace overlapCoupling{
         if ( couplingInitialization[ "type" ].as< std::string >( ).compare( "use_first_increment" ) == 0 ){
             error = setReferenceStateFromIncrement( 0, 0 );
 
+            if ( error ){
+
+                errorOut result = new errorNode( "initializeCoupling", "Error in setting the initial reference state" );
+                result->addNext( error );
+                return result;
+
+            }
+
             bool save_reference_positions = false;
 
             if ( couplingInitialization[ "projection_type" ].as< std::string >( ).compare(  "direct_projection" ) == 0 ){
@@ -210,6 +218,11 @@ namespace overlapCoupling{
                                          + *_inputProcessor.getMicroDisplacements( );
 
             }
+        }
+        else if ( couplingInitialization[ "type" ].as< std::string >( ).compare( "from_file" ) == 0 ){
+
+            error = extractProjectionMatricesFromFile( );
+
         }
         else{
             return new errorNode( "initializeCoupling",
@@ -5741,7 +5754,7 @@ namespace overlapCoupling{
 
         shared_ptr< XdmfInformation > domainInformation = XdmfInformation::New( "REFERENCE_INFORMATION_DOMAIN", domainInfoDescription );
         domain->insert( domainInformation );
-        shared_ptr< XdmfUnstructuredGrid > grid;
+        shared_ptr< XdmfUnstructuredGrid > grid = XdmfUnstructuredGrid::New( );
         domain->insert( grid );
 
         //Save the projection matrices
@@ -5803,7 +5816,7 @@ namespace overlapCoupling{
             errorOut error;
 
             //Write BQhatQ
-            error = writeSparseMatrixToXDMF( _DP_BQhatQ, "BQhatQ", writer, domain, grid );
+            error = writeSparseMatrixToXDMF( _DP_BQhatQ, "BQhatq", writer, domain, grid );
 
             if ( error ){
 
@@ -5852,11 +5865,13 @@ namespace overlapCoupling{
 
         }
         else{
+
             return new errorNode( "outputReferenceInformation",
                                   "The projection type " + projectionType + " is not recognized" );
+
         }
 
-        return new errorNode( "outputReferenceInformation", "OOOOOH NOOOOOO!" );
+        return NULL;
 
     }
 
@@ -6015,6 +6030,86 @@ namespace overlapCoupling{
 
         A = SparseMatrix( rows, cols );
         A.setFromTriplets( triplets.begin( ), triplets.end( ) );
+
+        return NULL;
+
+    }
+
+    errorOut overlapCoupling::extractProjectionMatricesFromFile( ){
+        /*!
+         * Extract the projection matrices from the storage file
+         */
+
+        //Set the filename
+        YAML::Node config = _inputProcessor.getCouplingInitialization( );
+        std::string filename = config[ "reference_filename" ].as< std::string >( );
+
+        //Initialize the XDMF reader
+        shared_ptr< XdmfReader > reader = XdmfReader::New( );
+        shared_ptr< XdmfDomain > _readDomain = shared_dynamic_cast< XdmfDomain >( reader->read( filename ) );
+        shared_ptr< XdmfUnstructuredGrid > _readGrid = _readDomain->getUnstructuredGrid( 0 );
+
+        std::string projectionType = config[ "type" ].as< std::string >( );
+
+        if ( projectionType.compare( "l2_projection" ) ){
+
+            std::string outstr = projectionType;
+            outstr += " not implemented";
+            return new errorNode( "extractProjectionMatricesFromFile", outstr );
+
+        }
+        else if ( projectionType.compare( "direct_projection" ) ){
+
+            errorOut error = readSparseMatrixFromXDMF( _readGrid, "BQhatQ", _DP_BQhatQ );
+
+            if ( error ){
+
+                errorOut result
+                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BQhatQ from the XDMF file" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            error = readSparseMatrixFromXDMF( _readGrid, "BQhatD", _DP_BQhatD );
+
+            if ( error ){
+
+                errorOut result
+                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BQhatD from the XDMF file" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            error = readSparseMatrixFromXDMF( _readGrid, "BDhatQ", _DP_BDhatQ );
+
+            if ( error ){
+
+                errorOut result
+                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BDhatQ from the XDMF file" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            error = readSparseMatrixFromXDMF( _readGrid, "BDhatD", _DP_BDhatD );
+
+            if ( error ){
+
+                errorOut result
+                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BDhatD from the XDMF file" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+        else{
+
+            return new errorNode( "extractProjectionMatricesFromFile", "Not implemented" );
+
+        }
 
         return NULL;
 
