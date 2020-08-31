@@ -3064,6 +3064,12 @@ namespace inputFileProcessor{
 
             std::remove( tmp.c_str( ) );
 
+            if ( !_config[ "coupling_initialization" ][ "output_homogenized_response" ][ "filetype" ] ){
+
+                _config [ "coupling_initialization" ][ "output_homogenized_response" ][ "filetype" ] = "XDMF";
+
+            }
+
         }
 
         if ( _config[ "coupling_initialization" ][ "output_updated_DOF" ] ){

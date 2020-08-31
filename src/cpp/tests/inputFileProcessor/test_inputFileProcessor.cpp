@@ -1598,6 +1598,13 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
+    if ( couplingInitialization[ "output_homogenized_response" ][ "filetype" ].as< std::string >( ).compare( "XDMF" ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 37) & False\n";
+        return 1;
+
+    }
+
     results << "test_getCouplingInitialization & True\n";
     return 0;
 
