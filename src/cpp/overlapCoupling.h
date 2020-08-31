@@ -333,6 +333,8 @@ namespace overlapCoupling{
                                       shared_ptr< XdmfWriter > &writer, shared_ptr< XdmfDomain > &domain,
                                       shared_ptr< XdmfUnstructuredGrid > &grid );
 
+    errorOut readSparseMatrixFromXDMF( const shared_ptr< XdmfUnstructuredGrid > &grid, const std::string &matrixName, SparseMatrix &A );
+
 }
 
 #endif

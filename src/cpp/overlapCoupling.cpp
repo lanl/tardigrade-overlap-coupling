@@ -5868,11 +5868,13 @@ namespace overlapCoupling{
          */
 
 
-        shared_ptr< XdmfAttribute > _A;
+        shared_ptr< XdmfAttribute > _A = XdmfAttribute::New( );
+        _A->setName( matrixName );
         shared_ptr< XdmfInformation > _A_info
             = XdmfInformation::New( matrixName + "_shape",
                                     std::to_string( A.rows( ) ) + "," + std::to_string( A.cols( ) ) );
         _A->insert( _A_info );
+        grid->insert( _A );
 
         uIntVector rowIndices, colIndices;
         uIntType nonZeros = A.nonZeros( );
@@ -5897,22 +5899,125 @@ namespace overlapCoupling{
         shared_ptr< XdmfAttribute > _A_rows = XdmfAttribute::New( );
         _A_rows->setName( matrixName + "_rows" );
         _A_rows->insert( 0, rowIndices.data( ), rowIndices.size( ), 1, 1 );
-        _A->insert( _A_rows );
+        grid->insert( _A_rows );
 
         shared_ptr< XdmfAttribute > _A_cols = XdmfAttribute::New( );
         _A_cols->setName( matrixName + "_cols" );
         _A_cols->insert( 0, colIndices.data( ), colIndices.size( ), 1, 1 );
-        _A->insert( _A_cols );
+        grid->insert( _A_cols );
 
         shared_ptr< XdmfAttribute > _A_values = XdmfAttribute::New( );
         _A_values->setName( matrixName + "_values" );
         _A_values->insert( 0, values.data( ), values.size( ), 1, 1 );
-        _A->insert( _A_values );
-
-        grid->insert( _A );
+        grid->insert( _A_values );
 
         domain->accept( writer );
         return NULL;
+    }
+
+    errorOut readSparseMatrixFromXDMF( const shared_ptr< XdmfUnstructuredGrid > &grid, const std::string &matrixName, SparseMatrix &A ){
+        /*!
+         * Read a sparse matrix from a XDMF file attribute. This is not a standard use of a XDMF file.
+         *
+         * :param const shared_ptr< XdmfUnstructuredGrid > &grid: The pointer to the grid object that contains the matrix
+         * :param const std::string &matrixName: The name of the matrix
+         * :param SparseMatrix &A: The re-constructed sparse matrix
+         */
+
+        shared_ptr< XdmfAttribute > _A = grid->getAttribute( matrixName );
+
+        if ( !_A ){
+
+            std::string outstr = matrixName;
+            outstr += " does not appear as an attribute in the provided grid\n";
+            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+
+        }
+
+        shared_ptr< XdmfInformation > shapeInfo = _A->getInformation( 0 );
+
+        if ( !shapeInfo ){
+
+            std::string outstr = "There is no information defined for the SparseMatrix " + matrixName;
+            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+
+        }
+
+        if ( shapeInfo->getKey( ).compare( matrixName + "_shape" ) != 0 ){
+
+            std::string outstr = matrixName;
+            outstr += "_shape is not in the information key";
+            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+
+        }
+
+        std::string matrixDimensionString = shapeInfo->getValue( );
+
+        //Extract the rows and cols
+        uIntType rows = std::stoi( matrixDimensionString.substr( 0, matrixDimensionString.find( "," ) ) );
+        uIntType cols = std::stoi( matrixDimensionString.substr( matrixDimensionString.find( "," ) + 1, matrixDimensionString.size( ) ) );
+
+        //Construct the triplet vector
+        shared_ptr< XdmfAttribute > _rows = grid->getAttribute( matrixName + "_rows" );
+
+        if ( !_rows ){
+
+            std::string outstr = matrixName;
+            outstr += "_rows attribute is not found";
+            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+
+        }
+
+        shared_ptr< XdmfAttribute > _cols = grid->getAttribute( matrixName + "_cols" );
+
+        if ( !_cols ){
+
+            std::string outstr = matrixName;
+            outstr += "_cols attribute is not found";
+            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+
+        }
+
+        shared_ptr< XdmfAttribute > _vals = grid->getAttribute( matrixName + "_values" );
+
+        if ( !_cols ){
+
+            std::string outstr = matrixName;
+            outstr += "_values attribute is not found";
+            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+
+        }
+
+        if ( ( _rows->getSize( ) != _cols->getSize( ) ) && ( _rows->getSize( ) != _vals->getSize( ) ) ){
+
+            std::string outstr = matrixName;
+            outstr += " attributes rows, cols, and values don't have consistent sizes";
+            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+
+        }
+
+        _rows->read( );
+        _cols->read( );
+        _vals->read( );
+
+        std::vector< DOFProjection::T > triplets;
+        triplets.reserve( _rows->getSize( ) );
+
+        for ( uIntType i = 0; i != _rows->getSize( ); i++ ){
+
+            uIntType _r = _rows->getValue< uIntType >( i );
+            uIntType _c = _cols->getValue< uIntType >( i );
+            floatType _v = _vals->getValue< floatType >( i );
+
+            triplets.push_back( DOFProjection::T( _r, _c, _v ) );
+
+        }
+
+        A = SparseMatrix( rows, cols );
+        A.setFromTriplets( triplets.begin( ), triplets.end( ) );
+
+        return NULL;
+
     }
 
 }

@@ -16,6 +16,8 @@ typedef overlapCoupling::floatType floatType; //!Define the float values type.
 typedef overlapCoupling::floatVector floatVector; //! Define a vector of floats
 typedef overlapCoupling::floatMatrix floatMatrix; //!Define a matrix of floats
 typedef overlapCoupling::uIntVector uIntVector; //!Define a vector of unsigned ints
+typedef overlapCoupling::SparseMatrix SparseMatrix; //!Define a sparse matrix
+typedef DOFProjection::T T; //!Define the triplet
 
 errorOut readMatrixFromFile( const std::string filename, floatVector &data, Eigen::MatrixXd &matrix ){
     /*!
@@ -1093,6 +1095,83 @@ int test_computeMicromorphicElementInternalForceVector( std::ofstream &results )
     return 0;
 }
 
+int test_writeSparseMatrixToXDMF( std::ofstream &results ){
+    /*!
+     * Test writing a sparse matrix to XDMF file
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    shared_ptr< XdmfDomain > domain = XdmfDomain::New( );
+    shared_ptr< XdmfUnstructuredGrid > grid = XdmfUnstructuredGrid::New( );
+
+    std::string filename = "test_output_file";
+
+    std::string xdmf_filename = filename + ".xdmf";
+    std::string h5_filename = filename + ".h5";
+    shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( h5_filename, true );
+    shared_ptr< XdmfWriter > writer = XdmfWriter::New( xdmf_filename, heavyWriter );
+
+    SparseMatrix A1( 3, 4 );
+    std::vector< T > triplets;
+    triplets.reserve( 7 );
+    triplets.push_back( T( 0, 0, 1.0 ) );
+    triplets.push_back( T( 0, 3, 1.5 ) );
+    triplets.push_back( T( 2, 1, 7.0 ) );
+    triplets.push_back( T( 1, 2, 5.0 ) );
+    triplets.push_back( T( 0, 1, 2.0 ) );
+    triplets.push_back( T( 1, 0, 1.6 ) );
+    triplets.push_back( T( 0, 2, 3.0 ) );
+
+    A1.setFromTriplets( triplets.begin( ), triplets.end( ) );
+
+    domain->insert( grid );
+
+    std::string matrixName = "A_MATRIX";
+    errorOut error = overlapCoupling::writeSparseMatrixToXDMF( A1, matrixName, writer, domain, grid );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_writeSparseMatrixToXDMF & False\n";
+        return 1;
+
+    }
+
+    shared_ptr< XdmfReader > reader = XdmfReader::New( );
+    shared_ptr< XdmfDomain > _readDomain = shared_dynamic_cast< XdmfDomain >( reader->read( "test_output_file.xdmf" ) );
+    shared_ptr< XdmfUnstructuredGrid > _readGrid = _readDomain->getUnstructuredGrid( 0 );
+
+    SparseMatrix A1_result;
+    error = overlapCoupling::readSparseMatrixFromXDMF( _readGrid, matrixName, A1_result );
+    
+    if ( error ){
+
+        error->print( );
+        results << "test_writeSparseMatrixToXDMF & False\n";
+        return 1;
+
+    }
+
+    if ( !A1.isApprox( A1_result ) ){
+
+        results << "test_writeSparseMatrixToXDMF (test 1) & False\n";
+        return 1;
+
+    }
+
+//    remove( h5_filename.c_str( ) );
+//    remove( xdmf_filename.c_str( ) );
+
+    results << "test_writeSparseMatrixToXDMF & True\n";
+    return 0;
+
+}
+
+//writeSparseMatrixToXDMF( const SparseMatrix &A, const std::string matrixName,
+//                                      shared_ptr< XdmfWriter > &writer, shared_ptr< XdmfDomain > &domain,
+//                                      shared_ptr< XdmfUnstructuredGrid > &grid )
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -1105,19 +1184,20 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-    test_overlapCoupling_constructor( results );
-    test_overlapCoupling_initializeCoupling( results );
-    test_overlapCoupling_processIncrement( results );
-    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
-    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
-    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
-    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
-    test_MADOutlierDetection( results );
-    test_formMicromorphicElementMassMatrix( results );
-    test_computeMicromorphicElementRequiredValues( results );
-    test_computeMicromorphicElementInternalForceVector( results );
+//    test_overlapCoupling_constructor( results );
+//    test_overlapCoupling_initializeCoupling( results );
+//    test_overlapCoupling_processIncrement( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+//    test_MADOutlierDetection( results );
+//    test_formMicromorphicElementMassMatrix( results );
+//    test_computeMicromorphicElementRequiredValues( results );
+//    test_computeMicromorphicElementInternalForceVector( results );
+    test_writeSparseMatrixToXDMF( results );
 
     //Close the results file
     results.close();
