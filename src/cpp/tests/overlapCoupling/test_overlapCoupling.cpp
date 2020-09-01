@@ -111,6 +111,12 @@ int test_overlapCoupling_initializeCoupling( std::ofstream &results ){
      * :param std::ofstream &results: The output file.
      */
 
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
 
@@ -127,6 +133,92 @@ int test_overlapCoupling_initializeCoupling( std::ofstream &results ){
         results << "test_overlapCoupling_initializeCoupling & False\n";
         return 1;
     }
+
+    if ( !std::ifstream( "reference_information.xdmf" ).good( ) ){
+
+        results << "test_overlapCoupling_initializeCoupling (test 1) & False\n";
+        return 1;
+
+    }
+
+    if ( !std::ifstream( "reference_information.h5" ).good( ) ){
+
+        results << "test_overlapCoupling_initializeCoupling (test 2) & False\n";
+        return 1;
+
+    }
+
+    if ( !std::ifstream( "homogenized_response.xdmf" ).good( ) ){
+
+        results << "test_overlapCoupling_initializeCoupling (test 3) & False\n";
+        return 1;
+
+    }
+
+    if ( !std::ifstream( "homogenized_response.h5" ).good( ) ){
+
+        results << "test_overlapCoupling_initializeCoupling (test 4) & False\n";
+        return 1;
+
+    }
+
+    std::string xdmf_filename = "reference_information.xdmf";
+    shared_ptr< XdmfReader > reader = XdmfReader::New( );
+    shared_ptr< XdmfDomain > _readDomain = shared_dynamic_cast< XdmfDomain >( reader->read( xdmf_filename ) );
+    shared_ptr< XdmfUnstructuredGrid > _readGrid = _readDomain->getUnstructuredGrid( 0 );
+
+    SparseMatrix N;
+    overlapCoupling::readSparseMatrixFromXDMF( _readGrid, "N", N );
+
+    Eigen::MatrixXd macroD( N.cols( ), 1 );
+
+    for ( unsigned int i = 0; i < N.cols( ); i+=12 ){
+
+        macroD( i +  0, 0 ) = 1;
+        macroD( i +  1, 0 ) = 2;
+        macroD( i +  2, 0 ) = 3;
+        macroD( i +  3, 0 ) = 0;
+        macroD( i +  4, 0 ) = 0;
+        macroD( i +  5, 0 ) = 0;
+        macroD( i +  6, 0 ) = 0;
+        macroD( i +  7, 0 ) = 0;
+        macroD( i +  8, 0 ) = 0;
+        macroD( i +  9, 0 ) = 0;
+        macroD( i + 10, 0 ) = 0;
+        macroD( i + 11, 0 ) = 0;
+
+    }
+
+    Eigen::MatrixXd R = N * macroD;
+
+    for ( unsigned int i = 0; i < R.rows( ); i+=3 ){
+
+        if ( !vectorTools::fuzzyEquals( R( i + 0, 0 ), 1. ) ){
+
+            results << "test_overlapCoupling_initializeCoupling (test 5) & False\n";
+            return 1;
+
+        }
+        if ( !vectorTools::fuzzyEquals( R( i + 1, 0 ), 2. ) ){
+
+            results << "test_overlapCoupling_initializeCoupling (test 6) & False\n";
+            return 1;
+
+        }
+        if ( !vectorTools::fuzzyEquals( R( i + 2, 0 ), 3. ) ){
+
+            results << "test_overlapCoupling_initializeCoupling (test 7) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
 
     results << "test_overlapCoupling_initializeCoupling & True\n";
     return 0;
@@ -1182,18 +1274,18 @@ int main(){
 
     test_overlapCoupling_constructor( results );
     test_overlapCoupling_initializeCoupling( results );
-    test_overlapCoupling_processIncrement( results );
-    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
-    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
-    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
-    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
-    test_MADOutlierDetection( results );
-    test_formMicromorphicElementMassMatrix( results );
-    test_computeMicromorphicElementRequiredValues( results );
-    test_computeMicromorphicElementInternalForceVector( results );
-    test_writeSparseMatrixToXDMF( results );
+//    test_overlapCoupling_processIncrement( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+//    test_MADOutlierDetection( results );
+//    test_formMicromorphicElementMassMatrix( results );
+//    test_computeMicromorphicElementRequiredValues( results );
+//    test_computeMicromorphicElementInternalForceVector( results );
+//    test_writeSparseMatrixToXDMF( results );
 
     //Close the results file
     results.close();

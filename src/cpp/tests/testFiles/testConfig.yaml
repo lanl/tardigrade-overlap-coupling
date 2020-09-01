@@ -13,10 +13,11 @@ coupling_initialization:
         extract_previous_dof_values: true #Flag indicating if the previously converged accelerations and velocities should be extracted or if the current increment's should be used. If true, previous_macro_increment and previous_micro_increment must be defined with the increment to be used indicated
         previous_micro_increment: 0
         previous_macro_increment: 0
-        update_displacement:
+        #update_displacement:
         output_reference_information:
+                save_interpolation_matrix:
         output_homogenized_response:
-        output_updated_DOF:
+                #output_updated_dof:
 
 macroscale_definition:
         filename: /home/nathan/research/overlap_coupling/src/cpp/tests/testFiles/macroscale_xdmf.xdmf
