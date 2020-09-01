@@ -3222,7 +3222,10 @@ namespace overlapCoupling{
         floatMatrix microInertias( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
         floatMatrix bodyCouples( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
         floatMatrix microSpinInertias( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
-        floatMatrix symmetricMicroStress( element->qrule.size( ), floatVector( _dim * _dim, 0 ) ); 
+        floatMatrix symmetricMicroStress( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
+        floatMatrix nodalDOFValues( element->nodes.size( ), floatVector( _dim + _dim * _dim, 0 ) );
+        floatMatrix dofValues( element->qrule.size( ), floatVector( _dim + _dim * _dim, 0 ) );
+        floatMatrix dofGradients( element->qrule.size( ), floatVector( _dim * ( _dim + _dim * _dim ), 0 ) );
 
         for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
 
@@ -3269,6 +3272,24 @@ namespace overlapCoupling{
             }
 
             Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
+
+            //Get the degree of freedom values at the nodes
+            const floatVector *macroDispDOFVector = _inputProcessor.getMacroDispDOFVector( );
+            for ( unsigned int n = 0; n < element->nodes.size( ); n++ ){
+
+                for ( unsigned int i = 0; i < ( _dim + _dim * _dim ); i++ ){
+
+                    nodalDOFValues[ n ][ i ] = ( *macroDispDOFVector )[ ( _dim + _dim * _dim ) * element->global_node_ids[ n ] + i ];
+
+                }
+
+            }
+
+            element->interpolate( nodalDOFValues, element->qrule[ qptIndex ].first, dofValues[ qptIndex ] );
+
+            floatMatrix dNodalDOFdX;
+            element->get_global_gradient( nodalDOFValues, element->qrule[ qptIndex ].first, element->reference_nodes, dNodalDOFdX );
+            dofGradients[ qptIndex ] = vectorTools::appendVectors( dNodalDOFdX );
 
             for ( unsigned int n = 0; n < element->nodes.size( ); n++ ){
 
@@ -3404,6 +3425,8 @@ namespace overlapCoupling{
         quadraturePointBodyCouples.emplace( macroCellID, vectorTools::appendVectors( bodyCouples ) );
         quadraturePointMicroSpinInertias.emplace( macroCellID, vectorTools::appendVectors( microSpinInertias ) );
         quadraturePointSymmetricMicroStress.emplace( macroCellID, vectorTools::appendVectors( symmetricMicroStress ) );
+        quadraturePointDOFValues.emplace( macroCellID, vectorTools::appendVectors( dofValues ) );
+        quadraturePointDOFGradients.emplace( macroCellID, vectorTools::appendVectors( dofGradients ) );
 
         return NULL;
 
@@ -6218,15 +6241,17 @@ namespace overlapCoupling{
         //Loop over the quadrature points
         for ( unsigned int qp = 0; qp < maxQP; qp++ ){
 
-            floatVector densityOut(                                   cellIds.size( ), 0 );
-            floatVector bodyForceOut(                          _dim * cellIds.size( ), 0 );
-            floatVector accelerationsOut(                      _dim * cellIds.size( ), 0 );
-            floatVector microInertiasOut(               _dim * _dim * cellIds.size( ), 0 );
-            floatVector bodyCouplesOut(                 _dim * _dim * cellIds.size( ), 0 );
-            floatVector microSpinInertiasOut(           _dim * _dim * cellIds.size( ), 0 );
-            floatVector symmetricMicroStressOut(        _dim * _dim * cellIds.size( ), 0 );
-            floatVector cauchyStressOut(                _dim * _dim * cellIds.size( ), 0 );
-            floatVector higherOrderStressOut(    _dim * _dim * _dim * cellIds.size( ), 0 );
+            floatVector densityOut(                                      cellIds.size( ), 0 );
+            floatVector bodyForceOut(                             _dim * cellIds.size( ), 0 );
+            floatVector accelerationsOut(                         _dim * cellIds.size( ), 0 );
+            floatVector microInertiasOut(                  _dim * _dim * cellIds.size( ), 0 );
+            floatVector bodyCouplesOut(                    _dim * _dim * cellIds.size( ), 0 );
+            floatVector microSpinInertiasOut(              _dim * _dim * cellIds.size( ), 0 );
+            floatVector symmetricMicroStressOut(           _dim * _dim * cellIds.size( ), 0 );
+            floatVector cauchyStressOut(                   _dim * _dim * cellIds.size( ), 0 );
+            floatVector higherOrderStressOut(       _dim * _dim * _dim * cellIds.size( ), 0 );
+            floatVector dofValuesOut(           ( _dim + _dim * _dim ) * cellIds.size( ), 0 );
+            floatVector dofGradientsOut( _dim * ( _dim + _dim * _dim ) * cellIds.size( ), 0 );
 
             //Loop over the cells
             for ( auto cellId = cellIds.begin( ); cellId != cellIds.end( ); cellId++ ){
@@ -6275,6 +6300,20 @@ namespace overlapCoupling{
 
                     higherOrderStressOut[ _dim * _dim * _dim * index + i ]
                         = quadraturePointHigherOrderStress[ *cellId ][ _dim * _dim * _dim * qp + i ];
+
+                }
+
+                for ( unsigned int i = 0; i < ( _dim + _dim * _dim ); i++ ){
+
+                    dofValuesOut[ ( _dim + _dim * _dim ) * index + i ]
+                        = quadraturePointDOFValues[ *cellId ][ ( _dim + _dim * _dim ) + i ];
+
+                }
+
+                for ( unsigned int i = 0; i < _dim * ( _dim + _dim * _dim ); i++ ){
+
+                    dofGradientsOut[ _dim * ( _dim + _dim * _dim ) * index + i ]
+                        = quadraturePointDOFValues[ *cellId ][ _dim * ( _dim + _dim * _dim ) + i ];
 
                 }
 
@@ -6445,6 +6484,42 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the higher order stress" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim + _dim * _dim );
+            for ( unsigned int i = 0; i < ( _dim + _dim * _dim ); i++ ){
+
+                    outputNames[ i ] = "DOF_" + std::to_string( i + 1 ) + "_" + std::to_string( qp );
+
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", dofValuesOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the degree of freedom values" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim * ( _dim + _dim * _dim ) );
+            for ( unsigned int i = 0; i < ( _dim + _dim * _dim ); i++ ){
+
+                for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    outputNames[ i ] = "DOF_" + std::to_string( i + 1 ) + "," + std::to_string( j + 1 ) + "_" + std::to_string( qp );
+
+                }
+
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", dofGradientsOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the degree of freedom values" );
                 result->addNext( error );
                 return result;
 

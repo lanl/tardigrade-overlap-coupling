@@ -280,6 +280,8 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatVector > quadraturePointSymmetricMicroStress;
             std::unordered_map< uIntType, floatVector > quadraturePointCauchyStress;
             std::unordered_map< uIntType, floatVector > quadraturePointHigherOrderStress;
+            std::unordered_map< uIntType, floatVector > quadraturePointDOFValues;
+            std::unordered_map< uIntType, floatVector > quadraturePointDOFGradients;
 
             //The external forces at the nodes
             std::unordered_map< uIntType, floatVector > externalForcesAtNodes;
