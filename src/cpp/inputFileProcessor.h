@@ -26,6 +26,7 @@ namespace inputFileProcessor{
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
     typedef unsigned int uIntType; //!Define the unsigned ints
     typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
+    typedef std::vector< uIntVector > uIntMatrix; //!Define a matrix of unsigned ints
     typedef std::vector< std::string > stringVector; //!Define a vector of strings
     typedef std::unordered_map< uIntType, uIntType > DOFMap; //!Define a map between degrees of freedom
     typedef std::vector< bool > boolVector; //!Define a vector of bool

@@ -1614,6 +1614,13 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
+    if ( couplingInitialization[ "output_homogenized_response" ][ "mode" ].as< std::string >( ).compare( "write" ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 38) & False\n";
+        return 1;
+
+    }
+
     results << "test_getCouplingInitialization & True\n";
     return 0;
 

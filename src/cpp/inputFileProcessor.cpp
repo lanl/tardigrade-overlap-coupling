@@ -3070,6 +3070,12 @@ namespace inputFileProcessor{
 
             }
 
+            if ( !_config[ "coupling_initialization" ][ "output_homogenized_response" ][ "mode" ] ){
+
+                _config [ "coupling_initialization" ][ "output_homogenized_response" ][ "mode" ] = "write";
+
+            }
+
         }
 
         if ( _config[ "coupling_initialization" ][ "output_updated_dof" ] ){
