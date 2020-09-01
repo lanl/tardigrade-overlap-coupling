@@ -232,7 +232,7 @@ namespace overlapCoupling{
 
             errorOut outputReferenceInformation( );
 
-            errorOut outputHomogenizedResponse( );
+            errorOut outputHomogenizedResponse( const uIntType collectionNumber = 0 );
 
             errorOut extractProjectionMatricesFromFile( );
 

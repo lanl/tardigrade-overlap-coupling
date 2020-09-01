@@ -288,7 +288,7 @@ namespace overlapCoupling{
         //Initialize the input processor
         errorOut error = _inputProcessor.initializeIncrement( microIncrement, macroIncrement );
         if ( error ){
-            errorOut result = new errorNode( "processIncrement", "Error in initialization of the input processor" );
+            errorOut result = new errorNode( "setReferenceStateFromIncrement", "Error in initialization of the input processor" );
             result->addNext( error );
             return result;
         }
@@ -558,11 +558,11 @@ namespace overlapCoupling{
 
         std::cout << "Performing linear solve for BDhatQ\n";
         _L2_BDhatQ = solver.solve( I.toDense( ) );
-        _L2_BDhatD = -_L2_BDhatQ * _N.block( 0, 0, nFreeMicroDOF, nFreeMacroDOF );
+        _L2_BDhatD = -_L2_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
 
-        _L2_BQhatQ = _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatQ;
-        _L2_BQhatD = _N.block( nFreeMicroDOF, 0, nGhostMicroDOF, nFreeMacroDOF )
-                   + _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
+        _L2_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatQ;
+        _L2_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF )
+                   + _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
 
         return NULL;
     }
@@ -652,12 +652,12 @@ namespace overlapCoupling{
 
         //Assemble the remaining projectors
 
-        _DP_BDhatD = -_DP_BDhatQ * _N.block( 0, 0, nFreeMicroDOF, nFreeMacroDOF );
+        _DP_BDhatD = -_DP_BDhatQ * _N.topRightCorner( nFreeMicroDOF, nFreeMacroDOF );
 
-        _DP_BQhatQ = _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _DP_BDhatQ;
+        _DP_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _DP_BDhatQ;
 
-        _DP_BQhatD = _N.block( nFreeMicroDOF, 0, nGhostMicroDOF, nFreeMacroDOF )
-                   + _N.block( nFreeMicroDOF, nFreeMacroDOF, nGhostMicroDOF, nGhostMacroDOF ) * _DP_BDhatD;
+        _DP_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF )
+                   + _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _DP_BDhatD;
 
         return NULL;
     }
@@ -5779,6 +5779,23 @@ namespace overlapCoupling{
         shared_ptr< XdmfUnstructuredGrid > grid = XdmfUnstructuredGrid::New( );
         domain->insert( grid );
 
+        //Save the interpolation matrix if required
+        if ( couplingInitialization[ "output_reference_information" ][ "save_interpolation_matrix" ] ){
+
+            errorOut error = writeSparseMatrixToXDMF( _N, "N", writer, domain, grid );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out the interpolation matrix N" );
+                result->addNext( error );
+                return result;
+
+            }
+
+
+        }
+
         //Save the projection matrices
 
         std::string projectionType = couplingInitialization[ "projection_type" ].as< std::string >( );
@@ -5838,7 +5855,7 @@ namespace overlapCoupling{
             errorOut error;
 
             //Write BQhatQ
-            error = writeSparseMatrixToXDMF( _DP_BQhatQ, "BQhatq", writer, domain, grid );
+            error = writeSparseMatrixToXDMF( _DP_BQhatQ, "BQhatQ", writer, domain, grid );
 
             if ( error ){
 
@@ -6137,9 +6154,11 @@ namespace overlapCoupling{
 
     }
 
-    errorOut overlapCoupling::outputHomogenizedResponse( ){
+    errorOut overlapCoupling::outputHomogenizedResponse( const uIntType collectionNumber ){
         /*!
          * Output the homogenized response to the data file
+         *
+         * :param const uIntType collectionNumber: The collection to place the reference state in ( defaults to 0 )
          */
 
         //Get the configuration
@@ -6158,7 +6177,280 @@ namespace overlapCoupling{
 
         }
 
+        const floatType *time = _inputProcessor.getMacroTime( );
 
+        uIntType increment;
+        errorOut error = writer->initializeIncrement( *time, _currentReferenceOutputIncrement, collectionNumber, increment );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "outputHomogenizedResponse",
+                                             "Error in the initialization of the increment for the homogenized output" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Write the mesh data to file. This increment references a previous increment for the mesh data so we don't need to do it again
+        error = writer->writeIncrementMeshData( increment, collectionNumber, { }, { { } }, { }, { }, { }, { { } }, { }, { } );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "outputHomogenizedResponse",
+                                             "Error in the initialization of the mesh data for the homogenized output" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Assemble the macro-scale cell ids
+        const uIntVector cellIds = vectorTools::appendVectors( { *_inputProcessor.getFreeMacroCellIds( ),
+                                                                 *_inputProcessor.getGhostMacroCellIds( ) } );
+
+        //Determine the maximum number of quadrature points
+        uIntType maxQP = 0;
+        for ( auto cellId = cellIds.begin( ); cellId != cellIds.end( ); cellId++ ){
+
+            maxQP = std::max( ( uIntType )quadraturePointDensities[ *cellId ].size( ), maxQP );
+
+        }
+
+        //Loop over the quadrature points
+        for ( unsigned int qp = 0; qp < maxQP; qp++ ){
+
+            floatVector densityOut(                                   cellIds.size( ), 0 );
+            floatVector bodyForceOut(                          _dim * cellIds.size( ), 0 );
+            floatVector accelerationsOut(                      _dim * cellIds.size( ), 0 );
+            floatVector microInertiasOut(               _dim * _dim * cellIds.size( ), 0 );
+            floatVector bodyCouplesOut(                 _dim * _dim * cellIds.size( ), 0 );
+            floatVector microSpinInertiasOut(           _dim * _dim * cellIds.size( ), 0 );
+            floatVector symmetricMicroStressOut(        _dim * _dim * cellIds.size( ), 0 );
+            floatVector cauchyStressOut(                _dim * _dim * cellIds.size( ), 0 );
+            floatVector higherOrderStressOut(    _dim * _dim * _dim * cellIds.size( ), 0 );
+
+            //Loop over the cells
+            for ( auto cellId = cellIds.begin( ); cellId != cellIds.end( ); cellId++ ){
+
+                //Set the cell index
+                uIntType index = cellId - cellIds.begin( );
+
+                //Determine the number of quadrature points for the cell
+                uIntType cellQP = quadraturePointDensities[ *cellId ].size( );
+
+                if ( qp >= cellQP ){
+
+                    //If the current quadrature point is too big then skip the element
+                    continue;
+
+                }
+
+                //Set the outputs for the current quadrature point
+                densityOut[ index ] = quadraturePointDensities[ *cellId ][ qp ];
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+
+                    bodyForceOut[ _dim * index + i ] 
+                        = quadraturePointBodyForce[     *cellId ][        _dim * qp + i ];
+                    accelerationsOut[ _dim * index + i ] 
+                        = quadraturePointAccelerations[ *cellId ][        _dim * qp + i ];
+
+                }
+
+                for ( unsigned int i = 0; i < _dim * _dim; i++ ){
+
+                    microInertiasOut[ _dim * _dim * index + i ]
+                        = quadraturePointMicroInertias[ *cellId ][ _dim * _dim * qp + i ];
+                    bodyCouplesOut[ _dim * _dim * index + i ]
+                        = quadraturePointBodyCouples[        *cellId ][ _dim * _dim * qp + i ];
+                    microSpinInertiasOut[ _dim * _dim * index + i ]
+                        = quadraturePointMicroSpinInertias[ *cellId ][ _dim * _dim * qp + i ];
+                    symmetricMicroStressOut[ _dim * _dim * index + i ]
+                        = quadraturePointSymmetricMicroStress[ *cellId ][ _dim * _dim * qp + i ];
+                    cauchyStressOut[ _dim * _dim * index + i ]
+                        = quadraturePointCauchyStress[ *cellId ][ _dim * _dim * qp + i ];
+
+                }
+
+                for ( unsigned int i = 0; i < _dim * _dim * _dim; i++ ){
+
+                    higherOrderStressOut[ _dim * _dim * _dim * index + i ]
+                        = quadraturePointHigherOrderStress[ *cellId ][ _dim * _dim * _dim * qp + i ];
+
+                }
+
+            }
+
+            //Write quadrature point information to file
+            stringVector outputNames = { "density_" + std::to_string( qp ) };
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", densityOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the density" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim );
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                outputNames[ i ] = "acceleration_" + std::to_string( i + 1 ) + "_" + std::to_string( qp );
+
+            }
+
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", accelerationsOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the acceleration" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                outputNames[ i ] = "body_force_" + std::to_string( i + 1 ) + "_" + std::to_string( qp );
+
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", bodyForceOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the body force" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim * _dim );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    outputNames[ _dim * i + j ] = "micro_inertia_" + std::to_string( i + 1 )  + std::to_string( j + 1 ) + "_" + std::to_string( qp );
+
+                }
+
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", microInertiasOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the micro inertias" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim * _dim );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    outputNames[ _dim * i + j ] = "body_couple_" + std::to_string( i + 1 )  + std::to_string( j + 1 ) + "_" + std::to_string( qp );
+
+                }
+
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", bodyCouplesOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the body couples" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim * _dim );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    outputNames[ _dim * i + j ] = "micro_spin_inertia_" + std::to_string( i + 1 )  + std::to_string( j + 1 ) + "_" + std::to_string( qp );
+
+                }
+
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", microSpinInertiasOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the body couples" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim * _dim );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    outputNames[ _dim * i + j ] = "symmetric_micro_stress_" + std::to_string( i + 1 )  + std::to_string( j + 1 ) + "_" + std::to_string( qp );
+
+                }
+
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", symmetricMicroStressOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the symmetric micro stress" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim * _dim );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    outputNames[ _dim * i + j ] = "cauchy_stress_" + std::to_string( i + 1 )  + std::to_string( j + 1 ) + "_" + std::to_string( qp );
+
+                }
+
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", cauchyStressOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the cauchy stress" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            outputNames = stringVector( _dim * _dim * _dim );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    for ( unsigned int k = 0; k < _dim; k++ ){
+
+                        outputNames[ _dim * _dim * i + _dim * j + k ] = "higher_order_stress_" + std::to_string( i + 1 )  + std::to_string( j + 1 ) + std::to_string( k + 1 ) + "_" + std::to_string( qp );
+
+                    }
+
+                }
+
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", higherOrderStressOut );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the higher order stress" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
         
         return new errorNode( "outputHomogenizedResponse", "Not implemented" );
     }
@@ -6278,37 +6570,29 @@ namespace overlapCoupling{
         uIntVector connectivity( 0 );
         for ( auto cell = elementIds.begin( ); cell != elementIds.end( ); cell++ ){
 
+            std::unique_ptr< elib::Element > element;
+
+            errorOut error = buildMacroDomainElement( *cell, *macroNodeReferencePositions, *macroDisplacements,
+                                                      *macroNodeReferenceConnectivity, *macroNodeReferenceConnectivityCellIndices, 
+                                                      element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "writeReferenceMeshDataToFile",
+                                                 "Error in construction of the micromorphic element" );
+                result->addNext( error );
+                return result;
+
+            }
+
             //Get the XDMF cell type
             uIntType index0 = ( *macroNodeReferenceConnectivityCellIndices )[ *cell ];
             uIntType cellType = ( *macroNodeReferenceConnectivity )[ index0 ];
 
-            //Get the element name
-            auto it = elib::XDMFTypeToElementName.find( cellType );
-    
-            if ( it == elib::XDMFTypeToElementName.end( ) ){
-    
-                return new errorNode( "writeReferenceMeshDataToFile",
-                                      "The cell type " + std::to_string(cellType) + " is not supported" );
-    
-            }
-    
-            //Get the number of nodes
-            auto it2 = elib::XDMFTypeToNodeCount.find( cellType );
-    
-            if ( it2 == elib::XDMFTypeToNodeCount.end( ) ){
-    
-                return new errorNode( "writeReferenceMeshDataToFile",
-                                      "The cell type " + std::to_string( cellType ) + " is not found in the node count map" );
-    
-            }
-    
-            //Get the nodes from the file
-            uIntVector globalNodeIds( macroNodeReferenceConnectivity->begin( ) + index0 + 1,
-                                      macroNodeReferenceConnectivity->begin( ) + index0 + 1 + it2->second );
+            uIntVector localNodeIds( element->global_node_ids.size( ) + 1 );
+            localNodeIds[ 0 ] = cellType;
 
-            uIntVector localNodeIds( globalNodeIds.size( ) );
-
-            for ( auto gN = globalNodeIds.begin( ); gN != globalNodeIds.end( ); gN++ ){
+            for ( auto gN = element->global_node_ids.begin( ); gN != element->global_node_ids.end( ); gN++ ){
 
                 auto node = macroGlobalToLocalDOFMap->find( *gN );
 
@@ -6320,7 +6604,7 @@ namespace overlapCoupling{
 
                 }
 
-                localNodeIds[ gN - globalNodeIds.begin( ) ] = node->second;
+                localNodeIds[ gN - element->global_node_ids.begin( ) + 1 ] = node->second;
 
             }
 

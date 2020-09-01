@@ -499,6 +499,12 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
      * :param std::ofstream &results: The output file.
      */
 
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
 
@@ -536,6 +542,12 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
         results << "test_overlapCoupling_initializeCoupling (test 2) & False\n";
         return 1;
     }
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
 
     results << "test_overlapCoupling_initializeCoupling & True\n";
     return 0;
@@ -1274,7 +1286,7 @@ int main(){
 
     test_overlapCoupling_constructor( results );
     test_overlapCoupling_initializeCoupling( results );
-//    test_overlapCoupling_processIncrement( results );
+    test_overlapCoupling_processIncrement( results );
 //    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
 //    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
 //    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
