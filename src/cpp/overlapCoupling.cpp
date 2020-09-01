@@ -169,6 +169,20 @@ namespace overlapCoupling{
 
         }
 
+        if ( !couplingConfiguration [ "output_homogenized_response" ].IsScalar( ) ){
+
+            //Output the homogenized material response to a data file
+            error = outputHomogenizedResponse( );
+            if ( error ){
+
+                errorOut result = new errorNode( "processIncrement", "Error when writing the homogenized response out to file" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+
         return NULL;
     }
 
@@ -191,6 +205,7 @@ namespace overlapCoupling{
 
         errorOut error = NULL;
         if ( couplingInitialization[ "type" ].as< std::string >( ).compare( "use_first_increment" ) == 0 ){
+
             error = setReferenceStateFromIncrement( 0, 0 );
 
             if ( error ){
@@ -218,6 +233,13 @@ namespace overlapCoupling{
                                          + *_inputProcessor.getMicroDisplacements( );
 
             }
+
+            if ( !couplingInitialization[ "output_homogenized_response" ].IsScalar( ) ){
+
+                error = writeReferenceMeshDataToFile( 0 );
+
+            }
+
         }
         else if ( couplingInitialization[ "type" ].as< std::string >( ).compare( "from_file" ) == 0 ){
 
@@ -6108,6 +6130,230 @@ namespace overlapCoupling{
         else{
 
             return new errorNode( "extractProjectionMatricesFromFile", "Not implemented" );
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut overlapCoupling::outputHomogenizedResponse( ){
+        /*!
+         * Output the homogenized response to the data file
+         */
+
+        //Get the configuration
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
+
+        //Form the writer
+        std::shared_ptr< dataFileInterface::dataFileBase > writer
+            = dataFileInterface::dataFileBase( config[ "output_homogenized_response" ] ).create( );
+
+        if ( writer->_error ){
+
+            errorOut result = new errorNode( "outputHomogenizedResponse",
+                                             "Error when initializing the writer" );
+            result->addNext( writer->_error );
+            return result;
+
+        }
+
+
+        
+        return new errorNode( "outputHomogenizedResponse", "Not implemented" );
+    }
+
+    errorOut overlapCoupling::writeReferenceMeshDataToFile( const uIntType collectionNumber ){
+        /*!
+         * Write the reference mesh data to the output file
+         *
+         * :param const uIntType collectionNumber: The collection to place the reference state in ( defaults to 0 )
+         */
+
+        YAML::Node config = _inputProcessor.getCouplingInitialization( )[ "output_homogenized_response" ]; 
+
+        //Form a writer object
+        std::shared_ptr< dataFileInterface::dataFileBase > writer
+            = dataFileInterface::dataFileBase( config ).create( );
+
+        if ( writer->_error ){
+
+            errorOut result = new errorNode( "writeReferenceMeshDataToFile", "Error in construction of writer" );
+            result->addNext( writer->_error );
+            return result;
+
+        }
+
+        //Get the free and ghost micro nodes global to local map
+        const DOFMap *macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+        //Get the macro node ids
+        const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
+        const uIntVector *ghostMacroNodeIds = _inputProcessor.getGhostMacroNodeIds( );
+
+        //Get the macro cell ids
+        const uIntVector elementIds = vectorTools::appendVectors( { *_inputProcessor.getFreeMacroCellIds( ),
+                                                                    *_inputProcessor.getGhostMacroCellIds( ) } );
+
+        //Get the mesh information
+        const uIntVector *macroNodeReferenceConnectivity = _inputProcessor.getMacroNodeReferenceConnectivity( );
+        const uIntVector *macroNodeReferenceConnectivityCellIndices = _inputProcessor.getMacroNodeReferenceConnectivityCellIndices( );
+
+        //Assemble the mesh data
+        const floatVector *macroNodeReferencePositions = _inputProcessor.getMacroNodeReferencePositions( );
+        const floatVector *macroDisplacements = _inputProcessor.getMacroDisplacements( );
+
+        //Assemble the node ids
+        uIntVector nodeIds( macroGlobalToLocalDOFMap->size( ) );
+
+        //Assemble the node position vectors
+        floatVector nodePositions( _dim * macroGlobalToLocalDOFMap->size( ) );
+
+        for ( auto node  = macroGlobalToLocalDOFMap->begin( );
+                   node != macroGlobalToLocalDOFMap->end( );
+                   node++ ){
+
+            nodeIds[ node->second ] = node->first;
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                nodePositions[ _dim * node->second + i ] = ( *macroNodeReferencePositions )[ _dim * node->first + i ]
+                                                         + ( *macroDisplacements )[ _dim * node->first + i ];
+
+            }
+
+        }
+
+        //Assemble the node sets
+        stringVector nodeSetNames = { "free_macro_nodes", "ghost_macro_nodes" };
+        uIntMatrix nodeSets( 2 );
+        nodeSets[ 0 ].resize( freeMacroNodeIds->size( ) );
+        nodeSets[ 1 ].resize( ghostMacroNodeIds->size( ) );
+
+        for ( auto node = freeMacroNodeIds->begin( ); node != freeMacroNodeIds->end( ); node++ ){
+
+            auto localNode = macroGlobalToLocalDOFMap->find( *node );
+
+            if ( localNode == macroGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "writeReferenceMeshDataToFile",
+                                      "The free macro node " + std::to_string( *node ) + " was not found in the macro global to local DOF map" );
+
+            }
+
+            nodeSets[ 0 ][ node - freeMacroNodeIds->begin( ) ] = localNode->second;
+
+        }
+
+        for ( auto node = ghostMacroNodeIds->begin( ); node != ghostMacroNodeIds->end( ); node++ ){
+
+            auto localNode = macroGlobalToLocalDOFMap->find( *node );
+
+            if ( localNode == macroGlobalToLocalDOFMap->end( ) ){
+
+                return new errorNode( "writeReferenceMeshDataToFile",
+                                      "The ghost macro node " + std::to_string( *node ) + " was not found in the macro global to local DOF map" );
+
+            }
+
+            nodeSets[ 1 ][ node - ghostMacroNodeIds->begin( ) ] = localNode->second;
+
+        }
+
+        //Assemble the element sets
+        stringVector elementSetNames = { "free_macro_elements", "ghost_macro_elements" };
+        uIntMatrix elementSets( 2 );
+        elementSets[ 0 ].resize( _inputProcessor.getFreeMacroCellIds( )->size( ) );
+        elementSets[ 1 ].resize( _inputProcessor.getGhostMacroCellIds( )->size( ) );
+
+        for ( uIntType i = 0; i < elementSets[ 0 ].size( ); i++ ){
+            elementSets[ 0 ][ i ] = i;
+        }
+
+        for ( uIntType i = 0; i < elementSets[ 1 ].size( ); i++ ){
+            elementSets[ 1 ][ i ] = elementSets[ 0 ].size( ) + i;
+        }
+
+        //Assemble the connectivity vector
+        uIntVector connectivity( 0 );
+        for ( auto cell = elementIds.begin( ); cell != elementIds.end( ); cell++ ){
+
+            //Get the XDMF cell type
+            uIntType index0 = ( *macroNodeReferenceConnectivityCellIndices )[ *cell ];
+            uIntType cellType = ( *macroNodeReferenceConnectivity )[ index0 ];
+
+            //Get the element name
+            auto it = elib::XDMFTypeToElementName.find( cellType );
+    
+            if ( it == elib::XDMFTypeToElementName.end( ) ){
+    
+                return new errorNode( "writeReferenceMeshDataToFile",
+                                      "The cell type " + std::to_string(cellType) + " is not supported" );
+    
+            }
+    
+            //Get the number of nodes
+            auto it2 = elib::XDMFTypeToNodeCount.find( cellType );
+    
+            if ( it2 == elib::XDMFTypeToNodeCount.end( ) ){
+    
+                return new errorNode( "writeReferenceMeshDataToFile",
+                                      "The cell type " + std::to_string( cellType ) + " is not found in the node count map" );
+    
+            }
+    
+            //Get the nodes from the file
+            uIntVector globalNodeIds( macroNodeReferenceConnectivity->begin( ) + index0 + 1,
+                                      macroNodeReferenceConnectivity->begin( ) + index0 + 1 + it2->second );
+
+            uIntVector localNodeIds( globalNodeIds.size( ) );
+
+            for ( auto gN = globalNodeIds.begin( ); gN != globalNodeIds.end( ); gN++ ){
+
+                auto node = macroGlobalToLocalDOFMap->find( *gN );
+
+                if ( node == macroGlobalToLocalDOFMap->end( ) ){
+
+                    return new errorNode( "writeReferenceMeshDataToFile",
+                                          "The global macro node " + std::to_string( *gN ) +
+                                          " can't be found in the global to local map" );
+
+                }
+
+                localNodeIds[ gN - globalNodeIds.begin( ) ] = node->second;
+
+            }
+
+            connectivity = vectorTools::appendVectors( { connectivity, localNodeIds } );
+
+        }
+
+        const floatType *time = _inputProcessor.getMacroTime( );
+
+        uIntType numIncrements;
+        writer->getNumIncrements( numIncrements );
+
+        errorOut error = writer->initializeIncrement( *time, numIncrements, collectionNumber, _currentReferenceOutputIncrement ); 
+
+        if ( error ){
+
+            errorOut result = new errorNode( "writeReferenceMeshDataToFile",
+                                             "Error in initialization of the increment in the writer" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = writer->writeIncrementMeshData( _currentReferenceOutputIncrement, collectionNumber,
+                                                nodeIds, nodeSets, nodeSetNames, nodePositions,
+                                                elementIds, elementSets, elementSetNames, connectivity );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "writeReferenceMeshDataToFile",
+                                             "Error in writing the mesh data to a file" );
+            result->addNext( error );
+            return result;
 
         }
 

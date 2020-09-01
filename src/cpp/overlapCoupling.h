@@ -25,6 +25,7 @@ namespace overlapCoupling{
     typedef inputFileProcessor::floatMatrix floatMatrix;
     typedef inputFileProcessor::uIntType uIntType;
     typedef inputFileProcessor::uIntVector uIntVector;
+    typedef inputFileProcessor::uIntMatrix uIntMatrix;
     typedef inputFileProcessor::stringVector stringVector;
     typedef inputFileProcessor::DOFMap DOFMap;
     typedef DOFProjection::SparseMatrix SparseMatrix;
@@ -231,7 +232,11 @@ namespace overlapCoupling{
 
             errorOut outputReferenceInformation( );
 
+            errorOut outputHomogenizedResponse( );
+
             errorOut extractProjectionMatricesFromFile( );
+
+            errorOut writeReferenceMeshDataToFile( const uIntType collectionNumber = 0 );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;
@@ -299,6 +304,7 @@ namespace overlapCoupling{
             floatVector _updatedFreeMicroDispDOFValues;
             floatVector _updatedFreeMacroDispDOFValues;
             bool _freeDOFValuesUpdated;
+            uIntType _currentReferenceOutputIncrement = 0;
 
     };
 
