@@ -577,6 +577,12 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
 
+    remove( "macroscale_dof.xdmf" );
+    remove( "macroscale_dof.h5" );
+
+    remove( "microscale_dof.xdmf" );
+    remove( "microscale_dof.h5" );
+
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
 
@@ -620,6 +626,12 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
+
+    remove( "macroscale_dof.xdmf" );
+    remove( "macroscale_dof.h5" );
+
+    remove( "microscale_dof.xdmf" );
+    remove( "microscale_dof.h5" );
 
     results << "test_overlapCoupling_initializeCoupling & True\n";
     return 0;
