@@ -3129,6 +3129,18 @@ namespace inputFileProcessor{
 
             std::remove( tmp.c_str( ) );
 
+            if ( !_config[ "coupling_initialization" ][ "output_updated_dof" ][ "macroscale_filetype" ] ){
+
+                _config[ "coupling_initialization" ][ "output_updated_dof" ][ "macroscale_filetype" ] = "XDMF";
+
+            }
+
+            if ( !_config[ "coupling_initialization" ][ "output_updated_dof" ][ "microscale_filetype" ] ){
+
+                _config[ "coupling_initialization" ][ "output_updated_dof" ][ "microscale_filetype" ] = "XDMF";
+
+            }
+
         }
         else{
 

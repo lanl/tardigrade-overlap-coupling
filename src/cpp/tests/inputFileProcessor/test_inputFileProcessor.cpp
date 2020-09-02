@@ -1621,6 +1621,20 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
+    if ( couplingInitialization[ "output_updated_dof" ][ "macroscale_filetype" ].as< std::string >( ).compare( "XDMF" ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 39) & False\n";
+        return 1;
+
+    }
+
+    if ( couplingInitialization[ "output_updated_dof" ][ "microscale_filetype" ].as< std::string >( ).compare( "XDMF" ) != 0 ){
+
+        results << "test_getCouplingInitialization (test 40) & False\n";
+        return 1;
+
+    }
+
     results << "test_getCouplingInitialization & True\n";
     return 0;
 
