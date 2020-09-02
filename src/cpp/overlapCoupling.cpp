@@ -6793,7 +6793,6 @@ namespace overlapCoupling{
 
         }
 
-        std::cout << "making macro config setup\n";
         std::string macro_config_string = "filename: ";
         macro_config_string += config[ "macroscale_filename" ].as< std::string >( ) + "\n";
         macro_config_string += "mode: write\n";
@@ -6801,7 +6800,6 @@ namespace overlapCoupling{
         macro_config_string += config[ "macroscale_filetype" ].as< std::string >( ) + "\n";
         macro_config_string += "append_to_existing_file: false\n";
 
-        std::cout << "making micro config setup\n";
         std::string micro_config_string = "filename: ";
         micro_config_string += config[ "microscale_filename" ].as< std::string >( ) + "\n";
         micro_config_string += "mode: write\n";
@@ -6809,13 +6807,10 @@ namespace overlapCoupling{
         micro_config_string += config[ "microscale_filetype" ].as< std::string >( ) + "\n";
         micro_config_string += "append_to_existing_file: false\n";
 
-        std::cout << "making macro config node\n";
         YAML::Node macro_config = YAML::Load( macro_config_string.c_str( ) ); 
-        std::cout << "making micro config node\n";
         YAML::Node micro_config = YAML::Load( micro_config_string.c_str( ) ); 
 
         //Form the macro writer object
-        std::cout << "forming macro writer object\n";
         std::shared_ptr< dataFileInterface::dataFileBase > macro_writer
             = dataFileInterface::dataFileBase( macro_config ).create( );
 
@@ -6828,7 +6823,6 @@ namespace overlapCoupling{
         }
 
         //Form the micro writer object
-        std::cout << "forming micro writer object\n";
         std::shared_ptr< dataFileInterface::dataFileBase > micro_writer
             = dataFileInterface::dataFileBase( micro_config ).create( );
 
@@ -6925,7 +6919,7 @@ namespace overlapCoupling{
 
         }
 
-        return new errorNode( "writeUpdatedDOFToFile", "Not implemented" );
+        return NULL;
 
     }
 
