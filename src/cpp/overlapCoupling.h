@@ -237,6 +237,8 @@ namespace overlapCoupling{
             errorOut extractProjectionMatricesFromFile( );
 
             errorOut writeReferenceMeshDataToFile( const uIntType collectionNumber = 0 );
+
+            errorOut writeUpdatedDOFToFile( const uIntType collectionNumber = 0 );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;

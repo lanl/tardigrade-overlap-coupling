@@ -183,6 +183,21 @@ namespace overlapCoupling{
 
         }
 
+        if ( !couplingConfiguration[ "output_updated_dof" ].IsScalar( ) ){
+
+            //Output the updated dof values to a data file
+            error = overlapCoupling::writeUpdatedDOFToFile( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "processIncrement", "Error when writing the updated dof information to file" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+
         return NULL;
     }
 
@@ -6758,6 +6773,159 @@ namespace overlapCoupling{
         }
 
         return NULL;
+
+    }
+
+    errorOut overlapCoupling::writeUpdatedDOFToFile( const uIntType collectionNumber ){
+        /*!
+         * Write the updated degree of freedom information to a output file
+         *
+         * :param const uIntType collectionNumber: The collection to place the reference state in ( defaults to 0 )
+         */
+
+        //Get the configuration for the writer object
+        YAML::Node config = _inputProcessor.getCouplingInitialization( )[ "output_updated_dof" ];
+
+        if ( !config ){
+
+            return new errorNode( "writeUpdatedDOFToFile",
+                                  "'output_updated_dof' is not defined in the configuration file" );
+
+        }
+
+        std::cout << "making macro config setup\n";
+        std::string macro_config_string = "filename: ";
+        macro_config_string += config[ "macroscale_filename" ].as< std::string >( ) + "\n";
+        macro_config_string += "mode: write\n";
+        macro_config_string += "filetype: ";
+        macro_config_string += config[ "macroscale_filetype" ].as< std::string >( ) + "\n";
+        macro_config_string += "append_to_existing_file: false\n";
+
+        std::cout << "making micro config setup\n";
+        std::string micro_config_string = "filename: ";
+        micro_config_string += config[ "microscale_filename" ].as< std::string >( ) + "\n";
+        micro_config_string += "mode: write\n";
+        micro_config_string += "filetype: ";
+        micro_config_string += config[ "microscale_filetype" ].as< std::string >( ) + "\n";
+        micro_config_string += "append_to_existing_file: false\n";
+
+        std::cout << "making macro config node\n";
+        YAML::Node macro_config = YAML::Load( macro_config_string.c_str( ) ); 
+        std::cout << "making micro config node\n";
+        YAML::Node micro_config = YAML::Load( micro_config_string.c_str( ) ); 
+
+        //Form the macro writer object
+        std::cout << "forming macro writer object\n";
+        std::shared_ptr< dataFileInterface::dataFileBase > macro_writer
+            = dataFileInterface::dataFileBase( macro_config ).create( );
+
+        if ( macro_writer->_error ){
+
+            errorOut result = new errorNode( "writeReferenceMeshDataToFile", "Error in construction of writer" );
+            result->addNext( macro_writer->_error );
+            return result;
+
+        }
+
+        //Form the micro writer object
+        std::cout << "forming micro writer object\n";
+        std::shared_ptr< dataFileInterface::dataFileBase > micro_writer
+            = dataFileInterface::dataFileBase( micro_config ).create( );
+
+        if ( micro_writer->_error ){
+
+            errorOut result = new errorNode( "writeReferenceMeshDataToFile", "Error in construction of writer" );
+            result->addNext( micro_writer->_error );
+            return result;
+
+        }
+
+        //Write out the macro DOF information
+        floatVector outputDOF = vectorTools::appendVectors( { _updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement } );
+
+        uIntType increment;
+        errorOut error = macro_writer->initializeIncrement( 1.0, 0, collectionNumber, increment );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in initializating the increment of the macro output file" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = macro_writer->writeScalarSolutionData( increment, collectionNumber, "updated_DOF", "Node", outputDOF ); 
+        
+        if ( error ){
+
+            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in outputting the updated macro DOF to the output file" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        floatVector nodeIds( _inputProcessor.getMacroGlobalToLocalDOFMap( )->size( ) );
+        for ( auto node  = _inputProcessor.getMacroGlobalToLocalDOFMap( )->begin( );
+                   node != _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( );
+                   node++ ){
+
+            nodeIds[ node->second ] = node->first;
+
+        }
+
+        error = macro_writer->writeScalarSolutionData( increment, collectionNumber, "node_ids", "Node", nodeIds );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in outputting the updated node ids to the micro output file" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Write out the micro DOF information
+        outputDOF = vectorTools::appendVectors( { _updatedFreeMicroDispDOFValues, _projected_ghost_micro_displacement } );
+
+        error = micro_writer->initializeIncrement( 1.0, 0, collectionNumber, increment );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in initializating the increment of the micro output file" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = micro_writer->writeScalarSolutionData( increment, collectionNumber, "updated_DOF", "Node", outputDOF ); 
+        
+        if ( error ){
+
+            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in outputting the updated micro DOF to the output file" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        nodeIds = floatVector( _inputProcessor.getMicroGlobalToLocalDOFMap( )->size( ) );
+        for ( auto node  = _inputProcessor.getMicroGlobalToLocalDOFMap( )->begin( );
+                   node != _inputProcessor.getMicroGlobalToLocalDOFMap( )->end( );
+                   node++ ){
+
+            nodeIds[ node->second ] = node->first;
+
+        }
+
+        error = micro_writer->writeScalarSolutionData( increment, collectionNumber, "node_ids", "Node", nodeIds );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in outputting the updated node ids to the micro output file" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return new errorNode( "writeUpdatedDOFToFile", "Not implemented" );
 
     }
 
