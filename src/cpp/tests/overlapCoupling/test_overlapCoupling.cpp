@@ -231,6 +231,12 @@ int test_overlapCoupling_getReferenceFreeMicroDomainMasses( std::ofstream &resul
      * :param std::ofstream &results: The output file.
      */
 
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
 
@@ -261,6 +267,12 @@ int test_overlapCoupling_getReferenceFreeMicroDomainMasses( std::ofstream &resul
         return 1;
     }
 
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
     results << "test_overlapCoupling_getReferenceFreeMicroDomainMasses & True\n";
     return 0;
 }
@@ -271,6 +283,12 @@ int test_overlapCoupling_getReferenceGhostMicroDomainMasses( std::ofstream &resu
      *
      * :param std::ofstream &results: The output file.
      */
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
 
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
@@ -299,6 +317,12 @@ int test_overlapCoupling_getReferenceGhostMicroDomainMasses( std::ofstream &resu
         return 1;
     }
 
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
     results << "test_overlapCoupling_getReferenceGhostMicroDomainMasses & True\n";
     return 0;
 }
@@ -308,6 +332,12 @@ int test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( std::ofstream
      *
      * :param std::ofstream &results: The output file.
      */
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
 
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
@@ -344,6 +374,12 @@ int test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( std::ofstream
         return 1;
     }
 
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
     results << "test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass & True\n";
     return 0;
 }
@@ -354,6 +390,12 @@ int test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( std::ofstrea
      *
      * :param std::ofstream &results: The output file.
      */
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
 
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
@@ -390,6 +432,12 @@ int test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( std::ofstrea
         return 1;
     }
 
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
     results << "test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass & True\n";
     return 0;
 }
@@ -398,6 +446,12 @@ int test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( 
     /*!
      * Test of the retrieval of the reference free micro domain centers of mass shape functions
      */
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
 
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
@@ -438,6 +492,12 @@ int test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( 
         return 1;
     } 
 
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
     results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions & True\n";
     return 0;
 
@@ -447,6 +507,12 @@ int test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions(
     /*!
      * Test of the retrieval of the reference ghost micro domain centers of mass shape functions
      */
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
 
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
@@ -486,6 +552,12 @@ int test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions(
         results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions (test 1) & False\n";
         return 1;
     } 
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
 
     results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions & True\n";
     return 0;
@@ -1287,17 +1359,17 @@ int main(){
     test_overlapCoupling_constructor( results );
     test_overlapCoupling_initializeCoupling( results );
     test_overlapCoupling_processIncrement( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
-//    test_MADOutlierDetection( results );
-//    test_formMicromorphicElementMassMatrix( results );
-//    test_computeMicromorphicElementRequiredValues( results );
-//    test_computeMicromorphicElementInternalForceVector( results );
-//    test_writeSparseMatrixToXDMF( results );
+    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+//    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+//    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+    test_MADOutlierDetection( results );
+    test_formMicromorphicElementMassMatrix( results );
+    test_computeMicromorphicElementRequiredValues( results );
+    test_computeMicromorphicElementInternalForceVector( results );
+    test_writeSparseMatrixToXDMF( results );
 
     //Close the results file
     results.close();

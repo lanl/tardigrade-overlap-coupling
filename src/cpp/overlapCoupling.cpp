@@ -3224,8 +3224,6 @@ namespace overlapCoupling{
         floatMatrix microSpinInertias( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
         floatMatrix symmetricMicroStress( element->qrule.size( ), floatVector( _dim * _dim, 0 ) );
         floatMatrix nodalDOFValues( element->nodes.size( ), floatVector( _dim + _dim * _dim, 0 ) );
-        floatMatrix dofValues( element->qrule.size( ), floatVector( _dim + _dim * _dim, 0 ) );
-        floatMatrix dofGradients( element->qrule.size( ), floatVector( _dim * ( _dim + _dim * _dim ), 0 ) );
 
         for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
 
@@ -3272,24 +3270,6 @@ namespace overlapCoupling{
             }
 
             Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
-
-            //Get the degree of freedom values at the nodes
-            const floatVector *macroDispDOFVector = _inputProcessor.getMacroDispDOFVector( );
-            for ( unsigned int n = 0; n < element->nodes.size( ); n++ ){
-
-                for ( unsigned int i = 0; i < ( _dim + _dim * _dim ); i++ ){
-
-                    nodalDOFValues[ n ][ i ] = ( *macroDispDOFVector )[ ( _dim + _dim * _dim ) * element->global_node_ids[ n ] + i ];
-
-                }
-
-            }
-
-            element->interpolate( nodalDOFValues, element->qrule[ qptIndex ].first, dofValues[ qptIndex ] );
-
-            floatMatrix dNodalDOFdX;
-            element->get_global_gradient( nodalDOFValues, element->qrule[ qptIndex ].first, element->reference_nodes, dNodalDOFdX );
-            dofGradients[ qptIndex ] = vectorTools::appendVectors( dNodalDOFdX );
 
             for ( unsigned int n = 0; n < element->nodes.size( ); n++ ){
 
@@ -3425,8 +3405,6 @@ namespace overlapCoupling{
         quadraturePointBodyCouples.emplace( macroCellID, vectorTools::appendVectors( bodyCouples ) );
         quadraturePointMicroSpinInertias.emplace( macroCellID, vectorTools::appendVectors( microSpinInertias ) );
         quadraturePointSymmetricMicroStress.emplace( macroCellID, vectorTools::appendVectors( symmetricMicroStress ) );
-        quadraturePointDOFValues.emplace( macroCellID, vectorTools::appendVectors( dofValues ) );
-        quadraturePointDOFGradients.emplace( macroCellID, vectorTools::appendVectors( dofGradients ) );
 
         return NULL;
 
@@ -6238,6 +6216,25 @@ namespace overlapCoupling{
 
         }
 
+        //Assemble the projected displacement vectors
+        floatVector projectedMacroDisplacement;
+        if ( !_currentReferenceOutputIncrement ){
+
+            projectedMacroDisplacement
+                = vectorTools::appendVectors(
+                    {
+                        floatVector( ( _dim + _dim * _dim ) * _inputProcessor.getFreeMacroNodeIds( )->size( ), 0 ),
+                        _projected_ghost_macro_displacement
+                    } );
+
+        }
+        else{
+
+            projectedMacroDisplacement =
+                vectorTools::appendVectors( { _updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement } );
+
+        }
+
         //Loop over the quadrature points
         for ( unsigned int qp = 0; qp < maxQP; qp++ ){
 
@@ -6303,19 +6300,61 @@ namespace overlapCoupling{
 
                 }
 
-                for ( unsigned int i = 0; i < ( _dim + _dim * _dim ); i++ ){
+                //Form the element
+                std::unique_ptr< elib::Element > element;
+                error = buildMacroDomainElement( *cellId,
+                                                 *_inputProcessor.getMacroNodeReferencePositions( ),
+                                                 *_inputProcessor.getMacroDisplacements( ),
+                                                 *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                                 *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
+                                                 element );
 
-                    dofValuesOut[ ( _dim + _dim * _dim ) * index + i ]
-                        = quadraturePointDOFValues[ *cellId ][ ( _dim + _dim * _dim ) + i ];
+                //Build the DOF vector
+                floatMatrix dofMatrix( element->qrule.size( ), floatVector( _dim + _dim * _dim, 0 ) );
+
+                for ( auto node = element->global_node_ids.begin( ); node != element->global_node_ids.end( ); node++ ){
+
+                    auto localNode = _inputProcessor.getMacroGlobalToLocalDOFMap( )->find( *node );
+
+                    if ( localNode == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
+
+                        return new errorNode( "outputHomogenizedResponse",
+                                              "Error in finding the global node " + std::to_string( *node ) +
+                                              " in the macro global to local DOF map" );
+
+                    }
+
+                    dofMatrix[ node - element->global_node_ids.begin( ) ] =
+                        floatVector( projectedMacroDisplacement.begin( ) + ( _dim + _dim * _dim ) * localNode->second,
+                                     projectedMacroDisplacement.begin( ) + ( _dim + _dim * _dim ) * ( localNode->second + 1 ) );
 
                 }
 
-                for ( unsigned int i = 0; i < _dim * ( _dim + _dim * _dim ); i++ ){
+                error = element->interpolate( dofMatrix, element->qrule[ qp ].first, dofValuesOut );
 
-                    dofGradientsOut[ _dim * ( _dim + _dim * _dim ) * index + i ]
-                        = quadraturePointDOFValues[ *cellId ][ _dim * ( _dim + _dim * _dim ) + i ];
+                if ( error ){
+
+                    errorOut result = new errorNode( "outputHomogenizedResponse",
+                                                     "Error in the interpolation of the DOF values" );
+                    result->addNext( error );
+                    return result;
 
                 }
+
+                floatMatrix qptDOFGradient;
+
+                error = element->get_global_gradient( dofMatrix, element->qrule[ qp ].first, element->reference_nodes, qptDOFGradient );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "outputHomogenizedResponse",
+                                                     "Error in the interpolation of the DOF values" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                dofGradientsOut = vectorTools::appendVectors( qptDOFGradient );
 
             }
 
@@ -6510,11 +6549,13 @@ namespace overlapCoupling{
 
                 for ( unsigned int j = 0; j < _dim; j++ ){
 
-                    outputNames[ i ] = "DOF_" + std::to_string( i + 1 ) + "," + std::to_string( j + 1 ) + "_" + std::to_string( qp );
+                    outputNames[ _dim * i + j ]
+                        = "DOF_" + std::to_string( i + 1 ) + "," + std::to_string( j + 1 ) + "_" + std::to_string( qp );
 
                 }
 
             }
+
             error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", dofGradientsOut );
 
             if ( error ){
@@ -6527,7 +6568,7 @@ namespace overlapCoupling{
 
         }
         
-        return new errorNode( "outputHomogenizedResponse", "Not implemented" );
+        return NULL;
     }
 
     errorOut overlapCoupling::writeReferenceMeshDataToFile( const uIntType collectionNumber ){
