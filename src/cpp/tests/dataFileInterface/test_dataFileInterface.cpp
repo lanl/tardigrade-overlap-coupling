@@ -1431,24 +1431,24 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-//    test_XDMFDataFile_constructor( results );
-//    test_XDMFDataFile_getNumIncrements( results );
-//    test_XDMFDataFile_readMesh( results );
-//    test_XDMFDataFile_getNumSubDomainNodes( results );
-//    test_XDMFDataFile_getNodeIds( results );
-//    test_XDMFDataFile_getSubDomainNodes( results );
-//    test_XDMFDataFile_getNumNodes( results );
-//    test_XDMFDataFile_getSetNames( results );
-//    test_XDMFDataFile_getSolutionData( results );
-//    test_XDMFDataFile_getSolutionVectorDataFromComponents( results );
-//    test_XDMFDataFile_getMeshData( results );
-//    test_XDMFDataFile_getMeshData2( results );
-//    test_XDMFDataFile_getIncrementTime( results );
-//
-//    test_XDMFDataFile_initializeIncrement( results );
-//    test_XDMFDataFile_addRootCollection( results );
-//    test_XDMFDataFile_writeIncrementMeshData( results );
-//    test_XDMFDataFile_writeScalarSolutionData( results );
+    test_XDMFDataFile_constructor( results );
+    test_XDMFDataFile_getNumIncrements( results );
+    test_XDMFDataFile_readMesh( results );
+    test_XDMFDataFile_getNumSubDomainNodes( results );
+    test_XDMFDataFile_getNodeIds( results );
+    test_XDMFDataFile_getSubDomainNodes( results );
+    test_XDMFDataFile_getNumNodes( results );
+    test_XDMFDataFile_getSetNames( results );
+    test_XDMFDataFile_getSolutionData( results );
+    test_XDMFDataFile_getSolutionVectorDataFromComponents( results );
+    test_XDMFDataFile_getMeshData( results );
+    test_XDMFDataFile_getMeshData2( results );
+    test_XDMFDataFile_getIncrementTime( results );
+
+    test_XDMFDataFile_initializeIncrement( results );
+    test_XDMFDataFile_addRootCollection( results );
+    test_XDMFDataFile_writeIncrementMeshData( results );
+    test_XDMFDataFile_writeScalarSolutionData( results );
     test_XDMFDataFile_writeSolutionData( results );
 
     //Close the results file
