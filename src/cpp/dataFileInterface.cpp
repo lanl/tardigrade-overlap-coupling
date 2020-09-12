@@ -289,6 +289,8 @@ namespace dataFileInterface{
 
         for ( auto cN = componentNames.begin( ); cN != componentNames.end( ); cN++ ){
 
+            uIntType componentIndex = cN - componentNames.begin( );
+
             error = getSolutionData( increment, *cN, dataCenter, componentData );
 
             if ( error ){
@@ -316,8 +318,11 @@ namespace dataFileInterface{
             }
 
             for ( auto c = componentData.begin( ); c != componentData.end( ); c++ ){
+                uIntType dataIndex = ( c - componentData.begin( ) ) * nComponents;
 
-                data[ ( c - componentData.begin( ) ) * nComponents + cN - componentNames.begin( ) ] = *c;
+                uIntType index = dataIndex + componentIndex;
+
+                data[ index ] = *c;
 
             } 
 
