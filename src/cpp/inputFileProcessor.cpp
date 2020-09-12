@@ -2114,82 +2114,32 @@ namespace inputFileProcessor{
         /*!
          * Extract the micro-stresses at the indicated increment
          *
-         * TODO: Replace with the generalized output reader
-         *
          * :param const unsigned int &increment: The current increment
          */
 
-        if ( !_config[ "microscale_definition" ][ "stress_variable_names" ] ){
+        stringVector variableKeys =
+            {
+                "s11", "s12", "s13", "s21", "s22", "s23", "s31", "s32", "s33"
+            };
 
-            return new errorNode( "extractMicroStresses",
-                                  "The stress variable names have not been defined under microscale_definition -> stress_variable_names" );
+        std::string dataType = "Node";
 
-        }
+        bool populateWithNullOnUndefined = false;
+        bool _tmpFlag;
 
-        uIntType dim = ( uIntType )std::sqrt( ( floatType )_config[ "microscale_definition" ][ "stress_variable_names" ].size( ) );
+        std::string configurationName = "stress_variable_names";
+        YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
 
-        if ( _config[ "microscale_definition" ][ "stress_variable_names" ].size( ) != dim * dim ){
-
-            return new errorNode( "extractMicroStresses",
-                                  "The dimensionality of the stresses must be a perfect square ( 1 value, 4 values, or 9 values ) for 1d, 2d, or 3d" );
-
-        }
-
-        stringVector stressKeys( dim * dim );
-
-        for ( uIntType i = 0; i < dim; i++ ){
-
-            for ( uIntType j = 0; j < dim; j++ ){
-
-                stressKeys[ dim * i + j ] = "s" + std::to_string( i + 1 ) + std::to_string( j + 1 );
-
-            }
-
-        }
-
-        uIntType numNodes;
-        errorOut error = _microscale->getNumNodes( increment, numNodes );
+        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _tmpFlag, _microStresses );
 
         if ( error ){
 
             errorOut result = new errorNode( "extractMicroStresses",
-                                             "Error in getting the number of nodes in the microscale" );
+                                             "Error in the extraction of the micro stresses" );
             result->addNext( error );
             return result;
-
-        }
-
-        _microStresses = floatVector( dim * dim * numNodes, 0 );
-
-        for ( auto sK = stressKeys.begin( ); sK != stressKeys.end( ); sK++ ){
-
-            if ( !_config[ "microscale_definition" ][ "stress_variable_names" ][ *sK ] ){
-
-                return new errorNode( "extractMicroStresses",
-                                      "The micro stress component " + *sK + " is not defined in the input file" );
-
-            }
-
-            floatVector stressComponent;
-
-            error = _microscale->getSolutionData( increment,
-                                                  _config[ "microscale_definition" ][ "stress_variable_names" ][ *sK ].as< std::string >( ),
-                                                  "Node", stressComponent );
-
-            if ( error ){
-
-                errorOut result = new errorNode( "extractMicroStresses",
-                                                 "Error in extracting the stress component " + *sK + " from the input file" );
-                result->addNext( error );
-                return result;
-
-            }
-
-            for ( auto sC = stressComponent.begin( ); sC != stressComponent.end( ); sC++ ){
-
-                _microStresses[ dim * dim * ( sC - stressComponent.begin( ) ) + sK - stressKeys.begin( ) ] = *sC;
-
-            }
 
         }
 
