@@ -64,6 +64,55 @@ namespace overlapCoupling{
         return _error;
     }
 
+    errorOut overlapCoupling::processLastIncrements( ){
+        /*!
+         * Process the final increments of the macro and micro scales
+         */
+
+        uIntType numMicroIncrements, numMacroIncrements;
+
+        //Get the number of micro increments
+        errorOut error = _inputProcessor._microscale->getNumIncrements( numMicroIncrements );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processLastIncrements",
+                                             "Error in getting the number of micro increments" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Get the number of macro increments
+        error = _inputProcessor._macroscale->getNumIncrements( numMacroIncrements );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "processLastIncrements",
+                                             "Error in getting the number of macro increments" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        //Process the final increments
+        error = processIncrement( numMicroIncrements - 1, numMacroIncrements - 1 );
+
+        if ( error ){
+
+            std::string outstr = "Error in processing the increments\n";
+            outstr += "    macro increment: " + std::to_string( numMacroIncrements - 1 ) + "\n";
+            outstr += "    micro increment: " + std::to_string( numMicroIncrements - 1 );
+            errorOut result = new errorNode( "processLastIncrements", outstr );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
     errorOut overlapCoupling::processIncrement( const unsigned int &microIncrement,
                                                 const unsigned int &macroIncrement ){
         /*!
@@ -1927,7 +1976,7 @@ namespace overlapCoupling{
 
             auto indx = macroGlobalToLocalDOFMap->find( *md );
 
-            if ( indx == microGlobalToLocalDOFMap->end( ) ){
+            if ( indx == macroGlobalToLocalDOFMap->end( ) ){
 
                 return new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
                                       "'" + std::to_string( *md ) + "' not found in the DOF map" );
@@ -2983,8 +3032,6 @@ namespace overlapCoupling{
          *     homogenized stresses computed at the quadrature points.
          */
 
-        ( void ) macroCellID;
-
         //Get the pointers to the values
         const floatVector *macroNodeReferenceLocations = _inputProcessor.getMacroNodeReferencePositions( );
         const floatVector *macroDisplacements = _inputProcessor.getMacroDisplacements( );
@@ -3100,13 +3147,17 @@ namespace overlapCoupling{
                 //Add the contribution to the overall RHS vectors
                 for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
 
-                    linearMomentumRHS[ _dim * j + it - nLinearMomentumRHS.begin( ) ] += *it;
+                    uIntType index = _dim * j + ( it - nLinearMomentumRHS.begin( ) );
+
+                    linearMomentumRHS[ index ] += *it;
 
                 }
 
                 for ( auto it = nFirstMomentRHS.begin( ); it != nFirstMomentRHS.end( ); it++ ){
 
-                    firstMomentRHS[ _dim * _dim * j + it - nFirstMomentRHS.begin( ) ] += *it;
+                    uIntType index = _dim * _dim * j + ( it - nFirstMomentRHS.begin( ) );
+
+                    firstMomentRHS[ index ] += *it;
 
                 }
 
@@ -3227,7 +3278,7 @@ namespace overlapCoupling{
         floatVector shapeFunctions;
         floatMatrix dNdx, jacobian;
 
-        std::vector< DOFProjection::T > coefficients;
+        tripletVector coefficients;
         coefficients.reserve( ( 2 * _dim * _dim + 3 * _dim * _dim ) * element->nodes.size( ) * element->qrule.size( ) );
 
         //Quadrature point interpolated values
@@ -3362,7 +3413,7 @@ namespace overlapCoupling{
         }
 
         //Determine where the "shelf" in the singular values occurs
-        std::vector< unsigned int > outliers;
+        uIntVector outliers;
 
         MADOutlierDetection( logSVec, outliers, 10 );
 
@@ -3535,7 +3586,7 @@ namespace overlapCoupling{
 
         floatType median = vectorTools::median(x);
 
-        std::vector< floatType > absDeviations = vectorTools::abs(x - median);
+        floatVector absDeviations = vectorTools::abs(x - median);
 
         floatType MAD = vectorTools::median(absDeviations) + eps;
 
@@ -3562,7 +3613,7 @@ namespace overlapCoupling{
                                                 const floatVector &momentOfInertia,
                                                 const floatVector &density,
                                                 const DOFMap *nodeIDToIndex,
-                                                std::vector< DOFProjection::T > &coefficients ){
+                                                tripletVector &coefficients ){
         /*!
          * Form the micromorphic mass matrix for an element
          *
@@ -3575,7 +3626,7 @@ namespace overlapCoupling{
          * :param const floatVector &density: The density in the current configuration
          *     at the quadrature points
          * :param const DOFMap &nodeIDToIndex: A map from the node id's to the DOF index
-         * :param std::vector< DOFProjection::T > &coefficients: The coefficients of the mass matrix
+         * :param tripletVector &coefficients: The coefficients of the mass matrix
          */
 
         //Get the dimension of the element
@@ -4379,7 +4430,7 @@ namespace overlapCoupling{
         uIntVector macroCellIDVector( freeMacroCellIds->begin( ), freeMacroCellIds->end( ) );
         macroCellIDVector = vectorTools::appendVectors( { macroCellIDVector, *ghostMacroCellIds } );
 
-        std::vector< DOFProjection::T > coefficients;
+        tripletVector coefficients;
 
         uIntType numCoefficients = 0;
         for ( auto it = externalForcesAtNodes.begin( ); it != externalForcesAtNodes.end( ); it++ ){
@@ -4554,7 +4605,7 @@ namespace overlapCoupling{
             = _inputProcessor.getMacroReferenceMomentsOfInertia( );
 
         //Initialize the coefficients vector
-        std::vector< DOFProjection::T > coefficients;
+        tripletVector coefficients;
 
         uIntType numCoefficients = 0;
         for ( auto it = externalForcesAtNodes.begin( ); it != externalForcesAtNodes.end( ); it++ ){
@@ -4825,8 +4876,8 @@ namespace overlapCoupling{
         }
 
         //Assemble the mass sub-matrices
-        std::vector< DOFProjection::T > c1;
-        std::vector< DOFProjection::T > c2;
+        tripletVector c1;
+        tripletVector c2;
 
         c1.reserve( _dim * ghostMicroMasses.size( ) ); 
         c2.reserve( _dim * freeMicroMasses.size( ) ); 
@@ -6070,7 +6121,7 @@ namespace overlapCoupling{
         _cols->read( );
         _vals->read( );
 
-        std::vector< DOFProjection::T > triplets;
+        tripletVector triplets;
         triplets.reserve( _rows->getSize( ) );
 
         for ( uIntType i = 0; i != _rows->getSize( ); i++ ){
@@ -6922,5 +6973,39 @@ namespace overlapCoupling{
         return NULL;
 
     }
+
+    DOFMap overlapCoupling::getMicroGlobalLocalNodeMap( ){
+        /*!
+         * Return a copy of the micro global to local node map
+         */
+
+        return *_inputProcessor.getMicroGlobalToLocalDOFMap( );
+    }
+
+    DOFMap overlapCoupling::getMacroGlobalLocalNodeMap( ){
+        /*!
+         * Return a copy of the macro global to local node map
+         */
+
+        return *_inputProcessor.getMacroGlobalToLocalDOFMap( );
+    }
+
+    floatVector overlapCoupling::getUpdatedMicroDisplacementDOF( ){
+        /*!
+         * Return a copy of the micro displacement dof vector
+         */
+
+        return vectorTools::appendVectors( { _updatedFreeMicroDispDOFValues, _projected_ghost_micro_displacement } );
+    }
+
+    floatVector overlapCoupling::getUpdatedMacroDisplacementDOF( ){
+        /*!
+         * Return a copy of the macro displacement dof vector
+         */
+
+        return vectorTools::appendVectors( { _updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement } );
+    }
+
+
 
 }

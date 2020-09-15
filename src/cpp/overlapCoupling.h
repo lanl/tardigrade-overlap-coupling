@@ -29,6 +29,7 @@ namespace overlapCoupling{
     typedef inputFileProcessor::stringVector stringVector;
     typedef inputFileProcessor::DOFMap DOFMap;
     typedef DOFProjection::SparseMatrix SparseMatrix;
+    typedef std::vector< DOFProjection::T > tripletVector;
 
     //!The different strategies for the partitioning coefficient
     enum partitioningCoefficient { VOLUME_FRACTION };
@@ -59,6 +60,8 @@ namespace overlapCoupling{
             errorOut processIncrement( const unsigned int &microIncrement,
                                        const unsigned int &macroIncrement );
 
+            errorOut processLastIncrements( );
+
             //Access functions
             const floatVector* getReferenceFreeMicroDomainMasses( );
             const floatVector* getReferenceGhostMicroDomainMasses( );
@@ -75,6 +78,14 @@ namespace overlapCoupling{
 
             const floatVector* getProjectedGhostMacroDisplacement( );
             const floatVector* getProjectedGhostMicroDisplacement( );
+
+            DOFMap getMicroGlobalLocalNodeMap( );
+
+            DOFMap getMacroGlobalLocalNodeMap( );
+
+            floatVector getUpdatedMicroDisplacementDOF( );
+
+            floatVector getUpdatedMacroDisplacementDOF( );
 
         private:
 
