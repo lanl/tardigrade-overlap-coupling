@@ -1367,11 +1367,8 @@ int test_writeSparseMatrixToXDMF( std::ofstream &results ){
     shared_ptr< XdmfUnstructuredGrid > grid = XdmfUnstructuredGrid::New( );
 
     std::string filename = "test_output_file";
-
-    std::string xdmf_filename = filename + ".xdmf";
     std::string h5_filename = filename + ".h5";
-    shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( h5_filename, true );
-    shared_ptr< XdmfWriter > writer = XdmfWriter::New( xdmf_filename, heavyWriter );
+    std::string xdmf_filename = filename + ".xdmf";
 
     SparseMatrix A1( 3, 4 );
     std::vector< T > triplets;
@@ -1389,7 +1386,7 @@ int test_writeSparseMatrixToXDMF( std::ofstream &results ){
     domain->insert( grid );
 
     std::string matrixName = "A_MATRIX";
-    errorOut error = overlapCoupling::writeSparseMatrixToXDMF( A1, matrixName, writer, domain, grid );
+    errorOut error = overlapCoupling::writeSparseMatrixToXDMF( A1, matrixName, filename, domain, grid );
 
     if ( error ){
 
