@@ -17,7 +17,6 @@
 #include<memory>
 
 //XDMF headers
-
 #include "XdmfDomain.hpp"
 #include "XdmfInformation.hpp"
 #include "XdmfReader.hpp"
@@ -84,7 +83,7 @@ namespace dataFileInterface{
             //Constructors
             dataFileBase( );
             dataFileBase( const YAML::Node &config );
-            dataFileBase( const YAML::Node &config, errorOut error );
+            dataFileBase( const YAML::Node &config, std::unique_ptr< errorNode > &error );
 
             //The factory for child classes
             std::shared_ptr<dataFileBase> create( );
@@ -130,7 +129,7 @@ namespace dataFileInterface{
                                                 const stringVector &dataNames, const std::string &dataType,
                                                 const floatVector &data ); //Probably doesn't need to be overloaded
 
-            errorOut _error;
+            std::unique_ptr< errorNode > _error;
             std::string _filename;
             std::string _mode;
 
@@ -156,7 +155,7 @@ namespace dataFileInterface{
         public:
             //Constructors
             XDMFDataFile( );
-            XDMFDataFile( YAML::Node configuration );
+            XDMFDataFile( const YAML::Node &configuration );
 
             //Overloads
             errorOut getIncrementTime( const uIntType &increment, floatType &time );
@@ -191,7 +190,6 @@ namespace dataFileInterface{
         private:
             //Interface Attributes
             shared_ptr< XdmfReader > _reader;
-            shared_ptr< XdmfWriter > _writer;
             shared_ptr< XdmfDomain > _domain;
 
             uIntVector _increment_reference_grids;

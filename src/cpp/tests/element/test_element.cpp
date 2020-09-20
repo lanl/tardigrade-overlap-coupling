@@ -707,7 +707,8 @@ int test_compute_local_coordinates(elib::Element &element, elib::vec xtest, bool
 
     elib::vec xi, result;
 
-    errorOut clc_result = element.compute_local_coordinates(xtest, xi);
+    std::unique_ptr< errorNode > clc_result;
+    clc_result.reset( element.compute_local_coordinates(xtest, xi) );
 
     if ( ( clc_result ) && (isoutside)){
         results << element.name.c_str() << "_test_compute_local_coordinates & True\n";

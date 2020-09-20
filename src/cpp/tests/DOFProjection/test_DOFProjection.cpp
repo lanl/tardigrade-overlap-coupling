@@ -2693,7 +2693,7 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
         return 1;
     }
 
-    result = floatVector( 27, 0 );
+    result = floatVector( 200, 0 );
     error = DOFProjection::addDomainMicroContributionToMacroMass( domainMicroNodeIndices, domainMacroNodeIndices, microMasses, 
                                                                   domainMicroShapeFunctions, microWeights, result,
                                                                   &macroNodeToLocalIndex );
@@ -2717,7 +2717,7 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
 
     }
 
-    result = floatVector( 27, 0 );
+    result = floatVector( 200, 0 );
 
     error = DOFProjection::addDomainMicroContributionToMacroMass( domainMicroNodeIndices, domainMacroNodeIndices, microVolumes,
                                                                   microDensities, domainMicroShapeFunctions, microWeights, result,
@@ -3929,11 +3929,12 @@ int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
 
     floatVector result( dim * dim * 200, 0 );
 
-    errorOut error = DOFProjection::addDomainMassMicroDisplacementPosition( dim,
-                                                                            domainMicroNodeIndices, domainMacroNodeIndices,
-                                                                            domainReferenceXis, microMasses, domainMicroShapeFunctions,
-                                                                            microWeights, microDisplacements,
-                                                                            result );
+    std::unique_ptr< errorNode > error;
+    error.reset( DOFProjection::addDomainMassMicroDisplacementPosition( dim,
+                                                                        domainMicroNodeIndices, domainMacroNodeIndices,
+                                                                        domainReferenceXis, microMasses, domainMicroShapeFunctions,
+                                                                        microWeights, microDisplacements,
+                                                                        result ) );
 
     if ( error ){
         error->print();
@@ -3950,12 +3951,12 @@ int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
 
     result = floatVector( dim * dim * 200, 0 );
 
-    error = DOFProjection::addDomainMassMicroDisplacementPosition( dim,
-                                                                   domainMicroNodeIndices, domainMacroNodeIndices,
-                                                                   domainReferenceXis, microVolumes, microDensities,
-                                                                   domainMicroShapeFunctions,
-                                                                   microWeights, microDisplacements,
-                                                                   result );
+    error.reset( DOFProjection::addDomainMassMicroDisplacementPosition( dim,
+                                                                        domainMicroNodeIndices, domainMacroNodeIndices,
+                                                                        domainReferenceXis, microVolumes, microDensities,
+                                                                        domainMicroShapeFunctions,
+                                                                        microWeights, microDisplacements,
+                                                                        result ) );
 
     if ( error ){
         error->print();
@@ -3970,23 +3971,29 @@ int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
         return 1;
     }
 
-    result = floatVector( dim * 137, 0 );
+    result = floatVector( dim * dim * 148, 0 );
 
-    error = DOFProjection::addDomainMassMicroDisplacementPosition( dim,
-                                                                   domainMicroNodeIndices, domainMacroNodeIndices,
-                                                                   domainReferenceXis, microMasses, domainMicroShapeFunctions,
-                                                                   microWeights, microDisplacements,
-                                                                   result, &macroNodeToLocalIndex );
+    error.reset( DOFProjection::addDomainMassMicroDisplacementPosition( dim,
+                                                                        domainMicroNodeIndices, domainMacroNodeIndices,
+                                                                        domainReferenceXis, microMasses, domainMicroShapeFunctions,
+                                                                        microWeights, microDisplacements,
+                                                                        result, &macroNodeToLocalIndex ) );
+
+    if ( error ){
+        error->print( );
+        results << "test_addDomainMassMicroDisplacementPosition & False\n";
+        return 1;
+    }
 
     for ( auto indx  = macroNodeToLocalIndex.begin( );
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
-                                                     answer.begin( ) + dim * ( indx->first + 1 )
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
+                                                     answer.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
-                                        floatVector( result.begin( ) + dim * indx->second,
-                                                     result.begin( ) + dim * ( indx->second + 1 )
+                                        floatVector( result.begin( ) + dim * dim * indx->second,
+                                                     result.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
            ){
@@ -3996,24 +4003,30 @@ int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
 
     }
 
-    result = floatVector( dim * 137, 0 );
+    result = floatVector( dim * dim * 148, 0 );
 
-    error = DOFProjection::addDomainMassMicroDisplacementPosition( dim,
-                                                                   domainMicroNodeIndices, domainMacroNodeIndices,
-                                                                   domainReferenceXis, microVolumes, microDensities,
-                                                                   domainMicroShapeFunctions,
-                                                                   microWeights, microDisplacements,
-                                                                   result, &macroNodeToLocalIndex );
+    error.reset( DOFProjection::addDomainMassMicroDisplacementPosition( dim,
+                                                                        domainMicroNodeIndices, domainMacroNodeIndices,
+                                                                        domainReferenceXis, microVolumes, microDensities,
+                                                                        domainMicroShapeFunctions,
+                                                                        microWeights, microDisplacements,
+                                                                        result, &macroNodeToLocalIndex ) );
+
+    if ( error ){
+        error->print( );
+        results << "test_addDomainMassMicroDisplacementPosition & False\n";
+        return 1;
+    }
 
     for ( auto indx  = macroNodeToLocalIndex.begin( );
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
-                                                     answer.begin( ) + dim * ( indx->first + 1 )
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
+                                                     answer.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
-                                        floatVector( result.begin( ) + dim * indx->second,
-                                                     result.begin( ) + dim * ( indx->second + 1 )
+                                        floatVector( result.begin( ) + dim * dim * indx->second,
+                                                     result.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
            ){

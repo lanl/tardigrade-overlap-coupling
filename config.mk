@@ -11,10 +11,12 @@
 ICC_EXIST:=$(shell which icc)
 ifdef ICC_EXIST
     CXX=icc
-    CFLAGS=-std=c++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
+#    CFLAGS=-std=c++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
+    CFLAGS=-std=c++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5# -lyaml-cpp
 else
-    CXX=g++
-    CFLAGS=-std=gnu++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
+#    CXX=$(CXX)
+#    CFLAGS=-std=gnu++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
+    CFLAGS=-std=gnu++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5# -lyaml-cpp
 endif
 
 # Location of the Eigen library
@@ -27,8 +29,8 @@ ROOTDIR:=$(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))
 QHULL=/projects/nathanm/micromorphic/micromorphic_library/external_repositories/quickhull/
 
 #Python includes ( TODO: Make this more automatic )
-PYTHON_INCLUDE:=/home/nathan/anaconda3/include
-PYTHON_LIB:=/home/nathan/anaconda3/lib
+PYTHON_INCLUDE:=/home/nathan/anaconda3/envs/moose/include
+PYTHON_LIB:=/home/nathan/anaconda3/envs/moose/lib
 
 # Add the location of the error_tools to the include and library
 ERRORSOURCE = $(ROOTDIR)/error_tools/src/cpp/error_tools.cpp
@@ -94,10 +96,10 @@ LIB+= -L$(ROOTDIR)/yaml-cpp/build/
 INC += -I$(ROOTDIR)/xdmf -I$(ROOTDIR)/xdmf/build
 INC += -I$(ROOTDIR)/xdmf/core -I$(ROOTDIR)/xdmf/build/core
 INC += -I$(PYTHON_INCLUDE)/libxml2
+INC += -I$(PYTHON_INCLUDE)
 
 LIB += -L$(ROOTDIR)/xdmf/build/lib -lXdmf -lXdmfCore -lXdmfUtils
-LIB += -L$(PYTHON_LIB)/libxml2 -lxml2
-LIB += -L$(PYTHON_LIB) -lhdf5 -ltiff
+LIB += -L$(PYTHON_LIB)# -lxml2
 
 # Add the location of the Boost headers
 INC+= -I$(BOOST_ROOT)

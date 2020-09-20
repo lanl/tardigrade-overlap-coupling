@@ -15,7 +15,7 @@ OBJECTS=overlap_coupling.o quickhull.o element.o assembly.o# geometry_decomposit
 LOCAL_CFLAGS=-I. -O3 -fpic -Wall
 
 #Set the mode due to the method variable
-DBG = 
+DBG =
 ifeq ($(METHOD),dbg)
   DBG = -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -g
 endif

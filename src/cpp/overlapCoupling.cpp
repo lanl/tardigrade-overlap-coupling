@@ -3251,15 +3251,19 @@ namespace overlapCoupling{
                 //Add the contribution to the overall RHS vectors
                 for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
 
-                    linearMomentumRHS[ _dim * j + it - nLinearMomentumRHS.begin( ) ] += *it;
-                    externalForcesAtNodes[ macroCellID ][ _dim * j + it - nLinearMomentumRHS.begin( ) ] += *it;
+                    uIntType index = _dim * j + ( it - nLinearMomentumRHS.begin( ) );
+
+                    linearMomentumRHS[ index ] += *it;
+                    externalForcesAtNodes[ macroCellID ][ index ] += *it;
 
                 }
 
                 for ( auto it = nFirstMomentRHS.begin( ); it != nFirstMomentRHS.end( ); it++ ){
 
-                    firstMomentRHS[ _dim * _dim * j + it - nFirstMomentRHS.begin( ) ] += *it;
-                    externalCouplesAtNodes[ macroCellID ][ _dim * _dim * j + it - nFirstMomentRHS.begin( ) ] += *it;
+                    uIntType index = _dim * _dim * j + ( it - nFirstMomentRHS.begin( ) );
+
+                    firstMomentRHS[ index ] += *it;
+                    externalCouplesAtNodes[ macroCellID ][ index ] += *it;
 
                 }
 
@@ -4671,7 +4675,7 @@ namespace overlapCoupling{
 
             }
 
-            auto momentOfInertiaType = macroReferenceDensityTypes->find( *macroCellID );
+            auto momentOfInertiaType = macroReferenceMomentOfInertiaTypes->find( *macroCellID );
 
             if ( momentOfInertiaType == macroReferenceMomentOfInertiaTypes->end( ) ){
 
@@ -5289,7 +5293,7 @@ namespace overlapCoupling{
             //Get the local ID
             auto idMap = macroGlobalToLocalDOFMap->find( *nodeID );
 
-            if ( idMap == microGlobalToLocalDOFMap->end( ) ){
+            if ( idMap == macroGlobalToLocalDOFMap->end( ) ){
 
                 return new errorNode( "assembleCouplingForceVector",
                                       "ghost macro node " + std::to_string( *nodeID ) +
@@ -5351,7 +5355,7 @@ namespace overlapCoupling{
             //Get the local ID
             auto idMap = macroGlobalToLocalDOFMap->find( *nodeID );
 
-            if ( idMap == microGlobalToLocalDOFMap->end( ) ){
+            if ( idMap == macroGlobalToLocalDOFMap->end( ) ){
 
                 return new errorNode( "assembleCouplingForceVector",
                                       "free macro node " + std::to_string( *nodeID ) +
@@ -5829,13 +5833,6 @@ namespace overlapCoupling{
         //Get the coupling initialization
         YAML::Node couplingInitialization = _inputProcessor.getCouplingInitialization( );
 
-        //Initialize the writer
-        std::string reference_filename
-            = couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( );
-
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( reference_filename + ".h5", true );
-        shared_ptr< XdmfWriter > writer = XdmfWriter::New( reference_filename + ".xdmf", heavyWriter );
-
         //Initialize the XDMF domain
         shared_ptr< XdmfDomain > domain = XdmfDomain::New( );
         std::string domainInfoDescription = "This is not a mesh-based XDMF file and should only be used ";
@@ -5846,10 +5843,14 @@ namespace overlapCoupling{
         shared_ptr< XdmfUnstructuredGrid > grid = XdmfUnstructuredGrid::New( );
         domain->insert( grid );
 
+        //Get the output filename
+        std::string reference_filename
+            = couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( );
+
         //Save the interpolation matrix if required
         if ( couplingInitialization[ "output_reference_information" ][ "save_interpolation_matrix" ] ){
 
-            errorOut error = writeSparseMatrixToXDMF( _N, "N", writer, domain, grid );
+            errorOut error = writeSparseMatrixToXDMF( _N, "N", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -5910,6 +5911,11 @@ namespace overlapCoupling{
             BDhatD->insert( 0, _L2_BDhatD.data( ), _L2_BDhatD.size( ), 1, 1 );
             grid->insert( BDhatD );
 
+            //Initialize the writer
+            shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( reference_filename + ".h5", true );
+            heavyWriter->setReleaseData( true );
+            shared_ptr< XdmfWriter > writer = XdmfWriter::New( reference_filename + ".xdmf", heavyWriter );
+
             domain->accept( writer );
 
         }
@@ -5922,7 +5928,7 @@ namespace overlapCoupling{
             errorOut error;
 
             //Write BQhatQ
-            error = writeSparseMatrixToXDMF( _DP_BQhatQ, "BQhatQ", writer, domain, grid );
+            error = writeSparseMatrixToXDMF( _DP_BQhatQ, "BQhatQ", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -5934,7 +5940,7 @@ namespace overlapCoupling{
             }
 
             //Write BQhatD
-            error = writeSparseMatrixToXDMF( _DP_BQhatD, "BQhatD", writer, domain, grid );
+            error = writeSparseMatrixToXDMF( _DP_BQhatD, "BQhatD", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -5946,7 +5952,7 @@ namespace overlapCoupling{
             }
 
             //Write BDhatQ
-            error = writeSparseMatrixToXDMF( _DP_BDhatQ, "BDhatQ", writer, domain, grid );
+            error = writeSparseMatrixToXDMF( _DP_BDhatQ, "BDhatQ", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -5958,7 +5964,7 @@ namespace overlapCoupling{
             }
 
             //Write BDhatD
-            error = writeSparseMatrixToXDMF( _DP_BDhatD, "BDhatD", writer, domain, grid );
+            error = writeSparseMatrixToXDMF( _DP_BDhatD, "BDhatD", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -5982,12 +5988,16 @@ namespace overlapCoupling{
     }
 
     errorOut writeSparseMatrixToXDMF( const SparseMatrix &A, const std::string matrixName,
-                                      shared_ptr< XdmfWriter > &writer, shared_ptr< XdmfDomain > &domain,
+                                      const std::string &filename, shared_ptr< XdmfDomain > &domain,
                                       shared_ptr< XdmfUnstructuredGrid > &grid ){
         /*!
          * Write a sparse matrix to a XDMF file
          */
 
+        //Initialize the writer
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( filename + ".h5", true );
+//        heavyWriter->setReleaseData( true );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( filename + ".xdmf", heavyWriter );
 
         shared_ptr< XdmfAttribute > _A = XdmfAttribute::New( );
         _A->setName( matrixName );
@@ -7006,6 +7016,71 @@ namespace overlapCoupling{
         return vectorTools::appendVectors( { _updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement } );
     }
 
+    errorOut runOverlapCoupling( const std::string &filename,
+                                 DOFMap &microGlobalLocalNodeMap, floatVector &updatedMicroDisplacementDOF,
+                                 DOFMap &macroGlobalLocalNodeMap, floatVector &updatedMacroDisplacementDOF 
+                               ){
+        /*!
+         * Run the overlap coupling method
+         *
+         * :param const std::string &filename: The name of the input YAML file
+         * :param DOFMap &microGlobalLocalNodeMap: The map from global to local node numbers for the micro nodes
+         * :param floatVector &updatedMicroDisplacementDOF: The updated micro displacement degrees of freedom
+         * :param DOFMap &macroGlobalLocalNodeMap: The map from global to local node numbers for the macro nodes
+         * :param floatVector &updatedMacroDisplacementDOF: The updated macro displacement degrees of freedom
+         */
 
+        //Construct the overlap coupling object
+        overlapCoupling oc( filename );
+
+        if ( oc.getConstructorError( ) ){
+
+            errorOut result
+                = new errorNode( "runOverlapCoupling", "Error in construction of overlapCoupling object" );
+
+            result->addNext( oc.getConstructorError( ) );
+
+            return result;
+
+        }
+
+        //Initialize the overlap coupling object
+        errorOut error = oc.initializeCoupling( );
+    
+        if ( error ){
+    
+            errorOut result
+                = new errorNode( "runOverlapCoupling", "Error in the initialization of the overlapCoupling object" );
+    
+            result->addNext( error );
+
+            return result;
+    
+        }
+
+        //Process the final increments of both the macro and micro-scales
+        error = oc.processLastIncrements( );
+    
+        if ( error ){
+    
+            errorOut result
+                = new errorNode( "runOverlapCoupling", "Error in processing the data" );
+    
+            result->addNext( error );
+
+            return result;
+    
+        }
+
+        //Return the updated DOF values
+        microGlobalLocalNodeMap = oc.getMicroGlobalLocalNodeMap( );
+        updatedMicroDisplacementDOF = oc.getUpdatedMicroDisplacementDOF( );
+
+        macroGlobalLocalNodeMap = oc.getMacroGlobalLocalNodeMap( );
+        updatedMacroDisplacementDOF = oc.getUpdatedMacroDisplacementDOF( );
+
+        return NULL;
+
+    } 
 
 }

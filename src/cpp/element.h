@@ -66,6 +66,7 @@ namespace elib{
         */
 
         public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
             std::string name; //!The name of the element
             std::vector< uitype > global_node_ids; //!The global id numbers of the nodes
             vecOfvec nodes; //!The global coordinates of the nodes
@@ -158,6 +159,7 @@ namespace elib{
         */
 
         public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
             Hex8(const std::vector< uitype > &global_node_ids, 
                  const vecOfvec &nodes, const quadrature_rule &qrule) : Element(global_node_ids, nodes, qrule){

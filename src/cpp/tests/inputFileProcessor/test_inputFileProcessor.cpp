@@ -34,13 +34,14 @@ int test_openConfigurationFile( std::ofstream &results ){
     }
 
     reader = inputFileProcessor::inputFileProcessor( );
-    errorOut error = reader.setConfigurationFilename( "" );
+    std::unique_ptr< errorNode > error;
+    error.reset( reader.setConfigurationFilename( "" ) );
     if ( !error ){
         results << "test_openConfigurationFile (test 2) & False\n";
         return 1;
     }
 
-    error = reader.setConfigurationFilename( filename );
+    error.reset( reader.setConfigurationFilename( filename ) );
     if ( error ){
         error->print();
         results << "test_openConfigurationFile (test 3) & False\n";
@@ -61,14 +62,15 @@ int test_setConfigurationFile( std::ofstream &results ){
     std::string filename = "../testFiles/testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader;
 
-    errorOut error = reader.setConfigurationFilename( "" );
+    std::unique_ptr< errorNode > error;
+    error.reset( reader.setConfigurationFilename( "" ) );
 
     if ( !error ){
         results << "test_setConfigurationFile & False\n";
         return 1;
     }
 
-    error = reader.setConfigurationFilename( filename );
+    error.reset( reader.setConfigurationFilename( filename ) );
 
     if ( error ){
         error->print();
@@ -446,7 +448,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) &&
+            if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) &&
                  ( std::find( freeMacroNodeIds->begin( ), freeMacroNodeIds->end( ), *n ) == freeMacroNodeIds->end( ) ) ){
 
                 results << "test_initializeIncrement (test 20) & False\n";

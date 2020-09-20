@@ -351,10 +351,15 @@ namespace overlapCoupling{
                                                        floatVector &uQpt, floatVector &XiQpt );
 
     errorOut writeSparseMatrixToXDMF( const SparseMatrix &A, const std::string matrixName,
-                                      shared_ptr< XdmfWriter > &writer, shared_ptr< XdmfDomain > &domain,
+                                      const std::string &filename, shared_ptr< XdmfDomain > &domain,
                                       shared_ptr< XdmfUnstructuredGrid > &grid );
 
     errorOut readSparseMatrixFromXDMF( const shared_ptr< XdmfUnstructuredGrid > &grid, const std::string &matrixName, SparseMatrix &A );
+
+    errorOut runOverlapCoupling( const std::string &filename,
+                                 DOFMap &microGlobalLocalNodeMap, floatVector &updatedMicroDisplacementDOF,
+                                 DOFMap &macroGlobalLocalNodeMap, floatVector &updatedMacroDisplacementDOF
+                               );
 
 }
 

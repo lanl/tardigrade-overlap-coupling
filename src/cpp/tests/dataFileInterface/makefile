@@ -24,8 +24,10 @@ OBJECTS = $(OBJECT) $(TESTOBJECT) $(ERROROBJECT)
 
 #Set the mode due to the method variable
 DBG =
+YAMLFLG = -lyaml-cpp
 ifeq ($(METHOD),dbg)
-  DBG = -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -g
+  DBG = -g -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
+  YAMLFLG = -lyaml-cppd
 endif
 ifeq ($(METHOD),oprof)
   DBG = -pg
@@ -36,7 +38,7 @@ INC+=-I../..
 all: $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
-	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) $^ -o $@ $(CFLAGS) -lstdc++ -std=gnu++11 -lvoro++ -lXdmf -lXdmfCore -lXdmfUtils -ltiff -lxml2 -lhdf5
+	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) $^ -o $@ $(CFLAGS) -lstdc++ -std=gnu++11 -lvoro++ -lXdmf -lXdmfCore -lXdmfUtils -ltiff -lxml2 -lhdf5 $(YAMLFLG)
 
 $(TESTOBJECT): $(TESTSOURCE) $(HEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11 -lvoro++

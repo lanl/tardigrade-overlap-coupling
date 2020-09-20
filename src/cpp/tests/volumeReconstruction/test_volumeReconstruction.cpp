@@ -74,7 +74,8 @@ int test_dualContouring_loadPoints( std::ofstream &results ){
 
     }
 
-    errorOut error = dc.loadPoints( &points );
+    std::unique_ptr< errorNode > error;
+    error.reset( dc.loadPoints( &points ) );
 
     if ( error ){
 
@@ -93,7 +94,8 @@ int test_dualContouring_loadPoints( std::ofstream &results ){
 
     floatVector points2 = { 1, 2, 3, 4, 5 };
 
-    error = dc.loadPoints( &points2 );
+
+    error.reset( dc.loadPoints( &points2 ) );
 
     if ( !error ){
 
@@ -128,7 +130,8 @@ int test_dualContouring_loadFunction( std::ofstream &results ){
 
     }
 
-    errorOut error = dc.loadPoints( &points );
+    std::unique_ptr< errorNode > error;
+    error.reset( dc.loadPoints( &points ) );
 
     if ( error ){
 
@@ -140,7 +143,7 @@ int test_dualContouring_loadFunction( std::ofstream &results ){
 
     floatVector function = { -1, 10 };
 
-    error = dc.loadFunction( &function );
+    error.reset( dc.loadFunction( &function ) );
 
     if ( error ){
 
@@ -159,7 +162,8 @@ int test_dualContouring_loadFunction( std::ofstream &results ){
 
     floatVector function2 = { 2 };
 
-    if ( !dc.loadFunction( &function2 ) ){
+    error.reset( dc.loadFunction( &function2 ) );
+    if ( !error ){
 
         results << "test_dualContouring_loadFunction (test 2) & False\n";
         return 1;

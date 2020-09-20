@@ -176,7 +176,9 @@ namespace inputFileProcessor{
             _macroscale = dataFileInterface::dataFileBase( _config[ "macroscale_definition" ] ).create( _config[ "macroscale_definition" ][ "filetype" ].as< std::string >( ) );
 
             if ( _macroscale->_error ){
-                return _macroscale->_error;
+                errorOut result = new errorNode( "initializeFileInterfaces", "Error in construction of the macroscale interface" );
+                result->addNext( _macroscale->_error );
+                return result;
             }
 
         }
@@ -204,7 +206,9 @@ namespace inputFileProcessor{
             _microscale = dataFileInterface::dataFileBase( _config[ "microscale_definition" ] ).create( _config[ "microscale_definition" ][ "filetype" ].as< std::string >( ) );
 
             if ( _microscale->_error ){
-                return _microscale->_error;
+                errorOut result = new errorNode( "initializeFileInterfaces", "Error in construction of the microscale interface" );
+                result->addNext( _microscale->_error );
+                return result;
             }
 
         }

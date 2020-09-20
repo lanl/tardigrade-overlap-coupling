@@ -588,7 +588,7 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     if ( oc.getConstructorError( ) ){
         oc.getConstructorError( )->print( );
-        results << "test_overlapCoupling_initializeCoupling & False\n";
+        results << "test_overlapCoupling_processIncrement & False\n";
         return 1;
     }
 
@@ -596,7 +596,7 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     if ( error ){
         error->print( );
-        results << "test_overlapCoupling_initializeCoupling & False\n";
+        results << "test_overlapCoupling_processIncrement & False\n";
         return 1;
     }
 
@@ -604,7 +604,7 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     if ( error ){
         error->print( );
-        results << "test_overlapCoupling_initializeCoupling & False\n";
+        results << "test_overlapCoupling_processIncrement & False\n";
         return 1;
     }
 
@@ -612,12 +612,12 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     const floatVector *projectedGhostMicroDisplacement = oc.getProjectedGhostMicroDisplacement( );
 
     if ( projectedGhostMacroDisplacement->size( ) == 0 ){
-        results << "test_overlapCoupling_initializeCoupling (test 1) & False\n";
+        results << "test_overlapCoupling_processIncrement (test 1) & False\n";
         return 1;
     }
 
     if ( projectedGhostMicroDisplacement->size( ) == 0 ){
-        results << "test_overlapCoupling_initializeCoupling (test 2) & False\n";
+        results << "test_overlapCoupling_processIncrement (test 2) & False\n";
         return 1;
     }
 
@@ -633,7 +633,80 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     remove( "microscale_dof.xdmf" );
     remove( "microscale_dof.h5" );
 
-    results << "test_overlapCoupling_initializeCoupling & True\n";
+    results << "test_overlapCoupling_processIncrement & True\n";
+    return 0;
+}
+
+int test_overlapCoupling_processLastIncrements( std::ofstream &results ){
+    /*!
+     * Test processing the last increments
+     *
+     * :param std::ofstream &results: The output file.
+     */
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
+    remove( "macroscale_dof.xdmf" );
+    remove( "macroscale_dof.h5" );
+
+    remove( "microscale_dof.xdmf" );
+    remove( "microscale_dof.h5" );
+
+    std::string filename = "../testFiles/testConfig.yaml";
+    overlapCoupling::overlapCoupling oc( filename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_processLastIncrements & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_processLastIncrements & False\n";
+        return 1;
+    }
+
+    error = oc.processLastIncrements( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_processLastIncrements & False\n";
+        return 1;
+    }
+
+    const floatVector *projectedGhostMacroDisplacement = oc.getProjectedGhostMacroDisplacement( );
+    const floatVector *projectedGhostMicroDisplacement = oc.getProjectedGhostMicroDisplacement( );
+
+    if ( projectedGhostMacroDisplacement->size( ) == 0 ){
+        results << "test_overlapCoupling_processLastIncrements (test 1) & False\n";
+        return 1;
+    }
+
+    if ( projectedGhostMicroDisplacement->size( ) == 0 ){
+        results << "test_overlapCoupling_processLastIncrements (test 2) & False\n";
+        return 1;
+    }
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
+    remove( "macroscale_dof.xdmf" );
+    remove( "macroscale_dof.h5" );
+
+    remove( "microscale_dof.xdmf" );
+    remove( "microscale_dof.h5" );
+
+    results << "test_overlapCoupling_processLastIncrements & True\n";
     return 0;
 }
 
@@ -1371,6 +1444,7 @@ int main(){
     test_overlapCoupling_constructor( results );
     test_overlapCoupling_initializeCoupling( results );
     test_overlapCoupling_processIncrement( results );
+    test_overlapCoupling_processLastIncrements( results );
     test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
     test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
     test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );

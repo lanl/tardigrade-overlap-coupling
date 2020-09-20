@@ -209,7 +209,8 @@ int test_XDMFDataFile_getSubDomainNodes( std::ofstream &results ){
 
     uIntVector domainNodesResult;
     std::string domainName = "left";
-    errorOut error = xdmf.getSubDomainNodes( 0, domainName, domainNodesResult );
+    std::unique_ptr< errorNode > error;
+    error.reset( xdmf.getSubDomainNodes( 0, domainName, domainNodesResult ) );
 
     if ( error ){
         error->print( );
@@ -223,7 +224,7 @@ int test_XDMFDataFile_getSubDomainNodes( std::ofstream &results ){
     }
 
     domainName = "free";
-    error = xdmf.getSubDomainNodes( 0, domainName, domainNodesResult );
+    error.reset( xdmf.getSubDomainNodes( 0, domainName, domainNodesResult ) );
 
     if ( !error ){
         results << "test_XDMFDataFile_getSubDomainNodes (test 2) & False\n";
@@ -247,7 +248,8 @@ int test_XDMFDataFile_getNumNodes( std::ofstream &results ){
     unsigned int answer = 16;
     unsigned int result;
 
-    errorOut error = xdmf.getNumNodes( 0, result );
+    std::unique_ptr< errorNode > error;
+    error.reset( xdmf.getNumNodes( 0, result ) );
 
     if ( error ){
         error->print( );
@@ -497,7 +499,8 @@ int test_XDMFDataFile_getNumSubDomainNodes( std::ofstream &results ){
 
     unsigned int numSubDomainNodesResult;
     std::string domainName = "left";
-    errorOut error = xdmf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult );
+    std::unique_ptr< errorNode > error;
+    error.reset( xdmf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult ) );
 
     if ( error ){
         error->print( );
@@ -511,7 +514,7 @@ int test_XDMFDataFile_getNumSubDomainNodes( std::ofstream &results ){
     }
 
     domainName = "free";
-    error = xdmf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult );
+    error.reset( xdmf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult ) );
 
     if ( !error ){
         results << "test_XDMFDataFile_getNumSubDomainNodes (test 2) & False\n";

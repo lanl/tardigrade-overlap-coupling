@@ -34,14 +34,22 @@ namespace dataFileInterface{
          * :param const YAML::Node &config: The YAML configuration file associated with the datafile
          */
 
+        //Make sure that the configuration file actually has something in it
+        if( !config[ "filename" ] ){
+
+            _error.reset( new errorNode( "dataFileBase", "The configuration file is empty" ) );
+            return;
+
+        }
+
         //Set the configuration file
-        _config = config;
+        _config = YAML::Clone( config );
 
         if ( _config["filename"] ){
             _filename = _config["filename"].as<std::string>();
         }
         else{
-            _error = new errorNode( "dataFileBase", "The filename must be defined in the YAML configuration file" );
+            _error.reset( new errorNode( "dataFileBase", "The filename must be defined in the YAML configuration file" ) );
             return;
         }
 
@@ -50,7 +58,7 @@ namespace dataFileInterface{
             boost::algorithm::to_lower( _mode );
         }
         else{
-            _error = new errorNode( "dataFileBase", "The mode for the data file must be defined in the YAML configuration file" );
+            _error.reset( new errorNode( "dataFileBase", "The mode for the data file must be defined in the YAML configuration file" ) );
             return;
         }
 
@@ -59,7 +67,7 @@ namespace dataFileInterface{
         return;
     }
 
-    dataFileBase::dataFileBase( const YAML::Node &config, errorOut error ) : dataFileBase( config ){
+    dataFileBase::dataFileBase( const YAML::Node &config, std::unique_ptr< errorNode > &error ) : dataFileBase( config ){
         /*!
          * The base dataFile constructor
          *
@@ -68,11 +76,11 @@ namespace dataFileInterface{
          * or some other user-defined mode.
          *
          * :param const YAML::Node &config: The YAML configuration file associated with the datafile
-         * :param errorOut error: The current value of the error
+         * :param std::unique_ptr< errorNode > error: The current value of the error
          */
 
         //Copy the error
-        _error = error;
+        _error = std::move( error );
 
         return;
     }
@@ -86,7 +94,7 @@ namespace dataFileInterface{
             return dataFileBase::create( _config[ "filetype" ].as< std::string >( ) );
         }
         
-        _error = new errorNode( "create", "The filetype is not defined" );
+        _error.reset( new errorNode( "create", "The filetype is not defined" ) );
         return std::make_shared< dataFileBase >( _config, _error );
     }
     std::shared_ptr<dataFileBase> dataFileBase::create( const std::string &type ){
@@ -99,7 +107,7 @@ namespace dataFileInterface{
         auto T = registryMap.find( type );
 
         if ( T == registryMap.end() ){
-            _error = new errorNode( "create", "The filetype ( " + type + " ) is not recognized" );
+            _error.reset( new errorNode( "create", "The filetype ( " + type + " ) is not recognized" ) );
             return std::make_shared< dataFileBase >( _config, _error ); //The requested class is not defined
         }
         else{ //Register new dataFile objects below
@@ -107,12 +115,12 @@ namespace dataFileInterface{
                 return std::make_shared<XDMFDataFile>( _config );
             }
             else{
-                _error = new errorNode( "create", "The filetype ( " + type + " ) is not recognized" );
+                _error.reset( new errorNode( "create", "The filetype ( " + type + " ) is not recognized" ) );
                 return std::make_shared< dataFileBase >( _config, _error ); //The requested class is not defined
             }
         }
 
-        _error = new errorNode( "create", "You should never get here..." );
+        _error.reset( new errorNode( "create", "You should never get here..." ) );
         return std::make_shared< dataFileBase >( _config, _error ); //The requested class is not defined
     }
 
@@ -614,7 +622,7 @@ namespace dataFileInterface{
         return;
     }
 
-    XDMFDataFile::XDMFDataFile( YAML::Node configuration ) : dataFileBase( configuration ){
+    XDMFDataFile::XDMFDataFile( const YAML::Node &configuration ) : dataFileBase( configuration ){
         /*!
          * The XDMFDataFile constructor with a YAML node
          *
@@ -627,11 +635,11 @@ namespace dataFileInterface{
             return;
         }
         else if ( _mode.compare( "write" ) == 0 ){
-            _initializeWriteMode( configuration );
+            _initializeWriteMode( _config );
             return;
         }
         else{
-            _error = new errorNode( "XDMFDataFile", "The data file mode " + _mode + " is not recognized" );
+            _error.reset( new errorNode( "XDMFDataFile", "The data file mode " + _mode + " is not recognized" ) );
             return;
         }
 
@@ -650,7 +658,7 @@ namespace dataFileInterface{
             _domain = shared_dynamic_cast< XdmfDomain >( _reader->read( _filename ) );
         }
         catch( XdmfError &e ){
-            _error = new errorNode( "XDMFDataFile", e.what() );
+            _error.reset( new errorNode( "XDMFDataFile", e.what() ) );
         }
     }
 
@@ -678,7 +686,8 @@ namespace dataFileInterface{
 
                 std::string output = "Error in YAML file for the output domain name: ";
                 output += e.what( );
-                _error = new errorNode( "XDMFDataFile", output );
+                _error.reset( new errorNode( "XDMFDataFile", output ) );
+                return;
 
             }
 
@@ -700,7 +709,8 @@ namespace dataFileInterface{
 
                 std::string output = "Error in YAML file for the output domain string: ";
                 output += e.what( );
-                _error = new errorNode( "XDMFDataFile", output );
+                _error.reset( new errorNode( "XDMFDataFile", output ) );
+                return;
 
             }
 
@@ -722,25 +732,28 @@ namespace dataFileInterface{
 
                 std::string output = "Error in YAML file for the append to existing file flag: ";
                 output += e.what( );
-                _error = new errorNode( "XDMFDataFile", output );
+                _error.reset( new errorNode( "XDMFDataFile", output ) );
+                return;
 
             }
 
         }
 
         //Initialize the writer
+        shared_ptr< XdmfWriter > writer;
         try{
 
             shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
             heavyWriter->setReleaseData( true );
-            _writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+            writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
 
         }
         catch( XdmfError &e ){
 
             std::string output = "Error in forming the XDMF writer: ";
             output += e.what( );
-            _error = new errorNode( "XDMFDataFile", output );
+            _error.reset( new errorNode( "XDMFDataFile", output ) );
+            return;
 
         }
 
@@ -753,7 +766,7 @@ namespace dataFileInterface{
                 _domain = shared_dynamic_cast<XdmfDomain>( _reader->read( _filename + ".xdmf" ) );
 
                 uIntType numIncrements;
-                _error = getNumIncrements( numIncrements );
+                _error.reset( getNumIncrements( numIncrements ) );
 
                 if ( _error ){
                     return;
@@ -775,7 +788,7 @@ namespace dataFileInterface{
                     = XdmfInformation::New( "Main_Temporal_Collection", "The main temporal ( or iteration ) collection" );
                 _gridHolder->insert( _holderInfo );
                 _domain->insert( _gridHolder );
-                _domain->accept( _writer );
+                _domain->accept( writer );
             }
 
         }
@@ -793,7 +806,7 @@ namespace dataFileInterface{
                 = XdmfInformation::New( "Main_Temporal_Collection", "The main temporal ( or iteration ) collection" );
             _gridHolder->insert( _holderInfo );
             _domain->insert( _gridHolder );
-            _domain->accept( _writer );
+            _domain->accept( writer );
 
         }
 
@@ -1274,7 +1287,14 @@ namespace dataFileInterface{
         }
         shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber ); //TODO: This should be verified to be general enough
         collection->insert( grid );
-        _domain->accept( _writer );
+
+        //Form the writer
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+        heavyWriter->setReleaseData( true );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+
+        //Write the data to file
+        _domain->accept( writer );
 
         //Set the reference increment
         _increment_reference_grids.push_back( reference_increment );
@@ -1347,9 +1367,14 @@ namespace dataFileInterface{
                 grid->insert( reference_grid->getSet( i ) );
             }
 
+            //Build the writer
+            shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+            heavyWriter->setReleaseData( true );
+            shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+
             //Write the grid to the file
             shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber ); //TODO: This should be verified to be general enough
-            _domain->accept( _writer );
+            _domain->accept( writer );
 
             return NULL;
 
@@ -1428,8 +1453,13 @@ namespace dataFileInterface{
 
         }
 
+        //Build the writer
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+        heavyWriter->setReleaseData( true );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+
         //Write to the output file
-        _domain->accept( _writer );
+        _domain->accept( writer );
 
         return NULL;
 
@@ -1453,7 +1483,12 @@ namespace dataFileInterface{
         _gridHolder->insert( _holderInfo );
         _domain->insert( _gridHolder );
 
-        _domain->accept( _writer );
+        //Build the writer
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+        heavyWriter->setReleaseData( true );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+
+        _domain->accept( writer );
 
         collectionNumber = _domain->getNumberGridCollections( ) - 1;
 
@@ -1569,7 +1604,12 @@ namespace dataFileInterface{
 
         grid->insert( solutionVector );
 
-        _domain->accept( _writer );
+        //Build the writer
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+        heavyWriter->setReleaseData( true );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+
+        _domain->accept( writer );
 
         return NULL;
 
