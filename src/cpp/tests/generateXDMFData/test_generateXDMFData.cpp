@@ -113,6 +113,7 @@ int test_fileGenerator_build( std::ofstream &results ){
      */
 
     remove( "xdmf_out.xdmf" );
+    remove( "xdmf_out.h5" );
 
     fileGenerator::fileGenerator fG( "testYAML.yaml" );
 
@@ -145,6 +146,7 @@ int test_fileGenerator_build( std::ofstream &results ){
     }
 
     remove( "xdmf_out.xdmf" );
+    remove( "xdmf_out.h5" );
 
     //Tests for errors
     fG = fileGenerator::fileGenerator( "badYAML.yaml" );
@@ -163,6 +165,9 @@ int test_fileGenerator_build( std::ofstream &results ){
         return 1;
 
     }
+
+    remove( "xdmf_out.xdmf" );
+    remove( "xdmf_out.h5" );
 
     results << "test_fileGenerator_build & True\n";
     return 0;
