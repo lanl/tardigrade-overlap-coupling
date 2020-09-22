@@ -39,6 +39,7 @@ namespace fileGenerator{
             YAML::Node _config;
 
             std::unique_ptr< errorNode > _error;
+            std::shared_ptr< dataFileInterface::dataFileBase > _writer;
     
     };
 
