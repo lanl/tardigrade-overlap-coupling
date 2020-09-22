@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Xdmf xmlns:xi="http://www.w3.org/2001/XInclude" Version="3.0">
+  <Domain>
+    <Information Name="DOMAIN" Value="Default domain name for micromorphic overlap coupling / filter output"/>
+    <Grid CollectionType="Temporal" GridType="Collection" Name="Collection">
+      <Information Name="Main_Temporal_Collection" Value="The main temporal ( or iteration ) collection"/>
+      <Grid Name="Grid">
+        <Time Value="0">
+          <Information Name="Time" Value="This is the current value of the timestep"/>
+        </Time>
+        <Geometry Origin="" Type="XYZ">
+          <Information Name="Coordinates" Value="Coordinates of the nodes in x1, y1, z1, x2, ... format "/>
+          <DataItem DataType="Float" Dimensions="12" Format="XML" Precision="8">0 0 0 1 0 0 1 1 0 0 1 0</DataItem>
+        </Geometry>
+        <Topology Dimensions="1" Type="Mixed">
+          <DataItem DataType="UInt" Dimensions="5" Format="XML" Precision="4">5 0 1 2 3</DataItem>
+        </Topology>
+        <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="NODEID" Type="GlobalId">
+          <Information Name="ID" Value="The nodal IDs"/>
+          <DataItem DataType="UInt" Dimensions="4" Format="XML" Precision="4">0 1 2 3</DataItem>
+        </Attribute>
+        <Attribute Center="Cell" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="ELEMID" Type="GlobalId">
+          <Information Name="ID" Value="The element IDs"/>
+          <DataItem DataType="UInt" Dimensions="1" Format="XML" Precision="4">1</DataItem>
+        </Attribute>
+        <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="ants" Type="Scalar">
+          <Information Name="ants" Value="Quantity ants"/>
+          <DataItem DataType="Float" Dimensions="2" Format="XML" Precision="8">0.20000000000000001 0.40000000000000002</DataItem>
+        </Attribute>
+        <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="cats" Type="Scalar">
+          <Information Name="cats" Value="Quantity cats"/>
+          <DataItem DataType="Float" Dimensions="3" Format="XML" Precision="8">0.90000000000000002 0.10000000000000001 0.69999999999999996</DataItem>
+        </Attribute>
+        <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="dogs" Type="Scalar">
+          <Information Name="dogs" Value="Quantity dogs"/>
+          <DataItem DataType="Float" Dimensions="4" Format="XML" Precision="8">88 87 86 85</DataItem>
+        </Attribute>
+        <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="rats" Type="Scalar">
+          <Information Name="rats" Value="Quantity rats"/>
+          <DataItem DataType="Float" Dimensions="2" Format="XML" Precision="8">0.20000000000000001 0.40000000000000002</DataItem>
+        </Attribute>
+        <Set Name="set1" Type="Node">
+          <DataItem DataType="UInt" Dimensions="2" Format="XML" Precision="4">2 3</DataItem>
+        </Set>
+        <Set Name="carrot" Type="Node">
+          <DataItem DataType="UInt" Dimensions="1" Format="XML" Precision="4">0</DataItem>
+        </Set>
+        <Set Name="all" Type="Cell">
+          <DataItem DataType="UInt" Dimensions="1" Format="XML" Precision="4">1</DataItem>
+        </Set>
+      </Grid>
+      <Grid Name="Grid">
+        <Time Value="1">
+          <Information Name="Time" Value="This is the current value of the timestep"/>
+        </Time>
+        <xi:include xpointer="element(/1/1/2/2/2)"/>
+        <xi:include xpointer="element(/1/1/2/2/3)"/>
+        <xi:include xpointer="element(/1/1/2/2/4)"/>
+        <xi:include xpointer="element(/1/1/2/2/5)"/>
+        <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="value1" Type="Scalar">
+          <Information Name="value1" Value="Quantity value1"/>
+          <DataItem DataType="Float" Dimensions="4" Format="XML" Precision="8">-1 3 4 2</DataItem>
+        </Attribute>
+        <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="squash" Type="Scalar">
+          <Information Name="squash" Value="Quantity squash"/>
+          <DataItem DataType="Float" Dimensions="4" Format="XML" Precision="8">0.10000000000000001 0.20000000000000001 0.29999999999999999 0.40000000000000002</DataItem>
+        </Attribute>
+        <Attribute Center="Node" ElementCell="" ElementDegree="0" ElementFamily="" ItemType="" Name="cell2" Type="Scalar">
+          <Information Name="cell2" Value="Quantity cell2"/>
+          <DataItem DataType="Float" Dimensions="4" Format="XML" Precision="8">-1 3 4 2</DataItem>
+        </Attribute>
+        <xi:include xpointer="element(/1/1/2/2/10)"/>
+        <xi:include xpointer="element(/1/1/2/2/11)"/>
+        <xi:include xpointer="element(/1/1/2/2/12)"/>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>
