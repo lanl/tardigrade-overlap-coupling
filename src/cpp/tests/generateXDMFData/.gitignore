@@ -1,0 +1,4 @@
+*.o
+results.tex
+test_generateXDMFData
+test_output*
