@@ -182,7 +182,7 @@ namespace overlapCoupling{
                 return result;
     
             }
-    
+
             //Assemble the coupling mass and damping matrices
             error = assembleCouplingMassAndDampingMatrices( );
     
@@ -716,7 +716,7 @@ namespace overlapCoupling{
 
         //Assemble the remaining projectors
 
-        _DP_BDhatD = -_DP_BDhatQ * _N.topRightCorner( nFreeMicroDOF, nFreeMacroDOF );
+        _DP_BDhatD = -_DP_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
 
         _DP_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _DP_BDhatQ;
 
@@ -5455,6 +5455,107 @@ namespace overlapCoupling{
         _FORCE = Eigen::MatrixXd( _FQ.rows( ) + _FD.rows( ), 1 );
         _FORCE << _FQ, _FD;
 
+//        std::cout << "FintQ:\n";
+//        for ( unsigned int i = 0; i < FintQ.size( ); i++ ){
+//            std::cout << _FintQ( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+//        std::cout << "FintD:\n";
+//        for ( unsigned int i = 0; i < FintD.size( ); i++ ){
+//            std::cout << _FintD( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+
+//        std::cout << "FextQ:\n";
+//        for ( unsigned int i = 0; i < FextQ.size( ); i++ ){
+//            std::cout << _FextQ( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+//        std::cout << "FextD:\n";
+//        for ( unsigned int i = 0; i < FextD.size( ); i++ ){
+//            std::cout << _FextD( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+
+//        std::cout << "FextQhat:\n";
+//        for ( unsigned int i = 0; i < FextQhat.size( ); i++ ){
+//            std::cout << _FextQhat( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+//        std::cout << "FextDhat:\n";
+//        for ( unsigned int i = 0; i < FextDhat.size( ); i++ ){
+//            std::cout << _FextDhat( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+
+//        std::cout << "FintQhat:\n";
+//        for ( unsigned int i = 0; i < FintQhat.size( ); i++ ){
+//            std::cout << _FintQhat( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+//        std::cout << "FintDhat:\n";
+//        for ( unsigned int i = 0; i < FintDhat.size( ); i++ ){
+//            std::cout << _FintDhat( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+
+        std::cout << "FQ:\n";
+//        for ( unsigned int i = 0; i < _FQ.size( ); i++ ){
+//            std::cout << _FQ( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+//        std::cout << "FD:\n";
+//        for ( unsigned int i = 0; i < _FD.size( ); i++ ){
+//            std::cout << _FD( i, 0 ) << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+//
+//        floatVector tmpVec( 3, 0 );
+//        for ( unsigned int i = 0; i < _FQ.size( ); i++ ){
+//            tmpVec[ ( i + 1 ) % 3 ] += fabs( _FQ( i, 0 ) );
+//        }
+//        std::cout << "Sum of FQ: "; vectorTools::print( tmpVec );
+//
+//        tmpVec = floatVector( 12, 0 );
+//        for ( unsigned int i = 0; i < _FD.size( ); i++ ){
+//            tmpVec[ ( i + 1 ) % 12 ] += fabs( _FD( i, 0 ) );
+//        }
+//        std::cout << "Sum of FD: "; vectorTools::print( tmpVec );
+//
+//        return new errorNode( "assembleCouplingForceVector", "derp" );
+//
+//        std::cout << "FextQ NORM:    " << _FextQ.norm( ) << "\n";
+//        std::cout << "FextD NORM:    " << _FextD.norm( ) << "\n";
+//        std::cout << "FextQhat NORM: " << _FextQhat.norm( ) << "\n";
+//        std::cout << "FextDhat NORM: " << _FextDhat.norm( ) << "\n";
+//        std::cout << "FintQ NORM:    " << _FintQ.norm( ) << "\n";
+//        std::cout << "FintD NORM:    " << _FintD.norm( ) << "\n";
+//        std::cout << "FintQhat NORM: " << _FintQhat.norm( ) << "\n";
+//        std::cout << "FintDhat NORM: " << _FintDhat.norm( ) << "\n";
+//        std::cout << "FQ NORM:       " << _FQ.norm( ) << "\n";
+//        std::cout << "FD NORM:       " << _FD.norm( ) << "\n";
+//        std::cout << "FORCE NORM:    " << _FORCE.norm( ) << "\n";
+
         return NULL;
     }
 
@@ -5785,6 +5886,60 @@ namespace overlapCoupling{
             solver.compute( LHS );
             _DotDotDOF_tp1 = solver.solve( RHS );
 
+//            return new errorNode( "solveFreeDisplacement", "derp3" );
+//
+//            std::cout << "_DotDof:\n";
+//            std::cout << "microscale\n";
+//            for ( unsigned int i = 0; i < microOffset; i++ ){
+//                std::cout << _DotDOF( i, 0 ) << " ";
+//                if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                    std::cout << "\n";
+//                }
+//            }
+//            std::cout << "macroscale\n";
+//            for ( unsigned int i = microOffset; i < _DotDOF.size( ); i++ ){
+//                std::cout << _DotDOF( i, 0 ) << " ";
+//                if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                    std::cout << "\n";
+//                }
+//            }
+//
+//            return new errorNode( "solveFreeDisplacement", "derp" );
+//
+//            std::cout << "_DotDotDof_t:\n";
+//            std::cout << "microscale\n";
+//            for ( unsigned int i = 0; i < microOffset; i++ ){
+//                std::cout << _DotDotDOF_t( i, 0 ) << " ";
+//                if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                    std::cout << "\n";
+//                }
+//            }
+//            std::cout << "macroscale\n";
+//            for ( unsigned int i = microOffset; i < _DotDotDOF_t.size( ); i++ ){
+//                std::cout << _DotDotDOF_t( i, 0 ) << " ";
+//                if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                    std::cout << "\n";
+//                }
+//            }
+//
+//            std::cout << "_DotDotDof_tp1:\n";
+//            std::cout << "microscale\n";
+//            for ( unsigned int i = 0; i < microOffset; i++ ){
+//                std::cout << _DotDotDOF_tp1( i, 0 ) << " ";
+//                if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                    std::cout << "\n";
+//                }
+//            }
+//            std::cout << "macroscale\n";
+//            for ( unsigned int i = microOffset; i < _DotDotDOF_tp1.size( ); i++ ){
+//                std::cout << _DotDotDOF_tp1( i, 0 ) << " ";
+//                if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                    std::cout << "\n";
+//                }
+//            }
+//
+//            return new errorNode( "solveFreeDisplacement", "derp2" );
+
         }
         else{
 
@@ -5794,6 +5949,24 @@ namespace overlapCoupling{
 
         //Update the free degrees of freedom
         _DOF += ( *dt ) * _DotDOF + 0.5 * ( ( *dt ) * ( *dt ) ) * ( ( 1 - 2 * beta ) * _DotDotDOF_t + 2 * beta * _DotDotDOF_tp1 );
+
+        std::cout << "_DOF:\n";
+        std::cout << "microscale\n";
+        for ( unsigned int i = 0; i < microOffset; i++ ){
+            std::cout << _DOF( i, 0 ) << " ";
+            if ( ( ( i + 1 ) % 12 ) == 0 ){
+                std::cout << "\n";
+            }
+        }
+        std::cout << "macroscale\n";
+        for ( unsigned int i = microOffset; i < _DOF.size( ); i++ ){
+            std::cout << _DOF( i, 0 ) << " ";
+            if ( ( ( i + 1 ) % 12 ) == 0 ){
+                std::cout << "\n";
+            }
+        }
+
+        return new errorNode( "solveFreeDisplacement", "derp4" );
 
         //Store the free degrees of freedom
         _updatedFreeMicroDispDOFValues = floatVector( FreeDOF.begin( ), FreeDOF.begin( ) + microOffset );
@@ -6898,6 +7071,14 @@ namespace overlapCoupling{
         //Write out the macro DOF information
         floatVector outputDOF = vectorTools::appendVectors( { _updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement } );
 
+//        std::cout << "Macroscale\n";
+//        for ( unsigned int i = 0; i < outputDOF.size( ); i++ ){
+//            std::cout << outputDOF[ i ] << " ";
+//            if ( ( ( i + 1 ) % 12 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
+
         uIntType increment;
         errorOut error = macro_writer->initializeIncrement( 1.0, 0, collectionNumber, increment );
 
@@ -6940,6 +7121,14 @@ namespace overlapCoupling{
 
         //Write out the micro DOF information
         outputDOF = vectorTools::appendVectors( { _updatedFreeMicroDispDOFValues, _projected_ghost_micro_displacement } );
+
+//        std::cout << "\nMicroscale\n";
+//        for ( unsigned int i = 0; i < outputDOF.size( ); i++ ){
+//            std::cout << outputDOF[ i ] << " ";
+//            if ( ( ( i + 1 ) % 3 ) == 0 ){
+//                std::cout << "\n";
+//            }
+//        }
 
         error = micro_writer->initializeIncrement( 1.0, 0, collectionNumber, increment );
 
