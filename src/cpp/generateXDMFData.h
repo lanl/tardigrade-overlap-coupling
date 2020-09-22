@@ -31,6 +31,8 @@ namespace fileGenerator{
             fileGenerator( );
     
             fileGenerator( const std::string &yamlFilename );
+
+            const std::unique_ptr< errorNode > &getError( );
     
         protected:
     

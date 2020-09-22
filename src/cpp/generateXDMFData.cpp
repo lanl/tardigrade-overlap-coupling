@@ -28,7 +28,7 @@ namespace fileGenerator{
 
         try{
 
-            _config = YAML::Load( yamlFilename );
+            _config = YAML::LoadFile( yamlFilename );
 
         }
         catch( std::exception &e ){
@@ -37,6 +37,18 @@ namespace fileGenerator{
 
         }
 
+        if ( !_config ){
+            _error.reset( new errorNode( "fileGenerator", "File not found" ) );
+        }
+
+    }
+
+    const std::unique_ptr< errorNode > &fileGenerator::getError( ){
+        /*!
+         * Get a reference to the error object
+         */
+
+        return _error;
     }
 
 }

@@ -7,7 +7,7 @@
 #define USE_EIGEN
 #include<vector_tools.h>
 
-#include<dataFileInterface.h>
+#include<generateXDMFData.h>
 
 typedef dataFileInterface::errorNode errorNode; //!Redefinition for the error node
 typedef dataFileInterface::errorOut errorOut; //!Redefinition for a pointer to the error node
@@ -17,6 +17,43 @@ typedef dataFileInterface::floatMatrix floatMatrix; //!Define a matrix of floats
 typedef dataFileInterface::uIntType uIntType; //!Define the unsigned int type
 typedef dataFileInterface::uIntVector uIntVector; //!Define a vector of unsigned ints
 typedef dataFileInterface::stringVector stringVector; //!Define a vector of strings
+
+int test_fileGenerator_constructor( std::ofstream &results ){
+    /*!
+     * Test the generateXDMFData constructor
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    //Make sure the default constructor runs
+    fileGenerator::fileGenerator fG;
+
+    if ( fG.getError( ) ){
+
+        fG.getError( )->print( );
+        results << "test_fileGenerator_constructor (test 1) & False\n";
+        return 1;
+
+    }
+
+    fG = fileGenerator::fileGenerator( "bad_file" );
+
+    if ( !fG.getError( ) ){
+        results << "test_fileGenerator_constructor (test 2) & False\n";
+        return 1;
+    }
+
+    fG = fileGenerator::fileGenerator( "testYAML.yaml" );
+
+    if ( fG.getError( ) ){
+        fG.getError( )->print( );
+        results << "test_fileGenerator_constructor (test 3) & False\n";
+        return 1;
+    }
+
+    results << "test_fileGenerator_constructor & True\n";
+    return 0;
+}
 
 int main(){
     /*!
@@ -29,6 +66,8 @@ int main(){
     //Open the results file
     std::ofstream results;
     results.open("results.tex");
+
+    test_fileGenerator_constructor( results );
 
     //Close the results file
     results.close();
