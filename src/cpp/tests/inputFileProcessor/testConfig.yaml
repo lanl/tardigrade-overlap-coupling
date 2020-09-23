@@ -1,0 +1,190 @@
+# Mesh and datafile definitions of the macro and micro-scales
+
+coupling_initialization:
+        type: use_first_increment #Other options will be "from_file" and "use_current_increment"
+        projection_type: "direct_projection" #Other options are "l2_projection"
+        use_reconstructed_mass_centers: false #Whether to use the reconstructed or particle particle mass centers in the homogenization
+        potential_energy_weighting_factor: 0.5 #The weighting factor for the potential energy between length-scales. ( qhat in Regueiro 2012 )
+        potential_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( qtilde in Regueiro 2012 )
+                type: volume_fraction #The type of partitioning. Currently only "volume_fraction" is available
+        kinetic_energy_weighting_factor: 0.5 #The weighting factor for the kinetic energy between length-scales. ( rhat in Regueiro 2012 )
+        kinetic_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( rtilde in Regueiro 2012 )
+                type: volume_fraction #The type of partitioning. Currently only "volume_fraction" is available
+        extract_previous_dof_values: true #Flag indicating if the previously converged accelerations and velocities should be extracted or if the current increment's should be used. If true, previous_macro_increment and previous_micro_increment must be defined with the increment to be used indicated
+        previous_micro_increment: 0
+        previous_macro_increment: 0
+        update_displacement:
+        output_reference_information:
+                save_interpolation_matrix:
+        output_homogenized_response:
+        output_updated_dof:
+
+macroscale_definition:
+        filename: macroscale.xdmf
+        mode: read
+        node_id_variable_name: NODEID #The variable name of the node IDs
+        cell_id_variable_name: ELEMID #The variable name of the cell IDs
+        displacement_variable_names: #The names of the displacemnet attributes at the nodes
+                u1: u1
+                u2: u1
+                u3: u3
+                phi11: phi_11
+                phi12: phi_12
+                phi13: phi_13
+                phi21: phi_21
+                phi22: phi_22
+                phi23: phi_23
+                phi31: phi_31
+                phi32: phi_32
+                phi33: phi_33
+        velocity_variable_names: #The names of the velocity attributes at the nodes
+                v1: v1
+                v2: v2
+                v3: v3
+                phiDot11: phiDot_11
+                phiDot12: phiDot_12
+                phiDot13: phiDot_13
+                phiDot21: phiDot_21
+                phiDot22: phiDot_22
+                phiDot23: phiDot_23
+                phiDot31: phiDot_31
+                phiDot32: phiDot_32
+                phiDot33: phiDot_33
+        acceleration_variable_names: #The names of the velocity attributes at the nodes
+                a1: a1
+                a2: a2
+                a3: a3
+                phiDotDot11: phiDotDot_11
+                phiDotDot12: phiDotDot_12
+                phiDotDot13: phiDotDot_13
+                phiDotDot21: phiDotDot_21
+                phiDotDot22: phiDotDot_22
+                phiDotDot23: phiDotDot_23
+                phiDotDot31: phiDotDot_31
+                phiDotDot32: phiDotDot_32
+                phiDotDot33: phiDotDot_33
+        internal_force_variable_names: #The names of the internal force attributes at the nodes
+                F1: FInternal_1
+                F2: FInternal_2
+                F3: FInternal_3
+                C11: CInternal_11
+                C12: CInternal_12
+                C13: CInternal_13
+                C21: CInternal_21
+                C22: CInternal_22
+                C23: CInternal_23
+                C31: CInternal_31
+                C32: CInternal_32
+                C33: CInternal_33
+        inertial_force_variable_names: #The names of the intertial force attributes at the nodes
+                F1: FInertial_1
+                F2: FInertial_2
+                F3: FInertial_3
+                C11: CInertial_11
+                C12: CInertial_12
+                C13: CInertial_13
+                C21: CInertial_21
+                C22: CInertial_22
+                C23: CInertial_23
+                C31: CInertial_31
+                C32: CInertial_32
+                C33: CInertial_33
+
+microscale_definition:
+        filename: microscale.xdmf
+        mode: read
+        volume_variable_name: volume #The name of the volume attribute at the nodes
+        density_variable_name: density #The name of the density attribute at the nodes
+        displacement_variable_names: #The names of the displacement attributes at the nodes
+                u1: u1 
+                u2: u2 
+                u3: u3 
+        velocity_variable_names: #The names of the velocity attributes at the nodes
+                v1: v1
+                v2: v2
+                v3: v3 
+        acceleration_variable_names: #The names of the acceleration attributes at the nodes
+                a1: a1
+                a2: a2
+                a3: a3 
+        stress_variable_names: #The names of the stress attributes at the nodes
+                s11: s11
+                s12: s12
+                s13: s13
+                s21: s21
+                s22: s22
+                s23: s23
+                s31: s31
+                s32: s32
+                s33: s33
+        internal_force_variable_names: #The names of the internal force attributes at the nodes
+                F1: FInternal_1
+                F2: FInternal_2
+                F3: FInternal_3
+        inertial_force_variable_names: #The names of the inertial force attributes at the nodes
+                F1: FInertial_1
+                F2: FInertial_2
+                F3: FInertial_3
+        node_id_variable_name: NODEID
+        cell_id_variable_name: ELEMID
+
+# Definition of the coupling domains
+free_macroscale_domains:
+        -
+          name: name1 #The macro-scale domains can be named arbitrarily
+          macro_cell: 1 #The index of the cell that corresponds to the macroscale free domain
+          macro_nodeset: free_nodes
+          micro_nodesets:
+                  - 
+                    name: ghost_nodeset_volume_1
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_2
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_3
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_4
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_5
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_6
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_7
+                    number_of_surface_microdomains: 6
+                  - 
+                    name: ghost_nodeset_volume_8
+                    number_of_surface_microdomains: 6
+          reference_density: #The density in the reference configuration
+                  type: constant #Only constant is currently recognized
+                  value: 2. #The density value in the reference configuration.
+          reference_moment_of_inertia: #The moment of inertia in the reference configuration
+                  type: constant #Only constant is currently recognized
+                  value: [ 1e-5, 2e-5, 3e-5, 4e-5, 5e-5, 6e-5 ] #The components of the moment of inertia. Note only six components are stored because it is symmetric
+
+ghost_macroscale_domains:
+        -
+          name: name1 #The macro-scale domains can be named arbitrarily
+          macro_cell: 2 #The index of the cell that corresponds to the macroscale ghost domain
+          macro_nodeset: ghost_nodes
+          micro_nodesets:
+                  - 
+                    name: free_nodeset_volume_1
+                  - 
+                    name: free_nodeset_volume_2
+                  - 
+                    name: free_nodeset_volume_3
+                  - 
+                    name: free_nodeset_volume_4
+                  - 
+                    name: free_nodeset_volume_5
+                  - 
+                    name: free_nodeset_volume_6
+                  - 
+                    name: free_nodeset_volume_7
+                  - 
+                    name: free_nodeset_volume_8

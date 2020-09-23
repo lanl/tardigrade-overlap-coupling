@@ -6,6 +6,7 @@
 #include<math.h>
 
 #include<inputFileProcessor.h>
+#include<generateXDMFData.h>
 
 typedef inputFileProcessor::errorNode errorNode; //!Redefinition for the error node
 typedef inputFileProcessor::errorOut errorOut; //!Redefinition for a pointer to the error node
@@ -17,6 +18,30 @@ typedef inputFileProcessor::uIntVector uIntVector; //!Define a vector of unsigne
 typedef inputFileProcessor::stringVector stringVector; //!Define a vector of strings
 typedef inputFileProcessor::DOFMap DOFMap; //!Define the map between DOF values
 
+errorOut _createXDMFDatafiles( ){
+
+    fileGenerator::fileGenerator fg( "macroscale.yaml" );
+    if ( fg.build( ) ){
+
+        fg.getError( )->print( );
+        errorOut result = new errorNode( "_createXDMFDatafiles", "Error in creation of the macroscale datafile" );
+        return result;
+
+    }
+
+    fg = fileGenerator::fileGenerator( "microscale.yaml" );
+    if ( fg.build( ) ){
+
+        fg.getError( )->print( );
+        errorOut result = new errorNode( "_createXDMFDatafiles", "Error in creation of the microscale datafile" );
+        return result;
+
+    }
+
+    return NULL;
+
+}
+
 int test_openConfigurationFile( std::ofstream &results ){
     /*!
      * Test opening the YAML configuration file.
@@ -24,7 +49,7 @@ int test_openConfigurationFile( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "../testFiles/testConfig.yaml";
+    std::string filename = "testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
     if ( reader.getError( ) ){
@@ -48,6 +73,79 @@ int test_openConfigurationFile( std::ofstream &results ){
         return 1;
     }
 
+    //Check the variable configuration
+    const uIntVector *result = reader.getFreeMacroCellIds( );
+
+    if ( result->size( ) == 0 ){
+
+        results << "test_openConfigurationFile (test 4) & False\n";
+        return 1;
+
+    }
+
+    if ( ( *result )[ 0 ] != 1 ){
+
+        results << "test_openConfigurationFile (test 5) & False\n";
+        return 1;
+
+    }
+
+    result = reader.getGhostMacroCellIds( );
+
+    if ( result->size( ) == 0 ){
+
+        results << "test_openConfigurationFile (test 6) & False\n";
+        return 1;
+
+    }
+
+    if ( ( *result )[ 0 ] != 2 ){
+
+        results << "test_openConfigurationFile (test 7) & False\n";
+        return 1;
+
+    }
+
+    result = reader.getFreeMacroCellMicroDomainCounts( );
+
+    if ( result->size( ) == 0 ){
+
+        results << "test_openConfigurationFile (test 8) & False\n";
+        return 1;
+
+    }
+
+    for ( auto v = result->begin( ); v != result->end( ); v++ ){
+
+        if ( *v != 8 ){
+
+            results << "test_openConfigurationFile (test 9) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    result = reader.getGhostMacroCellMicroDomainCounts( );
+
+    if ( result->size( ) == 0 ){
+
+        results << "test_openConfigurationFile (test 10) & False\n";
+        return 1;
+
+    }
+
+    for ( auto v = result->begin( ); v != result->end( ); v++ ){
+
+        if ( *v != 8 ){
+
+            results << "test_openConfigurationFile (test 11) & False\n";
+            return 1;
+
+        }
+
+    }
+
     results << "test_openConfigurationFile & True\n";
     return 0;
 }
@@ -59,7 +157,7 @@ int test_setConfigurationFile( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "../testFiles/testConfig.yaml";
+    std::string filename = "testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader;
 
     std::unique_ptr< errorNode > error;
@@ -319,20 +417,20 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
-    const uIntVector *nonOverlappedMicroNodeIds = reader.getNonOverlappedMicroNodeIds( );
+//    const uIntVector *nonOverlappedMicroNodeIds = reader.getNonOverlappedMicroNodeIds( );
     const uIntVector *freeMicroNodeIds = reader.getFreeMicroNodeIds( );
     const uIntVector *ghostMicroNodeIds = reader.getGhostMicroNodeIds( );
 
-    for ( auto n  = freeMicroNodeIds->begin( );
-               n != freeMicroNodeIds->end( );
-               n++ ){
-
-        if ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) != nonOverlappedMicroNodeIds->end( ) ){
-            std::cout << "*n: " << *n << "\n";
-            results << "test_initializeIncrement (test 13) & False\n";
-            return 1;
-        }
-    }
+//    for ( auto n  = freeMicroNodeIds->begin( );
+//               n != freeMicroNodeIds->end( );
+//               n++ ){
+//
+//        if ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) != nonOverlappedMicroNodeIds->end( ) ){
+//            std::cout << "*n: " << *n << "\n";
+//            results << "test_initializeIncrement (test 13) & False\n";
+//            return 1;
+//        }
+//    }
 
     for ( auto n  = ghostMicroNodeIds->begin( );
                n != ghostMicroNodeIds->end( );
@@ -344,34 +442,35 @@ int test_initializeIncrement( std::ofstream &results ){
             return 1;
         }
 
-        if ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) != nonOverlappedMicroNodeIds->end( ) ){
-            std::cout << "*n: " << *n << "\n";
-            results << "test_initializeIncrement (test 15) & False\n";
-            return 1;
-        }
+//        if ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) != nonOverlappedMicroNodeIds->end( ) ){
+//            std::cout << "*n: " << *n << "\n";
+//            results << "test_initializeIncrement (test 15) & False\n";
+//            return 1;
+//        }
 
     }
 
-    const stringVector *nonOverlappedMicroSurfaceNames = reader.getNonOverlappedMicroSurfaceNames( );
+//    const stringVector *nonOverlappedMicroSurfaceNames = reader.getNonOverlappedMicroSurfaceNames( );
+//    uIntVector nodes;
+//
+//    for ( auto surface  = nonOverlappedMicroSurfaceNames->begin( );
+//               surface != nonOverlappedMicroSurfaceNames->end( );
+//               surface++ ){
+//
+//        reader._microscale->getSubDomainNodes( 0, *surface, nodes );
+//
+//        for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
+//
+//            if ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) == nonOverlappedMicroNodeIds->end( ) ){
+//                results << "test_initializeIncrement (test 16) & False\n";
+//                return 1;
+//            }
+//
+//        }
+//
+//    }
+
     uIntVector nodes;
-
-    for ( auto surface  = nonOverlappedMicroSurfaceNames->begin( );
-               surface != nonOverlappedMicroSurfaceNames->end( );
-               surface++ ){
-
-        reader._microscale->getSubDomainNodes( 0, *surface, nodes );
-
-        for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
-
-            if ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) == nonOverlappedMicroNodeIds->end( ) ){
-                results << "test_initializeIncrement (test 16) & False\n";
-                return 1;
-            }
-
-        }
-
-    }
-
     const stringVector *freeMicroDomainNames = reader.getFreeMicroDomainNames( );
     for ( auto domain  = freeMicroDomainNames->begin( );
                domain != freeMicroDomainNames->end( );
@@ -381,8 +480,9 @@ int test_initializeIncrement( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) == nonOverlappedMicroNodeIds->end( ) ) &&
-                 ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) ){
+//            if ( ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) == nonOverlappedMicroNodeIds->end( ) ) &&
+//                 ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) ){
+            if ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ){
 
                 results << "test_initializeIncrement (test 17) & False\n";
                 return 1;
@@ -403,8 +503,10 @@ int test_initializeIncrement( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) == nonOverlappedMicroNodeIds->end( ) ) &&
-                 ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
+//            if ( ( std::find( nonOverlappedMicroNodeIds->begin( ), nonOverlappedMicroNodeIds->end( ), *n ) == nonOverlappedMicroNodeIds->end( ) ) &&
+//                 ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
+//                 ( std::find( ghostMicroNodeIds->begin( ), ghostMicroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) ){
+            if ( ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
                  ( std::find( ghostMicroNodeIds->begin( ), ghostMicroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) ){
 
                 results << "test_initializeIncrement (test 18) & False\n";
@@ -1149,141 +1251,141 @@ int test_getGhostMicroDomainNames( std::ostream &results ){
     return 0;
 }
 
-int test_getFreeMicroSurfaceNames( std::ostream &results ){
-    /*!
-     * Test getting a pointer to the free micro surface names
-     *
-     * :param std::ofstream &results: The output file
-     */
-
-    std::string filename = "../testFiles/testConfig.yaml";
-    inputFileProcessor::inputFileProcessor reader( filename );
-
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getFreeMicroSurfaceNames & False\n";
-        return 1;
-    }
-
-    stringVector answer = { "free_nodeset_surface_1",
-                            "free_nodeset_surface_2",
-                            "free_nodeset_surface_3",
-                            "free_nodeset_surface_4",
-                            "free_nodeset_surface_5",
-                            "free_nodeset_surface_6",
-                            "free_nodeset_surface_7",
-                            "free_nodeset_surface_8" };
-
-    const stringVector *result = reader.getFreeMicroSurfaceNames( );
-
-    unsigned int indx = 0;
-    for ( auto it = result->begin( ); it != result->end( ); it++ ){
-
-        if ( it->compare( answer[ indx ] ) != 0 ){
-
-            results << "test_getFreeMicroSurfaceNames (test 1) & False\n";
-            return 1;
-
-        }
-
-        indx++;
-
-    }
-
-    results << "test_getFreeMicroSurfaceNames & True\n";
-    return 0;
-}
-
-int test_getGhostMicroSurfaceNames( std::ostream &results ){
-    /*!
-     * Test getting a pointer to the ghost micro surface names
-     *
-     * :param std::ofstream &results: The output file
-     */
-
-    std::string filename = "../testFiles/testConfig.yaml";
-    inputFileProcessor::inputFileProcessor reader( filename );
-
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getGhostMicroSurfaceNames & False\n";
-        return 1;
-    }
-
-    stringVector answer = { "ghost_nodeset_surface_1",
-                            "ghost_nodeset_surface_2",
-                            "ghost_nodeset_surface_3",
-                            "ghost_nodeset_surface_4",
-                            "ghost_nodeset_surface_5",
-                            "ghost_nodeset_surface_6",
-                            "ghost_nodeset_surface_7",
-                            "ghost_nodeset_surface_8" };
-
-    const stringVector *result = reader.getGhostMicroSurfaceNames( );
-
-    unsigned int indx = 0;
-    for ( auto it = result->begin( ); it != result->end( ); it++ ){
-
-        if ( it->compare( answer[ indx ] ) != 0 ){
-
-            results << "test_getGhostMicroSurfaceNames (test 1) & False\n";
-            return 1;
-
-        }
-
-        indx++;
-
-    }
-
-    results << "test_getGhostMicroDomainNames & True\n";
-    return 0;
-}
-
-int test_getNonOverlappedMicroSurfaceNames( std::ostream &results ){
-    /*!
-     * Test getting a pointer to the non-overlapped micro surface names
-     *
-     * :param std::ofstream &results: The output file
-     */
-
-    std::string filename = "../testFiles/testConfig.yaml";
-    inputFileProcessor::inputFileProcessor reader( filename );
-
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getNonOverlappedMicroDomainNames & False\n";
-        return 1;
-    }
-
-    stringVector answer = { "non_overlapped_nodeset_surface_1",
-                            "non_overlapped_nodeset_surface_2",
-                            "non_overlapped_nodeset_surface_3",
-                            "non_overlapped_nodeset_surface_4",
-                            "non_overlapped_nodeset_surface_5",
-                            "non_overlapped_nodeset_surface_6",
-                            "non_overlapped_nodeset_surface_7",
-                            "non_overlapped_nodeset_surface_8" };
-
-    const stringVector *result = reader.getNonOverlappedMicroSurfaceNames( );
-
-    unsigned int indx = 0;
-    for ( auto it = result->begin( ); it != result->end( ); it++ ){
-
-        if ( it->compare( answer[ indx ] ) != 0 ){
-
-            results << "test_getNonOverlappedMicroSurfaceNames (test 1) & False\n";
-            return 1;
-
-        }
-
-        indx++;
-
-    }
-
-    results << "test_getNonOverlappedMicroDomainNames & True\n";
-    return 0;
-
-}
+//int test_getFreeMicroSurfaceNames( std::ostream &results ){
+//    /*!
+//     * Test getting a pointer to the free micro surface names
+//     *
+//     * :param std::ofstream &results: The output file
+//     */
+//
+//    std::string filename = "../testFiles/testConfig.yaml";
+//    inputFileProcessor::inputFileProcessor reader( filename );
+//
+//    if ( reader.getError( ) ){
+//        reader.getError( )->print( );
+//        results << "test_getFreeMicroSurfaceNames & False\n";
+//        return 1;
+//    }
+//
+//    stringVector answer = { "free_nodeset_surface_1",
+//                            "free_nodeset_surface_2",
+//                            "free_nodeset_surface_3",
+//                            "free_nodeset_surface_4",
+//                            "free_nodeset_surface_5",
+//                            "free_nodeset_surface_6",
+//                            "free_nodeset_surface_7",
+//                            "free_nodeset_surface_8" };
+//
+//    const stringVector *result = reader.getFreeMicroSurfaceNames( );
+//
+//    unsigned int indx = 0;
+//    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+//
+//        if ( it->compare( answer[ indx ] ) != 0 ){
+//
+//            results << "test_getFreeMicroSurfaceNames (test 1) & False\n";
+//            return 1;
+//
+//        }
+//
+//        indx++;
+//
+//    }
+//
+//    results << "test_getFreeMicroSurfaceNames & True\n";
+//    return 0;
+//}
+//
+//int test_getGhostMicroSurfaceNames( std::ostream &results ){
+//    /*!
+//     * Test getting a pointer to the ghost micro surface names
+//     *
+//     * :param std::ofstream &results: The output file
+//     */
+//
+//    std::string filename = "../testFiles/testConfig.yaml";
+//    inputFileProcessor::inputFileProcessor reader( filename );
+//
+//    if ( reader.getError( ) ){
+//        reader.getError( )->print( );
+//        results << "test_getGhostMicroSurfaceNames & False\n";
+//        return 1;
+//    }
+//
+//    stringVector answer = { "ghost_nodeset_surface_1",
+//                            "ghost_nodeset_surface_2",
+//                            "ghost_nodeset_surface_3",
+//                            "ghost_nodeset_surface_4",
+//                            "ghost_nodeset_surface_5",
+//                            "ghost_nodeset_surface_6",
+//                            "ghost_nodeset_surface_7",
+//                            "ghost_nodeset_surface_8" };
+//
+//    const stringVector *result = reader.getGhostMicroSurfaceNames( );
+//
+//    unsigned int indx = 0;
+//    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+//
+//        if ( it->compare( answer[ indx ] ) != 0 ){
+//
+//            results << "test_getGhostMicroSurfaceNames (test 1) & False\n";
+//            return 1;
+//
+//        }
+//
+//        indx++;
+//
+//    }
+//
+//    results << "test_getGhostMicroDomainNames & True\n";
+//    return 0;
+//}
+//
+//int test_getNonOverlappedMicroSurfaceNames( std::ostream &results ){
+//    /*!
+//     * Test getting a pointer to the non-overlapped micro surface names
+//     *
+//     * :param std::ofstream &results: The output file
+//     */
+//
+//    std::string filename = "../testFiles/testConfig.yaml";
+//    inputFileProcessor::inputFileProcessor reader( filename );
+//
+//    if ( reader.getError( ) ){
+//        reader.getError( )->print( );
+//        results << "test_getNonOverlappedMicroDomainNames & False\n";
+//        return 1;
+//    }
+//
+//    stringVector answer = { "non_overlapped_nodeset_surface_1",
+//                            "non_overlapped_nodeset_surface_2",
+//                            "non_overlapped_nodeset_surface_3",
+//                            "non_overlapped_nodeset_surface_4",
+//                            "non_overlapped_nodeset_surface_5",
+//                            "non_overlapped_nodeset_surface_6",
+//                            "non_overlapped_nodeset_surface_7",
+//                            "non_overlapped_nodeset_surface_8" };
+//
+//    const stringVector *result = reader.getNonOverlappedMicroSurfaceNames( );
+//
+//    unsigned int indx = 0;
+//    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+//
+//        if ( it->compare( answer[ indx ] ) != 0 ){
+//
+//            results << "test_getNonOverlappedMicroSurfaceNames (test 1) & False\n";
+//            return 1;
+//
+//        }
+//
+//        indx++;
+//
+//    }
+//
+//    results << "test_getNonOverlappedMicroDomainNames & True\n";
+//    return 0;
+//
+//}
 
 int test_getCouplingInitialization( std::ofstream &results ){
     /*!
@@ -1924,6 +2026,16 @@ int main(){
     if the test passes or fails respectively.
     */
 
+    //Run the setup
+    std::unique_ptr< errorNode > error;
+    error.reset( _createXDMFDatafiles( ) );
+    if ( error ){
+
+        error->print( );
+        return 1;
+
+    }
+
     //Open the results file
     std::ofstream results;
     results.open("results.tex");
@@ -1934,11 +2046,11 @@ int main(){
     test_initializeIncrement( results );
     test_getFreeMicroDomainNames( results );
     test_getGhostMicroDomainNames( results );
-    test_getFreeMicroSurfaceNames( results );
-    test_getGhostMicroSurfaceNames( results );
+//    test_getFreeMicroSurfaceNames( results );
+//    test_getGhostMicroSurfaceNames( results );
     test_getFreeMacroDomainNames( results );
     test_getGhostMacroDomainNames( results );
-    test_getNonOverlappedMicroSurfaceNames( results );
+//    test_getNonOverlappedMicroSurfaceNames( results );
     test_getCouplingInitialization( results );
     test_getVolumeReconstructionConfig( results );
     test_getFreeMicroSurfaceApproximateSplitCount( results );
@@ -1949,4 +2061,11 @@ int main(){
 
     //Close the results file
     results.close();
+
+    remove( "macroscale.xdmf" );
+    remove( "macroscale.h5" );
+
+    remove( "microscale.xdmf" );
+    remove( "microscale.h5" );
+
 }

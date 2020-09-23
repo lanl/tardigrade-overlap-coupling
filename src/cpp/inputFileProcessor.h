@@ -74,7 +74,7 @@ namespace inputFileProcessor{
             const floatType*   getMicroTime( );
             const floatVector* getMicroDensities( );
             const floatVector* getMicroVolumes( );
-            const floatVector* getMicroWeights( );
+            const std::unordered_map< uIntType, floatType >* getMicroWeights( );
             const floatVector* getMicroDisplacements( );
             const floatVector* getMicroBodyForces( );
             const floatVector* getMicroSurfaceTractions( );
@@ -115,9 +115,9 @@ namespace inputFileProcessor{
             const uIntVector* getFreeMicroSurfaceApproximateSplitCount( );
             const uIntVector* getGhostMicroSurfaceApproximateSplitCount( );
 
-            const stringVector* getFreeMicroSurfaceNames( );
-            const stringVector* getGhostMicroSurfaceNames( );
-            const stringVector* getNonOverlappedMicroSurfaceNames( );
+//            const stringVector* getFreeMicroSurfaceNames( );
+//            const stringVector* getGhostMicroSurfaceNames( );
+//            const stringVector* getNonOverlappedMicroSurfaceNames( );
 
             const uIntVector* getFreeMacroCellIds( );
             const uIntVector* getGhostMacroCellIds( );
@@ -125,7 +125,7 @@ namespace inputFileProcessor{
             const uIntVector* getFreeMacroCellMicroDomainCounts( );
             const uIntVector* getGhostMacroCellMicroDomainCounts( );
 
-            const uIntVector* getNonOverlappedMicroNodeIds( );
+//            const uIntVector* getNonOverlappedMicroNodeIds( );
             const uIntVector* getFreeMicroNodeIds( );
             const uIntVector* getGhostMicroNodeIds( );
 
@@ -207,8 +207,8 @@ namespace inputFileProcessor{
                                                      std::unordered_map< unsigned int, floatVector > &density,
                                                      std::unordered_map< unsigned int, floatVector > &microInertia );
 
-            errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
-                                                        stringVector &microSurfaceNodesets );
+//            errorOut checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
+//                                                        stringVector &microSurfaceNodesets );
 
             errorOut checkCouplingInitialization( );
 
@@ -280,7 +280,7 @@ namespace inputFileProcessor{
 
             floatType   _previousMicroTime;
             floatType   _microTime;
-            floatVector _microDomainWeights;
+            std::unordered_map< uIntType, floatType > _microDomainWeights;
             floatVector _microDensities;
             floatVector _microVolumes;
             floatVector _microDisplacements;
@@ -324,9 +324,9 @@ namespace inputFileProcessor{
             bool _macroExternalForceFlag = false;
             bool _macroInertialForceFlag = false;
 
-            stringVector _non_overlapped_micro_surface_sets;
-            stringVector _free_micro_surface_sets;
-            stringVector _ghost_micro_surface_sets;
+//            stringVector _non_overlapped_micro_surface_sets;
+//            stringVector _free_micro_surface_sets;
+//            stringVector _ghost_micro_surface_sets;
 
             stringVector _free_micro_volume_sets;
             stringVector _ghost_micro_volume_sets;
@@ -343,7 +343,7 @@ namespace inputFileProcessor{
             uIntVector _free_macro_cell_micro_domain_counts;
             uIntVector _ghost_macro_cell_micro_domain_counts;
 
-            uIntVector _unique_non_overlapped_micro_nodes;
+//            uIntVector _unique_non_overlapped_micro_nodes;
             uIntVector _unique_free_micro_nodes;
             uIntVector _unique_ghost_micro_nodes;
 

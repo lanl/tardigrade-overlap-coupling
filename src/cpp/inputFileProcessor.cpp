@@ -221,41 +221,41 @@ namespace inputFileProcessor{
 
         //Check that all required sets in the configuration file are defined correctly in the datasets
         
-        //Check that micro-scale volume-surface node pairs are defined correctly
-        if ( _config[ "microscale_definition" ][ "volume_surface_node_pairs" ] ){
-
-            YAML::Node VSPairs = _config[ "microscale_definition" ][ "volume_surface_node_pairs" ];
-
-            if ( !VSPairs.IsSequence( ) ){
-                return new errorNode( "initializeFileInterfaces",
-                                      "'volume_surface_node_pairs' is required to be a sequence" );
-            }
-
-            unsigned int indx = 1;
-            for ( auto it = VSPairs.begin( ); it != VSPairs.end(); it++ ){
-
-                if ( !( *it )[ "volume" ] ){
-                    return new errorNode( "initializeFileInterfaces",
-                                          "'volume' must be defined for each entry of 'volume_surface_node_pairs'" );
-                }
-                else if( !( *it )[ "volume" ].IsScalar( ) ){
-                    return new errorNode( "initializeFileInterface",
-                                          "'volume' should only define a single nodeset ( pair " + std::to_string( indx ) + " )" );
-                }
-                if ( !( *it )[ "surface" ] ){
-                    return new errorNode( "initializeFileInterfaces",
-                                          "'surface' must be defined for each entry of 'volume_surface_node_pairs'" );
-                }
-                else if( !( *it )[ "surface" ].IsScalar( ) ){
-                    return new errorNode( "initializeFileInterface",
-                                          "'surface' should only define a single nodeset ( pair " + std::to_string( indx ) + " )" );
-                }
-
-                indx++;
-
-            }
-
-        }
+//        //Check that micro-scale volume-surface node pairs are defined correctly
+//        if ( _config[ "microscale_definition" ][ "volume_surface_node_pairs" ] ){
+//
+//            YAML::Node VSPairs = _config[ "microscale_definition" ][ "volume_surface_node_pairs" ];
+//
+//            if ( !VSPairs.IsSequence( ) ){
+//                return new errorNode( "initializeFileInterfaces",
+//                                      "'volume_surface_node_pairs' is required to be a sequence" );
+//            }
+//
+//            unsigned int indx = 1;
+//            for ( auto it = VSPairs.begin( ); it != VSPairs.end(); it++ ){
+//
+//                if ( !( *it )[ "volume" ] ){
+//                    return new errorNode( "initializeFileInterfaces",
+//                                          "'volume' must be defined for each entry of 'volume_surface_node_pairs'" );
+//                }
+//                else if( !( *it )[ "volume" ].IsScalar( ) ){
+//                    return new errorNode( "initializeFileInterface",
+//                                          "'volume' should only define a single nodeset ( pair " + std::to_string( indx ) + " )" );
+//                }
+//                if ( !( *it )[ "surface" ] ){
+//                    return new errorNode( "initializeFileInterfaces",
+//                                          "'surface' must be defined for each entry of 'volume_surface_node_pairs'" );
+//                }
+//                else if( !( *it )[ "surface" ].IsScalar( ) ){
+//                    return new errorNode( "initializeFileInterface",
+//                                          "'surface' should only define a single nodeset ( pair " + std::to_string( indx ) + " )" );
+//                }
+//
+//                indx++;
+//
+//            }
+//
+//        }
 
         return NULL;
     }
@@ -267,29 +267,30 @@ namespace inputFileProcessor{
          * :param const unsigned int increment: The increment at which to compute the weights
          */
 
-        //Get the number of nodes in the microscale
-        unsigned int numNodes;
-        errorOut error = _microscale->getNumNodes( increment, numNodes );
-
+        //Initialize the weight map
+        std::string nodeIdName = _config[ "microscale_definition" ][ "node_id_variable_name" ].as< std::string >( );
+        uIntVector nodeIds;
+        errorOut error = _microscale->getNodeIds( increment, nodeIdName, nodeIds );
         if ( error ){
-            errorOut result = new errorNode( "setMicroNodeWeights", "Error in the extraction of the number of micro-scale nodes" );
+            errorOut result = new errorNode( "setMicroNodeWeights", "Error in the extraction of the node ids" );
             result->addNext( error );
             return result;
         }
+        for ( unsigned int i = 0; i < nodeIds.size( ); i++ ){
+            _microDomainWeights.emplace( i, 0 );
+        }
 
-        //Initialize the weight vector
-        _microDomainWeights = floatVector( numNodes, 0 );
-
-        //Loop through the free micro-surface sets
+        //Loop through the free micro-volume sets
         uIntVector setNodes;
-        for ( auto setName = _free_micro_surface_sets.begin(); setName != _free_micro_surface_sets.end(); setName++ ){
+//        for ( auto setName = _free_micro_surface_sets.begin(); setName != _free_micro_surface_sets.end(); setName++ ){
+        for ( auto setName = _free_micro_volume_sets.begin(); setName != _free_micro_volume_sets.end(); setName++ ){
 
-            //Get the surface set
+            //Get the volume set
             error = _microscale->getSubDomainNodes( increment, *setName, setNodes );
 
             if ( error ){
                 errorOut result = new errorNode( "setMicroNodeWeights",
-                                                 "Error in the extraction of the free micro surface set " + *setName );
+                                                 "Error in the extraction of the free micro volume set " + *setName );
                 result->addNext( error );
                 return result;
             }
@@ -303,15 +304,16 @@ namespace inputFileProcessor{
 
         }
 
-        //Loop through the ghost micro-surface sets
-        for ( auto setName = _ghost_micro_surface_sets.begin(); setName != _ghost_micro_surface_sets.end(); setName++ ){
+        //Loop through the ghost micro-volume sets
+//        for ( auto setName = _ghost_micro_surface_sets.begin(); setName != _ghost_micro_surface_sets.end(); setName++ ){
+        for ( auto setName = _ghost_micro_volume_sets.begin(); setName != _ghost_micro_volume_sets.end(); setName++ ){
 
-            //Get the surface set
+            //Get the volume set
             error = _microscale->getSubDomainNodes( increment, *setName, setNodes );
 
             if ( error ){
                 errorOut result = new errorNode( "setMicroNodeWeights",
-                                                 "Error in the extraction of the ghost micro surface set " + *setName );
+                                                 "Error in the extraction of the ghost micro volume set " + *setName );
                 result->addNext( error );
                 return result;
             }
@@ -325,42 +327,33 @@ namespace inputFileProcessor{
 
         }
 
-        //Loop through the non-overlapped sets
-        for ( auto setName = _non_overlapped_micro_surface_sets.begin();
-              setName != _non_overlapped_micro_surface_sets.end(); setName++ ){
-
-            //Get the surface set
-            error = _microscale->getSubDomainNodes( increment, *setName, setNodes );
-
-            if ( error ){
-                errorOut result = new errorNode( "setMicroNodeWeights",
-                                                 "Error in the extraction of the non-overlapped micro surface set " + *setName );
-                result->addNext( error );
-                return result;
-            }
-
-            //Loop over the nodes
-            for ( auto n = setNodes.begin(); n != setNodes.end(); n++ ){
-                
-                _microDomainWeights[ *n ] += 1;
-
-            }
-
-        }
+//        //Loop through the non-overlapped sets
+//        for ( auto setName = _non_overlapped_micro_surface_sets.begin();
+//              setName != _non_overlapped_micro_surface_sets.end(); setName++ ){
+//
+//            //Get the surface set
+//            error = _microscale->getSubDomainNodes( increment, *setName, setNodes );
+//
+//            if ( error ){
+//                errorOut result = new errorNode( "setMicroNodeWeights",
+//                                                 "Error in the extraction of the non-overlapped micro surface set " + *setName );
+//                result->addNext( error );
+//                return result;
+//            }
+//
+//            //Loop over the nodes
+//            for ( auto n = setNodes.begin(); n != setNodes.end(); n++ ){
+//                
+//                _microDomainWeights[ *n ] += 1;
+//
+//            }
+//
+//        }
 
         //Compute the weights
-        for ( unsigned int i = 0; i < numNodes; i++ ){
+        for ( auto w = _microDomainWeights.begin( ); w != _microDomainWeights.end( ); w++ ){
 
-            if ( _microDomainWeights[ i ] > 0 ){
-
-                _microDomainWeights[ i ] = 1. / _microDomainWeights[ i ];
-
-            }
-            else{
-
-                _microDomainWeights[ i ] = 1.;
-
-            }
+            _microDomainWeights[ w->first ] = 1. / w->second;
 
         }
 
@@ -759,13 +752,13 @@ namespace inputFileProcessor{
                 return result;
             }
 
-            error = checkCommonVolumeToSurfaceMapping( _ghost_micro_volume_sets, _ghost_micro_surface_sets );
-            if ( error ){
-                errorOut result = new errorNode( "initializeCouplingDomains",
-                                                 "Error in input-file check of the micro volume to surface mapping for the free macroscale domains" );
-                result->addNext( error );
-                return result;
-            }
+//            error = checkCommonVolumeToSurfaceMapping( _ghost_micro_volume_sets, _ghost_micro_surface_sets );
+//            if ( error ){
+//                errorOut result = new errorNode( "initializeCouplingDomains",
+//                                                 "Error in input-file check of the micro volume to surface mapping for the free macroscale domains" );
+//                result->addNext( error );
+//                return result;
+//            }
 
         }
 
@@ -783,78 +776,78 @@ namespace inputFileProcessor{
                 return result;
             }
 
-            error = checkCommonVolumeToSurfaceMapping( _free_micro_volume_sets, _free_micro_surface_sets );
-            if ( error ){
-                errorOut result = new errorNode( "initializeCouplingDomains",
-                                                 "Error in input-file check of the micro volume to surface mapping for the free macroscale domains" );
-                result->addNext( error );
-                return result;
-            }
+//            error = checkCommonVolumeToSurfaceMapping( _free_micro_volume_sets, _free_micro_surface_sets );
+//            if ( error ){
+//                errorOut result = new errorNode( "initializeCouplingDomains",
+//                                                 "Error in input-file check of the micro volume to surface mapping for the free macroscale domains" );
+//                result->addNext( error );
+//                return result;
+//            }
 
         }
 
-        if ( _config[ "non_overlapped_microscale_domains" ] ){
+//        if ( _config[ "non_overlapped_microscale_domains" ] ){
+//
+//            if ( _config[ "non_overlapped_microscale_domains" ].IsSequence( ) ){
+//
+//                unsigned int nNonOverlappedMicroscaleDomains = 0;
+//                unsigned int indx = 1;
+//                _non_overlapped_micro_surface_sets.clear();
+//
+//                for ( auto domain = _config[ "non_overlapped_microscale_domains" ].begin( );
+//                      domain != _config[ "non_overlapped_microscale_domains" ].end( );
+//                      domain++ ){
+//
+//                    if ( !domain->IsScalar( ) ){
+//
+//                        return new errorNode( "initializeCouplingDomains",
+//                                              "Entry " + std::to_string( indx ) + " of non_overlapped_microscale_domains is not a scalar" );
+//
+//                    }
+//
+//                    nNonOverlappedMicroscaleDomains++;
+//                    indx++;
+//
+//                }
+//
+//                indx = 0;
+//                _non_overlapped_micro_surface_sets = stringVector( nNonOverlappedMicroscaleDomains );
+//
+//                for ( auto domain = _config[ "non_overlapped_microscale_domains" ].begin( );
+//                      domain != _config[ "non_overlapped_microscale_domains" ].end( );
+//                      domain++ ){
+//
+//                    _non_overlapped_micro_surface_sets[ indx ] = domain->as< std::string >( );
+//                    indx++;
+//
+//                }
+//
+//            }
+//
+//        }
 
-            if ( _config[ "non_overlapped_microscale_domains" ].IsSequence( ) ){
-
-                unsigned int nNonOverlappedMicroscaleDomains = 0;
-                unsigned int indx = 1;
-                _non_overlapped_micro_surface_sets.clear();
-
-                for ( auto domain = _config[ "non_overlapped_microscale_domains" ].begin( );
-                      domain != _config[ "non_overlapped_microscale_domains" ].end( );
-                      domain++ ){
-
-                    if ( !domain->IsScalar( ) ){
-
-                        return new errorNode( "initializeCouplingDomains",
-                                              "Entry " + std::to_string( indx ) + " of non_overlapped_microscale_domains is not a scalar" );
-
-                    }
-
-                    nNonOverlappedMicroscaleDomains++;
-                    indx++;
-
-                }
-
-                indx = 0;
-                _non_overlapped_micro_surface_sets = stringVector( nNonOverlappedMicroscaleDomains );
-
-                for ( auto domain = _config[ "non_overlapped_microscale_domains" ].begin( );
-                      domain != _config[ "non_overlapped_microscale_domains" ].end( );
-                      domain++ ){
-
-                    _non_overlapped_micro_surface_sets[ indx ] = domain->as< std::string >( );
-                    indx++;
-
-                }
-
-            }
-
-        }
-
-        //Make sure that no nodeset that appears in the ghost micro-scale also appears in the free or non-overlapped micro-scales
-        for ( auto nodeset = _ghost_micro_surface_sets.begin( ); nodeset != _ghost_micro_surface_sets.end( ); nodeset++ ){
-
-            if ( std::find( _free_micro_surface_sets.begin( ), _free_micro_surface_sets.end( ), *nodeset ) != _free_micro_surface_sets.end( ) ){
-                return new errorNode( "initializeCouplingDomains",
-                                      *nodeset + " appears in the ghost and free micro-surface nodeset definitions" );
-            }
-
-            if ( std::find( _non_overlapped_micro_surface_sets.begin( ), _non_overlapped_micro_surface_sets.end( ), *nodeset ) != _non_overlapped_micro_surface_sets.end( ) ){
-                return new errorNode( "initializeCouplingDomains",
-                                      *nodeset + " appears in the ghost and free micro-surface nodeset definitions" );
-            }
-        }
-
-        for ( auto nodeset = _free_micro_surface_sets.begin( ); nodeset != _free_micro_surface_sets.end( ); nodeset++ ){
-
-            if ( std::find( _non_overlapped_micro_surface_sets.begin( ), _non_overlapped_micro_surface_sets.end( ), *nodeset ) != _non_overlapped_micro_surface_sets.end( ) ){
-                return new errorNode( "initializeCouplingDomains",
-                                      *nodeset + " appears in the free and non-overlapped micro-surface nodeset definitions" );
-            }
-
-        }
+//        //Make sure that no nodeset that appears in the ghost micro-scale also appears in the free or non-overlapped micro-scales
+//        for ( auto nodeset = _ghost_micro_surface_sets.begin( ); nodeset != _ghost_micro_surface_sets.end( ); nodeset++ ){
+//
+//            if ( std::find( _free_micro_surface_sets.begin( ), _free_micro_surface_sets.end( ), *nodeset ) != _free_micro_surface_sets.end( ) ){
+//                return new errorNode( "initializeCouplingDomains",
+//                                      *nodeset + " appears in the ghost and free micro-surface nodeset definitions" );
+//            }
+//
+//            if ( std::find( _non_overlapped_micro_surface_sets.begin( ), _non_overlapped_micro_surface_sets.end( ), *nodeset ) != _non_overlapped_micro_surface_sets.end( ) ){
+//                return new errorNode( "initializeCouplingDomains",
+//                                      *nodeset + " appears in the ghost and free micro-surface nodeset definitions" );
+//            }
+//        }
+//
+//        for ( auto nodeset = _free_micro_surface_sets.begin( ); nodeset != _free_micro_surface_sets.end( ); nodeset++ ){
+//
+//            if ( std::find( _non_overlapped_micro_surface_sets.begin( ), _non_overlapped_micro_surface_sets.end( ), *nodeset ) != _non_overlapped_micro_surface_sets.end( ) ){
+//                return new errorNode( "initializeCouplingDomains",
+//                                      *nodeset + " appears in the free and non-overlapped micro-surface nodeset definitions" );
+//            }
+//
+//        }
 
         //Make sure that no volume nodeset that appears in the ghost micro-scale also appears in the free micro-scale
         for ( auto nodeset = _ghost_micro_volume_sets.begin( ); nodeset != _ghost_micro_volume_sets.end( ); nodeset++ ){
@@ -1258,80 +1251,80 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
-                                                                    stringVector &microSurfaceNodesets ){
-        /*!
-         * Check the common volume to surface node mapping
-         *
-         * :param const stringVector &microVolumeNodesets: The nodesets which represent the volume of the micro-domains
-         * :param const stringVector &microSurfaceNodesets: The nodesets which represent the surfaces of the micro-domains
-         */
-
-        if ( !_config[ "microscale_definition" ][ "volume_surface_node_pairs" ] ){
-            
-            return new errorNode( "checkCommonVolumeToSurfaceMapping",
-                                  "volume_surface_node_pairs must be defined as a keyname attribute of 'microscale_definition'" );
-
-        }
-
-        if ( ( !_config[ "microscale_definition" ][ "volume_surface_node_pairs" ].IsSequence( ) ) && ( microVolumeNodesets.size( ) > 0 ) ){
-            return new errorNode( "checkCommonVolumeToSurfaceMapping",
-                                  "volume_surface_node_pairs must be a sequence" );
-
-        }
-
-        //Loop through the micro-volume nodesets
-        microSurfaceNodesets = stringVector( microVolumeNodesets.size( ) );
-        unsigned int indx = 0;
-        unsigned int p;
-        bool volumeFound = false;
-        for ( auto volumeName = microVolumeNodesets.begin( ); volumeName != microVolumeNodesets.end( ); volumeName++ ){
-
-            p = 1;
-            volumeFound = false;
-            for ( auto pair = _config[ "microscale_definition" ][ "volume_surface_node_pairs" ].begin( );
-                       pair != _config[ "microscale_definition" ][ "volume_surface_node_pairs" ].end( );
-                  pair++ ){
-
-                if ( !( *pair )[ "volume" ] ){
-
-                    return new errorNode( "checkCommonVolumeToSurfaceMapping",
-                                          "'volume' is not a key of 'volume_surface_node_pairs' entry " + std::to_string( p ) );
-
-                }
-                if ( !( *pair )[ "surface" ] ){
-
-                    return new errorNode( "checkCommonVolumeToSurfaceMapping",
-                                          "'surface' is not a key of 'volume_surface_node_pairs' entry " + std::to_string( p ) );
-
-                }
-
-                if ( ( *pair )[ "volume" ].as< std::string >( ).compare( *volumeName ) == 0 ){
-
-                    microSurfaceNodesets[ indx ] = ( *pair )[ "surface" ].as< std::string >( );
-                    volumeFound = true;
-                    break;
-
-                }
-
-                p++;
-
-            }
-
-            if ( !volumeFound ){
-
-                return new errorNode( "checkCommonVolumeToSurfaceMapping"
-                                      "'" + *volumeName + "' not found in 'volume_surface_node_pairs'" );
-
-            }
-
-            indx++;
-
-        }
-
-        return NULL;
-
-    } 
+//    errorOut inputFileProcessor::checkCommonVolumeToSurfaceMapping( const stringVector &microVolumeNodesets, 
+//                                                                    stringVector &microSurfaceNodesets ){
+//        /*!
+//         * Check the common volume to surface node mapping
+//         *
+//         * :param const stringVector &microVolumeNodesets: The nodesets which represent the volume of the micro-domains
+//         * :param const stringVector &microSurfaceNodesets: The nodesets which represent the surfaces of the micro-domains
+//         */
+//
+//        if ( !_config[ "microscale_definition" ][ "volume_surface_node_pairs" ] ){
+//            
+//            return new errorNode( "checkCommonVolumeToSurfaceMapping",
+//                                  "volume_surface_node_pairs must be defined as a keyname attribute of 'microscale_definition'" );
+//
+//        }
+//
+//        if ( ( !_config[ "microscale_definition" ][ "volume_surface_node_pairs" ].IsSequence( ) ) && ( microVolumeNodesets.size( ) > 0 ) ){
+//            return new errorNode( "checkCommonVolumeToSurfaceMapping",
+//                                  "volume_surface_node_pairs must be a sequence" );
+//
+//        }
+//
+//        //Loop through the micro-volume nodesets
+//        microSurfaceNodesets = stringVector( microVolumeNodesets.size( ) );
+//        unsigned int indx = 0;
+//        unsigned int p;
+//        bool volumeFound = false;
+//        for ( auto volumeName = microVolumeNodesets.begin( ); volumeName != microVolumeNodesets.end( ); volumeName++ ){
+//
+//            p = 1;
+//            volumeFound = false;
+//            for ( auto pair = _config[ "microscale_definition" ][ "volume_surface_node_pairs" ].begin( );
+//                       pair != _config[ "microscale_definition" ][ "volume_surface_node_pairs" ].end( );
+//                  pair++ ){
+//
+//                if ( !( *pair )[ "volume" ] ){
+//
+//                    return new errorNode( "checkCommonVolumeToSurfaceMapping",
+//                                          "'volume' is not a key of 'volume_surface_node_pairs' entry " + std::to_string( p ) );
+//
+//                }
+//                if ( !( *pair )[ "surface" ] ){
+//
+//                    return new errorNode( "checkCommonVolumeToSurfaceMapping",
+//                                          "'surface' is not a key of 'volume_surface_node_pairs' entry " + std::to_string( p ) );
+//
+//                }
+//
+//                if ( ( *pair )[ "volume" ].as< std::string >( ).compare( *volumeName ) == 0 ){
+//
+//                    microSurfaceNodesets[ indx ] = ( *pair )[ "surface" ].as< std::string >( );
+//                    volumeFound = true;
+//                    break;
+//
+//                }
+//
+//                p++;
+//
+//            }
+//
+//            if ( !volumeFound ){
+//
+//                return new errorNode( "checkCommonVolumeToSurfaceMapping"
+//                                      "'" + *volumeName + "' not found in 'volume_surface_node_pairs'" );
+//
+//            }
+//
+//            indx++;
+//
+//        }
+//
+//        return NULL;
+//
+//    } 
 
     errorOut inputFileProcessor::extractMicroNodeDensities( const unsigned int &increment ){
         /*!
@@ -2685,7 +2678,7 @@ namespace inputFileProcessor{
         return &_microVolumes;
     }
 
-    const floatVector* inputFileProcessor::getMicroWeights( ){
+    const std::unordered_map< uIntType, floatType >* inputFileProcessor::getMicroWeights( ){
         /*!
          * Get the micro weights
          */
@@ -2727,29 +2720,29 @@ namespace inputFileProcessor{
         return &_ghost_micro_surface_approximate_split_count;
     }
 
-    const stringVector* inputFileProcessor::getFreeMicroSurfaceNames( ){
-        /*!
-         * Get the free domain names
-         */
-
-        return &_free_micro_surface_sets;
-    }
-
-    const stringVector* inputFileProcessor::getGhostMicroSurfaceNames( ){
-        /*!
-         * Get the ghost domain names
-         */
-
-        return &_ghost_micro_surface_sets;
-    }
-
-    const stringVector* inputFileProcessor::getNonOverlappedMicroSurfaceNames( ){
-        /*!
-         * Get the ghost domain names
-         */
-
-        return &_non_overlapped_micro_surface_sets;
-    }
+//    const stringVector* inputFileProcessor::getFreeMicroSurfaceNames( ){
+//        /*!
+//         * Get the free domain names
+//         */
+//
+//        return &_free_micro_surface_sets;
+//    }
+//
+//    const stringVector* inputFileProcessor::getGhostMicroSurfaceNames( ){
+//        /*!
+//         * Get the ghost domain names
+//         */
+//
+//        return &_ghost_micro_surface_sets;
+//    }
+//
+//    const stringVector* inputFileProcessor::getNonOverlappedMicroSurfaceNames( ){
+//        /*!
+//         * Get the ghost domain names
+//         */
+//
+//        return &_non_overlapped_micro_surface_sets;
+//    }
 
     const YAML::Node inputFileProcessor::getCouplingInitialization( ){
         /*!
@@ -3192,19 +3185,19 @@ namespace inputFileProcessor{
          */
 
         //Get the unique nodes in the non-overlapped, free and ghost domains
-        errorOut error = getUniqueNodesInDomains( increment, _microscale, _non_overlapped_micro_surface_sets,
-                                                  _unique_non_overlapped_micro_nodes );
+//        errorOut error = getUniqueNodesInDomains( increment, _microscale, _non_overlapped_micro_surface_sets,
+//                                                  _unique_non_overlapped_micro_nodes );
+//
+//        if ( error ){
+//
+//            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+//                                             "Error in determining the unique non-overlapped microscale nodes" );
+//            result->addNext( error );
+//            return result;
+//
+//        }
 
-        if ( error ){
-
-            errorOut result = new errorNode( "setMicroNodeIndexMappings",
-                                             "Error in determining the unique non-overlapped microscale nodes" );
-            result->addNext( error );
-            return result;
-
-        }
-
-        error = getUniqueNodesInDomains( increment, _microscale, _free_micro_volume_sets, _unique_free_micro_nodes );
+        errorOut error = getUniqueNodesInDomains( increment, _microscale, _free_micro_volume_sets, _unique_free_micro_nodes );
 
         if ( error ){
 
@@ -3226,90 +3219,91 @@ namespace inputFileProcessor{
 
         }
 
-        //Remove nodes found in the non-overlapped nodes from the free and ghost nodes
-        unsigned int numNodes = 0;
-        unsigned int n;
-
-        //Approximate the size of the duplicate nodes. At worst, this will be the size of the
-        //nodes on the surfaces of the non-overlapped domains
-        for ( auto domain =  _non_overlapped_micro_surface_sets.begin( );
-                   domain != _non_overlapped_micro_surface_sets.end( );
-                   domain++ ){
-
-            _microscale->getNumSubDomainNodes( increment, *domain, n );
-            numNodes += n;
-
-        }
-
-        //Loop through the free nodes to find duplicates
-        uIntVector duplicateNodes;
-        duplicateNodes.reserve( numNodes );
-        
-        for ( auto node =  _unique_free_micro_nodes.begin( );
-                   node != _unique_free_micro_nodes.end( );
-                   node++ ){
-
-            //If the free node is found in the non-overlapped nodes add it to the duplicates
-            if ( std::find( _unique_non_overlapped_micro_nodes.begin( ), _unique_non_overlapped_micro_nodes.end( ),  *node )
-                 != _unique_non_overlapped_micro_nodes.end( ) ){
-
-                duplicateNodes.push_back( node - _unique_free_micro_nodes.begin( ) );
-
-            }
-
-        }
-
-        //Sort the duplicate nodes
-        std::sort( duplicateNodes.begin( ), duplicateNodes.end( ) );
-
-        //Remove the duplicate nodes
-        error = removeIndicesFromVector( _unique_free_micro_nodes, duplicateNodes.begin( ), duplicateNodes.end( ) );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "setMicroNodeIndexMappings",
-                                             "Error in the removal of the non-overlapped duplicate values from the free micro-node vector" );
-            result->addNext( error );
-            return result;
-
-        }
-
-        //Loop through the ghost nodes to find duplicates
-        duplicateNodes.clear( );
-        duplicateNodes.reserve( numNodes );
-        
-        for ( auto node =  _unique_ghost_micro_nodes.begin( );
-                   node != _unique_ghost_micro_nodes.end( );
-                   node++ ){
-
-            //If the ghost node is found in the free nodes add it to the duplicates
-            if ( std::find( _unique_non_overlapped_micro_nodes.begin( ), _unique_non_overlapped_micro_nodes.end( ),  *node )
-                 != _unique_non_overlapped_micro_nodes.end( ) ){
-
-                duplicateNodes.push_back( node - _unique_ghost_micro_nodes.begin( ) );
-
-            }
-
-        }
-
-        //Sort the duplicate nodes
-        std::sort( duplicateNodes.begin( ), duplicateNodes.end( ) );
-
-        //Remove the duplicate nodes
-        error = removeIndicesFromVector( _unique_ghost_micro_nodes, duplicateNodes.begin( ), duplicateNodes.end( ) );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "setMicroNodeIndexMappings",
-                                             "Error in the removal of non-overlapped duplicate values from the ghost vector" );
-            result->addNext( error );
-            return result;
-
-        }
+//        //Remove nodes found in the non-overlapped nodes from the free and ghost nodes
+//        unsigned int numNodes = 0;
+//        unsigned int n;
+//
+//        //Approximate the size of the duplicate nodes. At worst, this will be the size of the
+//        //nodes on the surfaces of the non-overlapped domains
+//        for ( auto domain =  _non_overlapped_micro_surface_sets.begin( );
+//                   domain != _non_overlapped_micro_surface_sets.end( );
+//                   domain++ ){
+//
+//            _microscale->getNumSubDomainNodes( increment, *domain, n );
+//            numNodes += n;
+//
+//        }
+//
+//        //Loop through the free nodes to find duplicates
+//        uIntVector duplicateNodes;
+//        duplicateNodes.reserve( numNodes );
+//        
+//        for ( auto node =  _unique_free_micro_nodes.begin( );
+//                   node != _unique_free_micro_nodes.end( );
+//                   node++ ){
+//
+//            //If the free node is found in the non-overlapped nodes add it to the duplicates
+//            if ( std::find( _unique_non_overlapped_micro_nodes.begin( ), _unique_non_overlapped_micro_nodes.end( ),  *node )
+//                 != _unique_non_overlapped_micro_nodes.end( ) ){
+//
+//                duplicateNodes.push_back( node - _unique_free_micro_nodes.begin( ) );
+//
+//            }
+//
+//        }
+//
+//        //Sort the duplicate nodes
+//        std::sort( duplicateNodes.begin( ), duplicateNodes.end( ) );
+//
+//        //Remove the duplicate nodes
+//        error = removeIndicesFromVector( _unique_free_micro_nodes, duplicateNodes.begin( ), duplicateNodes.end( ) );
+//
+//        if ( error ){
+//
+//            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+//                                             "Error in the removal of the non-overlapped duplicate values from the free micro-node vector" );
+//            result->addNext( error );
+//            return result;
+//
+//        }
+//
+//        //Loop through the ghost nodes to find duplicates
+//        duplicateNodes.clear( );
+//        duplicateNodes.reserve( numNodes );
+//        
+//        for ( auto node =  _unique_ghost_micro_nodes.begin( );
+//                   node != _unique_ghost_micro_nodes.end( );
+//                   node++ ){
+//
+//            //If the ghost node is found in the free nodes add it to the duplicates
+//            if ( std::find( _unique_non_overlapped_micro_nodes.begin( ), _unique_non_overlapped_micro_nodes.end( ),  *node )
+//                 != _unique_non_overlapped_micro_nodes.end( ) ){
+//
+//                duplicateNodes.push_back( node - _unique_ghost_micro_nodes.begin( ) );
+//
+//            }
+//
+//        }
+//
+//        //Sort the duplicate nodes
+//        std::sort( duplicateNodes.begin( ), duplicateNodes.end( ) );
+//
+//        //Remove the duplicate nodes
+//        error = removeIndicesFromVector( _unique_ghost_micro_nodes, duplicateNodes.begin( ), duplicateNodes.end( ) );
+//
+//        if ( error ){
+//
+//            errorOut result = new errorNode( "setMicroNodeIndexMappings",
+//                                             "Error in the removal of non-overlapped duplicate values from the ghost vector" );
+//            result->addNext( error );
+//            return result;
+//
+//        }
 
         //Find any duplicated between the free nodes and the ghost nodes
+        uIntVector duplicateNodes;
         duplicateNodes.clear( );
-        duplicateNodes.reserve( numNodes );
+        duplicateNodes.reserve( _unique_ghost_micro_nodes.size( ) );
         
         for ( auto node =  _unique_ghost_micro_nodes.begin( );
                    node != _unique_ghost_micro_nodes.end( );
@@ -3926,13 +3920,13 @@ namespace inputFileProcessor{
         return _computeMicroShapeFunctions;
     }
 
-    const uIntVector *inputFileProcessor::getNonOverlappedMicroNodeIds( ){
-        /*!
-         * Get the free micro-node ids
-         */
-
-        return &_unique_non_overlapped_micro_nodes;
-    }
+//    const uIntVector *inputFileProcessor::getNonOverlappedMicroNodeIds( ){
+//        /*!
+//         * Get the free micro-node ids
+//         */
+//
+//        return &_unique_non_overlapped_micro_nodes;
+//    }
 
     const uIntVector *inputFileProcessor::getFreeMicroNodeIds( ){
         /*!
