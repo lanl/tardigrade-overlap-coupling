@@ -48,6 +48,17 @@ namespace fileGenerator{
 
         }
 
+        //Remove any existing files
+        std::string filename = _config[ "output_configuration" ][ "filename" ].as< std::string >( );
+        std::string xmlfilename = filename;
+        xmlfilename += ".xdmf";
+
+        std::string h5filename = filename;
+        h5filename += ".h5";
+
+        remove( xmlfilename.c_str( ) );
+        remove( h5filename.c_str( ) );
+
         //Force overwrite of 'mode' to be 'write'        
         _config[ "output_configuration" ][ "mode" ] = "write";
 
@@ -211,6 +222,8 @@ namespace fileGenerator{
         uIntMatrix   elementSets;
         uIntVector   connectivity;
 
+        std::cout << "reference_increment: " << reference_increment << "\n";
+
         if ( reference_increment == _currentIncrement ){
 
             //Get the node id numbers
@@ -282,6 +295,17 @@ namespace fileGenerator{
 
         }
 
+        std::cout << "_currentIncrement: " << _currentIncrement << "\n";
+        std::cout << "_collectionNumber: " << _collectionNumber << "\n";
+        vectorTools::print( nodeIds );
+        vectorTools::print( nodeSets );
+        vectorTools::print( nodeSetNames );
+        vectorTools::print( nodePositions );
+        vectorTools::print( elementIds );
+        vectorTools::print( elementSets );
+        vectorTools::print( elementSetNames );
+        vectorTools::print( connectivity );
+
         error = _writer->writeIncrementMeshData( _currentIncrement, _collectionNumber, nodeIds, nodeSets, nodeSetNames, nodePositions,
                                                  elementIds, elementSets, elementSetNames, connectivity );
 
@@ -323,6 +347,9 @@ namespace fileGenerator{
 
             //Write out the solution vectors
             for ( unsigned int i = 0; i < keys.size( ); i++ ){
+
+                std::cout << keys[ i ] << "\n";
+                vectorTools::print( values[ i ] );
 
                 error = _writer->writeScalarSolutionData( _currentIncrement, _collectionNumber, keys[ i ], "Node", values[ i ] );
                 if ( error ){

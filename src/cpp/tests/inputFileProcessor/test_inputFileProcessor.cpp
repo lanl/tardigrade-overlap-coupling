@@ -198,12 +198,10 @@ int test_initializeFileInterfaces( std::ofstream &results ){
 
     floatVector answerMacroNodes =
         {
-            1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 
-            1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 2, 1, 1, 2, 0, 0, 
-            2, 1, 0, 2, 0, 0, 3, 0, 1, 3, 1, 1, 3, 1, 0, 3
+            0,  0, -1,  1,  0, -1,  1,  1, -1,  0,  1, -1,  0,  0,  0,  1,  0,
+            0,  1,  1,  0,  0,  1,  0,  0,  0,  1,  1,  0,  1,  1,  1,  1,  0,
+            1,  1,  0,  0,  2,  1,  0,  2,  1,  1,  2,  0,  1,  2
         };
-
-    floatVector answerMicroNodes;
 
     floatVector resultMacroNodes, resultMicroNodes;
 
@@ -214,6 +212,25 @@ int test_initializeFileInterfaces( std::ofstream &results ){
         results << "test_initializeFileInterfaces & False\n";
         return 1;
     }
+
+    floatVector answerMicroNodes =
+        {
+            0. , 0. , 0. , 0. , 0. , 0.5, 0. , 0. , 1. , 0. , 0. , 1.5, 0. ,
+            0. , 2. , 0. , 0. , 2.5, 0. , 0. , 3. , 0.5, 0. , 0. , 0.5, 0. ,
+            0.5, 0.5, 0. , 1. , 0.5, 0. , 1.5, 0.5, 0. , 2. , 0.5, 0. , 2.5,
+            0.5, 0. , 3. , 1. , 0. , 0. , 1. , 0. , 0.5, 1. , 0. , 1. , 1. ,
+            0. , 1.5, 1. , 0. , 2. , 1. , 0. , 2.5, 1. , 0. , 3. , 0. , 0.5,
+            0. , 0. , 0.5, 0.5, 0. , 0.5, 1. , 0. , 0.5, 1.5, 0. , 0.5, 2. ,
+            0. , 0.5, 2.5, 0. , 0.5, 3. , 0.5, 0.5, 0. , 0.5, 0.5, 0.5, 0.5,
+            0.5, 1. , 0.5, 0.5, 1.5, 0.5, 0.5, 2. , 0.5, 0.5, 2.5, 0.5, 0.5,
+            3. , 1. , 0.5, 0. , 1. , 0.5, 0.5, 1. , 0.5, 1. , 1. , 0.5, 1.5,
+            1. , 0.5, 2. , 1. , 0.5, 2.5, 1. , 0.5, 3. , 0. , 1. , 0. , 0. ,
+            1. , 0.5, 0. , 1. , 1. , 0. , 1. , 1.5, 0. , 1. , 2. , 0. , 1. ,
+            2.5, 0. , 1. , 3. , 0.5, 1. , 0. , 0.5, 1. , 0.5, 0.5, 1. , 1. ,
+            0.5, 1. , 1.5, 0.5, 1. , 2. , 0.5, 1. , 2.5, 0.5, 1. , 3. , 1. ,
+            1. , 0. , 1. , 1. , 0.5, 1. , 1. , 1. , 1. , 1. , 1.5, 1. , 1. ,
+            2. , 1. , 1. , 2.5, 1. , 1. , 3.
+        };
 
     if ( !vectorTools::fuzzyEquals( answerMacroNodes, resultMacroNodes ) ){
         results << "test_initializeFileInterfaces (test 1) & False\n";
@@ -228,7 +245,7 @@ int test_initializeFileInterfaces( std::ofstream &results ){
         return 1;
     }
 
-    if ( resultMicroNodes.size() != 80703 ){
+    if ( !vectorTools::fuzzyEquals( resultMicroNodes, answerMicroNodes ) ){
         results << "test_initializeFileInterfaces (test 2) & False\n";
         return 1;
     }
@@ -2043,29 +2060,23 @@ int main(){
     test_openConfigurationFile( results );
     test_setConfigurationFile( results );
     test_initializeFileInterfaces( results );
-    test_initializeIncrement( results );
-    test_getFreeMicroDomainNames( results );
-    test_getGhostMicroDomainNames( results );
-//    test_getFreeMicroSurfaceNames( results );
-//    test_getGhostMicroSurfaceNames( results );
-    test_getFreeMacroDomainNames( results );
-    test_getGhostMacroDomainNames( results );
-//    test_getNonOverlappedMicroSurfaceNames( results );
-    test_getCouplingInitialization( results );
-    test_getVolumeReconstructionConfig( results );
-    test_getFreeMicroSurfaceApproximateSplitCount( results );
-    test_getGhostMicroSurfaceApproximateSplitCount( results );
-    test_outputReferenceInformation( results );
-    test_outputHomogenizedInformation( results );
-    test_outputUpdatedDOF( results );
-
+//    test_initializeIncrement( results );
+//    test_getFreeMicroDomainNames( results );
+//    test_getGhostMicroDomainNames( results );
+////    test_getFreeMicroSurfaceNames( results );
+////    test_getGhostMicroSurfaceNames( results );
+//    test_getFreeMacroDomainNames( results );
+//    test_getGhostMacroDomainNames( results );
+////    test_getNonOverlappedMicroSurfaceNames( results );
+//    test_getCouplingInitialization( results );
+//    test_getVolumeReconstructionConfig( results );
+//    test_getFreeMicroSurfaceApproximateSplitCount( results );
+//    test_getGhostMicroSurfaceApproximateSplitCount( results );
+//    test_outputReferenceInformation( results );
+//    test_outputHomogenizedInformation( results );
+//    test_outputUpdatedDOF( results );
+//
     //Close the results file
     results.close();
-
-    remove( "macroscale.xdmf" );
-    remove( "macroscale.h5" );
-
-    remove( "microscale.xdmf" );
-    remove( "microscale.h5" );
 
 }
