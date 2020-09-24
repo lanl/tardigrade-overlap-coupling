@@ -1656,6 +1656,87 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const std::unordered_map< uIntType, floatVector > microInternalForcesAnswer
+        =
+             {
+                { 15, { 2.851562, 4.231133, 1.866341 } },
+                { 31, { 3.344066, 4.560423, 0.901855 } },
+                { 13, { 3.793505, 3.271966, 2.243144 } },
+                { 26, { 4.286010, 3.601256, 1.278659 } },
+                { 53, { 2.646243, 5.060558, 1.343330 } },
+                { 21, { 3.138748, 5.389848, 0.378845 } },
+                { 37, { 3.588187, 4.101391, 1.720134 } },
+                { 48, { 4.080691, 4.430681, 0.755648 } },
+                {  5, { 4.735449, 2.312798, 2.619948 } },
+                { 10, { 5.227953, 2.642088, 1.655463 } },
+                {  3, { 4.530131, 3.142223, 2.096937 } },
+                {  4, { 5.022635, 3.471513, 1.132452 } },
+                { 32, { 3.382869, 4.930815, 1.197123 } },
+                { 33, { 3.875373, 5.260105, 0.232638 } },
+                { 34, { 4.324812, 3.971648, 1.573927 } },
+                { 28, { 4.817317, 4.300938, 0.609442 } },
+                { 25, { 2.440925, 5.889983, 0.820320 } },
+                { 50, { 2.933429, 6.219273, -0.144166 } },
+                { 43, { 3.836570, 4.889713, -0.062630 } },
+                { 27, { 4.778514, 3.930546, 0.314174 } },
+                {  1, { 3.631252, 5.719138, -0.585641 } },
+                {  7, { 4.573196, 4.759971, -0.208837 } },
+                { 30, { 5.720458, 2.971378, 0.690977 } },
+                { 16, { 5.515139, 3.800803, 0.167967 } },
+                { 22, { 4.367877, 5.589395, -0.731847 } },
+                {  2, { 5.309821, 4.630228, -0.355044 } },
+                { 46, { 3.425933, 6.548563, -1.108651 } },
+                { 24, { 1.866553, 3.572553, 3.795311 } },
+                { 39, { 2.359057, 3.901843, 2.830826 } },
+                { 40, { 2.808497, 2.613386, 4.172115 } },
+                { 57, { 3.301001, 2.942676, 3.207630 } },
+                { 44, { 1.661235, 4.401978, 3.272301 } },
+                { 58, { 2.153739, 4.731268, 2.307815 } },
+                { 29, { 2.603179, 3.442811, 3.649104 } },
+                { 59, { 3.095683, 3.772101, 2.684619 } },
+                { 11, { 3.750441, 1.654218, 4.548919 } },
+                {  0, { 4.242945, 1.983508, 3.584433 } },
+                { 20, { 3.545122, 2.483643, 4.025908 } },
+                { 60, { 4.037627, 2.812933, 3.061423 } },
+                { 47, { 2.397860, 4.272235, 3.126094 } },
+                { 49, { 2.890364, 4.601525, 2.161609 } },
+                { 17, { 3.339804, 3.313068, 3.502898 } },
+                { 38, { 3.832308, 3.642358, 2.538412 } },
+                { 14, { 1.455917, 5.231403, 2.749290 } },
+                { 55, { 1.948421, 5.560693, 1.784805 } },
+            };
+
+    const std::unordered_map< uIntType, floatVector > *microInternalForcesResult = reader.getMicroInternalForces( );
+
+    for ( auto it = microInternalForcesAnswer.begin( ); it != microInternalForcesAnswer.end( ); it++ ){
+
+        auto r = microInternalForcesResult->find( it->first );
+
+        if ( r == microInternalForcesResult->end( ) ){
+
+            results << "test_initializeIncrement (test 47) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 48) & False\n";
+            return 1;
+
+        }
+
+    }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2006,20 +2087,6 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector microInternalForcesAnswer = { 0., 0., 0. };
-    const floatVector *microInternalForcesResult = reader.getMicroInternalForces( );
-
-    for ( auto mIFR = microInternalForcesResult->begin( ); mIFR != microInternalForcesResult->end( ); mIFR++ ){
-
-        if ( !vectorTools::fuzzyEquals( *mIFR, microInternalForcesAnswer[ ( mIFR - microInternalForcesResult->begin( ) ) % 3 ], 1e-5, 1e-4 ) ){
-
-            std::cout << mIFR - microInternalForcesResult->begin( ) << ": " << *mIFR << "\n";
-            results << "test_initializeIncrement (test 40) & False\n";
-            return 1;
-
-        }
-
-    }
 
     if ( !reader.microInternalForceDefined( ) ){
 

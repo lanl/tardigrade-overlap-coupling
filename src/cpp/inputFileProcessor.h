@@ -86,7 +86,7 @@ namespace inputFileProcessor{
             const std::unordered_map< uIntType, floatVector >* getPreviousMicroVelocities( );
             const std::unordered_map< uIntType, floatVector >* getPreviousMicroAccelerations( );
             const std::unordered_map< uIntType, floatVector >* getMicroStresses( );
-            const floatVector* getMicroInternalForces( );
+            const std::unordered_map< uIntType, floatVector >* getMicroInternalForces( );
             const floatVector* getMicroInertialForces( );
 
             const floatType*   getMacroTime( );
@@ -308,7 +308,7 @@ namespace inputFileProcessor{
             std::unordered_map< uIntType, floatVector > _microVelocities;
             std::unordered_map< uIntType, floatVector > _microAccelerations;
             std::unordered_map< uIntType, floatVector > _microStresses;
-            floatVector _microInternalForces;
+            std::unordered_map< uIntType, floatVector > _microInternalForces;
             floatVector _microInertialForces;
             bool _microBodyForceFlag = false;
             bool _microSurfaceTractionFlag = false;
