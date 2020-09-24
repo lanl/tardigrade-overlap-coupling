@@ -2205,7 +2205,7 @@ namespace inputFileProcessor{
         if ( error ){
 
             errorOut result = new errorNode( "extractMicroInertialForces",
-                                             "Error in the extraction of the macro inertial forces" );
+                                             "Error in the extraction of the micro inertial forces" );
             result->addNext( error );
             return result;
 
