@@ -6020,6 +6020,10 @@ namespace overlapCoupling{
         std::string reference_filename
             = couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( );
 
+        //Try to remove the files
+        remove( reference_filename + ".xdmf" );
+        remove( reference_filename + ".h5" );
+
         //Save the interpolation matrix if required
         if ( couplingInitialization[ "output_reference_information" ][ "save_interpolation_matrix" ] ){
 
@@ -6168,8 +6172,8 @@ namespace overlapCoupling{
          */
 
         //Initialize the writer
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( filename + ".h5", true );
-//        heavyWriter->setReleaseData( true );
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( filename + ".h5", false );
+        heavyWriter->setReleaseData( true );
         shared_ptr< XdmfWriter > writer = XdmfWriter::New( filename + ".xdmf", heavyWriter );
 
         shared_ptr< XdmfAttribute > _A = XdmfAttribute::New( );
