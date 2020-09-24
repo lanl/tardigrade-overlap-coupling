@@ -222,8 +222,6 @@ namespace fileGenerator{
         uIntMatrix   elementSets;
         uIntVector   connectivity;
 
-        std::cout << "reference_increment: " << reference_increment << "\n";
-
         if ( reference_increment == _currentIncrement ){
 
             //Get the node id numbers
@@ -295,17 +293,6 @@ namespace fileGenerator{
 
         }
 
-        std::cout << "_currentIncrement: " << _currentIncrement << "\n";
-        std::cout << "_collectionNumber: " << _collectionNumber << "\n";
-        vectorTools::print( nodeIds );
-        vectorTools::print( nodeSets );
-        vectorTools::print( nodeSetNames );
-        vectorTools::print( nodePositions );
-        vectorTools::print( elementIds );
-        vectorTools::print( elementSets );
-        vectorTools::print( elementSetNames );
-        vectorTools::print( connectivity );
-
         error = _writer->writeIncrementMeshData( _currentIncrement, _collectionNumber, nodeIds, nodeSets, nodeSetNames, nodePositions,
                                                  elementIds, elementSets, elementSetNames, connectivity );
 
@@ -347,9 +334,6 @@ namespace fileGenerator{
 
             //Write out the solution vectors
             for ( unsigned int i = 0; i < keys.size( ); i++ ){
-
-                std::cout << keys[ i ] << "\n";
-                vectorTools::print( values[ i ] );
 
                 error = _writer->writeScalarSolutionData( _currentIncrement, _collectionNumber, keys[ i ], "Node", values[ i ] );
                 if ( error ){
