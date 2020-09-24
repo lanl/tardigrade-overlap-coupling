@@ -79,10 +79,10 @@ namespace inputFileProcessor{
             const std::unordered_map< uIntType, floatVector >* getMicroBodyForces( );
             const std::unordered_map< uIntType, floatVector >* getMicroSurfaceTractions( );
             const std::unordered_map< uIntType, floatVector >* getMicroExternalForces( );
-            const floatVector* getMicroVelocities( );
+            const std::unordered_map< uIntType, floatVector >* getMicroVelocities( );
             const floatVector* getMicroAccelerations( );
             const std::unordered_map< uIntType, floatVector >* getPreviousMicroDisplacements( );
-            const floatVector* getPreviousMicroVelocities( );
+            const std::unordered_map< uIntType, floatVector >* getPreviousMicroVelocities( );
             const floatVector* getPreviousMicroAccelerations( );
             const floatVector* getMicroStresses( );
             const floatVector* getMicroInternalForces( );
@@ -234,7 +234,8 @@ namespace inputFileProcessor{
             errorOut extractMicroSurfaceTractions( const unsigned int &increment );
             errorOut extractMicroExternalForces( const unsigned int &increment );
             errorOut extractMicroVelocities( const unsigned int &increment );
-            errorOut extractMicroVelocities( const unsigned int &increment, bool &flag, floatVector &microVelocities );
+            errorOut extractMicroVelocities( const unsigned int &increment, bool &flag,
+                                             std::unordered_map< uIntType, floatVector > &microVelocities );
             errorOut extractMicroAccelerations( const unsigned int &increment );
             errorOut extractMicroAccelerations( const unsigned int &increment, bool &flag, floatVector &microAccelerations );
             errorOut extractMicroNodeVolumes( const unsigned int &increment );
@@ -302,7 +303,7 @@ namespace inputFileProcessor{
             std::unordered_map< uIntType, floatVector > _microBodyForces;
             std::unordered_map< uIntType, floatVector > _microSurfaceTractions;
             std::unordered_map< uIntType, floatVector > _microExternalForces;
-            floatVector _microVelocities;
+            std::unordered_map< uIntType, floatVector > _microVelocities;
             floatVector _microAccelerations;
             floatVector _microStresses;
             floatVector _microInternalForces;
@@ -376,7 +377,7 @@ namespace inputFileProcessor{
             std::unordered_map< uIntType, floatVector > _previousMicroDisplacements;
             floatVector _previousMacroDispDOFVector;
 
-            floatVector _previousMicroVelocities;
+            std::unordered_map< uIntType, floatVector > _previousMicroVelocities;
             floatVector _previousMacroVelocities;
 
             floatVector _previousMicroAccelerations;

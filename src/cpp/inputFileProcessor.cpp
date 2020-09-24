@@ -1679,21 +1679,7 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        stringVector variableKeys =
-            {
-                "v1", "v2", "v3",
-            };
-
-        std::string dataType = "Node";
-
-        bool populateWithNullOnUndefined = true;
-
-        std::string configurationName = "velocity_variable_names";
-        YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
-
-        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _microVelocityFlag, _microVelocities );
+        errorOut error = extractMicroVelocities( increment, _microVelocityFlag, _microVelocities );
 
         if ( error ){
 
@@ -1708,7 +1694,8 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMicroVelocities( const unsigned int &increment, bool &flag, floatVector &microVelocities ){
+    errorOut inputFileProcessor::extractMicroVelocities( const unsigned int &increment, bool &flag,
+                                                         std::unordered_map< uIntType, floatVector > &microVelocities ){
         /*!
          * Extract the node micro-velocities at the indicated increment
          *
@@ -1716,7 +1703,7 @@ namespace inputFileProcessor{
          *
          * :param const unsigned int &increment: The current increment
          * :param bool &flag: The flag to indicate if the values are defined in the input file
-         * :param floatVector &microVelocities: The vector to store the velocities in
+         * :param std::unordered_map< uIntType, floatVector > &microVelocities: The map to store the velocities in
          */
 
         stringVector variableKeys =
@@ -1730,10 +1717,11 @@ namespace inputFileProcessor{
 
         std::string configurationName = "velocity_variable_names";
         YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
 
         errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, microVelocities );
+                                                                        configuration, flag, values );
 
         if ( error ){
 
@@ -1741,6 +1729,27 @@ namespace inputFileProcessor{
                                              "Error in the extraction of the micro velocities" );
             result->addNext( error );
             return result;
+
+        }
+
+        if ( !flag ){
+
+            return NULL;
+
+        }
+
+        microVelocities.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMicroVelocities",
+                                      "The micro velocity vector is too short for the required index" );
+
+            }
+
+            microVelocities.emplace( n->first, floatVector( values.begin( ) + _dim * n->second,
+                                                            values.begin( ) + _dim * ( n->second + 1 ) ) );
 
         }
 
@@ -2797,7 +2806,7 @@ namespace inputFileProcessor{
         return &_microExternalForces;
     }
 
-    const floatVector* inputFileProcessor::getMicroVelocities( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroVelocities( ){
         /*!
          * Get a pointer to the micro velocities
          */
@@ -2830,7 +2839,7 @@ namespace inputFileProcessor{
         }
     }
 
-    const floatVector* inputFileProcessor::getPreviousMicroVelocities( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getPreviousMicroVelocities( ){
         /*!
          * Get a pointer to the previous micro velocities
          */
