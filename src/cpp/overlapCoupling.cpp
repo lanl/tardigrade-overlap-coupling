@@ -1805,9 +1805,9 @@ namespace overlapCoupling{
          *     node positions.
          */
 
-        const floatVector *microDensities = _inputProcessor.getMicroDensities( );
-        const floatVector *microVolumes   = _inputProcessor.getMicroVolumes( );
-        const floatVector *microWeights   = _inputProcessor.getMicroWeights( );
+        const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroDensities( );
+        const std::unordered_map< uIntType, floatType > *microVolumes   = _inputProcessor.getMicroVolumes( );
+        const std::unordered_map< uIntType, floatType > *microWeights   = _inputProcessor.getMicroWeights( );
 
         //Additional values
         unsigned int m, n, p;
@@ -1823,15 +1823,43 @@ namespace overlapCoupling{
             //Set the index
             m = microNode - domainNodes.begin( );
 
+            auto microDensity = microDensities->find( *microNode );
+
+            if ( microDensity == microDensities->end( ) ){
+
+                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                                      "Micro node " + std::to_string( *microNode ) + " was not found in the micro density map" );
+
+            }
+
+            auto microVolume = microVolumes->find( *microNode );
+
+            if ( microVolume == microVolumes->end( ) ){
+
+                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                                      "Micro node " + std::to_string( *microNode ) + " was not found in the micro volume map" );
+
+            }
+
+            auto microWeight = microWeights->find( *microNode );
+
+            if ( microWeight == microWeights->end( ) ){
+
+                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                                      "Micro node " + std::to_string( *microNode ) + " was not found in the micro weight map" );
+
+            }
+
+
             //Compute the micro-mass
-            microMass = ( *microDensities )[ *microNode ] * ( *microVolumes )[ *microNode ];
+            microMass = microDensity->second * microVolume->second;
 
             //Extract the micro Xi vector
             Xi = floatVector( domainReferenceXiVectors.begin( ) + _dim * m,
                               domainReferenceXiVectors.begin( ) + _dim * ( m + 1 ) );
 
             //Extract the weighting value
-            weight = ( *microWeights )[ *microNode ];
+            weight = microWeight->second;
 
             //Loop through the macro nodes
             for ( auto macroNode  = macroNodes.begin( );
