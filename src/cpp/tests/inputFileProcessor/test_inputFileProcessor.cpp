@@ -666,20 +666,77 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    floatType volumeTotalAnswer = 3;
+    const std::unordered_map< uIntType, floatType > volumeAnswer
+        =
+         {
+            { 15, -2.000 },
+            { 31, -3.500 },
+            { 13, 0.500 },
+            { 26, -1.000 },
+            { 53, -1.800 },
+            { 21, -3.300 },
+            { 37, 0.700 },
+            { 48, -0.800 },
+            {  5, 3.000 },
+            { 10, 1.500 },
+            {  3, 3.200 },
+            {  4, 1.700 },
+            { 32, 0.900 },
+            { 33, -0.600 },
+            { 34, 3.400 },
+            { 28, 1.900 },
+            { 25, -1.600 },
+            { 50, -3.100 },
+            { 43, -5.000 },
+            { 27, -2.500 },
+            {  1, -4.800 },
+            {  7, -2.300 },
+            { 30, 0.000 },
+            { 16, 0.200 },
+            { 22, -2.100 },
+            {  2, 0.400 },
+            { 46, -4.600 },
+            { 24, 1.000 },
+            { 39, -0.500 },
+            { 40, 3.500 },
+            { 57, 2.000 },
+            { 44, 1.200 },
+            { 58, -0.300 },
+            { 29, 3.700 },
+            { 59, 2.200 },
+            { 11, 6.000 },
+            {  0, 4.500 },
+            { 20, 6.200 },
+            { 60, 4.700 },
+            { 47, 3.900 },
+            { 49, 2.400 },
+            { 17, 6.400 },
+            { 38, 4.900 },
+            { 14, 1.400 },
+            { 55, -0.100 },
+        };
 
-    const floatVector *volumeResult = reader.getMicroVolumes( );
-    floatType volumeResultTotal = 0;
-    
-    for ( auto it = volumeResult->begin( ); it != volumeResult->end( ); it++ ){
+    const std::unordered_map< uIntType, floatType > *volumeResult = reader.getMicroVolumes( );
 
-        volumeResultTotal += *it;
+    for ( auto it = volumeAnswer.begin( ); it != volumeAnswer.end( ); it++ ){
 
-    }
+        auto r = volumeResult->find( it->first );
 
-    if ( !vectorTools::fuzzyEquals( volumeTotalAnswer, volumeResultTotal ) ){
-        results << "test_initializeIncrement (test 2) & False\n";
-        return 1;
+        if ( r == volumeResult->end( ) ){
+
+            results << "test_initializeIncrement (test 14) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": " << r->second << "\n";
+            std::cout << it->first << ": " << it->second << "\n";
+            results << "test_initializeIncrement (test 15) & False\n";
+            return 1;
+
+        }
+
     }
 
     floatVector answer = { 0., 0., 0.001 };

@@ -2256,16 +2256,32 @@ namespace inputFileProcessor{
 
         }
 
-        //Re-size the micro node density vector
-        errorOut error = _microscale->getSolutionData( increment, 
+        //Initialize the size of the micro volumes map
+        _microVolumes.reserve( _unique_free_micro_nodes.size( ) + _unique_ghost_micro_nodes.size( ) );
+
+        //Get the values of the micro volumes from the output file
+        floatVector values;
+        errorOut error = _microscale->getSolutionData( increment,
                                                        _config[ "microscale_definition" ][ "volume_variable_name" ].as< std::string >( ),
-                                                       "Node", _microVolumes );
+                                                       "Node", values );
 
         if ( error ){
 
             errorOut result = new errorNode( "extractMicroNodeVolumes", "Error in extraction of the micro volumes" );
             result->addNext( error );
             return result;
+
+        }
+
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMicroNodeDensities", "The volume vector is too short for the required index" );
+
+            }
+
+            _microVolumes.emplace( n->first, values[ n->second ] );
 
         }
 
@@ -2696,7 +2712,7 @@ namespace inputFileProcessor{
         return &_microInertialForces;
     }
 
-    const floatVector* inputFileProcessor::getMicroVolumes( ){
+    const std::unordered_map< uIntType, floatType >* inputFileProcessor::getMicroVolumes( ){
         /*!
          * Get a pointer to the volumes
          */

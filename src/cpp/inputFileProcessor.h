@@ -73,7 +73,7 @@ namespace inputFileProcessor{
 
             const floatType*   getMicroTime( );
             const std::unordered_map< uIntType, floatType >* getMicroDensities( );
-            const floatVector* getMicroVolumes( );
+            const std::unordered_map< uIntType, floatType >* getMicroVolumes( );
             const std::unordered_map< uIntType, floatType >* getMicroWeights( );
             const floatVector* getMicroDisplacements( );
             const floatVector* getMicroBodyForces( );
@@ -288,7 +288,7 @@ namespace inputFileProcessor{
             floatType   _microTime;
             std::unordered_map< uIntType, floatType > _microDomainWeights;
             std::unordered_map< uIntType, floatType > _microDensities;
-            floatVector _microVolumes;
+            std::unordered_map< uIntType, floatType > _microVolumes;
             floatVector _microDisplacements;
             floatVector _microNodeReferencePositions;
             uIntVector  _microNodeReferenceConnectivity;
