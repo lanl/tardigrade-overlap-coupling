@@ -739,39 +739,77 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    floatVector answer = { 0., 0., 0.001 };
+    const std::unordered_map< uIntType, floatVector > microNodeReferencePositionAnswer
+        =
+            {
+                { 15, { 0.00, 0.00, 1.00 } },
+                { 31, { 0.00, 0.00, 1.50 } },
+                { 13, { 0.50, 0.00, 1.00 } },
+                { 26, { 0.50, 0.00, 1.50 } },
+                { 53, { 0.00, 0.50, 1.00 } },
+                { 21, { 0.00, 0.50, 1.50 } },
+                { 37, { 0.50, 0.50, 1.00 } },
+                { 48, { 0.50, 0.50, 1.50 } },
+                {  5, { 1.00, 0.00, 1.00 } },
+                { 10, { 1.00, 0.00, 1.50 } },
+                {  3, { 1.00, 0.50, 1.00 } },
+                {  4, { 1.00, 0.50, 1.50 } },
+                { 32, { 0.50, 1.00, 1.00 } },
+                { 33, { 0.50, 1.00, 1.50 } },
+                { 34, { 1.00, 1.00, 1.00 } },
+                { 28, { 1.00, 1.00, 1.50 } },
+                { 25, { 0.00, 1.00, 1.00 } },
+                { 50, { 0.00, 1.00, 1.50 } },
+                { 43, { 0.00, 0.00, 2.00 } },
+                { 27, { 0.50, 0.00, 2.00 } },
+                {  1, { 0.00, 0.50, 2.00 } },
+                {  7, { 0.50, 0.50, 2.00 } },
+                { 30, { 1.00, 0.00, 2.00 } },
+                { 16, { 1.00, 0.50, 2.00 } },
+                { 22, { 0.50, 1.00, 2.00 } },
+                {  2, { 1.00, 1.00, 2.00 } },
+                { 46, { 0.00, 1.00, 2.00 } },
+                { 24, { 0.00, 0.00, 0.00 } },
+                { 39, { 0.00, 0.00, 0.50 } },
+                { 40, { 0.50, 0.00, 0.00 } },
+                { 57, { 0.50, 0.00, 0.50 } },
+                { 44, { 0.00, 0.50, 0.00 } },
+                { 58, { 0.00, 0.50, 0.50 } },
+                { 29, { 0.50, 0.50, 0.00 } },
+                { 59, { 0.50, 0.50, 0.50 } },
+                { 11, { 1.00, 0.00, 0.00 } },
+                {  0, { 1.00, 0.00, 0.50 } },
+                { 20, { 1.00, 0.50, 0.00 } },
+                { 60, { 1.00, 0.50, 0.50 } },
+                { 47, { 0.50, 1.00, 0.00 } },
+                { 49, { 0.50, 1.00, 0.50 } },
+                { 17, { 1.00, 1.00, 0.00 } },
+                { 38, { 1.00, 1.00, 0.50 } },
+                { 14, { 0.00, 1.00, 0.00 } },
+                { 55, { 0.00, 1.00, 0.50 } },
+            };
 
-    const floatVector *displacementResult = reader.getMicroDisplacements( );
+    const std::unordered_map< uIntType, floatVector > *microNodeReferencePositionResult = reader.getMicroNodeReferencePositions( );
 
-    unsigned int itmp = 0;
+    for ( auto it = microNodeReferencePositionAnswer.begin( ); it != microNodeReferencePositionAnswer.end( ); it++ ){
 
-    for ( auto it = displacementResult->begin( ); it != displacementResult->end( ); it++ ){
+        auto r = microNodeReferencePositionResult->find( it->first );
 
-        if ( !vectorTools::fuzzyEquals( *it, answer[ itmp ] ) ){ //Note tolerance due to inertia term
+        if ( r == microNodeReferencePositionResult->end( ) ){
 
-            std::cout << it - displacementResult->begin( ) << "\n";
-            std::cout << *it << "\n";
-            std::cout << answer[ itmp ] << "\n";
-            
-            results << "test_initializeIncrement (test 3) & False\n";
+            results << "test_initializeIncrement (test 16) & False\n";
             return 1;
 
         }
-        
-        itmp++;
-        if ( itmp >= 3 ){
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
 
-            itmp = 0;
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 17) & False\n";
+            return 1;
 
         }
 
-    }
-
-    const floatVector *microNodeReferencePositionResult = reader.getMicroNodeReferencePositions( );
-
-    if ( !vectorTools::fuzzyEquals( microNodeReferencePositionResult->size( ), displacementResult->size( ) ) ){
-        results << "test_initializeIncrement (test 4) & False\n";
-        return 1;
     }
 
     const floatVector macroNodeReferencePositionsAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1,
@@ -805,6 +843,35 @@ int test_initializeIncrement( std::ofstream &results ){
         results << "test_initializeIncrement (test 7) & False\n";
         return 1;
     }
+
+    floatVector answer = { 0., 0., 0.001 };
+
+    const floatVector *displacementResult = reader.getMicroDisplacements( );
+
+    unsigned int itmp = 0;
+
+    for ( auto it = displacementResult->begin( ); it != displacementResult->end( ); it++ ){
+
+        if ( !vectorTools::fuzzyEquals( *it, answer[ itmp ] ) ){ //Note tolerance due to inertia term
+
+            std::cout << it - displacementResult->begin( ) << "\n";
+            std::cout << *it << "\n";
+            std::cout << answer[ itmp ] << "\n";
+            
+            results << "test_initializeIncrement (test 3) & False\n";
+            return 1;
+
+        }
+        
+        itmp++;
+        if ( itmp >= 3 ){
+
+            itmp = 0;
+
+        }
+
+    }
+
 
     const uIntVector freeMacroCellIdsAnswer = { 1 };
     const uIntVector ghostMacroCellIdsAnswer = { 2 };

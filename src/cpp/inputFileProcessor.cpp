@@ -1133,7 +1133,7 @@ namespace inputFileProcessor{
 
                                 uIntType vindex = 0;
                                 uIntType ncomponents =  ( *domain )[ "reference_moment_of_inertia" ][ "value" ].size( );
-                                if ( ncomponents != 6 ){ //Assuming 3D
+                                if ( ncomponents != ( _dim * ( _dim + 1 ) / 2 ) ){
 
                                     return new errorNode( "checkCommonDomainConfiguration",
                                                           "Six terms are required for the definition of a constant reference micro moment of inertia of macro-domain " +
@@ -1162,7 +1162,7 @@ namespace inputFileProcessor{
 
                                 floatVector domainMicroInertia = { tmp[ 0 ], tmp[ 1 ], tmp[ 2 ],
                                                                    tmp[ 1 ], tmp[ 3 ], tmp[ 4 ],
-                                                                   tmp[ 2 ], tmp[ 4 ], tmp[ 5 ] };
+                                                                   tmp[ 2 ], tmp[ 4 ], tmp[ 5 ] }; //Assuming 3D
                                 microInertia.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ),
                                                       domainMicroInertia ); 
                                 microInertiaTypes.emplace( ( *domain )[ "macro_cell" ].as< unsigned int >( ),
@@ -1351,7 +1351,7 @@ namespace inputFileProcessor{
         }
 
         //Initialize the size of the micro densities map
-        _microDensities.reserve( _unique_free_micro_nodes.size( ) + _unique_ghost_micro_nodes.size( ) );
+        _microDensities.reserve( _microGlobalNodeIDOutputIndex.size( ) );
 
         //Get the values of the micro densities from the output file
         floatVector values;
@@ -2257,7 +2257,7 @@ namespace inputFileProcessor{
         }
 
         //Initialize the size of the micro volumes map
-        _microVolumes.reserve( _unique_free_micro_nodes.size( ) + _unique_ghost_micro_nodes.size( ) );
+        _microVolumes.reserve( _microGlobalNodeIDOutputIndex.size( ) );
 
         //Get the values of the micro volumes from the output file
         floatVector values;
@@ -2277,7 +2277,7 @@ namespace inputFileProcessor{
 
             if ( n->second >= values.size( ) ){
 
-                return new errorNode( "extractMicroNodeDensities", "The volume vector is too short for the required index" );
+                return new errorNode( "extractMicroNodeVolumes", "The volume vector is too short for the required index" );
 
             }
 
@@ -2546,7 +2546,12 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The increment at which to extract the micro-mesh data
          */
 
-        errorOut error = _microscale->getMeshData( increment, _microNodeReferencePositions,
+        //Initialize the size of the micro reference positions map
+        _microNodeReferencePositions.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+
+        floatVector referencePositions;
+
+        errorOut error = _microscale->getMeshData( increment, referencePositions,
                                                    _microNodeReferenceConnectivity,
                                                    _microNodeReferenceConnectivityCellIndices, _microCellCounts );
 
@@ -2555,6 +2560,22 @@ namespace inputFileProcessor{
             result->addNext( error );
             return result;
         }
+
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= referencePositions.size( ) ){
+
+                return new errorNode( "extractReferenceMicroMeshData",
+                                      "The reference positions vector is too short for the required index" );
+
+            }
+
+            _microNodeReferencePositions.emplace( n->first, floatVector( referencePositions.begin( ) + _dim * n->second,
+                                                                         referencePositions.begin( ) + _dim * ( n->second + 1 )
+                                                                       ) );
+
+        }
+
 
         return NULL;
 
@@ -4017,7 +4038,7 @@ namespace inputFileProcessor{
         return &_macroInertialForces;
     }
 
-    const floatVector* inputFileProcessor::getMicroNodeReferencePositions( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroNodeReferencePositions( ){
         /*!
          * Get the nodal positions from which the displacements are
          * referenced.

@@ -104,7 +104,7 @@ namespace inputFileProcessor{
             const floatType* getNewmarkGamma( );
             const floatType* getNewmarkBeta( );
 
-            const floatVector* getMicroNodeReferencePositions( );
+            const std::unordered_map< uIntType, floatVector >* getMicroNodeReferencePositions( );
             const floatVector* getMacroNodeReferencePositions( );
             const uIntVector*  getMacroNodeReferenceConnectivity( );
             const uIntVector*  getMacroNodeReferenceConnectivityCellIndices( );
@@ -181,6 +181,9 @@ namespace inputFileProcessor{
             const DOFMap *getMicroNodeIDOutputIndex( );
 
         private:
+
+            uIntType _dim = 3;
+
             //Private functions
             void initialize( );
 
@@ -290,7 +293,7 @@ namespace inputFileProcessor{
             std::unordered_map< uIntType, floatType > _microDensities;
             std::unordered_map< uIntType, floatType > _microVolumes;
             floatVector _microDisplacements;
-            floatVector _microNodeReferencePositions;
+            std::unordered_map< uIntType, floatVector > _microNodeReferencePositions;
             uIntVector  _microNodeReferenceConnectivity;
             uIntVector  _microNodeReferenceConnectivityCellIndices;
             unsigned int _microCellCounts;
