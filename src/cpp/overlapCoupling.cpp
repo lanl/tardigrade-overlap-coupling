@@ -1076,6 +1076,7 @@ namespace overlapCoupling{
             error = DOFProjection::computeDomainCenterOfMass( _dim, domainNodes, *_inputProcessor.getMicroVolumes( ),
                                                               *_inputProcessor.getMicroDensities( ),
                                                               *_inputProcessor.getMicroNodeReferencePositions( ),
+                                                              *_inputProcessor.getMicroDisplacements( ),
                                                               *_inputProcessor.getMicroWeights( ),
                                                               ghostDomainMass[ indx ], domainCM );
 
