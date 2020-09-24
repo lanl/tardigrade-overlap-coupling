@@ -2448,7 +2448,7 @@ namespace overlapCoupling{
 
         floatVector dataAtMicroPoints( dataCountAtPoint * microDomainNodeIDs.size( ), 0 );
 
-        const floatVector *microDensities = _inputProcessor.getMicroDensities( );
+        const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroDensities( );
 
         const floatVector *microBodyForces = _inputProcessor.getMicroBodyForces( );
 
@@ -2473,7 +2473,14 @@ namespace overlapCoupling{
         for ( auto node = microDomainNodeIDs.begin( ); node != microDomainNodeIDs.end( ); node++, index++ ){
 
             dataAtMicroPoints[ dataCountAtPoint * index + 0 ] = 1.;                           //Integrate the volume of the domain
-            dataAtMicroPoints[ dataCountAtPoint * index + 1 ] = ( *microDensities )[ *node ]; //Integrate the density of the domain
+
+            auto microDensity = microDensities->find( *node );
+            if ( microDensity == microDensities->end( ) ){
+                return new errorNode( "computeDomainVolumeAverages",
+                                      "Micro node " + std::to_string( *node ) + " was not found in the micro density map" );
+            }
+
+            dataAtMicroPoints[ dataCountAtPoint * index + 1 ] = microDensity->second; //Integrate the density of the domain
 
             //Integrate the micro stresses
             for ( unsigned int i = 0; i < _dim * _dim; i++ ){
@@ -2488,8 +2495,8 @@ namespace overlapCoupling{
                 for ( unsigned int i = 0; i < _dim; i++ ){
     
                     dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ] =
-                        ( *microDensities )[ *node ] * ( ( *microReferencePositions )[ _dim * ( *node )  + i ]
-                                                       + ( *microDisplacements )[ _dim * ( *node ) + i ] );
+                        microDensity->second * ( ( *microReferencePositions )[ _dim * ( *node )  + i ]
+                                             + ( *microDisplacements )[ _dim * ( *node ) + i ] );
     
                 }
 
@@ -2504,7 +2511,7 @@ namespace overlapCoupling{
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
                     dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ]
-                        = ( *microDensities )[ *node ] * ( *microBodyForces )[ _dim * ( *node ) + i ]; //Integrate the body forces of the domain
+                        = microDensity->second * ( *microBodyForces )[ _dim * ( *node ) + i ]; //Integrate the body forces of the domain
 
                 }
 
@@ -2518,7 +2525,7 @@ namespace overlapCoupling{
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
                     dataAtMicroPoints[ dataCountAtPoint * index + localIndex + i ]
-                        = ( *microDensities )[ *node ] * ( *microAccelerations )[ _dim * ( *node ) + i ]; //Integrate the accelerations of the domain
+                        = microDensity->second * ( *microAccelerations )[ _dim * ( *node ) + i ]; //Integrate the accelerations of the domain
 
                 }
 
@@ -2674,6 +2681,12 @@ namespace overlapCoupling{
     
             for ( auto node = microDomainNodeIDs.begin( ); node != microDomainNodeIDs.end( ); node++, index++ ){
 
+                auto microDensity = microDensities->find( *node );
+                if ( microDensity == microDensities->end( ) ){
+                    return new errorNode( "computeDomainVolumeAverages",
+                                          "Micro node " + std::to_string( *node ) + " was not found in the micro density map" );
+                }
+
                 //Extract the micro relative position
                 microRelativePosition = floatVector( microReferencePositions->begin( ) + _dim * ( *node ),
                                                      microReferencePositions->begin( ) + _dim * ( ( *node ) + 1 ) )
@@ -2682,7 +2695,7 @@ namespace overlapCoupling{
                                       - centerOfMass;
 
                 floatVector integrand
-                    = ( *microDensities )[ *node ]
+                    = microDensity->second
                     * vectorTools::appendVectors( vectorTools::dyadic( microRelativePosition, microRelativePosition ) );
 
                 //Add the contributions to the micro inertia
@@ -2702,7 +2715,7 @@ namespace overlapCoupling{
                                                 microBodyForces->begin( ) + _dim * ( *node + 1 ) );
 
                     floatVector integrand
-                        = ( *microDensities )[ *node ]
+                        = microDensity->second
                         * vectorTools::appendVectors( vectorTools::dyadic( microBodyForce, microRelativePosition ) );
     
                     for ( unsigned int i = 0; i < _dim * _dim; i++ ){
@@ -2725,7 +2738,7 @@ namespace overlapCoupling{
                                                               homogenizedAccelerations[ macroCellID ].end( ) );
 
                     floatVector integrand
-                        = ( *microDensities )[ *node ]
+                        = microDensity->second
                         * vectorTools::appendVectors( vectorTools::dyadic( microRelativeAcceleration, microRelativePosition ) );
     
                     for ( unsigned int i = 0; i < _dim * _dim; i++ ){
@@ -2828,7 +2841,7 @@ namespace overlapCoupling{
          */
 
         //Extract the required micro-scale values
-        const floatVector *microDensities = _inputProcessor.getMicroDensities( );
+        const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroDensities( );
         const floatVector *microDisplacements = _inputProcessor.getMicroDisplacements( );
         const floatVector *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
         const floatVector *microStresses = _inputProcessor.getMicroStresses( );
@@ -2905,8 +2918,14 @@ namespace overlapCoupling{
 
         for ( auto node = microDomainNodeIDs.begin( ); node != microDomainNodeIDs.end( ); node++ ){
 
+            auto microDensity = microDensities->find( *node );
+            if ( microDensity == microDensities->end( ) ){
+                return new errorNode( "computeDomainSurfaceAverages",
+                                      "The micro node " + std::to_string( *node ) + " was not found in the micro density map" );
+            }
+
             dataAtMicroPoints.push_back( 1 );
-            dataAtMicroPoints.push_back( ( *microDensities )[ *node ] );
+            dataAtMicroPoints.push_back( microDensity->second );
 
             floatVector microPoint = floatVector( microReferencePositions->begin( ) + _dim * ( *node ),
                                                   microReferencePositions->begin( ) + _dim * ( ( *node ) + 1 ) )
@@ -2915,7 +2934,7 @@ namespace overlapCoupling{
 
             for ( unsigned int i = 0; i < microPoint.size( ); i++ ){
 
-                dataAtMicroPoints.push_back( ( *microDensities )[ *node ] * microPoint[ i ] );
+                dataAtMicroPoints.push_back( microDensity->second * microPoint[ i ] );
 
             }
 
@@ -4851,8 +4870,8 @@ namespace overlapCoupling{
         floatType aD = config[ "macro_proportionality_coefficient" ].as< floatType >( );
 
         //Get the micro densities and volumes
-        const floatVector *microVolumes   = _inputProcessor.getMicroVolumes( );
-        const floatVector *microDensities = _inputProcessor.getMicroVolumes( );
+        const std::unordered_map< uIntType, floatType > *microVolumes   = _inputProcessor.getMicroVolumes( );
+        const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroVolumes( );
 
         //Get the global to local micro node mapping
         const DOFMap *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
@@ -4888,7 +4907,26 @@ namespace overlapCoupling{
 
             }
 
-            freeMicroMasses[ localMicroNodeIDMap->second ] = ( *microVolumes )[ *microID ] * ( *microDensities )[ *microID ];
+            auto microDensity = microDensities->find( *microID );
+
+            if ( microDensity == microDensities->end( ) ){
+
+                return new errorNode( "assembleCouplingMassAndDampingMatrices",
+                                      "Free micro node " + std::to_string( *microID ) + " was not found in the micro density map" );
+
+            }
+
+            auto microVolume = microVolumes->find( *microID );
+
+            if ( microVolume == microVolumes->end( ) ){
+
+                return new errorNode( "assembleCouplingMassAndDampingMatrices",
+                                      "Free micro node " + std::to_string( *microID ) + " was not found in the micro volume map" );
+
+            }
+
+
+            freeMicroMasses[ localMicroNodeIDMap->second ] = microVolume->second * microDensity->second;
 
         }
         //Assemble the ghost micro mass vector
@@ -4903,8 +4941,25 @@ namespace overlapCoupling{
 
             }
 
-            ghostMicroMasses[ localMicroNodeIDMap->second - nFreeMicroNodes ]
-                = ( *microVolumes )[ *microID ] * ( *microDensities )[ *microID ];
+            auto microDensity = microDensities->find( *microID );
+
+            if ( microDensity == microDensities->end( ) ){
+
+                return new errorNode( "assembleCouplingMassAndDampingMatrices",
+                                      "Free micro node " + std::to_string( *microID ) + " was not found in the micro density map" );
+
+            }
+
+            auto microVolume = microVolumes->find( *microID );
+
+            if ( microVolume == microVolumes->end( ) ){
+
+                return new errorNode( "assembleCouplingMassAndDampingMatrices",
+                                      "Free micro node " + std::to_string( *microID ) + " was not found in the micro volume map" );
+
+            }
+
+            ghostMicroMasses[ localMicroNodeIDMap->second - nFreeMicroNodes ] = microVolume->second * microDensity->second;
 
         }
 
@@ -6050,8 +6105,10 @@ namespace overlapCoupling{
             = couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( );
 
         //Try to remove the files
-        remove( reference_filename + ".xdmf" );
-        remove( reference_filename + ".h5" );
+        std::string xdmfFilename = reference_filename + ".xdmf";
+        std::string h5Filename = reference_filename + ".h5";
+        remove( xdmfFilename.c_str( ) );
+        remove( h5Filename.c_str( ) );
 
         //Save the interpolation matrix if required
         if ( couplingInitialization[ "output_reference_information" ][ "save_interpolation_matrix" ] ){
