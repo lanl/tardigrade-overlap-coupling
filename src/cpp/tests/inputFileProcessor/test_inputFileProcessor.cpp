@@ -1729,6 +1729,79 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const std::unordered_map< uIntType, floatVector > microInertialForcesAnswer
+        =
+            {
+                { 15, { 0.915926, -0.776311, -3.061289 } },
+                { 31, { 1.713875, 0.043499, -3.050079 } },
+                { 13, { 0.277727, -0.625485, -3.510893 } },
+                { 26, { 1.075675, 0.194325, -3.499683 } },
+                { 53, { 0.331368, -0.491830, -3.876881 } },
+                { 21, { 1.129317, 0.327980, -3.865671 } },
+                { 37, { -0.306832, -0.341004, -4.326486 } },
+                { 48, { 0.491117, 0.478807, -4.315275 } },
+                {  5, { -0.360473, -0.474659, -3.960498 } },
+                { 10, { 0.437475, 0.345151, -3.949287 } },
+                {  3, { -0.945031, -0.190177, -4.776090 } },
+                {  4, { -0.147083, 0.629633, -4.764879 } },
+                { 32, { -0.891390, -0.056522, -5.142078 } },
+                { 33, { -0.093442, 0.763288, -5.130867 } },
+                { 34, { -1.529590, 0.094304, -5.591682 } },
+                { 28, { -0.731641, 0.914114, -5.580471 } },
+                { 25, { -0.253190, -0.207348, -4.692474 } },
+                { 50, { 0.544758, 0.612462, -4.681263 } },
+                { 43, { 2.511823, 0.863309, -3.038868 } },
+                { 27, { 1.873624, 1.014136, -3.488472 } },
+                {  1, { 1.927265, 1.147791, -3.854460 } },
+                {  7, { 1.289065, 1.298617, -4.304064 } },
+                { 30, { 1.235424, 1.164962, -3.938076 } },
+                { 16, { 0.650865, 1.449443, -4.753668 } },
+                { 22, { 0.704507, 1.583098, -5.119656 } },
+                {  2, { 0.066307, 1.733925, -5.569261 } },
+                { 46, { 1.342707, 1.432272, -4.670052 } },
+                { 24, { -0.679970, -2.415932, -3.083711 } },
+                { 39, { 0.117978, -1.596122, -3.072500 } },
+                { 40, { -1.318170, -2.265106, -3.533315 } },
+                { 57, { -0.520222, -1.445295, -3.522104 } },
+                { 44, { -1.264529, -2.131450, -3.899303 } },
+                { 58, { -0.466580, -1.311640, -3.888092 } },
+                { 29, { -1.902729, -1.980624, -4.348907 } },
+                { 59, { -1.104780, -1.160814, -4.337696 } },
+                { 11, { -1.956370, -2.114279, -3.982919 } },
+                {  0, { -1.158422, -1.294469, -3.971708 } },
+                { 20, { -2.540928, -1.829798, -4.798511 } },
+                { 60, { -1.742980, -1.009988, -4.787300 } },
+                { 47, { -2.487287, -1.696143, -5.164499 } },
+                { 49, { -1.689339, -0.876332, -5.153289 } },
+                { 17, { -3.125487, -1.545316, -5.614103 } },
+                { 38, { -2.327538, -0.725506, -5.602893 } },
+                { 14, { -1.849087, -1.846969, -4.714895 } },
+                { 55, { -1.051139, -1.027159, -4.703684 } },
+            };
+
+    const std::unordered_map< uIntType, floatVector > *microInertialForcesResult = reader.getMicroInertialForces( );
+
+    for ( auto it = microInertialForcesAnswer.begin( ); it != microInertialForcesAnswer.end( ); it++ ){
+
+        auto r = microInertialForcesResult->find( it->first );
+
+        if ( r == microInertialForcesResult->end( ) ){
+
+            results << "test_initializeIncrement (test 49) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 50) & False\n";
+            return 1;
+
+        }
+
+    }
+
 
 
 
@@ -2091,28 +2164,6 @@ int test_initializeIncrement( std::ofstream &results ){
     if ( !reader.microInternalForceDefined( ) ){
 
         results << "test_initializeIncrement (test 41) & False\n";
-        return 1;
-
-    }
-
-    const floatVector microInertialForcesAnswer = { 0., 0., 0. };
-    const floatVector *microInertialForcesResult = reader.getMicroInertialForces( );
-
-    for ( auto mIFR = microInertialForcesResult->begin( ); mIFR != microInertialForcesResult->end( ); mIFR++ ){
-
-        if ( !vectorTools::fuzzyEquals( *mIFR, microInertialForcesAnswer[ ( mIFR - microInertialForcesResult->begin( ) ) % 3 ], 1e-5, 1e-4 ) ){
-
-            std::cout << mIFR - microInertialForcesResult->begin( ) << ": " << *mIFR << "\n";
-            results << "test_initializeIncrement (test 42) & False\n";
-            return 1;
-
-        }
-
-    }
-
-    if ( !reader.microInertialForceDefined( ) ){
-
-        results << "test_initializeIncrement (test 43) & False\n";
         return 1;
 
     }
