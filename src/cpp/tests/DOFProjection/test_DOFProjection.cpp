@@ -12,6 +12,7 @@ typedef DOFProjection::errorOut errorOut; //!Redefinition for a pointer to the e
 typedef DOFProjection::floatType floatType; //!Define the float values type.
 typedef DOFProjection::floatVector floatVector; //! Define a vector of floats
 typedef DOFProjection::floatMatrix floatMatrix; //!Define a matrix of floats
+typedef DOFProjection::uIntType uIntType; //!Define the unsigned integer type
 typedef DOFProjection::uIntVector uIntVector; //!Define a vector of unsigned ints
 
 typedef DOFProjection::SparseMatrix SparseMatrix; //!Define a sparse matrix
@@ -5088,6 +5089,12 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, microWeights,
                                                       domainMassResult, domainCMResult );
 
+    if ( error ){
+        error->print();
+        results << "test_computeDomainCenterOfMass & False\n";
+        return 1;
+    }
+
     if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
         results << "test_computeDomainCenterOfMass (test 3) & False\n";
         return 1;
@@ -5102,6 +5109,12 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     domainCMResult = floatVector( 0, 0 );
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities, microPositions,
                                                       microWeights, domainMassResult, domainCMResult );
+
+    if ( error ){
+        error->print();
+        results << "test_computeDomainCenterOfMass & False\n";
+        return 1;
+    }
 
     if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
         results << "test_computeDomainCenterOfMass (test 5) & False\n";
@@ -5134,6 +5147,11 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities,
                                                       microReferencePositions, microDisplacements,
                                                       microWeights, domainMassResult, domainCMResult );
+    if ( error ){
+        error->print();
+        results << "test_computeDomainCenterOfMass & False\n";
+        return 1;
+    }
 
     if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
         results << "test_computeDomainCenterOfMass (test 8) & False\n";
@@ -5144,6 +5162,40 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
         results << "test_computeDomainCenterOfMass (test 9) & False\n";
         return 1;
     }
+
+    std::unordered_map< uIntType, floatType > microVolumesMap;
+    std::unordered_map< uIntType, floatType > microDensitiesMap;
+    std::unordered_map< uIntType, floatType > microWeightsMap;
+
+    for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
+
+        microVolumesMap.emplace( *index, microVolumes[ *index ] );
+        microDensitiesMap.emplace( *index, microDensities[ *index ] );
+        microWeightsMap.emplace( *index, microWeights[ *index ] );
+
+    }
+
+    domainMassResult = 0;
+    domainCMResult = floatVector( 0, 0 );
+    error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumesMap, microDensitiesMap,
+                                                      microReferencePositions, microDisplacements,
+                                                      microWeightsMap, domainMassResult, domainCMResult );
+    if ( error ){
+        error->print();
+        results << "test_computeDomainCenterOfMass & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
+        results << "test_computeDomainCenterOfMass (test 10) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
+        results << "test_computeDomainCenterOfMass (test 11) & False\n";
+        return 1;
+    }
+
 
     results << "test_computeDomainCenterOfMass & True\n";
     return 0;

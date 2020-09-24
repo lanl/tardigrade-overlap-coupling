@@ -206,6 +206,15 @@ namespace DOFProjection{
                                         const floatVector &microDisplacements, const floatVector &microWeights,
                                         floatVector &domainCM );
 
+    errorOut computeDomainCenterOfMass( const uIntType &dim,
+                                        const uIntVector &domainMicroNodeIndices,
+                                        const std::unordered_map< uIntType, floatType > &microVolumes,
+                                        const std::unordered_map< uIntType, floatType > &microDensities,
+                                        const floatVector &microReferencePositions,
+                                        const floatVector &microDisplacements,
+                                        const std::unordered_map< uIntType, floatType > &microWeights,
+                                        floatType &domainMass, floatVector &domainCM );
+
     errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microPositions,
                                const floatVector &domainCM, floatVector &domainXis );
