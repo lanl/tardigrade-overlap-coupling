@@ -187,7 +187,7 @@ int test_initializeFileInterfaces( std::ofstream &results ){
      * :param std::ofstream &results: The output file.
      */
 
-    std::string filename = "../testFiles/testConfig.yaml";
+    std::string filename = "testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
     if ( reader.getError( ) ){
