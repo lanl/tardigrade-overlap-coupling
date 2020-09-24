@@ -1402,9 +1402,10 @@ namespace inputFileProcessor{
         std::string configurationName = "body_force_variable_names";
         YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
 
+        floatVector values;
         errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _microBodyForceFlag, _microBodyForces );
+                                                                        configuration, _microBodyForceFlag, values );
 
         if ( error ){
 
@@ -1415,10 +1416,28 @@ namespace inputFileProcessor{
 
         }
 
-        floatType _sign = _config[ "coupling_initialization" ][ "micro_body_force_sign" ].as< floatType >( );
-        if ( ( _microSurfaceTractionFlag ) && !vectorTools::fuzzyEquals( _sign, 1. ) ){
+        if ( !_microBodyForceFlag ){
 
-            _microBodyForces *= _sign;
+            return NULL;
+
+        }
+
+        floatType _sign = _config[ "coupling_initialization" ][ "micro_body_force_sign" ].as< floatType >( );
+
+        _microBodyForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMicroBodyForces", "The micro body force vector is too short for the required index" );
+
+            }
+
+            floatVector bf( values.begin( ) + _dim * n->second,
+                            values.begin( ) + _dim * ( n->second + 1 ) );
+            bf *= _sign;
+
+            _microBodyForces.emplace( n->first, bf );
 
         }
 
@@ -1445,9 +1464,10 @@ namespace inputFileProcessor{
         std::string configurationName = "surface_traction_variable_names";
         YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
 
+        floatVector values;
         errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _microSurfaceTractionFlag, _microSurfaceTractions );
+                                                                        configuration, _microSurfaceTractionFlag, values );
 
         if ( error ){
 
@@ -1458,10 +1478,29 @@ namespace inputFileProcessor{
 
         }
 
-        floatType _sign = _config[ "coupling_initialization" ][ "micro_surface_traction_sign" ].as< floatType >( );
-        if ( ( _microSurfaceTractionFlag ) && !vectorTools::fuzzyEquals( _sign, 1. ) ){
+        if ( !_microSurfaceTractionFlag ){
 
-            _microSurfaceTractions *= _sign;
+            return NULL;
+
+        }
+
+        floatType _sign = _config[ "coupling_initialization" ][ "micro_surface_traction_sign" ].as< floatType >( );
+
+        _microSurfaceTractions.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMicroSurfaceTractions",
+                                      "The micro surface traction vector is too short for the required index" );
+
+            }
+
+            floatVector st( values.begin( ) + _dim * n->second,
+                            values.begin( ) + _dim * ( n->second + 1 ) );
+            st *= _sign;
+
+            _microSurfaceTractions.emplace( n->first, st );
 
         }
 
@@ -1488,9 +1527,10 @@ namespace inputFileProcessor{
         std::string configurationName = "external_force_variable_names";
         YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
 
+        floatVector values;
         errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _microExternalForceFlag, _microExternalForces );
+                                                                        configuration, _microExternalForceFlag, values );
 
         if ( error ){
 
@@ -1505,7 +1545,12 @@ namespace inputFileProcessor{
 
             if( _microSurfaceTractionFlag && _microBodyForceFlag ){
 
-                _microExternalForces = _microSurfaceTractions + _microBodyForces;
+                _microExternalForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+                for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+                    _microExternalForces.emplace( n->first, _microSurfaceTractions[ n->first ] + _microBodyForces[ n->first ] );
+
+                }
                 _microExternalForceFlag = true;
 
             }
@@ -1525,7 +1570,25 @@ namespace inputFileProcessor{
         }
         else{
 
-            _microExternalForces *= _config[ "coupling_initialization" ][ "micro_external_force_sign" ].as< floatType >( );
+            _microExternalForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+            floatType _sign = _config[ "coupling_initialization" ][ "micro_external_force_sign" ].as< floatType >( );
+
+            for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+    
+                if ( n->second >= values.size( ) ){
+    
+                    return new errorNode( "extractMicroExternalForces",
+                                          "The micro external force vector is too short for the required index" );
+    
+                }
+    
+                floatVector ef( values.begin( ) + _dim * n->second,
+                                values.begin( ) + _dim * ( n->second + 1 ) );
+                ef *= _sign;
+    
+                _microExternalForces.emplace( n->first, ef );
+    
+            }
 
         }
 
@@ -2291,29 +2354,16 @@ namespace inputFileProcessor{
 
     errorOut inputFileProcessor::extractMicroDisplacements( const unsigned int &increment ){
         /*!
-         * Extract the node micro-velocities at the indicated increment
+         * Extract the node micro-displacements at the indicated increment
          *
          * TODO: Move this and other vector / tensor extraction routines to a common function
          *
          * :param const unsigned int &increment: The current increment
          */
 
-        stringVector variableKeys =
-            {
-                "u1", "u2", "u3",
-            };
-
-        std::string dataType = "Node";
-
-        bool populateWithNullOnUndefined = false;
-
-        std::string configurationName = "displacement_variable_names";
-        YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
         bool flag;
 
-        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, _microDisplacements );
+        errorOut error = extractMicroDisplacements( increment, flag, _microDisplacements );
 
         if ( error ){
 
@@ -2328,15 +2378,16 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMicroDisplacements( const unsigned int &increment, bool &flag, floatVector &microDisplacements ){
+    errorOut inputFileProcessor::extractMicroDisplacements( const unsigned int &increment, bool &flag,
+                                                            std::unordered_map< uIntType, floatVector > &microDisplacements ){
         /*!
-         * Extract the node micro-velocities at the indicated increment
+         * Extract the node micro-displacements at the indicated increment
          *
          * TODO: Move this and other vector / tensor extraction routines to a common function
          *
          * :param const unsigned int &increment: The current increment
          * :param bool &flag: The flag to indicate if the values are defined in the input file
-         * :param floatVector &microDisplacements: The vector to store the displacements in
+         * :param std::unordered_map< uIntType, floatVector > &microDisplacements: The map to store the displacements in
          */
 
         stringVector variableKeys =
@@ -2351,9 +2402,10 @@ namespace inputFileProcessor{
         std::string configurationName = "displacement_variable_names";
         YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
 
+        floatVector values;
         errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, microDisplacements );
+                                                                        configuration, flag, values );
 
         if ( error ){
 
@@ -2361,6 +2413,15 @@ namespace inputFileProcessor{
                                              "Error in the extraction of the micro displacements" );
             result->addNext( error );
             return result;
+
+        }
+
+        microDisplacements.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            microDisplacements.emplace( n->first, floatVector( values.begin( ) + _dim * n->second,
+                                                               values.begin( ) + _dim * ( n->second + 1 ) ) );
 
         }
 
@@ -2712,7 +2773,7 @@ namespace inputFileProcessor{
         return &_microDensities;
     }
 
-    const floatVector* inputFileProcessor::getMicroBodyForces( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroBodyForces( ){
         /*!
          * Get a pointer to the micro body forces
          */
@@ -2720,7 +2781,7 @@ namespace inputFileProcessor{
         return &_microBodyForces;
     }
 
-    const floatVector* inputFileProcessor::getMicroSurfaceTractions( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroSurfaceTractions( ){
         /*!
          * Get a pointer to the micro surface tractions
          */
@@ -2728,7 +2789,7 @@ namespace inputFileProcessor{
         return &_microSurfaceTractions;
     }
 
-    const floatVector* inputFileProcessor::getMicroExternalForces( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroExternalForces( ){
         /*!
          * Get a pointer to the micro body forces
          */
@@ -2752,7 +2813,7 @@ namespace inputFileProcessor{
         return &_microAccelerations;
     }
 
-    const floatVector* inputFileProcessor::getPreviousMicroDisplacements( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getPreviousMicroDisplacements( ){
         /*!
          * Get a pointer to the previous micro displacements
          */
@@ -3999,7 +4060,7 @@ namespace inputFileProcessor{
         return _macroInertialForceFlag;
     }
 
-    const floatVector* inputFileProcessor::getMicroDisplacements( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroDisplacements( ){
         /*!
          * Get the micro-displacements
          */
