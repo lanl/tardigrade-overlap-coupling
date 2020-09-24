@@ -105,7 +105,8 @@ namespace inputFileProcessor{
             const floatType* getNewmarkBeta( );
 
             const std::unordered_map< uIntType, floatVector >* getMicroNodeReferencePositions( );
-            const floatVector* getMacroNodeReferencePositions( );
+
+            const std::unordered_map< uIntType, floatVector >* getMacroNodeReferencePositions( );
             const uIntVector*  getMacroNodeReferenceConnectivity( );
             const uIntVector*  getMacroNodeReferenceConnectivityCellIndices( );
 
@@ -294,9 +295,8 @@ namespace inputFileProcessor{
             std::unordered_map< uIntType, floatType > _microVolumes;
             floatVector _microDisplacements;
             std::unordered_map< uIntType, floatVector > _microNodeReferencePositions;
-            uIntVector  _microNodeReferenceConnectivity;
-            uIntVector  _microNodeReferenceConnectivityCellIndices;
-            unsigned int _microCellCounts;
+//            uIntVector  _microNodeReferenceConnectivityCellIndices;
+//            unsigned int _microCellCounts;
 
             floatVector _microBodyForces;
             floatVector _microSurfaceTractions;
@@ -323,7 +323,7 @@ namespace inputFileProcessor{
             floatVector _macroInternalForces;
             floatVector _macroExternalForces;
             floatVector _macroInertialForces;
-            floatVector _macroNodeReferencePositions;
+            std::unordered_map< uIntType, floatVector > _macroNodeReferencePositions;
             uIntVector  _macroNodeReferenceConnectivity;
             uIntVector  _macroNodeReferenceConnectivityCellIndices;
             unsigned int _macroCellCounts;

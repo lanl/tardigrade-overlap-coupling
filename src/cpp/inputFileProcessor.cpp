@@ -2548,12 +2548,15 @@ namespace inputFileProcessor{
 
         //Initialize the size of the micro reference positions map
         _microNodeReferencePositions.reserve( _microGlobalNodeIDOutputIndex.size( ) );
-
         floatVector referencePositions;
+        uIntVector referenceConnectivity;
+        uIntVector connectivityCellIndices;
+        uIntType cellCounts;
 
-        errorOut error = _microscale->getMeshData( increment, referencePositions,
-                                                   _microNodeReferenceConnectivity,
-                                                   _microNodeReferenceConnectivityCellIndices, _microCellCounts );
+        uIntVector elementConnectivity;
+
+        errorOut error = _microscale->getMeshData( increment, referencePositions, referenceConnectivity,
+                                                   connectivityCellIndices, cellCounts );
 
         if ( error ){
             errorOut result = new errorNode( "extractMicroMeshData", "Error in the extraction of the micro-mesh information" );
@@ -2576,7 +2579,6 @@ namespace inputFileProcessor{
 
         }
 
-
         return NULL;
 
     }
@@ -2588,14 +2590,48 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The increment at which to extract the macro-mesh data
          */
 
-        errorOut error = _macroscale->getMeshData( increment, _macroNodeReferencePositions,
-                                                   _macroNodeReferenceConnectivity, _macroNodeReferenceConnectivityCellIndices,
-                                                   _macroCellCounts );
+        //Initialize the size of the micro reference positions map
+        _macroNodeReferencePositions.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+        floatVector referencePositions;
+        uIntVector referenceConnectivity;
+        uIntVector connectivityCellIndices;
+        uIntType cellCounts;
+
+        uIntVector elementConnectivity;
+
+        errorOut error = _macroscale->getMeshData( increment, referencePositions, referenceConnectivity,
+                                                   connectivityCellIndices, cellCounts );
 
         if ( error ){
             errorOut result = new errorNode( "extractMacroMeshData", "Error in the extraction of the macro-mesh information" );
             result->addNext( error );
             return result;
+        }
+
+        for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= referencePositions.size( ) ){
+
+                return new errorNode( "extractReferenceMacroMeshData",
+                                      "The reference positions vector is too short for the required index" );
+
+            }
+
+            _macroNodeReferencePositions.emplace( n->first, floatVector( referencePositions.begin( ) + _dim * n->second,
+                                                                         referencePositions.begin( ) + _dim * ( n->second + 1 )
+                                                                       ) );
+
+        }
+
+        uIntVector elementIds;
+        std::string elementIDName = _config[ "macroscale_definition" ][ "cell_id_variable_name" ].as< std::string >( );
+        error = _microscale->getCellIds( increment, elementIDName, elementIds );
+
+        if ( cellCounts > elementIds.size( ) ){
+
+            return new errorNode( "extractReferenceMacroMeshData",
+                                  "The connectivity and the number of elements in the macroscale aren't consistent" );
+
         }
 
         return NULL;
@@ -4047,7 +4083,7 @@ namespace inputFileProcessor{
         return &_microNodeReferencePositions;
     }
 
-    const floatVector* inputFileProcessor::getMacroNodeReferencePositions( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroNodeReferencePositions( ){
         /*!
          * Get the nodal positions from which the displacements are
          * referenced.

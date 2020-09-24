@@ -812,16 +812,44 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector macroNodeReferencePositionsAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1,
-                                                            1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1,
-                                                            0, 1, 2, 1, 1, 2, 0, 0, 2, 1, 0, 2,
-                                                            0, 0, 3, 0, 1, 3, 1, 1, 3, 1, 0, 3, };
+    const std::unordered_map< uIntType, floatVector > macroNodeReferencePositionsAnswer
+        =
+            {
+                {  5, { 0.000, 0.000, 0.000 } },
+                {  9, { 1.000, 0.000, 0.000 } },
+                {  8, { 1.000, 1.000, 0.000 } },
+                { 11, { 0.000, 1.000, 0.000 } },
+                {  3, { 0.000, 0.000, 1.000 } },
+                {  1, { 1.000, 0.000, 1.000 } },
+                {  6, { 1.000, 1.000, 1.000 } },
+                { 15, { 0.000, 1.000, 1.000 } },
+                { 12, { 0.000, 0.000, 2.000 } },
+                {  2, { 1.000, 0.000, 2.000 } },
+                { 13, { 1.000, 1.000, 2.000 } },
+                { 14, { 0.000, 1.000, 2.000 } },
+            };
 
-    const floatVector *macroNodeReferencePositionsResult = reader.getMacroNodeReferencePositions( );
+    const std::unordered_map< uIntType, floatVector > *macroNodeReferencePositionsResult = reader.getMacroNodeReferencePositions( );
 
-    if ( !vectorTools::fuzzyEquals( macroNodeReferencePositionsAnswer, *macroNodeReferencePositionsResult ) ){
-        results << "test_initializeIncrement (test 5) & False\n";
-        return 1;
+    for ( auto it = macroNodeReferencePositionsAnswer.begin( ); it != macroNodeReferencePositionsAnswer.end( ); it++ ){
+
+        auto r = macroNodeReferencePositionsResult->find( it->first );
+
+        if ( r == macroNodeReferencePositionsResult->end( ) ){
+
+            results << "test_initializeIncrement (test 18) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 19) & False\n";
+            return 1;
+
+        }
+
     }
 
     const uIntVector macroNodeReferenceConnectivityAnswer = { 9,  0,  1,  2,  3,  4, 5, 6,  7,
