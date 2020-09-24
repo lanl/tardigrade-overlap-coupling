@@ -2634,6 +2634,64 @@ namespace inputFileProcessor{
 
         }
 
+        _macroNodeReferenceConnectivity.reserve( _free_macro_cell_ids.size( ) + _ghost_macro_cell_ids.size( ) );
+
+        uIntType startIndex, stopIndex;
+        for ( auto cell = _free_macro_cell_ids.begin( ); cell != _free_macro_cell_ids.end( ); cell++ ){
+
+            auto index = std::find( elementIds.begin( ), elementIds.end( ), *cell );
+
+            if ( index == elementIds.end( ) ){
+
+                return new errorNode( "Free macro cell " + std::to_string( *cell ) + " was not found in the element ids" );
+
+            }
+
+            startIndex = connectivityCellIndices[ *index ];
+            if ( ( *index + 1 ) >= connectivityCellIndices.size( ) ){
+
+                stopIndex = referenceConnectivity.size( );
+
+            }
+            else{
+
+                stopIndex = connectivityCellIndices[ *index + 1 ];
+
+            }
+
+            _macroNodeReferenceConnectivity.emplace( *cell, uIntVector( referenceConnectivity.begin( ) + startIndex,
+                                                                        referenceConnectivity.begin( ) + stopIndex ) );
+
+
+        }
+
+        for ( auto cell = _ghost_macro_cell_ids.begin( ); cell != _ghost_macro_cell_ids.end( ); cell++ ){
+
+            auto index = std::find( elementIds.begin( ), elementIds.end( ), *cell );
+
+            if ( index == elementIds.end( ) ){
+
+                return new errorNode( "Ghost macro cell " + std::to_string( *cell ) + " was not found in the element ids" );
+
+            }
+
+            startIndex = connectivityCellIndices[ *index ];
+            if ( ( *index + 1 ) >= connectivityCellIndices.size( ) ){
+
+                stopIndex = referenceConnectivity.size( );
+
+            }
+            else{
+
+                stopIndex = connectivityCellIndices[ *index + 1 ];
+
+            }
+
+            _macroNodeReferenceConnectivity.emplace( *cell, uIntVector( referenceConnectivity.begin( ) + startIndex,
+                                                                        referenceConnectivity.begin( ) + stopIndex ) );
+
+        }
+
         return NULL;
 
     }
@@ -4092,7 +4150,7 @@ namespace inputFileProcessor{
         return &_macroNodeReferencePositions;
     }
 
-    const uIntVector* inputFileProcessor::getMacroNodeReferenceConnectivity( ){
+    const std::unordered_map< uIntType, uIntVector >* inputFileProcessor::getMacroNodeReferenceConnectivity( ){
         /*!
          * Get the nodal positions from which the displacements are
          * referenced.
@@ -4101,14 +4159,14 @@ namespace inputFileProcessor{
         return &_macroNodeReferenceConnectivity;
     }
 
-    const uIntVector* inputFileProcessor::getMacroNodeReferenceConnectivityCellIndices( ){
-        /*!
-         * Get the nodal positions from which the displacements are
-         * referenced.
-         */
-
-        return &_macroNodeReferenceConnectivityCellIndices;
-    }
+//    const uIntVector* inputFileProcessor::getMacroNodeReferenceConnectivityCellIndices( ){
+//        /*!
+//         * Get the nodal positions from which the displacements are
+//         * referenced.
+//         */
+//
+//        return &_macroNodeReferenceConnectivityCellIndices;
+//    }
 
     const uIntVector* inputFileProcessor::getFreeMacroCellIds( ){
         /*!

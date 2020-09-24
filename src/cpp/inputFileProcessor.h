@@ -107,8 +107,8 @@ namespace inputFileProcessor{
             const std::unordered_map< uIntType, floatVector >* getMicroNodeReferencePositions( );
 
             const std::unordered_map< uIntType, floatVector >* getMacroNodeReferencePositions( );
-            const uIntVector*  getMacroNodeReferenceConnectivity( );
-            const uIntVector*  getMacroNodeReferenceConnectivityCellIndices( );
+            const std::unordered_map< uIntType, uIntVector >*  getMacroNodeReferenceConnectivity( );
+//            const uIntVector*  getMacroNodeReferenceConnectivityCellIndices( );
 
             const stringVector* getFreeMicroDomainNames( );
             const stringVector* getGhostMicroDomainNames( );
@@ -324,9 +324,9 @@ namespace inputFileProcessor{
             floatVector _macroExternalForces;
             floatVector _macroInertialForces;
             std::unordered_map< uIntType, floatVector > _macroNodeReferencePositions;
-            uIntVector  _macroNodeReferenceConnectivity;
-            uIntVector  _macroNodeReferenceConnectivityCellIndices;
-            unsigned int _macroCellCounts;
+            std::unordered_map< uIntType, uIntVector > _macroNodeReferenceConnectivity;
+//            uIntVector  _macroNodeReferenceConnectivityCellIndices;
+//            unsigned int _macroCellCounts;
             bool _macroVelocityFlag = false;
             bool _macroAccelerationFlag = false;
             bool _macroInternalForceFlag = false;

@@ -852,24 +852,34 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const uIntVector macroNodeReferenceConnectivityAnswer = { 9,  0,  1,  2,  3,  4, 5, 6,  7,
-                                                              9,  8,  7,  4,  9, 10, 3, 0, 11,
-                                                              9, 12, 13, 14, 15, 10, 8, 9, 11 };
+    const std::unordered_map< uIntType, uIntVector > macroNodeReferenceConnectivityAnswer
+        =
+        {
+            {  1, {  9,  5,  9,  8, 11,  3,  1,  6, 15 } },
+            {  2, {  9,  3,  1,  6, 15, 12,  2, 13, 14 } },
+        };
 
-    const uIntVector *macroNodeReferenceConnectivityResult = reader.getMacroNodeReferenceConnectivity( );
+    const std::unordered_map< uIntType, uIntVector > *macroNodeReferenceConnectivityResult = reader.getMacroNodeReferenceConnectivity( );
 
-    if ( !vectorTools::fuzzyEquals( macroNodeReferenceConnectivityAnswer, *macroNodeReferenceConnectivityResult ) ){
-        results << "test_initializeIncrement (test 6) & False\n";
-        return 1;
-    }
+    for ( auto it = macroNodeReferenceConnectivityAnswer.begin( ); it != macroNodeReferenceConnectivityAnswer.end( ); it++ ){
 
-    const uIntVector macroNodeReferenceConnectivityCellIndicesAnswer = { 0, 9, 18 };
+        auto r = macroNodeReferenceConnectivityResult->find( it->first );
 
-    const uIntVector *macroNodeReferenceConnectivityCellIndicesResult = reader.getMacroNodeReferenceConnectivityCellIndices( );
+        if ( r == macroNodeReferenceConnectivityResult->end( ) ){
 
-    if ( !vectorTools::fuzzyEquals( macroNodeReferenceConnectivityCellIndicesAnswer, *macroNodeReferenceConnectivityCellIndicesResult ) ){
-        results << "test_initializeIncrement (test 7) & False\n";
-        return 1;
+            results << "test_initializeIncrement (test 21) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 22) & False\n";
+            return 1;
+
+        }
+
     }
 
     floatVector answer = { 0., 0., 0.001 };
