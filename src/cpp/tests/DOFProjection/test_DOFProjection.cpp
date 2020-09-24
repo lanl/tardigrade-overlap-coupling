@@ -5542,6 +5542,61 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
         }
     }
 
+    //Test map version
+    std::unordered_map< uIntType, floatType > microVolumesMap, microDensitiesMap, microWeightsMap;
+    for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
+
+        microVolumesMap.emplace( *index, microVolumes[ *index ] );
+        microDensitiesMap.emplace( *index, microDensities[ *index ] );
+        microWeightsMap.emplace( *index, microWeights[ *index ] );
+
+    }
+    error = DOFProjection::formMicroDomainToMacroProjectionMatrix( dim, 27, 137, domainMicroNodeIndices,
+                                                                   domainMacroNodeIndices, microVolumesMap, microDensitiesMap,
+                                                                   microWeightsMap, domainReferenceXis,
+                                                                   domainInterpolationFunctionValues,
+                                                                   domainMacroNodeProjectedMass,
+                                                                   domainMacroNodeProjectedMassMomentOfInertia,
+                                                                   domainMacroNodeMassRelativePositionConstant, projector,
+                                                                   &microNodeToLocalIndex, &macroNodeToLocalIndex );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_formMicroDomainToMacroProjectionMatrix & False\n";
+        return 1;
+
+    }
+
+    result = floatVector( ( dim + dim * dim ) * 137 );
+    new (&RES) Eigen::Map < Eigen::Matrix< floatType, -1, -1, Eigen::RowMajor > >( result.data(), result.size(), 1 );
+
+    RES = projector * MDOF;
+
+    for ( auto it = domainMacroNodeIndices.begin( ); it != domainMacroNodeIndices.end( ); it++ ){
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + nMacroDOF * ( *it ),
+                                                     answer.begin( ) + nMacroDOF * ( ( *it ) + 1 )
+                                                   ),
+                                        floatVector( result.begin( ) + nMacroDOF * macroNodeToLocalIndex[ *it ],
+                                                     result.begin( ) + nMacroDOF * ( macroNodeToLocalIndex[ *it ] + 1 )
+                                                   ),
+                                        1e-5, 1e-5 )
+           ){
+
+            vectorTools::print( floatVector( answer.begin( ) + nMacroDOF * ( *it ),
+                                             answer.begin( ) + nMacroDOF * ( ( *it ) + 1 )
+                                           )
+                              );
+            vectorTools::print( floatVector( result.begin( ) + nMacroDOF * macroNodeToLocalIndex[ *it ],
+                                             result.begin( ) + nMacroDOF * ( macroNodeToLocalIndex[ *it ] + 1 ) 
+                                           )
+                              );
+            results << "test_formMicroDomainToMacroProjectionMatrix (test 4) & False\n";
+            return 1;
+
+        }
+    }
+
     results << "test_formMicroDomainToMacroProjectionMatrix & True\n";
     return 0;
 }

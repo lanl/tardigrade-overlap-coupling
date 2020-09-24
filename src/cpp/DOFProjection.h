@@ -266,6 +266,23 @@ namespace DOFProjection{
                                                      SparseMatrix &projector,
                                                      const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex = NULL,
                                                      const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
+
+    errorOut formMicroDomainToMacroProjectionMatrix( const uIntType &dim,
+                                                     const uIntType nMicroNodes,
+                                                     const uIntType nMacroNodes,
+                                                     const uIntVector  &domainMicroNodeIndices,
+                                                     const uIntVector  &domainMacroNodeIndices,
+                                                     const std::unordered_map< uIntType, floatType > &microVolumes,
+                                                     const std::unordered_map< uIntType, floatType > &microDensities,
+                                                     const std::unordered_map< uIntType, floatType > &microWeights,
+                                                     const floatVector &domainReferenceXiVectors,
+                                                     const floatVector &domainInterpolationFunctionValues,
+                                                     const floatVector &domainMacroNodeProjectedMass,
+                                                     const floatVector &domainMacroNodeProjectedMassMomentOfInertia,
+                                                     const floatVector &domainMacroNodeMassRelativePositionConstant,
+                                                     SparseMatrix &projector,
+                                                     const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex = NULL,
+                                                     const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
 }
 
 

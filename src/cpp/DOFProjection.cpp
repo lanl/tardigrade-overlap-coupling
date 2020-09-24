@@ -2548,4 +2548,267 @@ namespace DOFProjection{
 
         return NULL;
     }
+
+    errorOut formMicroDomainToMacroProjectionMatrix( const uIntType &dim,
+                                                     const uIntType nMicroNodes,
+                                                     const uIntType nMacroNodes,
+                                                     const uIntVector  &domainMicroNodeIndices,
+                                                     const uIntVector  &domainMacroNodeIndices,
+                                                     const std::unordered_map< uIntType, floatType > &microVolumes,
+                                                     const std::unordered_map< uIntType, floatType > &microDensities,
+                                                     const std::unordered_map< uIntType, floatType > &microWeights,
+                                                     const floatVector &domainReferenceXiVectors,
+                                                     const floatVector &domainInterpolationFunctionValues,
+                                                     const floatVector &domainMacroNodeProjectedMass,
+                                                     const floatVector &domainMacroNodeProjectedMassMomentOfInertia,
+                                                     const floatVector &domainMacroNodeMassRelativePositionConstant,
+                                                     SparseMatrix &projector,
+                                                     const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex,
+                                                     const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex ){
+
+        /*!
+         * Form the micro to macro projection matrix due to the current domain
+         *
+         * :param const uIntType &dim: The dimension of the problem
+         * :param const uIntVector &domainMicroNodeIndices: The global micro node IDs in the domain
+         * :param const uIntVector &domainMacroNodeIndices: The global macro node IDs in the domain
+         * :param const std::unordered_map< uIntType, floatType > &microVolumes: The volumes of the micro-nodes
+         * :param const std::unordered_map< uIntType, floatType > &microDensities: The densities of the micro-nodes
+         * :param const const std::unordered_map< uIntType, floatType > &microWeights: The weighting values of the micro-nodes
+         * :param const floatVector &domainReferenceXiVectors: The relative position vectors of the nodes in the domain
+         * :param const floatVector &domainInterpolationFunctionValues: The values of the macro interpolation functions
+         *     at each of the micro nodes organized via [ N_11, N_12, ... ] where the first index is the micro node number
+         *     and the second is the macro node number in the domain.
+         * :param const floatVector &domainMacroNodeProjectedMass: The masses of the macro nodes derived from the
+         *     projection of the micro masses in the domain.
+         * :param const floatVector &domainMacroNodeProjectedMassMomentOfInertia: The mass weighted moment of inertia of the macro nodes
+         *     derived from the projection of the micro masses and relative positions. [ I1_11, I1_12, I1_13, I1_21, ... ] in the domain
+         * :param const floatVEctor &domainMacroNodeMassRelativePositionConstant: The mass-weighted relative position vector constant
+         *     at each of the macro nodes derived from the projection of the micro masses and relative positions in the domain.
+         *     [ C1_1, C1_2, C1_3, C2_1, ... ]
+         * :param SparseMatrix &projector: The contribution of the current domain to the projector
+         * :param const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex: The map from the global micro node IDs
+         *     to the local micro node ids
+         * :param const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex: The mapp from the global macro node IDs
+         *     to the local macro node ids
+         */
+
+        //Error handling
+        if ( dim != 3 ){
+            return new errorNode( "formMicroDomainToMacroProjectionMatrix",
+                                  "Only 3D domains are currently supported" );
+        }
+
+        if ( dim * domainMicroNodeIndices.size() != domainReferenceXiVectors.size() ){
+            return new errorNode( "formMicroDomainToMacroProjectionMatrix",
+                                  "The number of micro node indices is not equal to the number of Xi vectors" );
+        }
+
+        if ( !microNodeToLocalIndex ){
+            if ( nMicroNodes != microWeights.size() ){
+                return new errorNode( "formMicroDomainToMacroProjectionMatrix",
+                                      "The number of micro nodes is not equal to the number of weights" );
+            }
+        }
+
+        if ( dim * dim * domainMacroNodeProjectedMass.size( ) != domainMacroNodeProjectedMassMomentOfInertia.size( ) ){
+            return new errorNode( "formMicroDomainToMacroProjectionMatrix",
+                                  "The macro node projected mass and macro node projected mass moment of inertia vectors are not of consistent sizes" );
+        }
+
+        if ( dim * domainMacroNodeProjectedMass.size( ) != domainMacroNodeMassRelativePositionConstant.size( ) ){
+            return new errorNode( "formMicroDomainToMacroProjectionMatrix",
+                                  "The macro node projected mass and macro node mass weighted relative position constant vectors are not of consistent sizes" );
+        }
+
+        //Set the number of spatial degrees of freedom for the two scales
+        const uIntType nMicroDOF = dim;
+        const uIntType nMacroDOF = dim + dim * dim;
+
+        //Set up the vector of terms for the sparse matrix
+        std::vector< T > coefficients;
+        coefficients.reserve( nMicroDOF * domainMicroNodeIndices.size() * nMacroDOF * domainMacroNodeIndices.size() );
+
+        //Initialize the row and column indices for the sparse matrix
+        uIntType row0, col0;
+
+        //Initialize the macro node mass
+        floatType macroNodeMass;
+
+        //Initialize the macro inverse mass moment of inertia
+        floatVector inverseMacroMassMomentOfInertia;
+
+        //Initialize the macro mass weighted relative position constant
+        floatVector C;
+
+        //Initialize the micro mass
+        floatType microMass;
+
+        //Initialize the Xi vector
+        floatVector Xi;
+
+        //Initialize the value of the weight and shapefunction value
+        floatType w, sf;
+
+        //Initialize terms to simplify the expressions
+        floatType weightedMassTerm;
+        floatVector positionTerm;
+
+        //Initialize the global micro node index
+        uIntType m;
+
+        //Initialize the global macro node index
+        uIntType n;
+
+        //Initialize the output index for the micro-nodes
+        uIntType o;
+
+        //Initialize the output index for the macro-nodes
+        uIntType p;
+
+        //Loop over the macro nodes
+        for ( uIntType i = 0; i < domainMacroNodeIndices.size( ); i++ ){
+
+            //Set the global macro node index
+            n = domainMacroNodeIndices[ i ];
+
+            //Set the column index
+            if ( macroNodeToLocalIndex ){
+
+                auto indx = macroNodeToLocalIndex->find( n );
+
+                if ( indx == macroNodeToLocalIndex->end( ) ){
+
+                    return new errorNode( "formMacroDomaintoMicroInterpolationMatrix",
+                                          "The macro node " + std::to_string( n ) + " is not found in the macro node to local index map" );
+
+                }
+
+                p = indx->second;
+
+            }
+            else{
+                p = domainMacroNodeIndices[ i ];
+            }
+
+            row0 = nMacroDOF * p;
+
+            if ( i > domainMacroNodeProjectedMass.size( ) ){
+
+                return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                      "The macro node " + std::to_string( n ) + " is too large for the macro node projected mass vector" );
+
+            }
+
+            //Set the macro node mass
+            macroNodeMass = domainMacroNodeProjectedMass[ i ];
+
+            //Set the inverse macro node mass moment of inertia
+            inverseMacroMassMomentOfInertia
+                = vectorTools::inverse( floatVector( domainMacroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * i,
+                                                     domainMacroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * ( i + 1 ) ),
+                                        dim, dim );
+
+            //Set the mass weighted relative position constant
+            C = floatVector ( domainMacroNodeMassRelativePositionConstant.begin( ) + dim * i,
+                              domainMacroNodeMassRelativePositionConstant.begin( ) + dim * ( i + 1 ) );
+
+            //Loop over the micro nodes
+
+            for ( uIntType j = 0; j < domainMicroNodeIndices.size( ); j++ ){
+
+                //Set the global micro node index
+                m = domainMicroNodeIndices[ j ];
+
+                auto microWeight = microWeights.find( m );
+                if ( microWeight == microWeights.end( ) ){
+                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                          "The micro node " + std::to_string( m ) + " was not found in the micro weight map " );
+                }
+    
+                auto microVolume = microVolumes.find( m );
+                if ( microVolume == microVolumes.end( ) ){
+                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                          "The micro node " + std::to_string( m ) + " was not found in the micro volume map " );
+                }
+    
+                auto microDensity = microDensities.find( m );
+                if ( microDensity == microDensities.end( ) ){
+                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                          "The micro node " + std::to_string( m ) + " was not found in the micro density map " );
+                }
+    
+                //Set the row index
+                if ( microNodeToLocalIndex ){
+    
+                    auto indx = microNodeToLocalIndex->find( m );
+    
+                    if ( indx == microNodeToLocalIndex->end( ) ){
+    
+                        continue;
+    
+                    }
+   
+                    o = indx->second;
+                }
+                else{
+                    o = domainMicroNodeIndices[ j ];
+                }
+    
+                col0 = nMicroDOF * o;
+
+                if ( domainMacroNodeIndices.size( ) * j + i >= domainInterpolationFunctionValues.size( ) ){
+                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                          "The number of micro shape functions in the domain is msaller than required for micro-node "
+                                          + std::to_string( m ) + " and macro node " + std::to_string( n ) );
+                }
+
+                //Set the micro mass
+                microMass = microDensity->second * microVolume->second;
+
+                //Set the micro weight
+                w = microWeight->second;
+
+                //Set the shape function
+                sf = domainInterpolationFunctionValues[ domainMacroNodeIndices.size( ) * j + i ];
+
+                //Extract the micro-position
+                Xi = floatVector( domainReferenceXiVectors.begin( ) + dim * j,
+                                  domainReferenceXiVectors.begin( ) + dim * ( j + 1 ) );
+
+                //Compute the weighted mass term
+                weightedMassTerm = microMass * w * sf;
+
+                //Compute the position term
+                positionTerm = weightedMassTerm
+                             * vectorTools::matrixMultiply( Xi - C / macroNodeMass, inverseMacroMassMomentOfInertia, 1, 3, 3, 3 );
+
+                //Add the matrix coefficients
+                
+                //Macro displacements
+                coefficients.push_back( T( row0 + 0, col0 + 0, ( weightedMassTerm / macroNodeMass ) ) );
+                coefficients.push_back( T( row0 + 1, col0 + 1, ( weightedMassTerm / macroNodeMass ) ) );
+                coefficients.push_back( T( row0 + 2, col0 + 2, ( weightedMassTerm / macroNodeMass ) ) );
+
+                //Micro displacement ( phi )
+                coefficients.push_back( T( row0 +  3, col0 + 0, positionTerm[ 0 ] ) ); 
+                coefficients.push_back( T( row0 +  4, col0 + 0, positionTerm[ 1 ] ) ); 
+                coefficients.push_back( T( row0 +  5, col0 + 0, positionTerm[ 2 ] ) ); 
+                coefficients.push_back( T( row0 +  6, col0 + 1, positionTerm[ 0 ] ) ); 
+                coefficients.push_back( T( row0 +  7, col0 + 1, positionTerm[ 1 ] ) ); 
+                coefficients.push_back( T( row0 +  8, col0 + 1, positionTerm[ 2 ] ) ); 
+                coefficients.push_back( T( row0 +  9, col0 + 2, positionTerm[ 0 ] ) ); 
+                coefficients.push_back( T( row0 + 10, col0 + 2, positionTerm[ 1 ] ) ); 
+                coefficients.push_back( T( row0 + 11, col0 + 2, positionTerm[ 2 ] ) );
+
+            }
+
+        }
+
+        //Assemble the sparse matrix
+        projector = SparseMatrix( nMacroDOF * nMacroNodes, nMicroDOF * nMicroNodes );
+        projector.setFromTriplets( coefficients.begin(), coefficients.end() );
+
+        return NULL;
+    }
 }
