@@ -400,6 +400,198 @@ namespace DOFProjection{
         return NULL;
     }
 
+    errorOut formMacroDomainToMicroInterpolationMatrix( const uIntType &dim,
+                                                        const uIntType &nMicroNodes, const uIntType &nMacroNodes,
+                                                        const uIntVector &domainMicroNodeIndices,
+                                                        const uIntVector &domainMacroNodeIndices,
+                                                        const floatVector &domainReferenceXis,
+                                                        const floatVector &domainMacroInterpolationFunctionValues,
+                                                        const std::unordered_map< uIntType, floatType > &microWeights,
+                                                        SparseMatrix &domainN,
+                                                        const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex,
+                                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex ){
+        /*!
+         * Construct the interpolation matrix for a macro domain overlapping with a 
+         * micro-domain
+         *
+         * Note: It is assumed, that both the macro and micro-scale's have the same dimension. The number of spatial 
+         *       variables at the micro-scale is therefore three and the number of macro-scale spatial parameters is
+         *       dim + dim * dim.
+         *
+         * :param const uIntType &dim: The dimension of the problem.
+         * :param const uIntType &nMicroNodes: The number of micro-nodes in the N matrix
+         * :param const uIntType &nMacroNodes: The number of macro-nodes in the N matrix
+         * :param const uIntVector &domainMicroNodeIndices: The global micro-node indices in the given domain
+         * :param const uIntVector &domainMacroDOFIndices: The indices of the macro-scale nodes present in the domain
+         *     these are ( in a macro-scale FEA context ) the nodes of the micromorphic finite element.
+         * :param const floatVector &domainReferenceXis: The vectors from the local center of mass to the micro-nodes in the domain.
+         * :param const floatVector &domainMacroInterpolationFunctionValues: The values of the interpolation functions
+         *     at the local center of mass.
+         * :param const std::unordered_map< uIntType, floatType >: The weight associated with each micro-scale node.
+         *     This is important for two cases:
+         *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
+         *     - Weighting the influence of nodes if nodes which have no mass are being used. This may be important
+         *       if the minimum L2 norm projection is being used.
+         * :param SparseMatrix &domainN: The macro domain's interpolation function.
+         * :param std::unordered_map< uIntType, uIntType > *microNodeToLocalIndex: A map from the micro node index 
+         *     to the indices to be used in the output vector. The micro nodes which are either free or ghost may not be all
+         *     of the micro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
+         *
+         *     Note: If a node is not located in microNodeToLocalIndex ( and microNodeToLocalIndex is not NULL ) this node
+         *           will be skipped.
+         * :param std::unordered_map< uIntType, uIntType > *macroNodeToLocalIndex: A map from the macro node index 
+         *     to the indices to be used in the output vector. The macro nodes which are either free or ghost may not be all
+         *     of the macro-scale nodes so the projection matrices would include large zero regions and be ordered in a less
+         *     than optimal way. We can use this to define the mapping better. This defaults to NULL so the global ID index values
+         *     will be used.
+         */
+
+        //Error handling
+        if ( dim != 3 ){
+            return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                  "Only 3D domains are currently supported" );
+        }
+
+        if ( dim * domainMicroNodeIndices.size() != domainReferenceXis.size() ){
+            return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                  "The number of micro node indices is not equal to the number of Xi vectors" );
+        }
+
+        if ( !microNodeToLocalIndex ){
+            if ( nMicroNodes != microWeights.size() ){
+                return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                      "The number of micro nodes is not equal to the number of weights" );
+            }
+        }
+
+        if ( domainMacroNodeIndices.size() != domainMacroInterpolationFunctionValues.size() ){
+            return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                  "The number of macro indices is not equal to the number of macro interpolation function values" );
+        }
+
+        //Set the number of spatial degrees of freedom for the two scales
+        const uIntType nMicroDOF = dim;
+        const uIntType nMacroDOF = dim + dim * dim;
+
+        //Set up the vector of terms for the sparse matrix
+        std::vector< T > coefficients;
+        coefficients.reserve( nMicroDOF * domainMicroNodeIndices.size() * nMacroDOF * domainMacroNodeIndices.size() );
+
+        //Initialize the row and column indices for the sparse matrix
+        uIntType row0, col0;
+
+        //Initialize the Xi vector
+        floatVector Xi;
+
+        //Initialize the value of the weight and shapefunction value
+        floatType w, sf;
+
+        //Initialize the global micro node index
+        uIntType m;
+
+        //Initialize the global macro node index
+        uIntType n;
+
+        //Initialize the output index for the micro-nodes
+        uIntType o;
+
+        //Initialize the output index for the macro-nodes
+        uIntType p;
+
+        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
+
+            //Set the global micro node index
+            m = domainMicroNodeIndices[ i ];
+
+            auto microWeight = microWeights.find( m );
+
+            if ( microWeight == microWeights.end( ) ){
+                return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                      "The micro node " + std::to_string( m ) + " was not found in the micro weight map" );
+            }
+
+            //Set the row index
+            if ( microNodeToLocalIndex ){
+
+                auto indx = microNodeToLocalIndex->find( m );
+
+                if ( indx == microNodeToLocalIndex->end( ) ){
+
+                    continue;
+
+                }
+
+                o = indx->second;
+            }
+            else{
+                o = domainMicroNodeIndices[ i ];
+            }
+
+            row0 = nMicroDOF * o;
+
+            //Set the micro-position vector
+            Xi = floatVector( domainReferenceXis.begin() + nMicroDOF * i,
+                              domainReferenceXis.begin() + nMicroDOF * i + nMicroDOF );
+
+            //Set the value of the weight
+            w = microWeight->second;
+
+            for ( uIntType j = 0; j < domainMacroNodeIndices.size(); j++ ){
+
+                //Set the global macro node index
+                n = domainMacroNodeIndices[ j ];
+
+                //Set the column index
+                if ( macroNodeToLocalIndex ){
+    
+                    auto indx = macroNodeToLocalIndex->find( n );
+    
+                    if ( indx == macroNodeToLocalIndex->end( ) ){
+    
+                        return new errorNode( "formMacroDomaintoMicroInterpolationMatrix",
+                                              "The macro node " + std::to_string( n ) + " is not found in the macro node to local index map" );
+    
+                    }
+    
+                    p = indx->second;
+    
+                }
+                else{
+                    p = domainMacroNodeIndices[ j ];
+                }
+
+                col0 = nMacroDOF * p;
+
+                //Set the shape function value
+                sf = domainMacroInterpolationFunctionValues[ j ];
+
+                //Set the coefficients of the shape function matrix
+                coefficients.push_back( T( row0 + 0, col0 +  0, w * sf ) );
+                coefficients.push_back( T( row0 + 1, col0 +  1, w * sf ) );
+                coefficients.push_back( T( row0 + 2, col0 +  2, w * sf ) );
+                coefficients.push_back( T( row0 + 0, col0 +  3, w * sf * Xi[ 0 ] ) );
+                coefficients.push_back( T( row0 + 0, col0 +  4, w * sf * Xi[ 1 ] ) );
+                coefficients.push_back( T( row0 + 0, col0 +  5, w * sf * Xi[ 2 ] ) );
+                coefficients.push_back( T( row0 + 1, col0 +  6, w * sf * Xi[ 0 ] ) );
+                coefficients.push_back( T( row0 + 1, col0 +  7, w * sf * Xi[ 1 ] ) );
+                coefficients.push_back( T( row0 + 1, col0 +  8, w * sf * Xi[ 2 ] ) );
+                coefficients.push_back( T( row0 + 2, col0 +  9, w * sf * Xi[ 0 ] ) );
+                coefficients.push_back( T( row0 + 2, col0 + 10, w * sf * Xi[ 1 ] ) );
+                coefficients.push_back( T( row0 + 2, col0 + 11, w * sf * Xi[ 2 ] ) );
+
+            }
+
+        }
+
+        //Assemble the sparse matrix
+        domainN = SparseMatrix( nMicroDOF * nMicroNodes, nMacroDOF * nMacroNodes );
+        domainN.setFromTriplets( coefficients.begin(), coefficients.end() );
+
+        return NULL;
+    }
+
     errorOut addDomainMicroContributionToMacroMass( const uIntVector &domainMicroNodeIndices, const uIntVector &domainMacroNodeIndices,
                                                     const floatVector &microMasses, const floatVector &domainMicroShapeFunctions,
                                                     const floatVector &microWeights,

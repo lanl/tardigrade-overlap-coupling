@@ -239,6 +239,17 @@ namespace DOFProjection{
                                                         const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex = NULL,
                                                         const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
 
+    errorOut formMacroDomainToMicroInterpolationMatrix( const uIntType &dim,
+                                                        const uIntType &nMicroNodes, const uIntType &nMacroNodes,
+                                                        const uIntVector &domainMicroNodeIndices,
+                                                        const uIntVector &domainMacroNodeIndices,
+                                                        const floatVector &domainReferenceXis,
+                                                        const floatVector &domainMacroInterpolationFunctionValues,
+                                                        const std::unordered_map< uIntType, floatType > &microWeights,
+                                                        SparseMatrix &domainN,
+                                                        const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex = NULL,
+                                                        const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
+
     errorOut formMicroDomainToMacroProjectionMatrix( const uIntType &dim,
                                                      const uIntType nMicroNodes,
                                                      const uIntType nMacroNodes,

@@ -2576,6 +2576,52 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
         }
     }
 
+    //Test micro weights as unordered_map
+    std::unordered_map< uIntType, floatType > microWeightsMap;
+    for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
+
+        microWeightsMap.emplace( *index, microWeights[ *index ] );
+
+    }
+    error = DOFProjection::formMacroDomainToMicroInterpolationMatrix( dim, 27, 137,
+                                                                      domainMicroNodeIndices, domainMacroNodeIndices,
+                                                                      domainReferenceXis,
+                                                                      domainMacroInterpolationFunctionValues,
+                                                                      microWeightsMap, domainN,
+                                                                      &microNodeToLocalIndex, &macroNodeToLocalIndex );
+
+    if ( error ){
+        error->print();
+        results << "test_formMacroDomainToMicroInterpolationMatrix & False\n";
+        return 1;
+    }
+
+    RES = domainN * MDOF;
+
+    for ( auto it = domainMicroNodeIndices.begin( ); it != domainMicroNodeIndices.end( ); it++ ){
+        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
+                                                     answer.begin( ) + dim * ( ( *it ) + 1 )
+                                                   ),
+                                        floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
+                                                     result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 )
+                                                   )
+                                      )
+           ){
+
+            vectorTools::print( floatVector( answer.begin( ) + dim * ( *it ),
+                                             answer.begin( ) + dim * ( ( *it ) + 1 )
+                                           )
+                              );
+            vectorTools::print( floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
+                                             result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
+                                           )
+                              );
+            results << "test_addMacroDomainDisplacementToMicro (test 4) & False\n";
+            return 1;
+
+        }
+    }
+
 
     results << "test_formMacroDomainToMicroInterpolationMatrix & True\n";
     return 0;
