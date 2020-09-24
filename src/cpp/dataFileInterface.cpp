@@ -1289,7 +1289,7 @@ namespace dataFileInterface{
         collection->insert( grid );
 
         //Form the writer
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
         heavyWriter->setReleaseData( true );
         shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
 
@@ -1368,7 +1368,7 @@ namespace dataFileInterface{
             }
 
             //Build the writer
-            shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+            shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
             heavyWriter->setReleaseData( true );
             shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
 
@@ -1454,7 +1454,7 @@ namespace dataFileInterface{
         }
 
         //Build the writer
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
         heavyWriter->setReleaseData( true );
         shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
 
@@ -1484,7 +1484,7 @@ namespace dataFileInterface{
         _domain->insert( _gridHolder );
 
         //Build the writer
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
         heavyWriter->setReleaseData( true );
         shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
 
@@ -1605,7 +1605,7 @@ namespace dataFileInterface{
         grid->insert( solutionVector );
 
         //Build the writer
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", true );
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
         heavyWriter->setReleaseData( true );
         shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
 

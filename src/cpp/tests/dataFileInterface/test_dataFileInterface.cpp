@@ -1042,6 +1042,18 @@ int test_XDMFDataFile_writeScalarSolutionData( std::ofstream &results ){
 
     }
 
+    floatVector bigNodeDataAnswer( 1000, 1 );
+
+    error = xdmf.writeScalarSolutionData( increment, 0, "BIG_TEST_DATA", "NODE", bigNodeDataAnswer );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
+        return 1;
+
+    }
+
     floatVector elementDataAnswer = { -1, -2, -3 };
 
     error = xdmf.writeScalarSolutionData( increment, 0, "TEST_DATA_", "CeLl", elementDataAnswer );
@@ -1098,6 +1110,17 @@ int test_XDMFDataFile_writeScalarSolutionData( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( elementDataResult, elementDataAnswer ) ){
 
         results << "test_XDMFDataFile_writeScalarSolutionData (test 2) & False\n";
+        return 1;
+
+    }
+
+    floatVector bigNodeDataResult;
+    error = xdmf_result.getSolutionData( increment, "BIG_TEST_DATA", "Node", bigNodeDataResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_writeScalarSolutionData (test 3) & False\n";
         return 1;
 
     }
