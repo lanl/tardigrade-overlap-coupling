@@ -843,6 +843,49 @@ int test_XDMFDataFile_getNodeIds( std::ofstream &results ){
 
 }
 
+int test_XDMFDataFile_getCellIds( std::ofstream &results ){
+    /*!
+     * Extract the cell ids from the domain
+     */
+
+
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
+
+    if ( xdmf._error ){
+
+        xdmf._error->print( );
+        results << "test_XDMFDataFile_getCellIds & False\n";
+        return 1;
+    }
+
+    uIntVector cellIdAnswer = { 0, 1, 2 };
+
+    uIntVector cellIdResult;
+    errorOut error = xdmf.getCellIds( 0, "ELEMID", cellIdResult );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_XDMFDataFile_getCellIds & False\n";
+        return 1;
+
+    }
+
+    if ( !vectorTools::fuzzyEquals( cellIdResult, cellIdAnswer ) ){
+
+        vectorTools::print( cellIdResult );
+        vectorTools::print( cellIdAnswer );
+        results << "test_XDMFDataFile_getCellIds (test 1) & False\n";
+        return 1;
+
+    }
+
+    results << "test_XDMFDataFile_getCellIds & True\n";
+    return 0;
+
+}
+
 int test_XDMFDataFile_initializeIncrement( std::ofstream &results ){
     /*!
      * Initialize an increment in an output XDMF data file
@@ -1462,6 +1505,7 @@ int main(){
     test_XDMFDataFile_readMesh( results );
     test_XDMFDataFile_getNumSubDomainNodes( results );
     test_XDMFDataFile_getNodeIds( results );
+    test_XDMFDataFile_getCellIds( results );
     test_XDMFDataFile_getSubDomainNodes( results );
     test_XDMFDataFile_getNumNodes( results );
     test_XDMFDataFile_getSetNames( results );

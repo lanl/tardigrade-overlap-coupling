@@ -199,6 +199,24 @@ namespace dataFileInterface{
         return new errorNode( "getNodeIds", "Not implemented" );
     }
 
+    errorOut dataFileBase::getCellIds( const uIntType increment, const std::string &cellIdAttributeName, uIntVector &domainCells ){
+        /*!
+         * Get the global cell ids from the domain.
+         *
+         * TODO: Add specification of collection here ( and in other file reads )
+         *
+         * :param const uIntType increment: The increment at which to extract the data
+         * :param const std::string &cellIdAttributeName: The name of the cell-id attribute
+         * :param uIntVector &domainNodes: The nodes in the domain
+         */
+
+        ( void ) increment;
+        ( void ) domainCells;
+        ( void ) cellIdAttributeName;
+
+        return new errorNode( "getCellIds", "Not implemented" );
+    }
+
     errorOut dataFileBase::getSubDomainNodes( const uIntType increment, const std::string subDomainName, uIntVector &domainNodes ){
         /*!
          * Get the nodes in the provided sub-domain ( node set ).
@@ -1535,6 +1553,47 @@ namespace dataFileInterface{
 
         return NULL;
 
+    }
+
+    errorOut XDMFDataFile::getCellIds( const uIntType increment, const std::string &cellIdAttributeName, uIntVector &domainCells ){
+        /*!
+         * Get the global cell ids from the domain.
+         *
+         * TODO: Add specification of collection here ( and in other file reads )
+         *
+         * :param const uIntType increment: The increment at which to extract the data
+         * :param const std::string &cellIdAttributeName: The name of the cell-id attribute
+         * :param uIntVector &domainNodes: The nodes in the domain
+         */
+
+        shared_ptr< XdmfUnstructuredGrid > grid;
+        errorOut error = getUnstructuredGrid( increment, grid );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "getCellIds", "Error in getting the unstructured grid" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        try{
+
+            shared_ptr< XdmfAttribute > _attribute = grid->getAttribute( cellIdAttributeName );
+            _attribute->read( );
+            domainCells.resize( _attribute->getSize( ) );
+            _attribute->getValues( 0, domainCells.data(), _attribute->getSize( ), 1, 1 );
+
+        }
+        catch( XdmfError &e ){
+
+            std::string outstr = "Error in extraction of the cell ids: ";
+            outstr += e.what( );
+
+            return new errorNode( "getCellIds", outstr );
+        }
+
+        return NULL;
     }
 
     errorOut XDMFDataFile::writeScalarSolutionData( const uIntType increment, const uIntType collectionNumber,

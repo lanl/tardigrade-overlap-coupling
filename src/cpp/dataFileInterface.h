@@ -95,6 +95,7 @@ namespace dataFileInterface{
             virtual errorOut getNumNodes( const uIntType increment, uIntType &numNodes ); //Required overload
             virtual errorOut readMesh( const uIntType increment, floatVector &nodalPositions ); //Required overload
             virtual errorOut getNodeIds( const uIntType increment, const std::string &nodeIdAttributeName, uIntVector &domainNodes );
+            virtual errorOut getCellIds( const uIntType increment, const std::string &cellIdAttributeName, uIntVector &domainCells );
             virtual errorOut getSubDomainNodes( const uIntType increment, const std::string subDomainName,
                                                 uIntVector &domainNodes ); //Required overload
             virtual errorOut getNumSubDomainNodes( const uIntType increment, const std::string subDomainName,
@@ -163,6 +164,7 @@ namespace dataFileInterface{
             errorOut getNumNodes( const uIntType increment, uIntType &numNodes );
             errorOut readMesh( const uIntType increment, floatVector &nodalPositions );
             errorOut getNodeIds( const uIntType increment, const std::string &nodeIdAttributeName, uIntVector &domainNodes );
+            errorOut getCellIds( const uIntType increment, const std::string &cellIdAttributeName, uIntVector &domainCells );
             errorOut getSubDomainNodes( const uIntType increment, const std::string subDomainName,
                                         uIntVector &domainNodes );
             errorOut getNumSubDomainNodes( const uIntType increment, const std::string subDomainName,
