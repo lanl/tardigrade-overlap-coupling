@@ -261,7 +261,7 @@ int test_initializeIncrement( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "../testFiles/testConfig.yaml";
+    std::string filename = "testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
     if ( reader.getError( ) ){
@@ -277,16 +277,391 @@ int test_initializeIncrement( std::ofstream &results ){
         return 1;
     }
 
-    floatType resultAnswer = 2.;
+    //Check that the unique micro-scale nodes have been identified
+    const DOFMap microGlobalToLocalMapAnswer
+        =
+            {
+                { 15,  0 },
+                { 31,  1 },
+                { 13,  2 },
+                { 26,  3 },
+                { 53,  4 },
+                { 21,  5 },
+                { 37,  6 },
+                { 48,  7 },
+                {  5,  8 },
+                { 10,  9 },
+                {  3, 10 },
+                {  4, 11 },
+                { 32, 12 },
+                { 33, 13 },
+                { 34, 14 },
+                { 28, 15 },
+                { 25, 16 },
+                { 50, 17 },
+                { 43, 18 },
+                { 27, 19 },
+                {  1, 20 },
+                {  7, 21 },
+                { 30, 22 },
+                { 16, 23 },
+                { 22, 24 },
+                {  2, 25 },
+                { 46, 26 },
+                { 24, 27 },
+                { 39, 28 },
+                { 40, 29 },
+                { 57, 30 },
+                { 44, 31 },
+                { 58, 32 },
+                { 29, 33 },
+                { 59, 34 },
+                { 11, 35 },
+                {  0, 36 },
+                { 20, 37 },
+                { 60, 38 },
+                { 47, 39 },
+                { 49, 40 },
+                { 17, 41 },
+                { 38, 42 },
+                { 14, 43 },
+                { 55, 44 },
+            };
 
-    const floatVector *densityResult = reader.getMicroDensities( );
+    const DOFMap *microGlobalToLocalResult = reader.getMicroGlobalToLocalDOFMap( );
 
-    for ( auto it = densityResult->begin( ); it != densityResult->end( ); it++ ){
+    for ( auto it = microGlobalToLocalMapAnswer.begin( ); it != microGlobalToLocalMapAnswer.end( ); it++ ){
 
-        if ( !vectorTools::fuzzyEquals( *it, resultAnswer ) ){ //NOTE: Tolerance due to inertial effects
-            std::cout << *it << "\n";
+        auto r = microGlobalToLocalResult->find( it->first );
+
+        if ( r == microGlobalToLocalResult->end( ) ){
+
             results << "test_initializeIncrement (test 1) & False\n";
             return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": " << r->second << "\n";
+            std::cout << it->first << ": " << it->second << "\n";
+            results << "test_initializeIncrement (test 2) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    //Check that the unique macro-scale nodes have been identified
+    const DOFMap macroGlobalToLocalMapAnswer
+        =
+            {
+                {  5,  0 },
+                {  9,  1 },
+                {  8,  2 },
+                { 11,  3 },
+                {  3,  4 },
+                {  1,  5 },
+                {  6,  6 },
+                { 15,  7 },
+                { 12,  8 },
+                {  2,  9 },
+                { 13, 10 },
+                { 14, 11 },
+            };
+
+    const DOFMap *macroGlobalToLocalResult = reader.getMacroGlobalToLocalDOFMap( );
+
+    for ( auto it = macroGlobalToLocalMapAnswer.begin( ); it != macroGlobalToLocalMapAnswer.end( ); it++ ){
+
+        auto r = macroGlobalToLocalResult->find( it->first );
+
+        if ( r == macroGlobalToLocalResult->end( ) ){
+
+            results << "test_initializeIncrement (test 3) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": " << r->second << "\n";
+            std::cout << it->first << ": " << it->second << "\n";
+            results << "test_initializeIncrement (test 4) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    //Check that the micro node weights are initialized properly
+    const std::unordered_map< uIntType, floatType > microNodeWeightsAnswer
+        =
+            {
+                { 24, 1.000 },
+                { 39, 0.500 },
+                { 15, 0.500 },
+                { 31, 0.500 },
+                { 43, 1.000 },
+                { 40, 0.500 },
+                { 57, 0.250 },
+                { 13, 0.250 },
+                { 26, 0.250 },
+                { 27, 0.500 },
+                { 11, 1.000 },
+                {  0, 0.500 },
+                {  5, 0.500 },
+                { 10, 0.500 },
+                { 30, 1.000 },
+                { 44, 0.500 },
+                { 58, 0.250 },
+                { 53, 0.250 },
+                { 21, 0.250 },
+                {  1, 0.500 },
+                { 29, 0.250 },
+                { 59, 0.125 },
+                { 37, 0.125 },
+                { 48, 0.125 },
+                {  7, 0.250 },
+                { 20, 0.500 },
+                { 60, 0.250 },
+                {  3, 0.250 },
+                {  4, 0.250 },
+                { 16, 0.500 },
+                { 14, 1.000 },
+                { 55, 0.500 },
+                { 25, 0.500 },
+                { 50, 0.500 },
+                { 46, 1.000 },
+                { 47, 0.500 },
+                { 49, 0.250 },
+                { 32, 0.250 },
+                { 33, 0.250 },
+                { 22, 0.500 },
+                { 17, 1.000 },
+                { 38, 0.500 },
+                { 34, 0.500 },
+                { 28, 0.500 },
+                {  2, 1.000 },
+            };
+
+    const std::unordered_map< uIntType, floatType > *microNodeWeightsResult = reader.getMicroWeights( );
+
+    for ( auto it = microNodeWeightsAnswer.begin( ); it != microNodeWeightsAnswer.end( ); it++ ){
+
+        auto r = microNodeWeightsResult->find( it->first );
+
+        if ( r == microNodeWeightsResult->end( ) ){
+
+            results << "test_initializeIncrement (test 5) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": " << r->second << "\n";
+            std::cout << it->first << ": " << it->second << "\n";
+            results << "test_initializeIncrement (test 6) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    //Make sure the micro global node id to output index map has been extracted correctly
+    const DOFMap microGlobalNodeToOutputMapAnswer
+        =
+            {
+                { 15,  2 },
+                { 31,  3 },
+                { 13,  9 },
+                { 26, 10 },
+                { 53, 23 },
+                { 21, 24 },
+                { 37, 30 },
+                { 48, 31 },
+                {  5, 16 },
+                { 10, 17 },
+                {  3, 37 },
+                {  4, 38 },
+                { 32, 51 },
+                { 33, 52 },
+                { 34, 58 },
+                { 28, 59 },
+                { 25, 44 },
+                { 50, 45 },
+                { 43,  4 },
+                { 27, 11 },
+                {  1, 25 },
+                {  7, 32 },
+                { 30, 18 },
+                { 16, 39 },
+                { 22, 53 },
+                {  2, 60 },
+                { 46, 46 },
+                { 24,  0 },
+                { 39,  1 },
+                { 40,  7 },
+                { 57,  8 },
+                { 44, 21 },
+                { 58, 22 },
+                { 29, 28 },
+                { 59, 29 },
+                { 11, 14 },
+                {  0, 15 },
+                { 20, 35 },
+                { 60, 36 },
+                { 47, 49 },
+                { 49, 50 },
+                { 17, 56 },
+                { 38, 57 },
+                { 14, 42 },
+                { 55, 43 },
+            };
+
+    const DOFMap *microGlobalNodeToOutputMapResult = reader.getMicroNodeIDOutputIndex( );
+
+    for ( auto it = microGlobalNodeToOutputMapAnswer.begin( ); it != microGlobalNodeToOutputMapAnswer.end( ); it++ ){
+
+        auto r = microGlobalNodeToOutputMapResult->find( it->first );
+
+        if ( r == microGlobalNodeToOutputMapResult->end( ) ){
+
+            results << "test_initializeIncrement (test 7) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": " << r->second << "\n";
+            std::cout << it->first << ": " << it->second << "\n";
+            results << "test_initializeIncrement (test 8) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    //Make sure the macro global node id to output index map has been extracted correctly
+    const DOFMap macroGlobalNodeToOutputMapAnswer
+        =
+            {
+                {  5,  4 },
+                {  9,  5 },
+                {  8,  6 },
+                { 11,  7 },
+                {  3,  8 },
+                {  1,  9 },
+                {  6, 10 },
+                { 15, 11 },
+                { 12, 12 },
+                {  2, 13 },
+                { 13, 14 },
+                { 14, 15 },
+            };
+
+    const DOFMap *macroGlobalNodeToOutputMapResult = reader.getMacroNodeIDOutputIndex( );
+
+    for ( auto it = macroGlobalNodeToOutputMapAnswer.begin( ); it != macroGlobalNodeToOutputMapAnswer.end( ); it++ ){
+
+        auto r = macroGlobalNodeToOutputMapResult->find( it->first );
+
+        if ( r == macroGlobalNodeToOutputMapResult->end( ) ){
+
+            results << "test_initializeIncrement (test 9) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": " << r->second << "\n";
+            std::cout << it->first << ": " << it->second << "\n";
+            results << "test_initializeIncrement (test 10) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    //Make sure the time of the micro increment has been extracted correctly
+    const floatType timeAnswer = 1;
+
+    const floatType *timeResult = reader.getMicroTime( );
+
+    if ( !vectorTools::fuzzyEquals( timeAnswer, *timeResult ) ){
+
+        results << "test_initializeIncrement (test 11) & False\n";
+        return 1;
+
+    }
+
+    const std::unordered_map< uIntType, floatType > densityAnswer
+        =
+        {
+            { 15, 6.000 },
+            { 31, 8.000 },
+            { 13, 7.000 },
+            { 26, 9.000 },
+            { 53, 4.500 },
+            { 21, 6.500 },
+            { 37, 5.500 },
+            { 48, 7.500 },
+            {  5, 8.000 },
+            { 10, 10.000 },
+            {  3, 6.500 },
+            {  4, 8.500 },
+            { 32, 4.000 },
+            { 33, 6.000 },
+            { 34, 5.000 },
+            { 28, 7.000 },
+            { 25, 3.000 },
+            { 50, 5.000 },
+            { 43, 10.000 },
+            { 27, 11.000 },
+            {  1, 8.500 },
+            {  7, 9.500 },
+            { 30, 12.000 },
+            { 16, 10.500 },
+            { 22, 8.000 },
+            {  2, 9.000 },
+            { 46, 7.000 },
+            { 24, 2.000 },
+            { 39, 4.000 },
+            { 40, 3.000 },
+            { 57, 5.000 },
+            { 44, 0.500 },
+            { 58, 2.500 },
+            { 29, 1.500 },
+            { 59, 3.500 },
+            { 11, 4.000 },
+            {  0, 6.000 },
+            { 20, 2.500 },
+            { 60, 4.500 },
+            { 47, 0.000 },
+            { 49, 2.000 },
+            { 17, 1.000 },
+            { 38, 3.000 },
+            { 14, -1.000 },
+            { 55, 1.000 },
+        };
+
+    const std::unordered_map< uIntType, floatType > *densityResult = reader.getMicroDensities( );
+
+    for ( auto it = densityAnswer.begin( ); it != densityAnswer.end( ); it++ ){
+
+        auto r = densityResult->find( it->first );
+
+        if ( r == densityResult->end( ) ){
+
+            results << "test_initializeIncrement (test 12) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": " << r->second << "\n";
+            std::cout << it->first << ": " << it->second << "\n";
+            results << "test_initializeIncrement (test 13) & False\n";
+            return 1;
+
         }
 
     }
@@ -2060,7 +2435,7 @@ int main(){
     test_openConfigurationFile( results );
     test_setConfigurationFile( results );
     test_initializeFileInterfaces( results );
-//    test_initializeIncrement( results );
+    test_initializeIncrement( results );
 //    test_getFreeMicroDomainNames( results );
 //    test_getGhostMicroDomainNames( results );
 ////    test_getFreeMicroSurfaceNames( results );

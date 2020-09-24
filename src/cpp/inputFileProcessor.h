@@ -72,7 +72,7 @@ namespace inputFileProcessor{
             errorOut getError( ){ return _error; }
 
             const floatType*   getMicroTime( );
-            const floatVector* getMicroDensities( );
+            const std::unordered_map< uIntType, floatType >* getMicroDensities( );
             const floatVector* getMicroVolumes( );
             const std::unordered_map< uIntType, floatType >* getMicroWeights( );
             const floatVector* getMicroDisplacements( );
@@ -177,6 +177,9 @@ namespace inputFileProcessor{
             bool outputHomogenizedInformation( );
             bool outputUpdatedDOF( );
 
+            const DOFMap *getMacroNodeIDOutputIndex( );
+            const DOFMap *getMicroNodeIDOutputIndex( );
+
         private:
             //Private functions
             void initialize( );
@@ -259,6 +262,9 @@ namespace inputFileProcessor{
             errorOut setMicroNodeIndexMappings( const unsigned int &increment );
             errorOut setMacroNodeIndexMappings( const unsigned int &increment );
 
+            errorOut setMicroNodeOutputIndexMappings( const unsigned int &increment );
+            errorOut setMacroNodeOutputIndexMappings( const unsigned int &increment );
+
             template< typename T, typename Iter >
             errorOut removeIndicesFromVector( std::vector< T > & v, Iter begin, Iter end );
 
@@ -281,7 +287,7 @@ namespace inputFileProcessor{
             floatType   _previousMicroTime;
             floatType   _microTime;
             std::unordered_map< uIntType, floatType > _microDomainWeights;
-            floatVector _microDensities;
+            std::unordered_map< uIntType, floatType > _microDensities;
             floatVector _microVolumes;
             floatVector _microDisplacements;
             floatVector _microNodeReferencePositions;
@@ -376,6 +382,9 @@ namespace inputFileProcessor{
             std::unordered_map< unsigned int, std::string > _macroReferenceMomentOfInertiaTypes;
             std::unordered_map< unsigned int, floatVector > _macroReferenceDensities;
             std::unordered_map< unsigned int, floatVector > _macroReferenceMomentsOfInertia;
+
+            DOFMap _microGlobalNodeIDOutputIndex;
+            DOFMap _macroGlobalNodeIDOutputIndex;
 
     };
 

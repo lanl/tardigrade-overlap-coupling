@@ -262,26 +262,23 @@ namespace inputFileProcessor{
 
     errorOut inputFileProcessor::setMicroNodeWeights( const unsigned int increment ){
         /*!
-         * Compute the weights of the micro-nodes
+         * Compute the weights of the micro-nodes and stores them in a map from the global
+         * node id to the weight.
          *
          * :param const unsigned int increment: The increment at which to compute the weights
          */
 
         //Initialize the weight map
-        std::string nodeIdName = _config[ "microscale_definition" ][ "node_id_variable_name" ].as< std::string >( );
-        uIntVector nodeIds;
-        errorOut error = _microscale->getNodeIds( increment, nodeIdName, nodeIds );
-        if ( error ){
-            errorOut result = new errorNode( "setMicroNodeWeights", "Error in the extraction of the node ids" );
-            result->addNext( error );
-            return result;
+        for ( auto n = _unique_free_micro_nodes.begin( ); n != _unique_free_micro_nodes.end( ); n++ ){
+            _microDomainWeights.emplace( *n, 0 );
         }
-        for ( unsigned int i = 0; i < nodeIds.size( ); i++ ){
-            _microDomainWeights.emplace( i, 0 );
+        for ( auto n = _unique_ghost_micro_nodes.begin( ); n != _unique_ghost_micro_nodes.end( ); n++ ){
+            _microDomainWeights.emplace( *n, 0 );
         }
 
         //Loop through the free micro-volume sets
         uIntVector setNodes;
+        errorOut error;
 //        for ( auto setName = _free_micro_surface_sets.begin(); setName != _free_micro_surface_sets.end(); setName++ ){
         for ( auto setName = _free_micro_volume_sets.begin(); setName != _free_micro_volume_sets.end(); setName++ ){
 
@@ -360,26 +357,26 @@ namespace inputFileProcessor{
         return NULL;
     }
 
-    errorOut inputFileProcessor::setSurfaceSets( const unsigned int microIncrement ){
-        /*!
-         * Set the surface sets
-         *
-         * :param const unsigned int microIncrement: The increment to extract the micro surface sets
-         */
-
-        //Extract the set names from the microscale simulation
-        stringVector setNames;
-        errorOut error = _microscale->getSetNames( microIncrement, setNames );
-
-        if ( error ){
-            errorOut result = new errorNode( "setSurfaceSets",
-                                             "Error in extraction of the current micro increment's set names" );
-            result->addNext( error );
-            return result;
-        }
-
-        return NULL;
-    }
+//    errorOut inputFileProcessor::setSurfaceSets( const unsigned int microIncrement ){
+//        /*!
+//         * Set the surface sets
+//         *
+//         * :param const unsigned int microIncrement: The increment to extract the micro surface sets
+//         */
+//
+//        //Extract the set names from the microscale simulation
+//        stringVector setNames;
+//        errorOut error = _microscale->getSetNames( microIncrement, setNames );
+//
+//        if ( error ){
+//            errorOut result = new errorNode( "setSurfaceSets",
+//                                             "Error in extraction of the current micro increment's set names" );
+//            result->addNext( error );
+//            return result;
+//        }
+//
+//        return NULL;
+//    }
 
     errorOut inputFileProcessor::initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement ){
         /*!
@@ -398,14 +395,44 @@ namespace inputFileProcessor{
         }
 
         errorOut error = NULL;
-        //Collect the sets
-        error = setSurfaceSets( microIncrement );
+        error = setMicroNodeIndexMappings( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in setting the unique micro node index mappings" );
+            result->addNext( error );
+            return result;
+        }
+
+        error = setMacroNodeIndexMappings( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in setting the unique macro node index mappings" );
+            result->addNext( error );
+            return result;
+        }
 
         //Set the weights of the micro-nodes
         error = setMicroNodeWeights( microIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in computation of the micro-node weights" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Set the output index maps
+        error = setMicroNodeOutputIndexMappings( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in setting the micro node to output index map" );
+            result->addNext( error );
+            return result;
+        }
+
+        error = setMacroNodeOutputIndexMappings( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in setting the macro node to output index map" );
             result->addNext( error );
             return result;
         }
@@ -699,23 +726,6 @@ namespace inputFileProcessor{
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro inertial forces" );
-            result->addNext( error );
-            return result;
-        }
-
-        //Set the unique macro and micro nodes
-        error = setMicroNodeIndexMappings( microIncrement );
-
-        if ( error ){
-            errorOut result = new errorNode( "initializeIncrement", "Error in setting the unique micro node index mappings" );
-            result->addNext( error );
-            return result;
-        }
-
-        error = setMacroNodeIndexMappings( macroIncrement );
-
-        if ( error ){
-            errorOut result = new errorNode( "initializeIncrement", "Error in setting the unique macro node index mappings" );
             result->addNext( error );
             return result;
         }
@@ -1340,16 +1350,32 @@ namespace inputFileProcessor{
 
         }
 
-        //Re-size the micro node density vector
+        //Initialize the size of the micro densities map
+        _microDensities.reserve( _unique_free_micro_nodes.size( ) + _unique_ghost_micro_nodes.size( ) );
+
+        //Get the values of the micro densities from the output file
+        floatVector values;
         errorOut error = _microscale->getSolutionData( increment, 
                                                        _config[ "microscale_definition" ][ "density_variable_name" ].as< std::string >( ),
-                                                       "Node", _microDensities );
+                                                       "Node", values );
 
         if ( error ){
 
             errorOut result = new errorNode( "extractMicroNodeDensities", "Error in extraction of the micro densities" );
             result->addNext( error );
             return result;
+
+        }
+
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMicroNodeDensities", "The density vector is too short for the required index" );
+
+            }
+
+            _microDensities.emplace( n->first, values[ n->second ] );
 
         }
 
@@ -2547,7 +2573,7 @@ namespace inputFileProcessor{
         return &_microTime;
     }
 
-    const floatVector* inputFileProcessor::getMicroDensities( ){
+    const std::unordered_map< uIntType, floatType >* inputFileProcessor::getMicroDensities( ){
         /*!
          * Get a pointer to the density
          */
@@ -3607,6 +3633,137 @@ namespace inputFileProcessor{
         return NULL;
     }
 
+    errorOut inputFileProcessor::setMicroNodeOutputIndexMappings( const unsigned int &increment ){
+        /*!
+         * Set the map between the micro node ID number and it's index in the output file.
+         *
+         * :param const unsigned int &increment: The increment to do the extraction
+         */
+
+        uIntVector nodeIDs;
+        std::string attributeName = _config[ "microscale_definition" ][ "node_id_variable_name" ].as< std::string >( );
+        errorOut error = _microscale->getNodeIds( increment, attributeName, nodeIDs );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "_setMicroNodeOutputIndexMappings", "Error when getting the node ids" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        _microGlobalNodeIDOutputIndex.reserve( _unique_free_micro_nodes.size( ) + _unique_ghost_micro_nodes.size( ) );
+
+        for ( auto n = _unique_free_micro_nodes.begin( ); n != _unique_free_micro_nodes.end( ); n++ ){
+
+            auto it = std::find( nodeIDs.begin( ), nodeIDs.end( ), *n );
+
+            if ( it == nodeIDs.end( ) ){
+
+                std::string outstr = "Free micro node ";
+                outstr += *n;
+                outstr += " not found in nodeIds";
+
+                return new errorNode( "_setMicroNodeOutputIndexMappings", outstr );
+
+            }
+
+            uIntType index = it - nodeIDs.begin( );
+
+            _microGlobalNodeIDOutputIndex.emplace( *n, index );
+
+        } 
+
+        for ( auto n = _unique_ghost_micro_nodes.begin( ); n != _unique_ghost_micro_nodes.end( ); n++ ){
+
+            auto it = std::find( nodeIDs.begin( ), nodeIDs.end( ), *n );
+
+            if ( it == nodeIDs.end( ) ){
+
+                std::string outstr = "Ghost micro node ";
+                outstr += *n;
+                outstr += " not found in nodeIds";
+
+                return new errorNode( "_setMicroNodeOutputIndexMappings", outstr );
+
+            }
+
+            uIntType index = it - nodeIDs.begin( );
+
+            _microGlobalNodeIDOutputIndex.emplace( *n, index );
+
+        } 
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::setMacroNodeOutputIndexMappings( const unsigned int &increment ){
+        /*!
+         * Set the map between the macro node ID number and it's index in the output file.
+         *
+         * :param const unsigned int &increment: The increment to do the extraction
+         */
+
+        uIntVector nodeIDs;
+        std::string attributeName = _config[ "macroscale_definition" ][ "node_id_variable_name" ].as< std::string >( );
+        errorOut error = _macroscale->getNodeIds( increment, attributeName, nodeIDs );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "_setMacroNodeOutputIndexMappings", "Error when getting the node ids" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        _macroGlobalNodeIDOutputIndex.reserve( _unique_free_macro_nodes.size( ) + _unique_ghost_macro_nodes.size( ) );
+
+        for ( auto n = _unique_free_macro_nodes.begin( ); n != _unique_free_macro_nodes.end( ); n++ ){
+
+            auto it = std::find( nodeIDs.begin( ), nodeIDs.end( ), *n );
+
+            if ( it == nodeIDs.end( ) ){
+
+                std::string outstr = "Free macro node ";
+                outstr += *n;
+                outstr += " not found in nodeIds";
+
+                return new errorNode( "_setMacroNodeOutputIndexMappings", outstr );
+
+            }
+
+            uIntType index = it - nodeIDs.begin( );
+
+            _macroGlobalNodeIDOutputIndex.emplace( *n, index );
+
+        } 
+
+        for ( auto n = _unique_ghost_macro_nodes.begin( ); n != _unique_ghost_macro_nodes.end( ); n++ ){
+
+            auto it = std::find( nodeIDs.begin( ), nodeIDs.end( ), *n );
+
+            if ( it == nodeIDs.end( ) ){
+
+                std::string outstr = "Ghost macro node ";
+                outstr += *n;
+                outstr += " not found in nodeIds";
+
+                return new errorNode( "_setMacroNodeOutputIndexMappings", outstr );
+
+            }
+
+            uIntType index = it - nodeIDs.begin( );
+
+            _macroGlobalNodeIDOutputIndex.emplace( *n, index );
+
+        } 
+
+        return NULL;
+
+    }
+
+
     YAML::Node inputFileProcessor::getVolumeReconstructionConfig( ){
         /*!
          * Return the volume reconstruction configuration
@@ -4086,6 +4243,23 @@ namespace inputFileProcessor{
          */
 
         return _outputUpdatedDOF;
+
+    }
+
+    const DOFMap* inputFileProcessor::getMacroNodeIDOutputIndex( ){
+        /*!
+         * Returns a constant reference to the macro node id to output index map
+         */
+
+        return &_macroGlobalNodeIDOutputIndex;
+    }
+
+    const DOFMap* inputFileProcessor::getMicroNodeIDOutputIndex( ){
+        /*!
+         * Returns a constant reference to the micro node id to output index map
+         */
+
+        return &_microGlobalNodeIDOutputIndex;
 
     }
 
