@@ -1603,21 +1603,7 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        stringVector variableKeys =
-            {
-                "a1", "a2", "a3",
-            };
-
-        std::string dataType = "Node";
-
-        bool populateWithNullOnUndefined = true;
-
-        std::string configurationName = "acceleration_variable_names";
-        YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
-
-        errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _microAccelerationFlag, _microAccelerations );
+        errorOut error = extractMicroAccelerations( increment, _microAccelerationFlag, _microAccelerations );
 
         if ( error ){
 
@@ -1632,13 +1618,14 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMicroAccelerations( const unsigned int &increment, bool &flag, floatVector &microAccelerations ){
+    errorOut inputFileProcessor::extractMicroAccelerations( const unsigned int &increment, bool &flag,
+                                                            std::unordered_map< uIntType, floatVector > &microAccelerations ){
         /*!
          * Extract the node micro-accelerations at the indicated increment
          *
          * :param const unsigned int &increment: The increment at which to make the extraction
          * :param floatVector &flag: The flag to indicate if the accelerations were defined in the file
-         * :param floatVector &microAccelerations: The vector to store the micro-accelerations in
+         * :param std::unordered_map< uIntType, floatVector > &microAccelerations: The map to store the micro-accelerations in
          */
 
         stringVector variableKeys =
@@ -1652,10 +1639,11 @@ namespace inputFileProcessor{
 
         std::string configurationName = "acceleration_variable_names";
         YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
 
         errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, microAccelerations );
+                                                                        configuration, flag, values );
 
         if ( error ){
 
@@ -1663,6 +1651,27 @@ namespace inputFileProcessor{
                                              "Error in the extraction of the micro accelerations" );
             result->addNext( error );
             return result;
+
+        }
+
+        if ( !flag ){
+
+            return NULL;
+
+        }
+
+        microAccelerations.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMicroVelocities",
+                                      "The micro velocity vector is too short for the required index" );
+
+            }
+
+            microAccelerations.emplace( n->first, floatVector( values.begin( ) + _dim * n->second,
+                                                               values.begin( ) + _dim * ( n->second + 1 ) ) );
 
         }
 
@@ -2814,7 +2823,7 @@ namespace inputFileProcessor{
         return &_microVelocities;
     }
 
-    const floatVector* inputFileProcessor::getMicroAccelerations( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroAccelerations( ){
         /*!
          * Get a pointer to the micro accelerations
          */
@@ -2856,7 +2865,7 @@ namespace inputFileProcessor{
         }
     }
 
-    const floatVector* inputFileProcessor::getPreviousMicroAccelerations( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getPreviousMicroAccelerations( ){
         /*!
          * Get a pointer to the micro accelerations
          */

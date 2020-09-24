@@ -1281,6 +1281,78 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const std::unordered_map< uIntType, floatVector > microAccelerationsAnswer
+        =
+            {
+               { 15, { 5.7765, 5.9930, 1.1000 } },
+               { 31, { 5.7765, 5.9930, 2.1500 } },
+               { 13, { 6.1315, 5.9930, 1.1000 } },
+               { 26, { 6.1315, 5.9930, 2.1500 } },
+               { 53, { 5.7765, 6.4080, 1.1000 } },
+               { 21, { 5.7765, 6.4080, 2.1500 } },
+               { 37, { 6.1315, 6.4080, 1.1000 } },
+               { 48, { 6.1315, 6.4080, 2.1500 } },
+               {  5, { 6.4865, 5.9930, 1.1000 } },
+               { 10, { 6.4865, 5.9930, 2.1500 } },
+               {  3, { 6.4865, 6.4080, 1.1000 } },
+               {  4, { 6.4865, 6.4080, 2.1500 } },
+               { 32, { 6.1315, 6.8230, 1.1000 } },
+               { 33, { 6.1315, 6.8230, 2.1500 } },
+               { 34, { 6.4865, 6.8230, 1.1000 } },
+               { 28, { 6.4865, 6.8230, 2.1500 } },
+               { 25, { 5.7765, 6.8230, 1.1000 } },
+               { 50, { 5.7765, 6.8230, 2.1500 } },
+               { 43, { 5.7765, 5.9930, 3.2000 } },
+               { 27, { 6.1315, 5.9930, 3.2000 } },
+               {  1, { 5.7765, 6.4080, 3.2000 } },
+               {  7, { 6.1315, 6.4080, 3.2000 } },
+               { 30, { 6.4865, 5.9930, 3.2000 } },
+               { 16, { 6.4865, 6.4080, 3.2000 } },
+               { 22, { 6.1315, 6.8230, 3.2000 } },
+               {  2, { 6.4865, 6.8230, 3.2000 } },
+               { 46, { 5.7765, 6.8230, 3.2000 } },
+               { 24, { 5.7765, 5.9930, -1.0000 } },
+               { 39, { 5.7765, 5.9930, 0.0500 } },
+               { 40, { 6.1315, 5.9930, -1.0000 } },
+               { 57, { 6.1315, 5.9930, 0.0500 } },
+               { 44, { 5.7765, 6.4080, -1.0000 } },
+               { 58, { 5.7765, 6.4080, 0.0500 } },
+               { 29, { 6.1315, 6.4080, -1.0000 } },
+               { 59, { 6.1315, 6.4080, 0.0500 } },
+               { 11, { 6.4865, 5.9930, -1.0000 } },
+               {  0, { 6.4865, 5.9930, 0.0500 } },
+               { 20, { 6.4865, 6.4080, -1.0000 } },
+               { 60, { 6.4865, 6.4080, 0.0500 } },
+               { 47, { 6.1315, 6.8230, -1.0000 } },
+               { 49, { 6.1315, 6.8230, 0.0500 } },
+               { 17, { 6.4865, 6.8230, -1.0000 } },
+               { 38, { 6.4865, 6.8230, 0.0500 } },
+               { 14, { 5.7765, 6.8230, -1.0000 } },
+               { 55, { 5.7765, 6.8230, 0.0500 } },
+           };
+
+    const std::unordered_map< uIntType, floatVector > *microAccelerationsResult = reader.getMicroAccelerations( );
+
+    for ( auto it = microAccelerationsAnswer.begin( ); it != microAccelerationsAnswer.end( ); it++ ){
+
+        auto r = microAccelerationsResult->find( it->first );
+
+        if ( r == microAccelerationsResult->end( ) ){
+
+            results << "test_initializeIncrement (test 36) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 37) & False\n";
+            return 1;
+
+        }
+
+    }
 
 
 
@@ -1559,20 +1631,6 @@ int test_initializeIncrement( std::ofstream &results ){
 
         results << "test_initializeIncrement (test 29) & False\n";
         return 1;
-
-    }
-
-    const floatVector microAccelerationsAnswer = { 0., 0., 0.004 };
-    const floatVector *microAccelerationsResult = reader.getMicroAccelerations( );
-
-    for ( auto mAR = microAccelerationsResult->begin( ); mAR != microAccelerationsResult->end( ); mAR++ ){
-
-        if ( !vectorTools::fuzzyEquals( *mAR, microAccelerationsAnswer[ ( mAR - microAccelerationsResult->begin( ) ) % 3 ], 1e-5, 1e-5 ) ){
-    
-            results << "test_initializeIncrement (test 30) & False\n";
-            return 1;
-    
-        }
 
     }
 
@@ -1986,19 +2044,74 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector previousMicroAccelerationsAnswer = { 0., 0., 0.0 };
-    const floatVector *previousMicroAccelerationsResult = reader.getPreviousMicroAccelerations( );
+    const std::unordered_map< uIntType, floatVector > previousMicroAccelerationsAnswer
+        =
+            {
+                { 15, { 4.2500, 4.2500, 6.3500 } },
+                { 31, { 4.2500, 4.2500, 7.4000 } },
+                { 13, { 4.6050, 4.2500, 6.3500 } },
+                { 26, { 4.6050, 4.2500, 7.4000 } },
+                { 53, { 4.2500, 4.6650, 6.3500 } },
+                { 21, { 4.2500, 4.6650, 7.4000 } },
+                { 37, { 4.6050, 4.6650, 6.3500 } },
+                { 48, { 4.6050, 4.6650, 7.4000 } },
+                {  5, { 4.9600, 4.2500, 6.3500 } },
+                { 10, { 4.9600, 4.2500, 7.4000 } },
+                {  3, { 4.9600, 4.6650, 6.3500 } },
+                {  4, { 4.9600, 4.6650, 7.4000 } },
+                { 32, { 4.6050, 5.0800, 6.3500 } },
+                { 33, { 4.6050, 5.0800, 7.4000 } },
+                { 34, { 4.9600, 5.0800, 6.3500 } },
+                { 28, { 4.9600, 5.0800, 7.4000 } },
+                { 25, { 4.2500, 5.0800, 6.3500 } },
+                { 50, { 4.2500, 5.0800, 7.4000 } },
+                { 43, { 4.2500, 4.2500, 8.4500 } },
+                { 27, { 4.6050, 4.2500, 8.4500 } },
+                {  1, { 4.2500, 4.6650, 8.4500 } },
+                {  7, { 4.6050, 4.6650, 8.4500 } },
+                { 30, { 4.9600, 4.2500, 8.4500 } },
+                { 16, { 4.9600, 4.6650, 8.4500 } },
+                { 22, { 4.6050, 5.0800, 8.4500 } },
+                {  2, { 4.9600, 5.0800, 8.4500 } },
+                { 46, { 4.2500, 5.0800, 8.4500 } },
+                { 24, { 4.2500, 4.2500, 4.2500 } },
+                { 39, { 4.2500, 4.2500, 5.3000 } },
+                { 40, { 4.6050, 4.2500, 4.2500 } },
+                { 57, { 4.6050, 4.2500, 5.3000 } },
+                { 44, { 4.2500, 4.6650, 4.2500 } },
+                { 58, { 4.2500, 4.6650, 5.3000 } },
+                { 29, { 4.6050, 4.6650, 4.2500 } },
+                { 59, { 4.6050, 4.6650, 5.3000 } },
+                { 11, { 4.9600, 4.2500, 4.2500 } },
+                {  0, { 4.9600, 4.2500, 5.3000 } },
+                { 20, { 4.9600, 4.6650, 4.2500 } },
+                { 60, { 4.9600, 4.6650, 5.3000 } },
+                { 47, { 4.6050, 5.0800, 4.2500 } },
+                { 49, { 4.6050, 5.0800, 5.3000 } },
+                { 17, { 4.9600, 5.0800, 4.2500 } },
+                { 38, { 4.9600, 5.0800, 5.3000 } },
+                { 14, { 4.2500, 5.0800, 4.2500 } },
+                { 55, { 4.2500, 5.0800, 5.3000 } },
+            };
 
-    for ( auto v  = previousMicroAccelerationsResult->begin( );
-               v != previousMicroAccelerationsResult->end( );
-               v++ ){
+    std::cout << "check numbering\n";
+    const std::unordered_map< uIntType, floatVector > *previousMicroAccelerationsResult = reader.getPreviousMicroAccelerations( );
 
-        uIntType indx = v - previousMicroAccelerationsResult->begin( );
+    for ( auto it = previousMicroAccelerationsAnswer.begin( ); it != previousMicroAccelerationsAnswer.end( ); it++ ){
 
-        if ( !vectorTools::fuzzyEquals( previousMicroAccelerationsAnswer[ indx % 3 ], *v, 1e-5, 1e-5 ) ){
+        auto r = previousMicroAccelerationsResult->find( it->first );
 
-            std::cout << *v << "\n";
-            results << "test_initializeIncrement (test 60) & False\n";
+        if ( r == previousMicroAccelerationsResult->end( ) ){
+
+            results << "test_initializeIncrement (test 34) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 35) & False\n";
             return 1;
 
         }
