@@ -2233,10 +2233,11 @@ namespace inputFileProcessor{
 
         std::string configurationName = "stress_variable_names";
         YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
 
         errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _tmpFlag, _microStresses );
+                                                                        configuration, _tmpFlag, values );
 
         if ( error ){
 
@@ -2244,6 +2245,21 @@ namespace inputFileProcessor{
                                              "Error in the extraction of the micro stresses" );
             result->addNext( error );
             return result;
+
+        }
+
+        _microStresses.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMicroVelocities",
+                                      "The micro stress vector is too short for the required index" );
+
+            }
+
+            _microStresses.emplace( n->first, floatVector( values.begin( ) + _dim * _dim * n->second,
+                                                           values.begin( ) + _dim * _dim * ( n->second + 1 ) ) );
 
         }
 
@@ -2783,6 +2799,24 @@ namespace inputFileProcessor{
         return &_microTime;
     }
 
+    const floatType* inputFileProcessor::getPreviousMicroTime( ){
+        /*!
+         * Get the timestamp of the micro increment
+         */
+
+        if ( _extractPreviousDOFValues ){
+
+            return &_previousMicroTime;
+
+        }
+        else{
+
+            return &_microTime;
+            
+        }
+
+    }
+
     const std::unordered_map< uIntType, floatType >* inputFileProcessor::getMicroDensities( ){
         /*!
          * Get a pointer to the density
@@ -2882,7 +2916,7 @@ namespace inputFileProcessor{
         }
     }
 
-    const floatVector* inputFileProcessor::getMicroStresses( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroStresses( ){
         /*!
          * Get a pointer to the micro stresses
          */
