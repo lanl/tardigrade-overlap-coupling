@@ -129,10 +129,10 @@ microscale_definition:
                 F1: bf_1
                 F2: bf_2
                 F3: bf_3
-        surface_traction_variable_names: #The names of the body force attributes at the nodes
-                T1: st_1
-                T2: st_2
-                T3: st_3
+        surface_force_variable_names: #The names of the surface force attributes at the nodes
+                F1: st_1
+                F2: st_2
+                F3: st_3
         node_id_variable_name: NODEID
         cell_id_variable_name: ELEMID
 

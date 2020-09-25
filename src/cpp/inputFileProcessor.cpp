@@ -500,11 +500,11 @@ namespace inputFileProcessor{
             return result;
         }
 
-        //Extract the micro surface tractions
-        error = extractMicroSurfaceTractions( microIncrement );
+        //Extract the micro surface forces
+        error = extractMicroSurfaceForces( microIncrement );
 
         if ( error ){
-            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the micro surface tractions" );
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the micro surface forces" );
             result->addNext( error );
             return result;
         }
@@ -712,20 +712,39 @@ namespace inputFileProcessor{
             return result;
         }
 
-        //Extract the macro external forces
-        error = extractMacroExternalForces( macroIncrement );
-
-        if ( error ){
-            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro external forces" );
-            result->addNext( error );
-            return result;
-        }
-
         //Extract the macro inertial forces
         error = extractMacroInertialForces( macroIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro inertial forces" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Extract the macro body forces / couples
+        error = extractMacroBodyForcesAndCouples( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro body forces and couples" );
+            result->addNext( error );
+            return result;
+        }
+
+        //Extract the macro surface forces / couples
+        error = extractMacroSurfaceForcesAndCouples( microIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro surface forces and couples" );
+            result->addNext( error );
+            return result;
+        }
+
+
+        //Extract the macro external forces
+        error = extractMacroExternalForces( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro external forces" );
             result->addNext( error );
             return result;
         }
@@ -1445,54 +1464,54 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMicroSurfaceTractions( const unsigned int &increment ){
+    errorOut inputFileProcessor::extractMicroSurfaceForces( const unsigned int &increment ){
         /*!
-         * Extract the node micro-surface tractions at the indicated increment
+         * Extract the node micro-surface forces at the indicated increment
          *
          * :param const unsigned int &increment: The current increment
          */
 
         stringVector variableKeys =
             {
-                "T1", "T2", "T3",
+                "F1", "F2", "F3",
             };
 
         std::string dataType = "Node";
 
         bool populateWithNullOnUndefined = true;
 
-        std::string configurationName = "surface_traction_variable_names";
+        std::string configurationName = "surface_force_variable_names";
         YAML::Node configuration = _config[ "microscale_definition" ][ configurationName.c_str( ) ];
 
         floatVector values;
         errorOut error = inputFileProcessor::extractDataFileProperties( _microscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _microSurfaceTractionFlag, values );
+                                                                        configuration, _microSurfaceForceFlag, values );
 
         if ( error ){
 
-            errorOut result = new errorNode( "extractMicroSurfaceTractions",
-                                             "Error in the extraction of the micro surface tractions" );
+            errorOut result = new errorNode( "extractMicroSurfaceForces",
+                                             "Error in the extraction of the micro surface forces" );
             result->addNext( error );
             return result;
 
         }
 
-        if ( !_microSurfaceTractionFlag ){
+        if ( !_microSurfaceForceFlag ){
 
             return NULL;
 
         }
 
-        floatType _sign = _config[ "coupling_initialization" ][ "micro_surface_traction_sign" ].as< floatType >( );
+        floatType _sign = _config[ "coupling_initialization" ][ "micro_surface_force_sign" ].as< floatType >( );
 
-        _microSurfaceTractions.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+        _microSurfaceForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
             if ( n->second >= values.size( ) ){
 
-                return new errorNode( "extractMicroSurfaceTractions",
-                                      "The micro surface traction vector is too short for the required index" );
+                return new errorNode( "extractMicroSurfaceForces",
+                                      "The micro surface forces vector is too short for the required index" );
 
             }
 
@@ -1500,7 +1519,7 @@ namespace inputFileProcessor{
                             values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) );
             st *= _sign;
 
-            _microSurfaceTractions.emplace( n->first, st );
+            _microSurfaceForces.emplace( n->first, st );
 
         }
 
@@ -1534,7 +1553,7 @@ namespace inputFileProcessor{
 
         if ( error ){
 
-            errorOut result = new errorNode( "extractMicroSurfaceTractions",
+            errorOut result = new errorNode( "extractMicroSurfaceForces",
                                              "Error in the extraction of the macro velocities" );
             result->addNext( error );
             return result;
@@ -1543,20 +1562,20 @@ namespace inputFileProcessor{
 
         if ( !_microExternalForceFlag ){
 
-            if( _microSurfaceTractionFlag && _microBodyForceFlag ){
+            if( _microSurfaceForceFlag && _microBodyForceFlag ){
 
                 _microExternalForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
                 for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
-                    _microExternalForces.emplace( n->first, _microSurfaceTractions[ n->first ] + _microBodyForces[ n->first ] );
+                    _microExternalForces.emplace( n->first, _microSurfaceForces[ n->first ] + _microBodyForces[ n->first ] );
 
                 }
                 _microExternalForceFlag = true;
 
             }
-            else if ( _microSurfaceTractionFlag ){
+            else if ( _microSurfaceForceFlag ){
 
-                _microExternalForces = _microSurfaceTractions;
+                _microExternalForces = _microSurfaceForces;
                 _microExternalForceFlag = true;
 
             }
@@ -1864,24 +1883,7 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        stringVector variableKeys =
-            {
-                "a1", "a2", "a3",
-                "phiDotDot11", "phiDotDot12", "phiDotDot13",
-                "phiDotDot21", "phiDotDot22", "phiDotDot23",
-                "phiDotDot31", "phiDotDot32", "phiDotDot33",
-            };
-
-        std::string dataType = "Node";
-
-        bool populateWithNullOnUndefined = true;
-
-        std::string configurationName = "acceleration_variable_names";
-        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
-
-        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _macroAccelerationFlag, _macroAccelerations );
+        errorOut error = extractMacroAccelerations( increment, _macroAccelerationFlag, _macroAccelerations );
 
         if ( error ){
 
@@ -1896,13 +1898,14 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMacroAccelerations( const unsigned int &increment, bool &flag, floatVector &macroAccelerations ){
+    errorOut inputFileProcessor::extractMacroAccelerations( const unsigned int &increment, bool &flag,
+                                                            std::unordered_map< uIntType, floatVector > &macroAccelerations ){
         /*!
          * Extract the node macro-accelerations at the indicated increment
          *
          * :param const unsigned int &increment: The current increment
          * :param bool &flag: The flag indicating if the values are defined in the file
-         * :param floatVector &macroAccelerations: The vector to store the values in
+         * :param std::unordered_map< uIntType, floatVector > &macroAccelerations: The vector to store the values in
          */
 
         stringVector variableKeys =
@@ -1919,10 +1922,11 @@ namespace inputFileProcessor{
 
         std::string configurationName = "acceleration_variable_names";
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
 
         errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, macroAccelerations );
+                                                                        configuration, flag, values );
 
         if ( error ){
 
@@ -1930,6 +1934,28 @@ namespace inputFileProcessor{
                                              "Error in the extraction of the macro accelerations" );
             result->addNext( error );
             return result;
+
+        }
+
+        if ( !flag ){
+
+            return NULL;
+
+        }
+
+        macroAccelerations.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+        for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMacroAccelerations",
+                                      "The values vector is too small for the index required by micro-node " +
+                                      std::to_string( n->first ) );
+
+            }
+
+            macroAccelerations.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                               values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
 
         }
 
@@ -1971,6 +1997,28 @@ namespace inputFileProcessor{
             return result;
 
         }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroBodyForcesAndCouples( const unsigned int &increment ){
+        /*!
+         * Extract the node macro body forces and couples at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroSurfaceForcesAndCouples( const unsigned int &increment ){
+        /*!
+         * Extract the node macro surface forces and couples at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
 
         return NULL;
 
@@ -2864,12 +2912,12 @@ namespace inputFileProcessor{
         return &_microBodyForces;
     }
 
-    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroSurfaceTractions( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroSurfaceForces( ){
         /*!
-         * Get a pointer to the micro surface tractions
+         * Get a pointer to the micro surface forces
          */
 
-        return &_microSurfaceTractions;
+        return &_microSurfaceForces;
     }
 
     const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroExternalForces( ){
@@ -3152,9 +3200,9 @@ namespace inputFileProcessor{
 
         }
 
-        if ( !_config[ "coupling_initialization" ][ "micro_surface_traction_sign" ] ){
+        if ( !_config[ "coupling_initialization" ][ "micro_surface_force_sign" ] ){
 
-            _config[ "coupling_initialization" ][ "micro_surface_traction_sign" ] = 1; //Default to 1
+            _config[ "coupling_initialization" ][ "micro_surface_force_sign" ] = 1; //Default to 1
 
         }
 
@@ -4055,12 +4103,12 @@ namespace inputFileProcessor{
         return _microBodyForceFlag;
     }
 
-    bool inputFileProcessor::microSurfaceTractionDefined( ){
+    bool inputFileProcessor::microSurfaceForceDefined( ){
         /*!
-         * Get whether the micro-body force has been defined
+         * Get whether the micro-surface force has been defined
          */
 
-        return _microSurfaceTractionFlag;
+        return _microSurfaceForceFlag;
     }
 
     bool inputFileProcessor::microExternalForceDefined( ){
@@ -4183,7 +4231,7 @@ namespace inputFileProcessor{
         return &_macroVelocities;
     }
 
-    const floatVector* inputFileProcessor::getMacroAccelerations( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroAccelerations( ){
         /*!
          * Get a pointer to the macro accelerations
          */
@@ -4232,7 +4280,7 @@ namespace inputFileProcessor{
 
     }
 
-    const floatVector* inputFileProcessor::getPreviousMacroAccelerations( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getPreviousMacroAccelerations( ){
         /*!
          * Get a pointer to the previous macro accelerations
          *
