@@ -2512,7 +2512,7 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
                                              result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
                                            )
                               );
-            results << "test_addMacroDomainDisplacementToMicro (test 2) & False\n";
+            results << "test_formMacroDomainToMicroInterpolationMatrix (test 2) & False\n";
             return 1;
 
         }
@@ -2570,7 +2570,7 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
                                              result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
                                            )
                               );
-            results << "test_addMacroDomainDisplacementToMicro (test 3) & False\n";
+            results << "test_formMacroDomainToMicroInterpolationMatrix (test 3) & False\n";
             return 1;
 
         }
@@ -2578,14 +2578,19 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
 
     //Test micro weights as unordered_map
     std::unordered_map< uIntType, floatType > microWeightsMap;
+    std::unordered_map< uIntType, floatVector > domainReferenceXisMap;
     for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
 
         microWeightsMap.emplace( *index, microWeights[ *index ] );
 
+        uIntType inc = index - domainMicroNodeIndices.begin( );
+        domainReferenceXisMap.emplace( *index, floatVector( domainReferenceXis.begin( ) + dim * inc,
+                                                            domainReferenceXis.begin( ) + dim * ( inc + 1 ) ) );
+
     }
     error = DOFProjection::formMacroDomainToMicroInterpolationMatrix( dim, 27, 137,
                                                                       domainMicroNodeIndices, domainMacroNodeIndices,
-                                                                      domainReferenceXis,
+                                                                      domainReferenceXisMap,
                                                                       domainMacroInterpolationFunctionValues,
                                                                       microWeightsMap, domainN,
                                                                       &microNodeToLocalIndex, &macroNodeToLocalIndex );
@@ -2616,7 +2621,7 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
                                              result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
                                            )
                               );
-            results << "test_addMacroDomainDisplacementToMicro (test 4) & False\n";
+            results << "test_formMacroDomainToMicroInterpolationMatrix (test 4) & False\n";
             return 1;
 
         }
@@ -5599,6 +5604,7 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
 
     //Test map version
     std::unordered_map< uIntType, floatType > microVolumesMap, microDensitiesMap, microWeightsMap;
+    std::unordered_map< uIntType, floatVector > domainReferenceXisMap;
 
     for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
 
@@ -5606,10 +5612,14 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
         microDensitiesMap.emplace( *index, microDensities[ *index ] );
         microWeightsMap.emplace( *index, microWeights[ *index ] );
 
+        uIntType inc = index - domainMicroNodeIndices.begin( );
+        domainReferenceXisMap.emplace( *index, floatVector( domainReferenceXis.begin( ) + dim * inc,
+                                                            domainReferenceXis.begin( ) + dim * ( inc + 1 ) ) );
+
     }
     error = DOFProjection::formMicroDomainToMacroProjectionMatrix( dim, 27, 137, domainMicroNodeIndices,
                                                                    domainMacroNodeIndices, microVolumesMap, microDensitiesMap,
-                                                                   microWeightsMap, domainReferenceXis,
+                                                                   microWeightsMap, domainReferenceXisMap,
                                                                    domainInterpolationFunctionValues,
                                                                    domainMacroNodeProjectedMass,
                                                                    domainMacroNodeProjectedMassMomentOfInertia,

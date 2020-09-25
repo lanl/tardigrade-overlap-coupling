@@ -404,7 +404,7 @@ namespace DOFProjection{
                                                         const uIntType &nMicroNodes, const uIntType &nMacroNodes,
                                                         const uIntVector &domainMicroNodeIndices,
                                                         const uIntVector &domainMacroNodeIndices,
-                                                        const floatVector &domainReferenceXis,
+                                                        const std::unordered_map< uIntType, floatVector > &domainReferenceXis,
                                                         const floatVector &domainMacroInterpolationFunctionValues,
                                                         const std::unordered_map< uIntType, floatType > &microWeights,
                                                         SparseMatrix &domainN,
@@ -424,7 +424,8 @@ namespace DOFProjection{
          * :param const uIntVector &domainMicroNodeIndices: The global micro-node indices in the given domain
          * :param const uIntVector &domainMacroDOFIndices: The indices of the macro-scale nodes present in the domain
          *     these are ( in a macro-scale FEA context ) the nodes of the micromorphic finite element.
-         * :param const floatVector &domainReferenceXis: The vectors from the local center of mass to the micro-nodes in the domain.
+         * :param const std::unordered_map< uIntType, floatType > &domainReferenceXis: The vectors from the local center of
+         *     mass to the micro-nodes in the domain.
          * :param const floatVector &domainMacroInterpolationFunctionValues: The values of the interpolation functions
          *     at the local center of mass.
          * :param const std::unordered_map< uIntType, floatType >: The weight associated with each micro-scale node.
@@ -452,11 +453,6 @@ namespace DOFProjection{
         if ( dim != 3 ){
             return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
                                   "Only 3D domains are currently supported" );
-        }
-
-        if ( dim * domainMicroNodeIndices.size() != domainReferenceXis.size() ){
-            return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
-                                  "The number of micro node indices is not equal to the number of Xi vectors" );
         }
 
         if ( !microNodeToLocalIndex ){
@@ -512,6 +508,13 @@ namespace DOFProjection{
                                       "The micro node " + std::to_string( m ) + " was not found in the micro weight map" );
             }
 
+            auto referenceXi = domainReferenceXis.find( m );
+
+            if ( referenceXi == domainReferenceXis.end( ) ){
+                return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                                      "The micro node " + std::to_string( m ) + " was not found in the reference Xi vector map" );
+            }
+
             //Set the row index
             if ( microNodeToLocalIndex ){
 
@@ -532,8 +535,7 @@ namespace DOFProjection{
             row0 = nMicroDOF * o;
 
             //Set the micro-position vector
-            Xi = floatVector( domainReferenceXis.begin() + nMicroDOF * i,
-                              domainReferenceXis.begin() + nMicroDOF * i + nMicroDOF );
+            Xi = referenceXi->second;
 
             //Set the value of the weight
             w = microWeight->second;
@@ -2481,7 +2483,7 @@ namespace DOFProjection{
 
                 if ( indx == macroNodeToLocalIndex->end( ) ){
 
-                    return new errorNode( "formMacroDomaintoMicroInterpolationMatrix",
+                    return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                           "The macro node " + std::to_string( n ) + " is not found in the macro node to local index map" );
 
                 }
@@ -2497,7 +2499,7 @@ namespace DOFProjection{
 
             if ( i > domainMacroNodeProjectedMass.size( ) ){
 
-                return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                       "The macro node " + std::to_string( n ) + " is too large for the macro node projected mass vector" );
 
             }
@@ -2523,7 +2525,7 @@ namespace DOFProjection{
                 m = domainMicroNodeIndices[ j ];
 
                 if ( m >= microWeights.size( ) ){
-                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                    return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                           "The number of micro-weights is smaller than required for micro-node " + std::to_string( m ) );
                 }
     
@@ -2547,12 +2549,12 @@ namespace DOFProjection{
                 col0 = nMicroDOF * o;
 
                 if ( m >= microWeights.size( ) ){
-                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                    return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                           "The number of micro-weights is smaller than required for micro-node " + std::to_string( m ) );
                 }
 
                 if ( domainMacroNodeIndices.size( ) * j + i >= domainInterpolationFunctionValues.size( ) ){
-                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                    return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                           "The number of micro shape functions in the domain is msaller than required for micro-node "
                                           + std::to_string( m ) + " and macro node " + std::to_string( n ) );
                 }
@@ -2614,7 +2616,7 @@ namespace DOFProjection{
                                                      const std::unordered_map< uIntType, floatType > &microVolumes,
                                                      const std::unordered_map< uIntType, floatType > &microDensities,
                                                      const std::unordered_map< uIntType, floatType > &microWeights,
-                                                     const floatVector &domainReferenceXiVectors,
+                                                     const std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
                                                      const floatVector &domainInterpolationFunctionValues,
                                                      const floatVector &domainMacroNodeProjectedMass,
                                                      const floatVector &domainMacroNodeProjectedMassMomentOfInertia,
@@ -2631,8 +2633,9 @@ namespace DOFProjection{
          * :param const uIntVector &domainMacroNodeIndices: The global macro node IDs in the domain
          * :param const std::unordered_map< uIntType, floatType > &microVolumes: The volumes of the micro-nodes
          * :param const std::unordered_map< uIntType, floatType > &microDensities: The densities of the micro-nodes
-         * :param const const std::unordered_map< uIntType, floatType > &microWeights: The weighting values of the micro-nodes
-         * :param const floatVector &domainReferenceXiVectors: The relative position vectors of the nodes in the domain
+         * :param const std::unordered_map< uIntType, floatType > &microWeights: The weighting values of the micro-nodes
+         * :param const std::unordered_map< uIntType, floatType > &domainReferenceXiVectors: The relative position 
+         *     vectors of the nodes in the domain
          * :param const floatVector &domainInterpolationFunctionValues: The values of the macro interpolation functions
          *     at each of the micro nodes organized via [ N_11, N_12, ... ] where the first index is the micro node number
          *     and the second is the macro node number in the domain.
@@ -2654,11 +2657,6 @@ namespace DOFProjection{
         if ( dim != 3 ){
             return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                   "Only 3D domains are currently supported" );
-        }
-
-        if ( dim * domainMicroNodeIndices.size() != domainReferenceXiVectors.size() ){
-            return new errorNode( "formMicroDomainToMacroProjectionMatrix",
-                                  "The number of micro node indices is not equal to the number of Xi vectors" );
         }
 
         if ( !microNodeToLocalIndex ){
@@ -2736,7 +2734,7 @@ namespace DOFProjection{
 
                 if ( indx == macroNodeToLocalIndex->end( ) ){
 
-                    return new errorNode( "formMacroDomaintoMicroInterpolationMatrix",
+                    return new errorNode( "formMicroDomaintoMacroProjectionMatrix",
                                           "The macro node " + std::to_string( n ) + " is not found in the macro node to local index map" );
 
                 }
@@ -2752,7 +2750,7 @@ namespace DOFProjection{
 
             if ( i > domainMacroNodeProjectedMass.size( ) ){
 
-                return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                       "The macro node " + std::to_string( n ) + " is too large for the macro node projected mass vector" );
 
             }
@@ -2779,20 +2777,26 @@ namespace DOFProjection{
 
                 auto microWeight = microWeights.find( m );
                 if ( microWeight == microWeights.end( ) ){
-                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
-                                          "The micro node " + std::to_string( m ) + " was not found in the micro weight map " );
+                    return new errorNode( "formMicroDomainToMacroProjectionMatrix",
+                                          "The micro node " + std::to_string( m ) + " was not found in the micro weight map" );
                 }
     
                 auto microVolume = microVolumes.find( m );
                 if ( microVolume == microVolumes.end( ) ){
-                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
-                                          "The micro node " + std::to_string( m ) + " was not found in the micro volume map " );
+                    return new errorNode( "formMicroDomainToMacroProjectionMatrix",
+                                          "The micro node " + std::to_string( m ) + " was not found in the micro volume map" );
                 }
     
                 auto microDensity = microDensities.find( m );
                 if ( microDensity == microDensities.end( ) ){
-                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
-                                          "The micro node " + std::to_string( m ) + " was not found in the micro density map " );
+                    return new errorNode( "formMicroDomainToMacroProjectionMatrix",
+                                          "The micro node " + std::to_string( m ) + " was not found in the micro density map" );
+                }
+
+                auto domainReferenceXi = domainReferenceXiVectors.find( m );
+                if ( domainReferenceXi == domainReferenceXiVectors.end( ) ){
+                    return new errorNode( "formMicroDomainToMacroProjectionMatrix",
+                                          "The micro node " + std::to_string( m ) + " was not found in the reference Xi vector map" );
                 }
     
                 //Set the row index
@@ -2815,7 +2819,7 @@ namespace DOFProjection{
                 col0 = nMicroDOF * o;
 
                 if ( domainMacroNodeIndices.size( ) * j + i >= domainInterpolationFunctionValues.size( ) ){
-                    return new errorNode( "formMacroDomainToMicroInterpolationMatrix",
+                    return new errorNode( "formMicroDomainToMacroProjectionMatrix",
                                           "The number of micro shape functions in the domain is msaller than required for micro-node "
                                           + std::to_string( m ) + " and macro node " + std::to_string( n ) );
                 }
@@ -2830,8 +2834,7 @@ namespace DOFProjection{
                 sf = domainInterpolationFunctionValues[ domainMacroNodeIndices.size( ) * j + i ];
 
                 //Extract the micro-position
-                Xi = floatVector( domainReferenceXiVectors.begin( ) + dim * j,
-                                  domainReferenceXiVectors.begin( ) + dim * ( j + 1 ) );
+                Xi = domainReferenceXi->second;
 
                 //Compute the weighted mass term
                 weightedMassTerm = microMass * w * sf;
