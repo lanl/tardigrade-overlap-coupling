@@ -116,13 +116,13 @@ namespace overlapCoupling{
             floatVector _macroNodeProjectedMassMomentOfInertia;
             floatVector _macroNodeMassRelativePositionConstant;
 
-            floatVector _macroReferencePositions;
-            floatVector _microReferencePositions;
+            std::unordered_map< uIntType, floatVector > _macroReferencePositions;
+            std::unordered_map< uIntType, floatVector > _microReferencePositions;
 
             //Private functions
             errorOut processDomainMassData( const unsigned int &microIncrement, const std::string &domainName,
                                             floatType &domainMass, floatVector &domainCenterOfMass,
-                                            floatVector &domainXiVectors );
+                                            std::unordered_map< uIntType, floatVector > &domainXiVectors );
 
             //Compute initial values
             errorOut setReferenceStateFromIncrement( const unsigned int &microIncrement, const unsigned int &macroIncrement );
@@ -172,7 +172,7 @@ namespace overlapCoupling{
 
             errorOut addDomainContributionToInterpolationMatrix( const uIntVector  &domainNodes,
                                                                  const uIntVector  &macroNodes,
-                                                                 const floatVector &domainReferenceXis,
+                                                                 const std::unordered_map< uIntType, floatVector > &domainReferenceXis,
                                                                  const floatVector &domainCenterOfMassShapeFunctionValues );
 
             errorOut processDomainReference( const unsigned int &microIncrement,
@@ -180,13 +180,13 @@ namespace overlapCoupling{
                                              const unsigned int cellID, const uIntVector &macroNodes,
                                              floatType   &referenceMicroDomainMass,
                                              floatVector &referenceMicroDomainCentersOfMass,
-                                             floatVector &domainReferenceXiVectors,
+                                             std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
                                              floatVector &domainCenterOfMassShapeFunctionValues,
                                              floatVector &domainMicroPositionShapeFunctionValues );
 
             errorOut addDomainToDirectProjectionReferenceValues( const uIntVector &domainNodes,
                                                                  const uIntVector &macroNodes,
-                                                                 const floatVector &domainReferenceXiVectors,
+                                                                 const std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
                                                                  const floatVector &domainMicroPositionShapeFunctionValues
                                                                );
 

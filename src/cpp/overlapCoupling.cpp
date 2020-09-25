@@ -290,11 +290,41 @@ namespace overlapCoupling{
 
             if ( save_reference_positions ){
 
-                _macroReferencePositions = *_inputProcessor.getMacroNodeReferencePositions( )
-                                         + *_inputProcessor.getMacroDisplacements( );
+                _macroReferencePositions.reserve( _inputProcessor.getMacroNodeReferencePositions( )->size( ) );
 
-                _microReferencePositions = *_inputProcessor.getMicroNodeReferencePositions( )
-                                         + *_inputProcessor.getMicroDisplacements( );
+                for ( auto n = _inputProcessor.getMacroNodeReferencePositions( )->begin( );
+                           n != _inputProcessor.getMacroNodeReferencePositions( )->end( );
+                           n++ ){
+
+                    auto m = _inputProcessor.getMacroDisplacements( )->find( n->first );
+
+                    if ( m == _inputProcessor.getMacroDisplacements( )->end( ) ){
+
+                        return new errorNode( "initializeCoupling", "Macro node " + std::to_string( n->first ) + " not found in the macro displacements map. Fatal error in the input processor" );
+
+                    }
+
+                    _macroReferencePositions.emplace( n->first, n->second + m->second );
+
+                }
+
+                _microReferencePositions.reserve( _inputProcessor.getMicroNodeReferencePositions( )->size( ) );
+
+                for ( auto n = _inputProcessor.getMicroNodeReferencePositions( )->begin( );
+                           n != _inputProcessor.getMicroNodeReferencePositions( )->end( );
+                           n++ ){
+
+                    auto m = _inputProcessor.getMicroDisplacements( )->find( n->first );
+
+                    if ( m == _inputProcessor.getMicroDisplacements( )->end( ) ){
+
+                        return new errorNode( "initializeCoupling", "Micro node " + std::to_string( n->first ) + " not found in the micro displacements map. Fatal error in the input processor" );
+
+                    }
+
+                    _microReferencePositions.emplace( n->first, n->second + m->second );
+
+                }
 
             }
 
@@ -405,7 +435,7 @@ namespace overlapCoupling{
 
         uIntVector macroNodes;
 
-        floatVector domainReferenceXiVectors;
+        std::unordered_map< uIntType, floatVector > domainReferenceXiVectors;
         floatVector domainCenterOfMassShapeFunctionValues;
         floatVector domainMicroPositionShapeFunctionValues;
 
@@ -731,7 +761,7 @@ namespace overlapCoupling{
                                                       const unsigned int cellID, const uIntVector &macroNodes,
                                                       floatType   &referenceMicroDomainMass,
                                                       floatVector &referenceMicroDomainCentersOfMass,
-                                                      floatVector &domainReferenceXiVectors,
+                                                      std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
                                                       floatVector &domainCenterOfMassShapeFunctionValues,
                                                       floatVector &domainMicroPositionShapeFunctionValues ){
         /*!
@@ -746,7 +776,7 @@ namespace overlapCoupling{
          *     should be a reference to the micro-domain mass vector
          * :param floatVector &referenceMicroDomainCentersOfMass: The reference micro-domain center of mass
          *     vector for all of the micro domains
-         * :param floatVector &domainReferenceXiVectors: The reference Xi vectors for the domain.
+         * :param std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors: The reference Xi vectors for the domain.
          * :param floatVector &domainCenterOfMassShapeFunctionValues: The shape function values at the 
          *     center of mass
          * :param floatVector &domainMicroPositionShapeFunctionValues: The shape function values at the
@@ -834,7 +864,7 @@ namespace overlapCoupling{
 
     errorOut overlapCoupling::processDomainMassData( const unsigned int &microIncrement, const std::string &domainName,
                                                      floatType &domainMass, floatVector &domainCenterOfMass,
-                                                     floatVector &domainXiVectors ){
+                                                     std::unordered_map< uIntType, floatVector > &domainXiVectors ){
         /*!
          * Process a micro-scale domain
          *
@@ -842,7 +872,7 @@ namespace overlapCoupling{
          * :param const std::string &domainName: The name of the domain
          * :param floatType &domainMass: The mass of the domain
          * :param floatVector &domainCenterOfMass
-         * :param floatVector &domainXiVectors
+         * :param std::unordered_map< uIntType, floatVector > &domainXiVectors
          */
 
         //Get the domain's nodes
@@ -1621,13 +1651,14 @@ namespace overlapCoupling{
 
     errorOut overlapCoupling::addDomainContributionToInterpolationMatrix( const uIntVector  &domainNodes,
                                                                           const uIntVector  &macroNodes,
-                                                                          const floatVector &domainReferenceXis,
+                                                                          const std::unordered_map< uIntType, floatVector > &domainReferenceXis,
                                                                           const floatVector &domainCenterOfMassShapeFunctionValues ){
         /*!
          * Add the contribution of a domain to the interpolation matrices
          *
          * :param const std::string &domainName: The name of the domain
-         * :param const floatVector &domainReferenceXis: The micro-position vectors of the nodes within the domain
+         * :param const std::unordered_map< uIntType, floatVector > &domainReferenceXis: The micro-position vectors of 
+         *     the nodes within the domain
          * :param const floatVector &domainCenterOfMassShapeFunctionValues: The shape function values at the centers of 
          *     mass of the micro-domains.
          */
@@ -1793,14 +1824,15 @@ namespace overlapCoupling{
 
     errorOut overlapCoupling::addDomainToDirectProjectionReferenceValues( const uIntVector &domainNodes,
                                                                           const uIntVector &macroNodes,
-                                                                          const floatVector &domainReferenceXiVectors,
+                                                                          const std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
                                                                           const floatVector &domainMicroPositionShapeFunctionValues ){
         /*!
          * Add the current domain information to the direct projection reference values
          *
          * :param const uIntVector &domainNodes: The nodes associated with the current domain
          * :param const uIntVector &macroNodes: The macro nodes associated with the current domain
-         * :param const floatVector &domainReferenceXiVectors: The relative position vectors of the domain
+         * :param const std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors: The relative position
+         *     vectors of the domain
          * :param const floatVector &domainMicroPositionShapeFunctionValues: The shape function values at the micro
          *     node positions.
          */
@@ -1850,13 +1882,21 @@ namespace overlapCoupling{
 
             }
 
+            auto referenceXi = domainReferenceXiVectors.find( *microNode );
+
+            if ( referenceXi == domainReferenceXiVectors.end( ) ){
+
+                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                                      "Micro node " + std::to_string( *microNode ) + " was not found in the reference Xi map" );
+
+            }
+
 
             //Compute the micro-mass
             microMass = microDensity->second * microVolume->second;
 
             //Extract the micro Xi vector
-            Xi = floatVector( domainReferenceXiVectors.begin( ) + _dim * m,
-                              domainReferenceXiVectors.begin( ) + _dim * ( m + 1 ) );
+            Xi = referenceXi->second;
 
             //Extract the weighting value
             weight = microWeight->second;
