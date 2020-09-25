@@ -722,7 +722,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the macro body forces / couples
-        error = extractMacroBodyForcesAndCouples( microIncrement );
+        error = extractMacroBodyForces( microIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro body forces and couples" );
@@ -731,7 +731,7 @@ namespace inputFileProcessor{
         }
 
         //Extract the macro surface forces / couples
-        error = extractMacroSurfaceForcesAndCouples( microIncrement );
+        error = extractMacroSurfaceForces( microIncrement );
 
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro surface forces and couples" );
@@ -2036,23 +2036,129 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMacroBodyForcesAndCouples( const unsigned int &increment ){
+    errorOut inputFileProcessor::extractMacroBodyForces( const unsigned int &increment ){
         /*!
          * Extract the node macro body forces and couples at the indicated increment
          *
          * :param const unsigned int &increment: The current increment
          */
 
+        stringVector variableKeys =
+            {
+                "F1", "F2", "F3",
+                "C11", "C12", "C13",
+                "C21", "C22", "C23",
+                "C31", "C32", "C33"
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "body_force_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _macroBodyForceFlag, values );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroBodyForces",
+                                             "Error in the extraction of the macro body forces" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        if ( !_macroBodyForceFlag ){
+
+            _macroBodyForces.clear( );
+            return NULL;
+
+        }
+
+        _macroBodyForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+        floatType _sign = _config[ "coupling_initialization" ][ "macro_body_force_sign" ].as< floatType >( );
+        for( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMacroBodyForces",
+                                      "The index required by macro node " + std::to_string( n->first ) + " is too large for the values vector" );
+
+            }
+
+            _macroBodyForces.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                             values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            _macroBodyForces[ n->first ] *= _sign;
+
+        }
+
         return NULL;
 
     }
 
-    errorOut inputFileProcessor::extractMacroSurfaceForcesAndCouples( const unsigned int &increment ){
+    errorOut inputFileProcessor::extractMacroSurfaceForces( const unsigned int &increment ){
         /*!
          * Extract the node macro surface forces and couples at the indicated increment
          *
          * :param const unsigned int &increment: The current increment
          */
+
+        stringVector variableKeys =
+            {
+                "F1", "F2", "F3",
+                "C11", "C12", "C13",
+                "C21", "C22", "C23",
+                "C31", "C32", "C33"
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "surface_force_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _macroSurfaceForceFlag, values );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroSurfaceForces",
+                                             "Error in the extraction of the macro surface forces" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        if ( !_macroSurfaceForceFlag ){
+
+            _macroSurfaceForces.clear( );
+            return NULL;
+
+        }
+
+        _macroSurfaceForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+        floatType _sign = _config[ "coupling_initialization" ][ "macro_surface_force_sign" ].as< floatType >( );
+        for( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMacroSurfaceForces",
+                                      "The index required by macro node " + std::to_string( n->first ) + " is too large for the values vector" );
+
+            }
+
+            _macroSurfaceForces.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            _macroSurfaceForces[ n->first ] *= _sign;
+
+        }
 
         return NULL;
 
@@ -2079,10 +2185,11 @@ namespace inputFileProcessor{
 
         std::string configurationName = "external_force_variable_names";
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
 
         errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _macroExternalForceFlag, _macroExternalForces );
+                                                                        configuration, _macroExternalForceFlag, values );
 
         if ( error ){
 
@@ -2093,10 +2200,57 @@ namespace inputFileProcessor{
 
         }
 
-        floatType _sign = _config[ "coupling_initialization" ][ "macro_external_force_sign" ].as< floatType >( );
-        if ( _macroExternalForceFlag && !vectorTools::fuzzyEquals( _sign, 1. ) ){
+        if ( !_macroExternalForceFlag ){
 
-            _macroExternalForces *= _sign;
+            if( _macroSurfaceForceFlag && _macroBodyForceFlag ){
+
+                _macroExternalForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+                for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+                    _microExternalForces.emplace( n->first, _macroSurfaceForces[ n->first ] + _macroBodyForces[ n->first ] );
+
+                }
+                _macroExternalForceFlag = true;
+
+            }
+            else if ( _macroSurfaceForceFlag ){
+
+                _macroExternalForces = _macroSurfaceForces;
+                _macroExternalForceFlag = true;
+
+            }
+            else if ( _macroBodyForceFlag ){
+
+                _macroExternalForces = _microBodyForces;
+                _macroExternalForceFlag = true;
+
+            }
+            else{
+                _macroExternalForces.clear( );
+            }
+
+        }
+        else{
+
+            _macroExternalForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+            floatType _sign = _config[ "coupling_initialization" ][ "macro_external_force_sign" ].as< floatType >( );
+
+            for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+    
+                if ( n->second >= values.size( ) ){
+    
+                    return new errorNode( "extractMacroExternalForces",
+                                          "The macro external force vector is too short for the required index" );
+    
+                }
+    
+                floatVector ef( values.begin( ) + variableKeys.size( ) * n->second,
+                                values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) );
+                ef *= _sign;
+    
+                _macroExternalForces.emplace( n->first, ef );
+    
+            }
 
         }
 
@@ -2125,10 +2279,11 @@ namespace inputFileProcessor{
 
         std::string configurationName = "inertial_force_variable_names";
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
 
         errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _macroInertialForceFlag, _macroInertialForces );
+                                                                        configuration, _macroInertialForceFlag, values );
 
         if ( error ){
 
@@ -2139,10 +2294,28 @@ namespace inputFileProcessor{
 
         }
 
-        floatType _sign = _config[ "coupling_initialization" ][ "macro_internal_force_sign" ].as< floatType >( );
-        if ( _macroInternalForceFlag && !vectorTools::fuzzyEquals( _sign, 1. ) ){
+        if ( !_macroInertialForceFlag ){
 
-            _macroInertialForces *= _sign;
+            _macroInertialForces.clear( );
+            return NULL;
+
+        }
+
+        floatType _sign = _config[ "coupling_initialization" ][ "macro_inertial_force_sign" ].as< floatType >( );
+        _macroInertialForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+        for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMacroInertialForces",
+                                      "The index required for macro node " + std::to_string( n->first ) +
+                                      " is too large for the values vector" );
+
+            }
+
+            _macroInertialForces.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                 values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            _macroInertialForces[ n->first ] *= _sign;
 
         }
 
@@ -2401,6 +2574,7 @@ namespace inputFileProcessor{
 
 
         _microInternalForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+        floatType _sign = _config[ "coupling_initialization" ][ "micro_internal_force_sign" ].as< floatType >( );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
             if ( n->second >= values.size( ) ){
@@ -2412,6 +2586,7 @@ namespace inputFileProcessor{
 
             _microInternalForces.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
                                                                  values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            _microInternalForces[ n->first ] *= _sign;
 
         }
 
@@ -2460,6 +2635,7 @@ namespace inputFileProcessor{
 
 
         _microInertialForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+        floatType _sign = _config[ "coupling_initialization" ][ "micro_inertial_force_sign" ].as< floatType >( );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
             if ( n->second >= values.size( ) ){
@@ -2469,8 +2645,10 @@ namespace inputFileProcessor{
 
             }
 
+
             _microInertialForces.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
                                                                  values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            _microInertialForces[ n->first ] *= _sign;
 
         }
 
@@ -3218,6 +3396,12 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config[ "coupling_initialization" ][ "macro_inertial_force_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "macro_inertial_force_sign" ] = 1; //Default to 1
+
+        }
+
         if ( !_config[ "coupling_initialization" ][ "macro_external_force_sign" ] ){
 
             _config[ "coupling_initialization" ][ "macro_external_force_sign" ] = 1; //Default to 1
@@ -3227,6 +3411,12 @@ namespace inputFileProcessor{
         if ( !_config[ "coupling_initialization" ][ "micro_internal_force_sign" ] ){
 
             _config[ "coupling_initialization" ][ "micro_internal_force_sign" ] = 1; //Default to 1
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "micro_inertial_force_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "micro_inertial_force_sign" ] = 1; //Default to 1
 
         }
 
@@ -4344,7 +4534,7 @@ namespace inputFileProcessor{
         return &_macroInternalForces;
     }
 
-    const floatVector* inputFileProcessor::getMacroExternalForces( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroExternalForces( ){
         /*!
          * Get a pointer to the macro internal forces
          */
@@ -4352,7 +4542,7 @@ namespace inputFileProcessor{
         return &_macroExternalForces;
     }
 
-    const floatVector* inputFileProcessor::getMacroInertialForces( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroInertialForces( ){
         /*!
          * Get a pointer to the macro inertial forces
          */

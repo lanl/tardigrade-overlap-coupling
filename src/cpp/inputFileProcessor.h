@@ -98,8 +98,8 @@ namespace inputFileProcessor{
             const std::unordered_map< uIntType, floatVector >* getPreviousMacroVelocities( );
             const std::unordered_map< uIntType, floatVector >* getPreviousMacroAccelerations( );
             const std::unordered_map< uIntType, floatVector >* getMacroInternalForces( );
-            const floatVector* getMacroExternalForces( );
-            const floatVector* getMacroInertialForces( );
+            const std::unordered_map< uIntType, floatVector >* getMacroExternalForces( );
+            const std::unordered_map< uIntType, floatVector >* getMacroInertialForces( );
 
             const floatType* getDt( );
             const floatType* getNewmarkGamma( );
@@ -262,8 +262,8 @@ namespace inputFileProcessor{
             errorOut extractMacroAccelerations( const unsigned int &increment, bool &flag,
                                                 std::unordered_map< uIntType, floatVector > &macroAccelerations );
             errorOut extractMacroInternalForces( const unsigned int &increment );
-            errorOut extractMacroBodyForcesAndCouples( const unsigned int &increment );
-            errorOut extractMacroSurfaceForcesAndCouples( const unsigned int &increment );
+            errorOut extractMacroBodyForces( const unsigned int &increment );
+            errorOut extractMacroSurfaceForces( const unsigned int &increment );
             errorOut extractMacroExternalForces( const unsigned int &increment );
             errorOut extractMacroInertialForces( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
@@ -330,8 +330,10 @@ namespace inputFileProcessor{
             std::unordered_map< uIntType, floatVector > _macroVelocities;
             std::unordered_map< uIntType, floatVector > _macroAccelerations;
             std::unordered_map< uIntType, floatVector > _macroInternalForces;
-            floatVector _macroExternalForces;
-            floatVector _macroInertialForces;
+            std::unordered_map< uIntType, floatVector > _macroSurfaceForces;
+            std::unordered_map< uIntType, floatVector > _macroBodyForces;
+            std::unordered_map< uIntType, floatVector > _macroExternalForces;
+            std::unordered_map< uIntType, floatVector > _macroInertialForces;
             std::unordered_map< uIntType, floatVector > _macroNodeReferencePositions;
             std::unordered_map< uIntType, uIntVector > _macroNodeReferenceConnectivity;
 //            uIntVector  _macroNodeReferenceConnectivityCellIndices;
@@ -339,6 +341,8 @@ namespace inputFileProcessor{
             bool _macroVelocityFlag = false;
             bool _macroAccelerationFlag = false;
             bool _macroInternalForceFlag = false;
+            bool _macroSurfaceForceFlag  = false;
+            bool _macroBodyForceFlag     = false;
             bool _macroExternalForceFlag = false;
             bool _macroInertialForceFlag = false;
 

@@ -2131,6 +2131,46 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const std::unordered_map< uIntType, floatVector > macroInertialForcesAnswer
+        =
+            {
+                {  5, { 1.964831, 1.278634, -1.125705, -2.353362, 0.113154, -1.589520, 0.935279, 1.013984, 2.260416, 3.108513, -2.500627, 0.826868 } },
+                {  9, { 2.191268, 0.761777, -1.956907, -1.913616, -0.753844, -2.572974, -0.979177, 1.534873, 3.600554, 2.755534, -2.233762, 2.617534 } },
+                {  8, { 1.628217, 1.471129, -1.883881, -1.853679, -2.038739, -1.016306, -1.413380, 0.733672, 2.539391, 4.310301, -0.946690, 2.543249 } },
+                { 11, { 1.401781, 1.987986, -1.052679, -2.293425, -1.171740, -0.032851, 0.501075, 0.212783, 1.199253, 4.663281, -1.213556, 0.752583 } },
+                {  3, { 1.065332, 3.110252, -0.267265, -0.927058, -1.756161, -2.313741, -0.023437, -0.393319, 1.532658, 2.038427, -4.150676, 2.771371 } },
+                {  1, { 1.291768, 2.593395, -1.098467, -0.487312, -2.623159, -3.297196, -1.937893, 0.127570, 2.872797, 1.685447, -3.883810, 4.562038 } },
+                {  6, { 0.728718, 3.302747, -1.025441, -0.427375, -3.908054, -1.740527, -2.372096, -0.673631, 1.811634, 3.240215, -2.596738, 4.487753 } },
+                { 15, { 0.502282, 3.819604, -0.194239, -0.867121, -3.041055, -0.757073, -0.457640, -1.194520, 0.471496, 3.593195, -2.863604, 2.697087 } },
+                { 12, { 0.165833, 4.941870, 0.591175, 0.499246, -3.625476, -3.037963, -0.982153, -1.800622, 0.804901, 0.968341, -5.800724, 4.715875 } },
+                {  2, { 0.392269, 4.425013, -0.240027, 0.938992, -4.492474, -4.021417, -2.896609, -1.279733, 2.145039, 0.615361, -5.533858, 6.506542 } },
+                { 13, { -0.170781, 5.134365, -0.167001, 0.998929, -5.777368, -2.464749, -3.330812, -2.080934, 1.083877, 2.170129, -4.246787, 6.432257 } },
+                { 14, { -0.397217, 5.651222, 0.664201, 0.559183, -4.910370, -1.481294, -1.416356, -2.601823, -0.256262, 2.523108, -4.513652, 4.641591 } },
+            };
+
+    const std::unordered_map< uIntType, floatVector > *macroInertialForcesResult = reader.getMacroInertialForces( );
+
+    for ( auto it = macroInertialForcesAnswer.begin( ); it != macroInertialForcesAnswer.end( ); it++ ){
+
+        auto r = macroInertialForcesResult->find( it->first );
+
+        if ( r == macroInertialForcesResult->end( ) ){
+
+            results << "test_initializeIncrement (test 67) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 68) & False\n";
+            return 1;
+
+        }
+
+    }
+
 
 
 
@@ -2416,21 +2456,6 @@ int test_initializeIncrement( std::ofstream &results ){
 
         results << "test_initializeIncrement (test 45) & False\n";
         return 1;
-
-    }
-
-    const floatVector macroInertialForcesAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
-    const floatVector *macroInertialForcesResult = reader.getMacroInertialForces( );
-
-    for ( auto mIFR = macroInertialForcesResult->begin( ); mIFR != macroInertialForcesResult->end( ); mIFR++ ){
-
-        if ( !vectorTools::fuzzyEquals( *mIFR, macroInertialForcesAnswer[ ( mIFR - macroInertialForcesResult->begin( ) ) % 12 ], 1e-5, 1e-4 ) ){
-
-            std::cout << mIFR - macroInertialForcesResult->begin( ) << ": " << *mIFR << "\n";
-            results << "test_initializeIncrement (test 46) & False\n";
-            return 1;
-
-        }
 
     }
 
