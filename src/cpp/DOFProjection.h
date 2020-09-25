@@ -210,8 +210,8 @@ namespace DOFProjection{
                                         const uIntVector &domainMicroNodeIndices,
                                         const std::unordered_map< uIntType, floatType > &microVolumes,
                                         const std::unordered_map< uIntType, floatType > &microDensities,
-                                        const floatVector &microReferencePositions,
-                                        const floatVector &microDisplacements,
+                                        const std::unordered_map< uIntType, floatVector > &microReferencePositions,
+                                        const std::unordered_map< uIntType, floatVector > &microDisplacements,
                                         const std::unordered_map< uIntType, floatType > &microWeights,
                                         floatType &domainMass, floatVector &domainCM );
 
@@ -222,6 +222,13 @@ namespace DOFProjection{
     errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microReferencePositions,
                                const floatVector &microDisplacements, const floatVector &domainCM, floatVector &domainXis );
+
+    errorOut computeDomainXis( const uIntType &dim,
+                               const uIntVector &domainMicroNodeIndices,
+                               const std::unordered_map< uIntType, floatVector > &microReferencePositions,
+                               const std::unordered_map< uIntType, floatVector > &microDisplacements,
+                               const floatVector &domainCM,
+                               std::unordered_map< uIntType, floatVector > &domainXis );
 
     /*===================================================
     |                Projection Matrices                |

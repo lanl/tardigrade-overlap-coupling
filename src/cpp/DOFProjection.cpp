@@ -2097,8 +2097,8 @@ namespace DOFProjection{
                                         const uIntVector &domainMicroNodeIndices,
                                         const std::unordered_map< uIntType, floatType > &microVolumes,
                                         const std::unordered_map< uIntType, floatType > &microDensities,
-                                        const floatVector &microReferencePositions,
-                                        const floatVector &microDisplacements,
+                                        const std::unordered_map< uIntType, floatVector > &microReferencePositions,
+                                        const std::unordered_map< uIntType, floatVector > &microDisplacements,
                                         const std::unordered_map< uIntType, floatType > &microWeights,
                                         floatType &domainMass, floatVector &domainCM ){
         /*!
@@ -2109,9 +2109,9 @@ namespace DOFProjection{
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const std::unordered_map< uIntType, floatType > &microVolumes: The volumes of the micro nodes.
          * :param const std::unordered_map< uIntType, floatType > &microDensities: The densities of the micro nodes.
-         * :param const floatVector &microReferencePositions: The reference positions of the micro-nodes.
-         * :param const floatVector &microDisplacements: The displacements of the micro-nodes relative to their
-         *     reference positions.
+         * :param const std::unordered_map< uIntType, floatType > &microReferencePositions: The reference positions of the micro-nodes.
+         * :param const std::unordered_map< uIntType, floatType > &microDisplacements: The displacements of the micro-nodes
+         *     relative to their reference positions.
          * :param const std::unordered_map< uIntType, floatType > &microWeights: The weight associated with each micro-scale node.
          *     This is important for two cases:
          *     - Nodes which are shared between macro-scale domains. ( we don't want to double count )
@@ -2120,18 +2120,6 @@ namespace DOFProjection{
          * :param floatVector &domainMass: The mass of the domain
          * :param floatVector &domainCM: The center of mass of the domain
          */
-
-        for ( uIntType i = 0; i < domainMicroNodeIndices.size(); i++ ){
-            if ( microReferencePositions.size() < dim * domainMicroNodeIndices[ i ] + dim ){
-                return new errorNode( "computeDomainCenterOfMass",
-                                      "The size of the micro-reference positions vector is not consistent with the micro indices" );
-            }
-
-            if ( microDisplacements.size() < dim * domainMicroNodeIndices[ i ] + dim ){
-                return new errorNode( "computeDomainCenterOfMass",
-                                      "The size of the micro-displacements vector is not consistent with the micro indices" );
-            }
-        }
 
         //Initialize the domain mass
         domainMass = 0;
@@ -2168,16 +2156,30 @@ namespace DOFProjection{
 
             }
 
+            auto microReferencePosition = microReferencePositions.find( *index );
+
+            if ( microReferencePosition == microReferencePositions.end( ) ){
+
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "The micro index " + std::to_string( *index ) + " was not found in the micro reference position map" );
+
+            }
+
+            auto microDisplacement = microDisplacements.find( *index );
+
+            if ( microDisplacement == microDisplacements.end( ) ){
+
+                return new errorNode( "computeDomainCenterOfMass",
+                                      "The micro index " + std::to_string( *index ) + " was not found in the micro displacement map" );
+
+            }
+
             //Add to the domain's mass
             domainMass += microVolume->second * microDensity->second * microWeight->second;
 
             //Add to the domain's mass weighted position
             domainCM += microVolume->second * microDensity->second * microWeight->second
-                        * ( floatVector( microReferencePositions.begin() + dim * ( *index ),
-                                       microReferencePositions.begin() + dim * ( *index + 1 ) )
-                        + floatVector( microDisplacements.begin() + dim * ( *index ),
-                                       microDisplacements.begin() + dim * ( *index + 1 ) )
-                        );
+                      * ( microReferencePosition->second + microDisplacement->second );
 
         }
 
@@ -2283,6 +2285,61 @@ namespace DOFProjection{
         return NULL;
 
     }
+
+    errorOut computeDomainXis( const uIntType &dim,
+                               const uIntVector &domainMicroNodeIndices,
+                               const std::unordered_map< uIntType, floatVector > &microReferencePositions,
+                               const std::unordered_map< uIntType, floatVector > &microDisplacements,
+                               const floatVector &domainCM,
+                               std::unordered_map< uIntType, floatVector > &domainXis ){
+        /*
+         * Compute the relative position vector between the center of mass of a micro domain and the 
+         * micro position.
+         *
+         * :param const uIntType &dim: The dimension of the problem
+         * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
+         * :param const std::unordered_map< uIntType, floatVector > &microReferencePositions: The reference positions of the micro-nodes.
+         * :param const std::unordered_map< uIntType, floatVector > &microDisplacements: The displacements of the micro-nodes.
+         * :param floatVector &domainCM: The center of mass of the domain
+         * :param std::unordered_map< uIntType, floatVector > &domainXis: The relative positions of the micro nodes.
+         */
+
+        //Error Handling
+        if ( domainCM.size() != dim ){
+            return new errorNode( "computeDomainXis",
+                                  "The center of mass is not consistent with the dimension" );
+        }
+
+        //Resize the Xi map
+        domainXis.reserve( domainMicroNodeIndices.size() );
+
+        for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
+
+            auto microReferencePosition = microReferencePositions.find( *index );
+
+            if ( microReferencePosition == microReferencePositions.end( ) ){
+
+                return new errorNode( "computeDomainXis", "Micro node " + std::to_string( *index ) + " was not found in the micro reference positions map" );
+
+            }
+
+            auto microDisplacement = microDisplacements.find( *index );
+
+            if ( microDisplacement == microDisplacements.end( ) ){
+
+                return new errorNode( "computeDomainXis", "Micro node " + std::to_string( *index ) + " was not found in the micro displacements map" );
+
+            }
+
+            //Compute the relative position vector 
+            domainXis.emplace( *index, ( microReferencePosition->second + microDisplacement->second ) - domainCM );
+
+        }
+
+        return NULL;
+
+    }
+
 
     errorOut formMicroDomainToMacroProjectionMatrix( const uIntType &dim,
                                                      const uIntType nMicroNodes,

@@ -5212,6 +5212,7 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     std::unordered_map< uIntType, floatType > microVolumesMap;
     std::unordered_map< uIntType, floatType > microDensitiesMap;
     std::unordered_map< uIntType, floatType > microWeightsMap;
+    std::unordered_map< uIntType, floatVector > microReferencePositionsMap, microDisplacementsMap;
 
     for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
 
@@ -5219,12 +5220,18 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
         microDensitiesMap.emplace( *index, microDensities[ *index ] );
         microWeightsMap.emplace( *index, microWeights[ *index ] );
 
+        microReferencePositionsMap.emplace( *index, floatVector( microReferencePositions.begin( ) + dim * ( *index ),
+                                                                 microReferencePositions.begin( ) + dim * ( ( *index ) + 1 ) ) );
+        microDisplacementsMap.emplace( *index, floatVector( microDisplacements.begin( ) + dim * ( *index ),
+                                                            microDisplacements.begin( ) + dim * ( ( *index ) + 1 ) ) );
+
+
     }
 
     domainMassResult = 0;
     domainCMResult = floatVector( 0, 0 );
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumesMap, microDensitiesMap,
-                                                      microReferencePositions, microDisplacements,
+                                                      microReferencePositionsMap, microDisplacementsMap,
                                                       microWeightsMap, domainMassResult, domainCMResult );
     if ( error ){
         error->print();
@@ -5312,6 +5319,54 @@ int test_computeDomainXis( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( domainXiAnswer, domainXiResult ) ){
         results << "test_computeDomainXis (test 2) & False\n";
         return 1;
+    }
+
+    std::unordered_map< uIntType, floatVector > microReferencePositionsMap, microDisplacementsMap, domainXiAnswerMap, domainXiResultMap;
+
+    for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
+
+        microReferencePositionsMap.emplace( *index, floatVector( microReferencePositions.begin( ) + dim * ( *index ),
+                                                                 microReferencePositions.begin( ) + dim * ( ( *index ) + 1 ) ) );
+
+        microDisplacementsMap.emplace( *index, floatVector( microDisplacements.begin( ) + dim * ( *index ),
+                                                            microDisplacements.begin( ) + dim * ( ( *index ) + 1 ) ) );
+
+
+        uIntType inc = index - domainMicroNodeIndices.begin( );
+        domainXiAnswerMap.emplace( *index, floatVector( domainXiAnswer.begin( ) + dim * inc,
+                                                        domainXiAnswer.begin( ) + dim * ( inc + 1 ) ) );
+
+
+    }
+
+    error = DOFProjection::computeDomainXis( dim, domainMicroNodeIndices, microReferencePositionsMap,
+                                             microDisplacementsMap, domainCM, domainXiResultMap );
+
+    if ( error ){
+        error->print();
+        results << "test_computeDomainXis & False\n";
+        return 1;
+    }
+
+    for ( auto n = domainXiAnswerMap.begin( ); n != domainXiAnswerMap.end( ); n++ ){
+
+        auto m = domainXiResultMap.find( n->first );
+
+        if ( m == domainXiResultMap.end( ) ){
+
+            results << "test_computeDomainXis (test 3) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( n->second, m->second ) ){
+
+            vectorTools::print( n->second );
+            vectorTools::print( m->second );
+            results << "test_computeDomainXis (test 4) & False\n";
+            return 1;
+
+        }
+
     }
 
     results << "test_computeDomainXis & True\n";
@@ -5544,6 +5599,7 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
 
     //Test map version
     std::unordered_map< uIntType, floatType > microVolumesMap, microDensitiesMap, microWeightsMap;
+
     for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
 
         microVolumesMap.emplace( *index, microVolumes[ *index ] );
