@@ -219,44 +219,6 @@ namespace inputFileProcessor{
 
         }
 
-        //Check that all required sets in the configuration file are defined correctly in the datasets
-        
-//        //Check that micro-scale volume-surface node pairs are defined correctly
-//        if ( _config[ "microscale_definition" ][ "volume_surface_node_pairs" ] ){
-//
-//            YAML::Node VSPairs = _config[ "microscale_definition" ][ "volume_surface_node_pairs" ];
-//
-//            if ( !VSPairs.IsSequence( ) ){
-//                return new errorNode( "initializeFileInterfaces",
-//                                      "'volume_surface_node_pairs' is required to be a sequence" );
-//            }
-//
-//            unsigned int indx = 1;
-//            for ( auto it = VSPairs.begin( ); it != VSPairs.end(); it++ ){
-//
-//                if ( !( *it )[ "volume" ] ){
-//                    return new errorNode( "initializeFileInterfaces",
-//                                          "'volume' must be defined for each entry of 'volume_surface_node_pairs'" );
-//                }
-//                else if( !( *it )[ "volume" ].IsScalar( ) ){
-//                    return new errorNode( "initializeFileInterface",
-//                                          "'volume' should only define a single nodeset ( pair " + std::to_string( indx ) + " )" );
-//                }
-//                if ( !( *it )[ "surface" ] ){
-//                    return new errorNode( "initializeFileInterfaces",
-//                                          "'surface' must be defined for each entry of 'volume_surface_node_pairs'" );
-//                }
-//                else if( !( *it )[ "surface" ].IsScalar( ) ){
-//                    return new errorNode( "initializeFileInterface",
-//                                          "'surface' should only define a single nodeset ( pair " + std::to_string( indx ) + " )" );
-//                }
-//
-//                indx++;
-//
-//            }
-//
-//        }
-
         return NULL;
     }
 
@@ -324,29 +286,6 @@ namespace inputFileProcessor{
 
         }
 
-//        //Loop through the non-overlapped sets
-//        for ( auto setName = _non_overlapped_micro_surface_sets.begin();
-//              setName != _non_overlapped_micro_surface_sets.end(); setName++ ){
-//
-//            //Get the surface set
-//            error = _microscale->getSubDomainNodes( increment, *setName, setNodes );
-//
-//            if ( error ){
-//                errorOut result = new errorNode( "setMicroNodeWeights",
-//                                                 "Error in the extraction of the non-overlapped micro surface set " + *setName );
-//                result->addNext( error );
-//                return result;
-//            }
-//
-//            //Loop over the nodes
-//            for ( auto n = setNodes.begin(); n != setNodes.end(); n++ ){
-//                
-//                _microDomainWeights[ *n ] += 1;
-//
-//            }
-//
-//        }
-
         //Compute the weights
         for ( auto w = _microDomainWeights.begin( ); w != _microDomainWeights.end( ); w++ ){
 
@@ -356,27 +295,6 @@ namespace inputFileProcessor{
 
         return NULL;
     }
-
-//    errorOut inputFileProcessor::setSurfaceSets( const unsigned int microIncrement ){
-//        /*!
-//         * Set the surface sets
-//         *
-//         * :param const unsigned int microIncrement: The increment to extract the micro surface sets
-//         */
-//
-//        //Extract the set names from the microscale simulation
-//        stringVector setNames;
-//        errorOut error = _microscale->getSetNames( microIncrement, setNames );
-//
-//        if ( error ){
-//            errorOut result = new errorNode( "setSurfaceSets",
-//                                             "Error in extraction of the current micro increment's set names" );
-//            result->addNext( error );
-//            return result;
-//        }
-//
-//        return NULL;
-//    }
 
     errorOut inputFileProcessor::initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement ){
         /*!
