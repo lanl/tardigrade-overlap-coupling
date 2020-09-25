@@ -26,7 +26,7 @@ macroscale_definition:
         cell_id_variable_name: ELEMID #The variable name of the cell IDs
         displacement_variable_names: #The names of the displacemnet attributes at the nodes
                 u1: u1
-                u2: u1
+                u2: u2
                 u3: u3
                 phi11: phi_11
                 phi12: phi_12

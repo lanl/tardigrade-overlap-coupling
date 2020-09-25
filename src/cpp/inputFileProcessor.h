@@ -90,12 +90,12 @@ namespace inputFileProcessor{
             const std::unordered_map< uIntType, floatVector >* getMicroInertialForces( );
 
             const floatType*   getMacroTime( );
-            const floatVector* getMacroDisplacements( );
-            const floatVector* getMacroDispDOFVector( );
-            const floatVector* getMacroVelocities( );
+            const std::unordered_map< uIntType, floatVector >* getMacroDisplacements( );
+            const std::unordered_map< uIntType, floatVector >* getMacroDispDOFVector( );
+            const std::unordered_map< uIntType, floatVector >* getMacroVelocities( );
             const floatVector* getMacroAccelerations( );
-            const floatVector* getPreviousMacroDispDOFVector( );
-            const floatVector* getPreviousMacroVelocities( );
+            const std::unordered_map< uIntType, floatVector >* getPreviousMacroDispDOFVector( );
+            const std::unordered_map< uIntType, floatVector >* getPreviousMacroVelocities( );
             const floatVector* getPreviousMacroAccelerations( );
             const floatVector* getMacroInternalForces( );
             const floatVector* getMacroExternalForces( );
@@ -253,9 +253,11 @@ namespace inputFileProcessor{
             errorOut extractMacroTime( const unsigned int &increment, floatType &macroTime );
             errorOut extractMacroDisplacements( const unsigned int &increment );
             errorOut extractMacroDispDOFVector( const unsigned int &increment );
-            errorOut extractMacroDispDOFVector( const unsigned int &increment, bool &flag, floatVector &macroDispDOFVector );
+            errorOut extractMacroDispDOFVector( const unsigned int &increment, bool &flag,
+                                                std::unordered_map< uIntType, floatVector > &macroDispDOFVector );
             errorOut extractMacroVelocities( const unsigned int &increment );
-            errorOut extractMacroVelocities( const unsigned int &increment, bool &flag, floatVector &macroVelocities );
+            errorOut extractMacroVelocities( const unsigned int &increment, bool &flag,
+                                             std::unordered_map< uIntType, floatVector > &macroVelocities );
             errorOut extractMacroAccelerations( const unsigned int &increment );
             errorOut extractMacroAccelerations( const unsigned int &increment, bool &flag, floatVector &macroAccelerations );
             errorOut extractMacroInternalForces( const unsigned int &increment );
@@ -320,9 +322,9 @@ namespace inputFileProcessor{
 
             floatType   _previousMacroTime;
             floatType   _macroTime;
-            floatVector _macroDisplacements;
-            floatVector _macroDispDOFVector;
-            floatVector _macroVelocities;
+            std::unordered_map< uIntType, floatVector > _macroDisplacements;
+            std::unordered_map< uIntType, floatVector > _macroDispDOFVector;
+            std::unordered_map< uIntType, floatVector > _macroVelocities;
             floatVector _macroAccelerations;
             floatVector _macroInternalForces;
             floatVector _macroExternalForces;
@@ -377,10 +379,10 @@ namespace inputFileProcessor{
             bool _outputUpdatedDOF = false;
 
             std::unordered_map< uIntType, floatVector > _previousMicroDisplacements;
-            floatVector _previousMacroDispDOFVector;
+            std::unordered_map< uIntType, floatVector > _previousMacroDispDOFVector;
 
             std::unordered_map< uIntType, floatVector > _previousMicroVelocities;
-            floatVector _previousMacroVelocities;
+            std::unordered_map< uIntType, floatVector > _previousMacroVelocities;
 
             std::unordered_map< uIntType, floatVector > _previousMicroAccelerations;
             floatVector _previousMacroAccelerations;

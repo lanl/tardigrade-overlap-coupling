@@ -1433,8 +1433,8 @@ namespace inputFileProcessor{
 
             }
 
-            floatVector bf( values.begin( ) + _dim * n->second,
-                            values.begin( ) + _dim * ( n->second + 1 ) );
+            floatVector bf( values.begin( ) + variableKeys.size( ) * n->second,
+                            values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) );
             bf *= _sign;
 
             _microBodyForces.emplace( n->first, bf );
@@ -1496,8 +1496,8 @@ namespace inputFileProcessor{
 
             }
 
-            floatVector st( values.begin( ) + _dim * n->second,
-                            values.begin( ) + _dim * ( n->second + 1 ) );
+            floatVector st( values.begin( ) + variableKeys.size( ) * n->second,
+                            values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) );
             st *= _sign;
 
             _microSurfaceTractions.emplace( n->first, st );
@@ -1582,8 +1582,8 @@ namespace inputFileProcessor{
     
                 }
     
-                floatVector ef( values.begin( ) + _dim * n->second,
-                                values.begin( ) + _dim * ( n->second + 1 ) );
+                floatVector ef( values.begin( ) + variableKeys.size( ) * n->second,
+                                values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) );
                 ef *= _sign;
     
                 _microExternalForces.emplace( n->first, ef );
@@ -1670,8 +1670,8 @@ namespace inputFileProcessor{
 
             }
 
-            microAccelerations.emplace( n->first, floatVector( values.begin( ) + _dim * n->second,
-                                                               values.begin( ) + _dim * ( n->second + 1 ) ) );
+            microAccelerations.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                               values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
 
         }
 
@@ -1757,8 +1757,8 @@ namespace inputFileProcessor{
 
             }
 
-            microVelocities.emplace( n->first, floatVector( values.begin( ) + _dim * n->second,
-                                                            values.begin( ) + _dim * ( n->second + 1 ) ) );
+            microVelocities.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                            values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
 
         }
 
@@ -1773,24 +1773,7 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        stringVector variableKeys =
-            {
-                "v1", "v2", "v3",
-                "phiDot11", "phiDot12", "phiDot13",
-                "phiDot21", "phiDot22", "phiDot23",
-                "phiDot31", "phiDot32", "phiDot33",
-            };
-
-        std::string dataType = "Node";
-
-        bool populateWithNullOnUndefined = true;
-
-        std::string configurationName = "velocity_variable_names";
-        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
-
-        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _macroVelocityFlag, _macroVelocities );
+        errorOut error = extractMacroVelocities( increment, _macroVelocityFlag, _macroVelocities );
 
         if ( error ){
 
@@ -1805,13 +1788,14 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMacroVelocities( const unsigned int &increment, bool &flag, floatVector &macroVelocities ){
+    errorOut inputFileProcessor::extractMacroVelocities( const unsigned int &increment, bool &flag,
+                                                         std::unordered_map< uIntType, floatVector > &macroVelocities ){
         /*!
          * Extract the node macro-velocities at the indicated increment
          *
          * :param const unsigned int &increment: The current increment
          * :param bool &flag: The flag indicating if the values are defined in the file
-         * :param floatVector &macroVelocities: The vector to store the values in
+         * :param std::unordered_map< uIntType, floatVector > &macroVelocities: The map to store the values in
          */
 
         stringVector variableKeys =
@@ -1828,10 +1812,11 @@ namespace inputFileProcessor{
 
         std::string configurationName = "velocity_variable_names";
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
 
         errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, macroVelocities );
+                                                                        configuration, flag, values );
 
         if ( error ){
 
@@ -1839,6 +1824,31 @@ namespace inputFileProcessor{
                                              "Error in the extraction of the macro velocities" );
             result->addNext( error );
             return result;
+
+        }
+
+        if ( !flag ){
+
+            return NULL;
+
+        }
+        else{
+
+            macroVelocities.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+            for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+                if ( n->second > values.size( ) ){
+
+                    return new errorNode( "extractMacroVelocities",
+                                          "The values vector is too small for the index required by micro node " +
+                                          std::to_string( n->first ) );
+
+                }
+
+                macroVelocities.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+
+            }
 
         }
 
@@ -2258,8 +2268,8 @@ namespace inputFileProcessor{
 
             }
 
-            _microStresses.emplace( n->first, floatVector( values.begin( ) + _dim * _dim * n->second,
-                                                           values.begin( ) + _dim * _dim * ( n->second + 1 ) ) );
+            _microStresses.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                           values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
 
         }
 
@@ -2317,8 +2327,8 @@ namespace inputFileProcessor{
 
             }
 
-            _microInternalForces.emplace( n->first, floatVector( values.begin( ) + _dim * n->second,
-                                                                 values.begin( ) + _dim * ( n->second + 1 ) ) );
+            _microInternalForces.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                 values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
 
         }
 
@@ -2375,8 +2385,8 @@ namespace inputFileProcessor{
 
             }
 
-            _microInertialForces.emplace( n->first, floatVector( values.begin( ) + _dim * n->second,
-                                                                 values.begin( ) + _dim * ( n->second + 1 ) ) );
+            _microInertialForces.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                 values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
 
         }
 
@@ -2500,8 +2510,15 @@ namespace inputFileProcessor{
 
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
-            microDisplacements.emplace( n->first, floatVector( values.begin( ) + _dim * n->second,
-                                                               values.begin( ) + _dim * ( n->second + 1 ) ) );
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMicroDisplacements",
+                                      "The displacement vector is too short for the required index" );
+
+            }
+
+            microDisplacements.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                               values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
 
         }
 
@@ -2518,78 +2535,47 @@ namespace inputFileProcessor{
          * :param const unsigned int &increment: The current increment
          */
 
-        //Variable definitions
-        long unsigned int indx = 0;
+        stringVector variableKeys =
+            {
+                "u1", "u2", "u3",
+            };
 
-        floatVector disp;
+        std::string dataType = "Node";
 
-        //Expected displacement keys
-        stringVector displacementKeys = { "u1", "u2", "u3" }; //The dimension is assumed to be 3
+        bool populateWithNullOnUndefined = false;
+        bool flag;
 
-        //Initialize the micro displacements vector
-        _macroDisplacements.clear( );
-        unsigned int numNodes;
+        std::string configurationName = "displacement_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
 
-        errorOut error = _macroscale->getNumNodes( increment, numNodes );
+
+        floatVector values;
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, flag, values );
 
         if ( error ){
-            
-            errorOut result = new errorNode( "extractMacroDisplacements", "Error in the determination of the number of macro-nodes" );
+
+            errorOut result = new errorNode( "extractMacroDisplacements",
+                                             "Error in the extraction of the macro displacements" );
             result->addNext( error );
             return result;
 
         }
 
-        _macroDisplacements.resize( displacementKeys.size( ) * numNodes );
+        _microDisplacements.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
 
-        //Check if the displacement names have been defined
-        if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ] ){
+        for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
-            return new errorNode( "extractMacroDisplacements", "The names of the displacements of the macro-positions are not defined" );
+            if ( n->second >= values.size( ) ){
 
-        }
-        else{
-
-            for ( auto it = displacementKeys.begin( ); it != displacementKeys.end( ); it++ ){
-
-                if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ] ){
-
-                    return new errorNode( "extractMacroDisplacements", "'" + *it + " is not defined in 'displacement_variable_names'");
-
-                }
-                else if ( !_config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ].IsScalar( ) ){
-
-                    return new errorNode( "extractMacroDisplacements", "'" + *it + "' is not a scalar" );
-
-                }
-                else{
-
-                    //Get the displacement
-                    errorOut error
-                        = _macroscale->getSolutionData( increment, 
-                                                        _config[ "macroscale_definition" ][ "displacement_variable_names" ][ *it ].as< std::string >( ),
-                                                        "Node", disp );
-
-                    if ( error ){
-                        
-                        errorOut result = new errorNode( "extractMacroDisplacements", "Error in extraction of '" + *it + "'" );
-                        result->addNext( error );
-                        return result;
-
-                    }
-
-                    //Set the displacements
-                    for ( unsigned int i = 0; i < disp.size( ); i++ ){
-
-                        _macroDisplacements[ displacementKeys.size( ) * i + indx ] = disp[ i ];
-
-                    }
-
-                }
-
-                indx++;
+                return new errorNode( "extractMacroDisplacements",
+                                      "The outputDOF vector is too short for the required index" );
 
             }
+
+            _macroDisplacements.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
 
         }
 
@@ -2601,29 +2587,11 @@ namespace inputFileProcessor{
         /*!
          * Extract the displacement degrees of freedom of the nodes in the macro domain.
          *
-         * TODO: Replace with generalized form
-         *
          * :param const unsigned int &increment: The current increment
          */
-        stringVector variableKeys =
-            {
-                 "u1", "u2", "u3",
-                 "phi11", "phi12", "phi13",
-                 "phi21", "phi22", "phi23",
-                 "phi31", "phi32", "phi33"
-            };
 
-        std::string dataType = "Node";
-
-        bool populateWithNullOnUndefined = false;
-
-        std::string configurationName = "displacement_variable_names";
-        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
         bool flag;
-
-        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, _macroDispDOFVector );
+        errorOut error = extractMacroDispDOFVector( increment, flag, _macroDispDOFVector );
 
         if ( error ){
 
@@ -2638,7 +2606,7 @@ namespace inputFileProcessor{
 
     }
 
-    errorOut inputFileProcessor::extractMacroDispDOFVector( const unsigned int &increment, bool &flag, floatVector &macroDispDOFVector ){
+    errorOut inputFileProcessor::extractMacroDispDOFVector( const unsigned int &increment, bool &flag, std::unordered_map< uIntType, floatVector > &macroDispDOFVector ){
         /*!
          * Extract the displacement degrees of freedom of the nodes in the macro domain.
          *
@@ -2646,7 +2614,7 @@ namespace inputFileProcessor{
          *
          * :param const unsigned int &increment: The current increment
          * :param bool &flag: The flag to indicate if the values are defined in the input file
-         * :param floatVector &microDispDOFVector: The vector to store the displacements DOF vector in
+         * :param std::unordered_map< uIntType, floatVector > &microDispDOFVector: The vector to store the displacements DOF vector in
          */
         stringVector variableKeys =
             {
@@ -2662,10 +2630,11 @@ namespace inputFileProcessor{
 
         std::string configurationName = "displacement_variable_names";
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
 
         errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, macroDispDOFVector );
+                                                                        configuration, flag, values );
 
         if ( error ){
 
@@ -2673,6 +2642,22 @@ namespace inputFileProcessor{
                                              "Error in the extraction of the micro displacement degree of freedom vector" );
             result->addNext( error );
             return result;
+
+        }
+
+        macroDispDOFVector.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+
+        for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMacroDispDOFVector",
+                                      "The DOF vector is too short for the required index" );
+
+            }
+
+            macroDispDOFVector.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                               values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
 
         }
 
@@ -4174,7 +4159,7 @@ namespace inputFileProcessor{
         return &_macroTime;
     }
 
-    const floatVector* inputFileProcessor::getMacroDisplacements( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroDisplacements( ){
         /*!
          * Get the macro-displacements
          */
@@ -4182,7 +4167,7 @@ namespace inputFileProcessor{
         return &_macroDisplacements;
     }
 
-    const floatVector* inputFileProcessor::getMacroDispDOFVector( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroDispDOFVector( ){
         /*!
          * Get the macro-displacement DOF vector
          */
@@ -4190,7 +4175,7 @@ namespace inputFileProcessor{
         return &_macroDispDOFVector;
     }
 
-    const floatVector* inputFileProcessor::getMacroVelocities( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroVelocities( ){
         /*!
          * Get a pointer to the macro velocities
          */
@@ -4207,7 +4192,7 @@ namespace inputFileProcessor{
 
     }
 
-    const floatVector* inputFileProcessor::getPreviousMacroDispDOFVector( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getPreviousMacroDispDOFVector( ){
         /*!
          * Get a pointer to the previous macro values of the displacement degrees of freedom
          *
@@ -4227,7 +4212,7 @@ namespace inputFileProcessor{
 
     }
 
-    const floatVector* inputFileProcessor::getPreviousMacroVelocities( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getPreviousMacroVelocities( ){
         /*!
          * Get a pointer to the previous macro velocities
          *

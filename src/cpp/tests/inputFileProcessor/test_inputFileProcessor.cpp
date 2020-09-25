@@ -1802,48 +1802,138 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const floatType macroTimeAnswer = 1.;
+    const floatType* macroTimeResult = reader.getMacroTime( );
 
+    if ( !vectorTools::fuzzyEquals( macroTimeAnswer, *macroTimeResult ) ){
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    const floatVector macroDisplacementsAnswer =
-        {
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-            0., 0., -0.001,
-        };
-
-    const floatVector *macroDisplacementsResult = reader.getMacroDisplacements( );
-
-    if ( !vectorTools::fuzzyEquals( macroDisplacementsAnswer, *macroDisplacementsResult ) ){
-        vectorTools::print( *macroDisplacementsResult );
-        results << "test_initializeIncrement (test 12) & False\n";
+        results << "test_initializeIncrement (test 51) & False\n";
         return 1;
+
     }
+
+    const std::unordered_map< uIntType, floatVector > macroDisplacementsAnswer
+        =
+            {
+                {  5, { 0.641275, 0.232390, -2.327989 } },
+                {  9, { -0.277488, 1.864821, -0.959118 } },
+                {  8, { -1.872777, 2.331052, -2.562691 } },
+                { 11, { -0.954015, 0.698621, -3.931561 } },
+                {  3, { 0.863789, 1.140577, -2.616417 } },
+                {  1, { -0.054974, 2.773008, -1.247547 } },
+                {  6, { -1.650263, 3.239239, -2.851120 } },
+                { 15, { -0.731501, 1.606808, -4.219990 } },
+                { 12, { 1.086303, 2.048764, -2.904846 } },
+                {  2, { 0.167540, 3.681195, -1.535975 } },
+                { 13, { -1.427749, 4.147426, -3.139548 } },
+                { 14, { -0.508987, 2.514995, -4.508419 } },
+            };
+
+    const std::unordered_map< uIntType, floatVector > *macroDisplacementsResult = reader.getMacroDisplacements( );
+
+    for ( auto it = macroDisplacementsAnswer.begin( ); it != macroDisplacementsAnswer.end( ); it++ ){
+
+        auto r = macroDisplacementsResult->find( it->first );
+
+        if ( r == macroDisplacementsResult->end( ) ){
+
+            results << "test_initializeIncrement (test 51) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 52) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    const std::unordered_map< uIntType, floatVector > macroDispDOFVectorAnswer
+        =
+            {
+                {  5, { 0.641275, 0.232390, -2.327989, 2.476106, 3.649307, 0.380024, -0.602181, -0.098268, 1.214942, -1.346951, 0.875060, 0.810153 } },
+                {  9, { -0.277488, 1.864821, -0.959118, 3.747254, 2.993086, 1.602849, -0.801713, 0.385446, 1.268479, -0.333959, 0.834465, 0.773507 } },
+                {  8, { -1.872777, 2.331052, -2.562691, 5.125425, 4.185234, 0.239589, -2.210062, -1.562753, 0.311109, -2.017245, 2.360391, -1.174211 } },
+                { 11, { -0.954015, 0.698621, -3.931561, 3.854278, 4.841455, -0.983235, -2.010531, -2.046468, 0.257571, -3.030237, 2.400986, -1.137565 } },
+                {  3, { 0.863789, 1.140577, -2.616417, 3.550081, 5.494371, 0.536456, 0.929143, -0.090355, 2.448663, -3.175893, 0.545918, -0.235911 } },
+                {  1, { -0.054974, 2.773008, -1.247547, 4.821228, 4.838150, 1.759280, 0.729611, 0.393360, 2.502200, -2.162901, 0.505323, -0.272557 } },
+                {  6, { -1.650263, 3.239239, -2.851120, 6.199400, 6.030298, 0.396021, -0.678739, -1.554840, 1.544830, -3.846187, 2.031250, -2.220275 } },
+                { 15, { -0.731501, 1.606808, -4.219990, 4.928252, 6.686519, -0.826804, -0.479207, -2.038554, 1.491293, -4.859179, 2.071844, -2.183628 } },
+                { 12, { 1.086303, 2.048764, -2.904846, 4.624056, 7.339434, 0.692887, 2.460467, -0.082442, 3.682384, -5.004835, 0.216776, -1.281975 } },
+                {  2, { 0.167540, 3.681195, -1.535975, 5.895203, 6.683213, 1.915712, 2.260935, 0.401273, 3.735921, -3.991843, 0.176182, -1.318621 } },
+                { 13, { -1.427749, 4.147426, -3.139548, 7.273375, 7.875361, 0.552453, 0.852585, -1.546927, 2.778551, -5.675130, 1.702108, -3.266339 } },
+                { 14, { -0.508987, 2.514995, -4.508419, 6.002227, 8.531582, -0.670372, 1.052117, -2.030641, 2.725014, -6.688121, 1.742702, -3.229692 } },
+            };
+    const std::unordered_map< uIntType, floatVector > *macroDispDOFVectorResult = reader.getMacroDispDOFVector( );
+
+    for ( auto it = macroDispDOFVectorAnswer.begin( ); it != macroDispDOFVectorAnswer.end( ); it++ ){
+
+        auto r = macroDispDOFVectorResult->find( it->first );
+
+        if ( r == macroDispDOFVectorResult->end( ) ){
+
+            results << "test_initializeIncrement (test 53) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 54) & False\n";
+            return 1;
+
+        }
+
+    }
+
+    const std::unordered_map< uIntType, floatVector > macroVelocitiesAnswer
+        =
+            {
+                {  5, { -2.346964, -2.328088, 2.337123, 1.674508, 1.402881, -1.276984, 2.105710, 1.195199, 0.817334, 1.284606, -0.465939, -1.366498 } },
+                {  9, { -0.548438, -2.321249, 3.137203, -0.038677, 2.051591, -1.215603, 0.532880, 0.749185, 1.584563, 0.398241, -2.435270, -0.742095 } },
+                {  8, { 1.144646, -3.077963, 3.498864, -1.812710, 3.863297, -3.088573, -0.357800, 1.094312, 2.608025, 0.763815, -2.637127, -0.243639 } },
+                { 11, { -0.653880, -3.084803, 2.698784, -0.099526, 3.214588, -3.149954, 1.215030, 1.540326, 1.840796, 1.650181, -0.667796, -0.868043 } },
+                {  3, { -1.773946, -3.882980, 2.418979, 1.029116, 1.811975, -0.760381, 3.600941, 2.431781, 1.015779, 0.656494, 0.547274, -2.449650 } },
+                {  1, { 0.024580, -3.876140, 3.219060, -0.684069, 2.460685, -0.699000, 2.028111, 1.985767, 1.783008, -0.229872, -1.422057, -1.825247 } },
+                {  6, { 1.717664, -4.632855, 3.580720, -2.458102, 4.272392, -2.571970, 1.137432, 2.330893, 2.806471, 0.135703, -1.623914, -1.326792 } },
+                { 15, { -0.080862, -4.639694, 2.780640, -0.744918, 3.623682, -2.633351, 2.710262, 2.776907, 2.039242, 1.022068, 0.345417, -1.951195 } },
+                { 12, { -1.200928, -5.437871, 2.500835, 0.383724, 2.221070, -0.243779, 5.096172, 3.668363, 1.214225, 0.028381, 1.560487, -3.532803 } },
+                {  2, { 0.597598, -5.431032, 3.300916, -1.329461, 2.869779, -0.182398, 3.523342, 3.222349, 1.981454, -0.857984, -0.408844, -2.908399 } },
+                { 13, { 2.290682, -6.187747, 3.662577, -3.103494, 4.681486, -2.055368, 2.632663, 3.567475, 3.004916, -0.492410, -0.610701, -2.409944 } },
+                { 14, { 0.492156, -6.194586, 2.862496, -1.390310, 4.032776, -2.116749, 4.205493, 4.013489, 2.237687, 0.393955, 1.358630, -3.034347 } },
+            };
+
+    const std::unordered_map< uIntType, floatVector > *macroVelocitiesResult = reader.getMacroVelocities( );
+
+    for ( auto it = macroVelocitiesAnswer.begin( ); it != macroVelocitiesAnswer.end( ); it++ ){
+
+        auto r = macroVelocitiesResult->find( it->first );
+
+        if ( r == macroVelocitiesResult->end( ) ){
+
+            results << "test_initializeIncrement (test 55) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 56) & False\n";
+            return 1;
+
+        }
+
+    }
+
+
+
+
 
 //    const uIntVector *nonOverlappedMicroNodeIds = reader.getNonOverlappedMicroNodeIds( );
     const uIntVector *freeMicroNodeIds = reader.getFreeMicroNodeIds( );
@@ -2060,34 +2150,6 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
-    const floatVector *macroDispDOFVectorResult = reader.getMacroDispDOFVector( );
-
-    const floatVector macroDispDOFVectorAnswer =
-        {
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0., 0., -0.001, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        };
-   
-    if ( !vectorTools::fuzzyEquals( macroDispDOFVectorAnswer, *macroDispDOFVectorResult ) ){
-        results << "test_initializeIncrement (test 27) & False\n";
-        return 1;
-    }
-
-
     if ( reader.microBodyForceDefined( ) ){
 
         results << "test_initializeIncrement (test 29) & False\n";
@@ -2134,22 +2196,6 @@ int test_initializeIncrement( std::ofstream &results ){
 
         results << "test_initializeIncrement (test 37) & False\n";
         return 1;
-
-    }
-
-    const floatVector macroVelocitiesAnswer = { 0., 0., -0.002, 0., 0., 0., 0., 0., 0., 0., 0., 0. };
-
-    const floatVector *macroVelocitiesResult = reader.getMacroVelocities( );
-
-    for ( auto mVR = macroVelocitiesResult->begin( ); mVR != macroVelocitiesResult->end( ); mVR++ ){
-
-        if ( !vectorTools::fuzzyEquals( *mVR, macroVelocitiesAnswer[ ( mVR - macroVelocitiesResult->begin( ) ) % 12 ], 1e-5, 1e-5 ) ){
-
-            std::cout << *mVR << "\n"; 
-            results << "test_initializeIncrement (test 38) & False\n";
-            return 1;
-    
-        }
 
     }
 
@@ -2309,39 +2355,82 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    std::cout << "check numbers\n";
+    const std::unordered_map< uIntType, floatVector > previousMacroDispDOFVectorAnswer
+        =
+            {
+                {  5, { 0.028316, 1.669368, -0.675497, 1.237413, 1.695543, -0.472972, 0.302567, 0.847229, 1.313857, 0.027499, 0.297804, -0.165902 } },
+                {  9, { -0.890446, 3.301799, 0.693373, 2.508561, 1.039322, 0.749852, 0.103035, 1.330944, 1.367395, 1.040491, 0.257210, -0.202549 } },
+                {  8, { -2.485736, 3.768030, -0.910199, 3.886732, 2.231470, -0.613407, -1.305314, -0.617256, 0.410025, -0.642795, 1.783136, -2.150267 } },
+                { 11, { -1.566974, 2.135599, -2.279070, 2.615585, 2.887691, -1.836232, -1.105782, -1.100970, 0.356487, -1.655787, 1.823730, -2.113620 } },
+                {  3, { 0.250830, 2.577555, -0.963926, 2.311388, 3.540607, -0.316540, 1.833891, 0.855143, 2.547578, -1.801443, -0.031338, -1.211966 } },
+                {  1, { -0.667932, 4.209986, 0.404945, 3.582536, 2.884385, 0.906284, 1.634359, 1.338857, 2.601116, -0.788451, -0.071932, -1.248613 } },
+                {  6, { -2.263222, 4.676217, -1.198628, 4.960707, 4.076534, -0.456975, 0.226010, -0.609342, 1.643746, -2.471737, 1.453994, -3.196331 } },
+                { 15, { -1.344460, 3.043786, -2.567498, 3.689560, 4.732755, -1.679800, 0.425541, -1.093057, 1.590208, -3.484729, 1.494589, -3.159684 } },
+                { 12, { 0.473344, 3.485742, -1.252354, 3.385363, 5.385670, -0.160109, 3.365215, 0.863056, 3.781300, -3.630385, -0.360479, -2.258030 } },
+                {  2, { -0.445418, 5.118173, 0.116516, 4.656510, 4.729449, 1.062716, 3.165683, 1.346770, 3.834837, -2.617393, -0.401074, -2.294677 } },
+                { 13, { -2.040708, 5.584404, -1.487057, 6.034682, 5.921597, -0.300544, 1.757333, -0.601429, 2.877467, -4.300680, 1.124852, -4.242395 } },
+                { 14, { -1.121946, 3.951973, -2.855927, 4.763534, 6.577818, -1.523368, 1.956865, -1.085144, 2.823929, -5.313671, 1.165447, -4.205748 } },
+            };
 
-    const floatVector previousMacroDispDOFVectorAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
-    const floatVector *previousMacroDispDOFVectorResult = reader.getPreviousMacroDispDOFVector( );
+    const std::unordered_map< uIntType, floatVector > *previousMacroDispDOFVectorResult = reader.getPreviousMacroDispDOFVector( );
 
-    for ( auto v  = previousMacroDispDOFVectorResult->begin( );
-               v != previousMacroDispDOFVectorResult->end( );
-               v++ ){
+    for ( auto it = previousMacroDispDOFVectorAnswer.begin( ); it != previousMacroDispDOFVectorAnswer.end( ); it++ ){
 
-        uIntType indx = v - previousMacroDispDOFVectorResult->begin( );
+        auto r = previousMacroDispDOFVectorResult->find( it->first );
 
-        if ( !vectorTools::fuzzyEquals( previousMacroDispDOFVectorAnswer[ indx % 12 ], *v, 1e-5, 1e-5 ) ){
+        if ( r == previousMacroDispDOFVectorResult->end( ) ){
 
-            std::cout << *v << "\n";
-            results << "test_initializeIncrement (test 61) & False\n";
+            results << "test_initializeIncrement (test 53) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 54) & False\n";
             return 1;
 
         }
 
     }
 
-    const floatVector previousMacroVelocitiesAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
-    const floatVector *previousMacroVelocitiesResult = reader.getPreviousMacroVelocities( );
+    std::cout << "check numbering\n";
+    const std::unordered_map< uIntType, floatVector > previousMacroVelocitiesAnswer
+        =
+             {
+                {  5, { -1.501765, -1.483894, 0.684890, 0.330246, -0.559686, -0.727351, 1.240470, 1.138232, 0.275631, 1.151980, 0.135063, -0.239197 } },
+                {  9, { 0.296761, -1.477054, 1.484970, -1.382938, 0.089023, -0.665970, -0.332360, 0.692218, 1.042860, 0.265615, -1.834268, 0.385206 } },
+                {  8, { 1.989845, -2.233769, 1.846631, -3.156971, 1.900730, -2.538940, -1.223039, 1.037345, 2.066323, 0.631189, -2.036125, 0.883662 } },
+                { 11, { 0.191319, -2.240608, 1.046550, -1.443787, 1.252020, -2.600321, 0.349790, 1.483359, 1.299094, 1.517554, -0.066794, 0.259258 } },
+                {  3, { -0.928747, -3.038786, 0.766746, -0.315146, -0.150592, -0.210748, 2.735701, 2.374814, 0.474077, 0.523867, 1.148276, -1.322349 } },
+                {  1, { 0.869779, -3.031946, 1.566826, -2.028330, 0.498117, -0.149367, 1.162871, 1.928800, 1.241306, -0.362498, -0.821055, -0.697946 } },
+                {  6, { 2.562863, -3.788661, 1.928487, -3.802363, 2.309824, -2.022337, 0.272192, 2.273927, 2.264768, 0.003076, -1.022912, -0.199490 } },
+                { 15, { 0.764337, -3.795500, 1.128407, -2.089179, 1.661114, -2.083718, 1.845022, 2.719941, 1.497539, 0.889442, 0.946419, -0.823894 } },
+                { 12, { -0.355729, -4.593677, 0.848602, -0.960538, 0.258502, 0.305854, 4.230932, 3.611396, 0.672522, -0.104245, 2.161489, -2.405502 } },
+                {  2, { 1.442797, -4.586838, 1.648683, -2.673722, 0.907211, 0.367235, 2.658103, 3.165382, 1.439751, -0.990611, 0.192157, -1.781098 } },
+                { 13, { 3.135881, -5.343553, 2.010343, -4.447755, 2.718918, -1.505734, 1.767423, 3.510508, 2.463214, -0.625036, -0.009700, -1.282643 } },
+                { 14, { 1.337355, -5.350392, 1.210263, -2.734571, 2.070208, -1.567116, 3.340253, 3.956522, 1.695985, 0.261329, 1.959631, -1.907046 } },
+            };
 
-    for ( auto v  = previousMacroVelocitiesResult->begin( );
-               v != previousMacroVelocitiesResult->end( );
-               v++ ){
+    const std::unordered_map< uIntType, floatVector > *previousMacroVelocitiesResult = reader.getPreviousMacroVelocities( );
 
-        uIntType indx = v - previousMacroVelocitiesResult->begin( );
+    for ( auto it = previousMacroVelocitiesAnswer.begin( ); it != previousMacroVelocitiesAnswer.end( ); it++ ){
 
-        if ( !vectorTools::fuzzyEquals( previousMacroVelocitiesAnswer[ indx % 12 ], *v, 1e-5, 1e-5 ) ){
+        auto r = previousMacroVelocitiesResult->find( it->first );
 
-            std::cout << *v << "\n";
-            results << "test_initializeIncrement (test 62) & False\n";
+        if ( r == previousMacroVelocitiesResult->end( ) ){
+
+            results << "test_initializeIncrement (test 55) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 56) & False\n";
             return 1;
 
         }
@@ -2380,16 +2469,6 @@ int test_initializeIncrement( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( microTimeAnswer, *microTimeResult ) ){
 
         results << "test_initializeIncrement (test 64) & False\n";
-        return 1;
-
-    }
-
-    const floatType macroTimeAnswer = 1.;
-    const floatType* macroTimeResult = reader.getMacroTime( );
-
-    if ( !vectorTools::fuzzyEquals( macroTimeAnswer, *macroTimeResult ) ){
-
-        results << "test_initializeIncrement (test 65) & False\n";
         return 1;
 
     }
