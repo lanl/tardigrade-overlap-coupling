@@ -2207,7 +2207,7 @@ namespace inputFileProcessor{
                 _macroExternalForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
                 for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
-                    _microExternalForces.emplace( n->first, _macroSurfaceForces[ n->first ] + _macroBodyForces[ n->first ] );
+                    _macroExternalForces.emplace( n->first, _macroSurfaceForces[ n->first ] + _macroBodyForces[ n->first ] );
 
                 }
                 _macroExternalForceFlag = true;
@@ -2221,7 +2221,7 @@ namespace inputFileProcessor{
             }
             else if ( _macroBodyForceFlag ){
 
-                _macroExternalForces = _microBodyForces;
+                _macroExternalForces = _macroBodyForces;
                 _macroExternalForceFlag = true;
 
             }
@@ -3402,6 +3402,18 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config[ "coupling_initialization" ][ "macro_body_force_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "macro_body_force_sign" ] = 1; //Default to 1
+
+        }
+
+        if ( !_config[ "coupling_initialization" ][ "macro_surface_force_sign" ] ){
+
+            _config[ "coupling_initialization" ][ "macro_surface_force_sign" ] = 1; //Default to 1
+
+        }
+
         if ( !_config[ "coupling_initialization" ][ "macro_external_force_sign" ] ){
 
             _config[ "coupling_initialization" ][ "macro_external_force_sign" ] = 1; //Default to 1
@@ -4548,6 +4560,22 @@ namespace inputFileProcessor{
          */
 
         return &_macroInertialForces;
+    }
+
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroBodyForces( ){
+        /*!
+         * Get a pointer to the macro body forces
+         */
+
+        return &_macroBodyForces;
+    }
+
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroSurfaceForces( ){
+        /*!
+         * Get a pointer to the macro surface forces
+         */
+
+        return &_macroSurfaceForces;
     }
 
     const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroNodeReferencePositions( ){

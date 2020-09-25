@@ -98,6 +98,8 @@ namespace inputFileProcessor{
             const std::unordered_map< uIntType, floatVector >* getPreviousMacroVelocities( );
             const std::unordered_map< uIntType, floatVector >* getPreviousMacroAccelerations( );
             const std::unordered_map< uIntType, floatVector >* getMacroInternalForces( );
+            const std::unordered_map< uIntType, floatVector >* getMacroBodyForces( );
+            const std::unordered_map< uIntType, floatVector >* getMacroSurfaceForces( );
             const std::unordered_map< uIntType, floatVector >* getMacroExternalForces( );
             const std::unordered_map< uIntType, floatVector >* getMacroInertialForces( );
 

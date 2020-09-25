@@ -89,6 +89,32 @@ macroscale_definition:
                 C31: CInertial_31
                 C32: CInertial_32
                 C33: CInertial_33
+        body_force_variable_names: #The names of the body force attributes at the nodes
+                F1: bf_1
+                F2: bf_2
+                F3: bf_3
+                C11: bc_11
+                C12: bc_12
+                C13: bc_13
+                C21: bc_21
+                C22: bc_22
+                C23: bc_23
+                C31: bc_31
+                C32: bc_32
+                C33: bc_33
+        surface_force_variable_names: #The names of the surface force attributes at the nodes
+                F1: sf_1
+                F2: sf_2
+                F3: sf_3
+                C11: sc_11
+                C12: sc_12
+                C13: sc_13
+                C21: sc_21
+                C22: sc_22
+                C23: sc_23
+                C31: sc_31
+                C32: sc_32
+                C33: sc_33
 
 microscale_definition:
         filename: microscale.xdmf
