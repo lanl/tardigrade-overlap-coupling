@@ -435,9 +435,11 @@ namespace overlapCoupling{
 
         uIntVector macroNodes;
 
+        //THIS MAY CAUSE BUGS!
         std::unordered_map< uIntType, floatVector > domainReferenceXiVectors;
         floatVector domainCenterOfMassShapeFunctionValues;
-        floatVector domainMicroPositionShapeFunctionValues;
+        std::unordered_map< uIntType, floatVector > domainMicroPositionShapeFunctionValues;
+        //THIS MAY CAUSE BUGS!
 
         for ( auto cellID  = freeMacroCellIDs->begin( );
                    cellID != freeMacroCellIDs->end( );
@@ -763,7 +765,7 @@ namespace overlapCoupling{
                                                       floatVector &referenceMicroDomainCentersOfMass,
                                                       std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
                                                       floatVector &domainCenterOfMassShapeFunctionValues,
-                                                      floatVector &domainMicroPositionShapeFunctionValues ){
+                                                      std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues ){
         /*!
          * Process the domain for use with preparing the reference configuration
          *
@@ -779,7 +781,7 @@ namespace overlapCoupling{
          * :param std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors: The reference Xi vectors for the domain.
          * :param floatVector &domainCenterOfMassShapeFunctionValues: The shape function values at the 
          *     center of mass
-         * :param floatVector &domainMicroPositionShapeFunctionValues: The shape function values at the
+         * :param std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues: The shape function values at the
          *     micro node positions inside of the domain. This is only computed if indicated by the 
          *     configuration file.
          */
@@ -928,7 +930,7 @@ namespace overlapCoupling{
                                                                      const unsigned int &microIncrement,
                                                                      const floatVector &domainCenterOfMass,
                                                                      floatVector &domainCenterOfMassShapeFunctionValues,
-                                                                     floatVector &domainMicroPositionShapeFunctionValues ){
+                                                                     std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues ){
         /*!
          * Compute the shape function values at the required locations
          *
@@ -937,17 +939,16 @@ namespace overlapCoupling{
          * :param const unsigned int &microIncrement: The micro-scale increment to analyze
          * :param const floatVector &domainCenterOfMass: The center of mass of the domain
          * :param floatVector &domainCenterOfMassShapeFunctionValues: The shapefunction values at the center of mass
-         * :param floatVector &domainMicroPositionShapeFunctionValues: The shapefunction values at all of the micro nodes
-         *     contained within the domain.
+         * :param std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues:
+         *     The shapefunction values at all of the micro nodes contained within the domain.
          */
 
         //Compute the shape functions of the domain's center of mass
-        errorOut error = computeShapeFunctionsAtPoints( cellID,
-                                                        *_inputProcessor.getMacroNodeReferencePositions( ),
-                                                        *_inputProcessor.getMacroDisplacements( ),
-                                                        *_inputProcessor.getMacroNodeReferenceConnectivity( ),
-                                                        *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
-                                                        domainCenterOfMass, domainCenterOfMassShapeFunctionValues );
+        errorOut error = computeShapeFunctionsAtPoint( cellID,
+                                                       *_inputProcessor.getMacroNodeReferencePositions( ),
+                                                       *_inputProcessor.getMacroDisplacements( ),
+                                                       *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                                       domainCenterOfMass, domainCenterOfMassShapeFunctionValues );
 
         if ( error ){
 
@@ -975,19 +976,34 @@ namespace overlapCoupling{
         if ( _inputProcessor.computeMicroShapeFunctions( ) ){
 
             //Get the micro-node positions
-            floatVector microNodePositions( _dim * domainNodes.size( ) );
+            std::unordered_map< uIntType, floatVector > microNodePositions;
     
-            unsigned int index;
-            const floatVector *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
-            const floatVector *microDisplacements      = _inputProcessor.getMicroDisplacements( );
+            const std::unordered_map< uIntType, floatVector > *microReferencePositions
+                = _inputProcessor.getMicroNodeReferencePositions( );
+            const std::unordered_map< uIntType, floatVector > *microDisplacements
+                = _inputProcessor.getMicroDisplacements( );
 
+            microNodePositions.reserve( microReferencePositions->size( ) );
             for ( auto it = domainNodes.begin( ); it != domainNodes.end( ); it++ ){
-    
-                index = it - domainNodes.begin( );
-                for ( unsigned int i = 0; i < _dim; i++ ){
-                    microNodePositions[ _dim * index + i ] = ( *microReferencePositions )[ _dim * ( *it ) + i ]
-                                                           + ( *microDisplacements )[ _dim * ( *it ) + i ];
+  
+                auto microReferencePosition = microReferencePositions->find( *it );
+
+                if ( microReferencePosition == microReferencePositions->end( ) ){
+
+                    return new errorNode( "computeDomainShapeFunctionInformation",
+                                          "Micro node " + std::to_string( *it ) + " was not found in the reference position map" );
+
                 }
+
+                auto microDisplacement = microDisplacements->find( *it );
+                if ( microDisplacement == microDisplacements->end( ) ){
+
+                    return new errorNode( "computeDomainShapeFunctionInformation",
+                                          "Micro node " + std::to_string( *it ) + " was not found in the displacement map" );
+
+                }
+
+                microNodePositions.emplace( *it, microReferencePosition->second + microDisplacement->second ); 
     
             }
     
@@ -996,7 +1012,6 @@ namespace overlapCoupling{
                                                    *_inputProcessor.getMacroNodeReferencePositions( ),
                                                    *_inputProcessor.getMacroDisplacements( ),
                                                    *_inputProcessor.getMacroNodeReferenceConnectivity( ),
-                                                   *_inputProcessor.getMacroNodeReferenceConnectivityCellIndices( ),
                                                    microNodePositions,
                                                    domainMicroPositionShapeFunctionValues );
 
@@ -1287,57 +1302,136 @@ namespace overlapCoupling{
 
     }
 
+    errorOut overlapCoupling::computeShapeFunctionsAtPoint( const unsigned int cellID,
+                                                            const std::unordered_map< uIntType, floatVector > &nodeLocations,
+                                                            const std::unordered_map< uIntType, uIntVector > &connectivity,
+                                                            const floatVector &point,
+                                                            floatVector &shapeFunctions ){
+        /*!
+         * Compute the shape functions of a given macro-scale domain at a single point
+         *
+         * :param const unsigned int &cellID: The cell ID at which to compute the shape functions
+         * :param const std::unordered_map< uIntType, floatVector > &nodeLocations: The nodal location map
+         * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity map
+         * :param const floatVector &point: The point at which to compute the shape functions
+         * :param floatVector &shapeFunctions: The shapefunctions at the point
+         */
+
+        if ( point.size( ) != _dim ){
+
+            return new errorNode( "computeShapeFunctionsAtPoints",
+                                  "This function only works for a single point of dimension " + std::to_string( _dim ) );
+
+        }
+
+        std::unordered_map< uIntType, floatVector > pointMap;
+        pointMap.emplace( 0, point );
+
+        std::unordered_map< uIntType, floatVector > shapefunctionMap;
+
+        error = computeShapeFunctionsAtPoints( cellID, nodeLocations, connectivity, pointMap, shapefunctionMap );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeShapeFunctionsAtPoints",
+                                             "Error when computing shape functions" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        shapeFunctions = shapefunctionMap[ 0 ];
+
+        return NULL;
+
+    }
+
+    errorOut overlapCoupling::computeShapeFunctionsAtPoint( const unsigned int cellID,
+                                                            const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
+                                                            const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
+                                                            const std::unordered_map< uIntType, uIntVector > &connectivity,
+                                                            const floatVector &point,
+                                                            floatVector &shapeFunctions ){
+        /*!
+         * Compute the shape functions of a given macro-scale domain at a single point
+         *
+         * :param const unsigned int &cellID: The cell ID at which to compute the shape functions
+         * :param const std::unordered_map< uIntType, floatVector > &nodeLocations: The nodal location map
+         * :param const std::unordered_map< uIntType, floatVector > &nodeLocations: The nodal displacement map
+         * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity map
+         * :param const floatVector &point: The point at which to compute the shape functions
+         * :param floatVector &shapeFunctions: The shapefunctions at the point
+         */
+
+        if ( point.size( ) != _dim ){
+
+            return new errorNode( "computeShapeFunctionsAtPoints",
+                                  "This function only works for a single point of dimension " + std::to_string( _dim ) );
+
+        }
+
+        std::unordered_map< uIntType, floatVector > pointMap;
+        pointMap.emplace( 0, point );
+
+        std::unordered_map< uIntType, floatVector > shapefunctionMap;
+
+        error = computeShapeFunctionsAtPoints( cellID, nodeReferenceLocations, nodeDisplacements, 
+                                               connectivity, pointMap, shapefunctionMap );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeShapeFunctionsAtPoints",
+                                             "Error when computing shape functions" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        shapeFunctions = shapefunctionMap[ 0 ];
+
+        return NULL;
+
+    }
+
     errorOut overlapCoupling::computeShapeFunctionsAtPoints( const unsigned int cellID,
-                                                             const floatVector &nodeLocations,
-                                                             const uIntVector &connectivity,
-                                                             const uIntVector &connectivityCellIndices,
-                                                             const floatVector &points,
-                                                             floatVector &shapeFunctions ){
+                                                             const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
+                                                             const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
+                                                             const std::unordered_map< uIntType, uIntVector > &connectivity,
+                                                             const std::unordered_map< uIntType, floatVector > &points,
+                                                             std::unordered_map< uIntType, floatVector > &shapeFunctions ){
         /*!
          * Compute the shape functions of a given macro-scale domain at the given points
          *
          * :param const unsigned int &cellID: The cell ID at which to compute the shape functions
-         * :param const floatVector &nodeLocations: The nodal location vector
-         * :param const uIntVector &connectivity: The connectivity vector
-         * :param const uIntVector &connectivityCellIndices: The indices of the different cells
-         *     in the connectivity vector.
-         * :param const floatVector &points: The points at which to compute the shape functions
-         * :param floatVector &shapeFunctions: The shapefunctions at the points
+         * :param const std::unordered_map< uIntType, floatVector > &nodeLocations: The nodal location map
+         * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity map
+         * :param const std::unordered_map< uIntType, floatVector > &points: The points at which to compute the shape functions
+         * :param std::unordered_map< uIntType, floatVector > &shapeFunctions: The shapefunctions at the points
          */
 
         //Build the element representing the macro-scale domain
         std::unique_ptr< elib::Element > element;
-        errorOut error = overlapCoupling::buildMacroDomainElement( cellID, nodeLocations, connectivity,
-                                                                   connectivityCellIndices, element );
+        errorOut error = overlapCoupling::buildMacroDomainElement( cellID, nodeLocations, connectivity, element );
 
         //Make sure the number of points and the size of the output are consistent
-        unsigned nPoints = points.size( ) / _dim;
-        if ( ( points.size( ) % _dim ) > 0 ){
-
-            return new errorNode( "computeShapeFunctionsAtPoints",
-                                  "The points vector is inconsistent with the dimension\n"
-                                  "    points.size( ): " + std::to_string( points.size( ) ) + "\n" +
-                                  "    nPoints: " + std::to_string( nPoints ) );
-
-        }
+        unsigned nPoints = points.size( );
 
         shapeFunctions.clear();
-        shapeFunctions.reserve( element->reference_nodes.size( ) * nPoints );
+        shapeFunctions.reserve( nPoints );
 
         //Compute the shape functions at each point
         floatVector point;
         floatVector localPosition, pointShapeFunctions;
 
         //Loop over the output vector
-        for ( unsigned int p = 0; p < nPoints; p++ ){
+        for ( auto p = points.begin( ); p != points.end( ); p++ ){
 
-            point = floatVector( points.begin( ) + _dim * p, points.begin( ) + _dim * ( p + 1 ) );
-
-            error = element->compute_local_coordinates( point, localPosition );
+            error = element->compute_local_coordinates( point->second, localPosition );
 
             if ( !element->local_point_inside( localPosition ) ){
 
-                shapeFunctions.push_back( 0. );
+                pointShapeFunctions = { 0 };
+                shapeFunctions.emplace( p->first, pointShapeFunctions );
                 continue;
 
             }
@@ -1358,11 +1452,75 @@ namespace overlapCoupling{
 
             }
 
-            for ( unsigned int i = 0; i < pointShapeFunctions.size( ); i++ ){
+            shapeFunctions.emplace( p->first, pointShapeFunctions );
 
-                shapeFunctions.push_back( pointShapeFunctions[ i ] );
+        }
+
+        return NULL;
+    }
+
+    errorOut overlapCoupling::computeShapeFunctionsAtPoints( const unsigned int cellID,
+                                                             const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
+                                                             const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
+                                                             const std::unordered_map< uIntType, uIntVector > &connectivity,
+                                                             const std::unordered_map< uIntType, floatVector > &points,
+                                                             std::unordered_map< uIntType, floatVector > &shapeFunctions ){
+        /*!
+         * Compute the shape functions of a given macro-scale domain at the given points
+         *
+         * :param const unsigned int &cellID: The cell ID at which to compute the shape functions
+         * :param const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations: The nodal reference location map
+         * :param const std::unordered_map< uIntType, floatVector > &nodeDisplacements: The nodal displacement map
+         * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity map
+         * :param const std::unordered_map< uIntType, floatVector > &points: The points at which to compute the shape functions
+         * :param std::unordered_map< uIntType, floatVector > &shapeFunctions: The shapefunctions at the points
+         */
+
+        //Build the element representing the macro-scale domain
+        std::unique_ptr< elib::Element > element;
+        errorOut error = overlapCoupling::buildMacroDomainElement( cellID, nodeReferenceLocations, nodeDisplacements,
+                                                                   connectivity, element );
+
+        //Make sure the number of points and the size of the output are consistent
+        unsigned nPoints = points.size( );
+
+        shapeFunctions.clear();
+        shapeFunctions.reserve( nPoints );
+
+        //Compute the shape functions at each point
+        floatVector point;
+        floatVector localPosition, pointShapeFunctions;
+
+        //Loop over the output vector
+        for ( auto p = points.begin( ); p != points.end( ); p++ ){
+
+            error = element->compute_local_coordinates( point->second, localPosition );
+
+            if ( !element->local_point_inside( localPosition ) ){
+
+                pointShapeFunctions = { 0 };
+                shapeFunctions.emplace( p->first, pointShapeFunctions );
+                continue;
 
             }
+
+            if ( error ) {
+
+                return new errorNode( "computeShapeFunctionsAtPoints",
+                                      "Error in computing the local coordinates for point " + std::to_string( p ) );
+
+            }
+
+            error = element->get_shape_functions( localPosition, pointShapeFunctions );
+
+            if ( error ) {
+
+                return new errorNode( "computeShapeFunctionsAtPoints",
+                                      "Error in the computation of the shape functions for point " + std::to_string( p ) );
+
+            }
+
+            shapeFunctions.emplace( p->first, pointShapeFunctions );
 
         }
 
@@ -1371,21 +1529,18 @@ namespace overlapCoupling{
     }
 
     errorOut overlapCoupling::computeShapeFunctionsAtPoints( const unsigned int cellID,
-                                                             const floatVector &nodeReferenceLocations,
-                                                             const floatVector &nodeDisplacements,
-                                                             const uIntVector &connectivity,
-                                                             const uIntVector &connectivityCellIndices,
+                                                             const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
+                                                             const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
+                                                             const std::unordered_map< uIntType, uIntVector > &connectivity
                                                              const floatVector &points,
                                                              floatVector &shapeFunctions ){
         /*!
          * Compute the shape functions of a given macro-scale domain at the given points
          *
          * :param const unsigned int &cellID: The cell ID at which to compute the shape functions
-         * :param const floatVector &nodeReferenceLocations: The nodal reference location vector
-         * :param const floatVector &nodeDisplacements: The nodal reference location vector
-         * :param const uIntVector &connectivity: The connectivity vector
-         * :param const uIntVector &connectivityCellIndices: The indices of the different cells
-         *     in the connectivity vector.
+         * :param :const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations The nodal reference location map
+         * :param const std::unordered_map< uIntType, floatVector > &nodeDisplacements: The nodal displacement map
+         * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity map
          * :param const floatVector &points: The points at which to compute the shape functions
          * :param floatVector &shapeFunctions: The shapefunctions at the points
          */
@@ -1825,7 +1980,7 @@ namespace overlapCoupling{
     errorOut overlapCoupling::addDomainToDirectProjectionReferenceValues( const uIntVector &domainNodes,
                                                                           const uIntVector &macroNodes,
                                                                           const std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
-                                                                          const floatVector &domainMicroPositionShapeFunctionValues ){
+                                                                          const std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues ){
         /*!
          * Add the current domain information to the direct projection reference values
          *
@@ -1833,7 +1988,7 @@ namespace overlapCoupling{
          * :param const uIntVector &macroNodes: The macro nodes associated with the current domain
          * :param const std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors: The relative position
          *     vectors of the domain
-         * :param const floatVector &domainMicroPositionShapeFunctionValues: The shape function values at the micro
+         * :param const std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues: The shape function values at the micro
          *     node positions.
          */
 
@@ -1891,6 +2046,14 @@ namespace overlapCoupling{
 
             }
 
+            auto shapefunctions = domainMicroPositionShapeFunctionValues.find( *microNode );
+
+            if ( shapefunctions == domainMicroPositionShapeFunctionValues.end( ) ){
+
+                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                                      "Micro node " + std::to_string( *microNode ) + " was not found in the shape function values map" );
+
+            }
 
             //Compute the micro-mass
             microMass = microDensity->second * microVolume->second;
@@ -1924,7 +2087,7 @@ namespace overlapCoupling{
                 }
 
                 //Get the shape function
-                sf = domainMicroPositionShapeFunctionValues[ macroNodes.size( ) * m + n ];
+                sf = shapefunctions[ n ];
 
                 //Add the contribution to the nodal mass
                 _macroNodeProjectedMass[ p ] += microMass * sf * weight;

@@ -134,7 +134,7 @@ namespace overlapCoupling{
 
             //Compute the shape functions at the centers of mass
             errorOut buildMacroDomainElement( const unsigned int cellID,
-                                              const floatVector &nodeLocations,
+                                              const std::unordered_map< uIntType, floatVector > &nodeLocations,
                                               const uIntVector &connectivity,
                                               const uIntVector &connectivityCellIndices,
                                               std::unique_ptr< elib::Element > &element );            
@@ -146,20 +146,29 @@ namespace overlapCoupling{
                                               const uIntVector &connectivityCellIndices,
                                               std::unique_ptr< elib::Element > &element );            
 
-            errorOut computeShapeFunctionsAtPoints( const unsigned int cellID, const floatVector &nodeLocations,
-                                                    const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
-                                                    const floatVector &points, floatVector &shapeFunctions );
+            errorOut computeShapeFunctionsAtPoint( const unsigned int cellID,
+                                                   const std::unordered_map< uIntType, floatVector > &nodeLocations,
+                                                   const std::unordered_map< uIntType, uIntVector >  &connectivity,
+                                                   const floatVector &point, floatVector &shapeFunction );
+
+            errorOut computeShapeFunctionsAtPoint( const unsigned int cellID,
+                                                   const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
+                                                   const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
+                                                   const std::unordered_map< uIntType, uIntVector >  &connectivity,
+                                                   const floatVector &point, floatVector &shapeFunction );
 
             errorOut computeShapeFunctionsAtPoints( const unsigned int cellID,
-                                                    const floatVector &nodeReferenceLocations, const floatVector &nodeDisplacements,
-                                                    const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
-                                                    const floatVector &points, floatVector &shapeFunctions );
+                                                    const std::unordered_map< uIntType, floatVector > &nodeLocations,
+                                                    const std::unordered_map< uIntType, uIntVector > &connectivity,
+                                                    const std::unordered_map< uIntType, floatVector > &points,
+                                                    std::unordered_map< uIntType, floatVector > &shapeFunctions );
 
-            errorOut computeShapeFunctionGradientsAtPoints( const unsigned int cellID,
-                                                            const floatVector &nodeReferenceLocations,
-                                                            const floatVector &nodeDisplacements,
-                                                            const uIntVector &connectivity, const uIntVector &connectivityCellIndices,
-                                                            const floatVector &points, floatVector &shapeFunctions );
+            errorOut computeShapeFunctionsAtPoints( const unsigned int cellID,
+                                                    const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
+                                                    const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
+                                                    const std::unordered_map< uIntType, uIntVector > &connectivity,
+                                                    const std::unordered_map< uIntType, floatVector > &points,
+                                                    std::unordered_map< uIntType, floatVector > &shapeFunctions );
 
             errorOut computeShapeFunctionsAtReferenceCentersOfMass( );
 
@@ -168,7 +177,7 @@ namespace overlapCoupling{
                                                             const unsigned int &microIncrement,
                                                             const floatVector &domainCenterOfMass,
                                                             floatVector &domainCenterOfMassShapeFunctionValues,
-                                                            floatVector &domainMicroPositionShapeFunctionValues );
+                                                            std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues );
 
             errorOut addDomainContributionToInterpolationMatrix( const uIntVector  &domainNodes,
                                                                  const uIntVector  &macroNodes,
@@ -182,12 +191,12 @@ namespace overlapCoupling{
                                              floatVector &referenceMicroDomainCentersOfMass,
                                              std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
                                              floatVector &domainCenterOfMassShapeFunctionValues,
-                                             floatVector &domainMicroPositionShapeFunctionValues );
+                                             std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues );
 
             errorOut addDomainToDirectProjectionReferenceValues( const uIntVector &domainNodes,
                                                                  const uIntVector &macroNodes,
                                                                  const std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
-                                                                 const floatVector &domainMicroPositionShapeFunctionValues
+                                                                 const std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues
                                                                );
 
             errorOut formTheProjectors( const unsigned int &microIncrement, const unsigned int &macroIncrement );
