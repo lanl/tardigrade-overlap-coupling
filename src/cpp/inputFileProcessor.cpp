@@ -1437,6 +1437,7 @@ namespace inputFileProcessor{
 
         if ( !_microBodyForceFlag ){
 
+            _microBodyForces.clear( );
             return NULL;
 
         }
@@ -1499,6 +1500,7 @@ namespace inputFileProcessor{
 
         if ( !_microSurfaceForceFlag ){
 
+            _microSurfaceForces.clear( );
             return NULL;
 
         }
@@ -1584,6 +1586,9 @@ namespace inputFileProcessor{
                 _microExternalForces = _microBodyForces;
                 _microExternalForceFlag = true;
 
+            }
+            else{
+                _microExternalForces.clear( );
             }
 
         }
@@ -1675,6 +1680,7 @@ namespace inputFileProcessor{
 
         if ( !flag ){
 
+            _microAccelerations.clear( );
             return NULL;
 
         }
@@ -1762,6 +1768,7 @@ namespace inputFileProcessor{
 
         if ( !flag ){
 
+            _microVelocities.clear( );
             return NULL;
 
         }
@@ -1848,6 +1855,7 @@ namespace inputFileProcessor{
 
         if ( !flag ){
 
+            _macroVelocities.clear( );
             return NULL;
 
         }
@@ -1939,6 +1947,7 @@ namespace inputFileProcessor{
 
         if ( !flag ){
 
+            macroAccelerations.clear( );
             return NULL;
 
         }
@@ -1984,10 +1993,11 @@ namespace inputFileProcessor{
 
         std::string configurationName = "internal_force_variable_names";
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
 
         errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
                                                                         populateWithNullOnUndefined, configurationName,
-                                                                        configuration, _macroInternalForceFlag, _macroInternalForces );
+                                                                        configuration, _macroInternalForceFlag, values );
 
         if ( error ){
 
@@ -1995,6 +2005,30 @@ namespace inputFileProcessor{
                                              "Error in the extraction of the macro internal forces" );
             result->addNext( error );
             return result;
+
+        }
+
+        if ( !_macroInternalForceFlag ){
+
+            _macroInternalForces.clear( );
+            return NULL;
+
+        }
+
+        _macroInternalForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+        floatType _sign = _config[ "coupling_initialization" ][ "macro_internal_force_sign" ].as< floatType >( );
+        for( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMacroInternalForces",
+                                      "The index required by macro node " + std::to_string( n->first ) + " is too large for the values vector" );
+
+            }
+
+            _macroInternalForces.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                 values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            _macroInternalForces[ n->first ] *= _sign;
 
         }
 
@@ -2108,7 +2142,7 @@ namespace inputFileProcessor{
         floatType _sign = _config[ "coupling_initialization" ][ "macro_internal_force_sign" ].as< floatType >( );
         if ( _macroInternalForceFlag && !vectorTools::fuzzyEquals( _sign, 1. ) ){
 
-            _macroInternalForces *= _sign;
+            _macroInertialForces *= _sign;
 
         }
 
@@ -2360,6 +2394,7 @@ namespace inputFileProcessor{
 
         if ( !_microInternalForceFlag ){
 
+            _microInternalForces.clear( );
             return NULL;
 
         }
@@ -2418,6 +2453,7 @@ namespace inputFileProcessor{
 
         if ( !_microInertialForceFlag ){
 
+            _microInertialForces.clear( );
             return NULL;
 
         }
@@ -3178,7 +3214,7 @@ namespace inputFileProcessor{
 
         if ( !_config[ "coupling_initialization" ][ "macro_internal_force_sign" ] ){
 
-            _config[ "coupling_initialization" ][ "macro_internal_force_sign" ] = -1; //Default to -1
+            _config[ "coupling_initialization" ][ "macro_internal_force_sign" ] = -1; //Default to -1 to be consistent with the micromorphic implementation
 
         }
 
@@ -4300,7 +4336,7 @@ namespace inputFileProcessor{
 
     }
 
-    const floatVector* inputFileProcessor::getMacroInternalForces( ){
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroInternalForces( ){
         /*!
          * Get a pointer to the macro internal forces
          */

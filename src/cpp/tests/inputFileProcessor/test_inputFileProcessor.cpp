@@ -2091,6 +2091,59 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const std::unordered_map< uIntType, floatVector > macroInternalForcesAnswer
+        =
+            {
+                {  5, { -3.123250, 0.977401, 2.054240, 1.757330, -0.474837, 1.152554, 0.177148, -0.110803, -0.822029, -0.726168, -0.869646, 0.163025 } },
+                {  9, { -1.936939, 2.067285, 3.129559, 1.307129, 1.073546, 1.568170, 0.669365, 0.549069, -1.706006, 0.098907, -0.200723, 0.426380 } },
+                {  8, { -2.811405, 2.316517, 3.559565, 0.391797, 2.169330, 0.888284, -0.794757, -1.286124, 0.075576, 0.364483, 1.119236, -0.465277 } },
+                { 11, { -3.997715, 1.226633, 2.484245, 0.841998, 0.620946, 0.472668, -1.286974, -1.945997, 0.959553, -0.460592, 0.450314, -0.728632 } },
+                {  3, { -3.134236, 2.438781, 3.072693, 3.369779, -1.079855, 0.553564, -0.716138, 0.891244, -2.584717, -2.198251, 0.401625, 0.010912 } },
+                {  1, { -1.947925, 3.528665, 4.148013, 2.919578, 0.468528, 0.969180, -0.223921, 1.551116, -3.468694, -1.373176, 1.070548, 0.274268 } },
+                {  6, { -2.822390, 3.777897, 4.578018, 2.004247, 1.564312, 0.289294, -1.688043, -0.284077, -1.687111, -1.107600, 2.390507, -0.617389 } },
+                { 15, { -4.008701, 2.688013, 3.502699, 2.454448, 0.015928, -0.126322, -2.180260, -0.943950, -0.803134, -1.932675, 1.721585, -0.880745 } },
+                { 12, { -3.145221, 3.900161, 4.091147, 4.982229, -1.684873, -0.045426, -1.609424, 1.893290, -4.347404, -3.670334, 1.672896, -0.141200 } },
+                {  2, { -1.958911, 4.990045, 5.166466, 4.532028, -0.136490, 0.370190, -1.117208, 2.553163, -5.231381, -2.845259, 2.341819, 0.122155 } },
+                { 13, { -2.833376, 5.239278, 5.596472, 3.616696, 0.959294, -0.309696, -2.581330, 0.717969, -3.449799, -2.579683, 3.661778, -0.769502 } },
+                { 14, { -4.019687, 4.149394, 4.521152, 4.066897, -0.589089, -0.725312, -3.073546, 0.058097, -2.565822, -3.404757, 2.992856, -1.032857 } },
+            };
+
+    const std::unordered_map< uIntType, floatVector > *macroInternalForcesResult = reader.getMacroInternalForces( );
+
+    for ( auto it = macroInternalForcesAnswer.begin( ); it != macroInternalForcesAnswer.end( ); it++ ){
+
+        auto r = macroInternalForcesResult->find( it->first );
+
+        if ( r == macroInternalForcesResult->end( ) ){
+
+            results << "test_initializeIncrement (test 65) & False\n";
+            return 1;
+
+        }
+        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
+
+            std::cout << r->first << ": "; vectorTools::print( r->second );
+            std::cout << it->first << ": "; vectorTools::print( it->second );
+            results << "test_initializeIncrement (test 66) & False\n";
+            return 1;
+
+        }
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2356,21 +2409,6 @@ int test_initializeIncrement( std::ofstream &results ){
 
         results << "test_initializeIncrement (test 41) & False\n";
         return 1;
-
-    }
-
-    const floatVector macroInternalForcesAnswer = { 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0. };
-    const floatVector *macroInternalForcesResult = reader.getMacroInternalForces( );
-
-    for ( auto mIFR = macroInternalForcesResult->begin( ); mIFR != macroInternalForcesResult->end( ); mIFR++ ){
-
-        if ( !vectorTools::fuzzyEquals( *mIFR, macroInternalForcesAnswer[ ( mIFR - macroInternalForcesResult->begin( ) ) % 12 ], 1e-5, 1e-4 ) ){
-
-            std::cout << mIFR - macroInternalForcesResult->begin( ) << ": " << *mIFR << "\n";
-            results << "test_initializeIncrement (test 44) & False\n";
-            return 1;
-
-        }
 
     }
 
