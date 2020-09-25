@@ -3508,13 +3508,13 @@ int main(){
     test_getFreeMacroDomainNames( results );
     test_getGhostMacroDomainNames( results );
     test_getCouplingInitialization( results );
-//    test_getVolumeReconstructionConfig( results );
-//    test_getFreeMicroSurfaceApproximateSplitCount( results );
-//    test_getGhostMicroSurfaceApproximateSplitCount( results );
-//    test_outputReferenceInformation( results );
-//    test_outputHomogenizedInformation( results );
-//    test_outputUpdatedDOF( results );
-//
+    test_getVolumeReconstructionConfig( results );
+    test_getFreeMicroSurfaceApproximateSplitCount( results );
+    test_getGhostMicroSurfaceApproximateSplitCount( results );
+    test_outputReferenceInformation( results );
+    test_outputHomogenizedInformation( results );
+    test_outputUpdatedDOF( results );
+
     //Close the results file
     results.close();
 

@@ -699,14 +699,6 @@ namespace inputFileProcessor{
                 return result;
             }
 
-//            error = checkCommonVolumeToSurfaceMapping( _ghost_micro_volume_sets, _ghost_micro_surface_sets );
-//            if ( error ){
-//                errorOut result = new errorNode( "initializeCouplingDomains",
-//                                                 "Error in input-file check of the micro volume to surface mapping for the free macroscale domains" );
-//                result->addNext( error );
-//                return result;
-//            }
-
         }
 
         if ( _config[ "ghost_macroscale_domains" ] ){
@@ -723,78 +715,7 @@ namespace inputFileProcessor{
                 return result;
             }
 
-//            error = checkCommonVolumeToSurfaceMapping( _free_micro_volume_sets, _free_micro_surface_sets );
-//            if ( error ){
-//                errorOut result = new errorNode( "initializeCouplingDomains",
-//                                                 "Error in input-file check of the micro volume to surface mapping for the free macroscale domains" );
-//                result->addNext( error );
-//                return result;
-//            }
-
         }
-
-//        if ( _config[ "non_overlapped_microscale_domains" ] ){
-//
-//            if ( _config[ "non_overlapped_microscale_domains" ].IsSequence( ) ){
-//
-//                unsigned int nNonOverlappedMicroscaleDomains = 0;
-//                unsigned int indx = 1;
-//                _non_overlapped_micro_surface_sets.clear();
-//
-//                for ( auto domain = _config[ "non_overlapped_microscale_domains" ].begin( );
-//                      domain != _config[ "non_overlapped_microscale_domains" ].end( );
-//                      domain++ ){
-//
-//                    if ( !domain->IsScalar( ) ){
-//
-//                        return new errorNode( "initializeCouplingDomains",
-//                                              "Entry " + std::to_string( indx ) + " of non_overlapped_microscale_domains is not a scalar" );
-//
-//                    }
-//
-//                    nNonOverlappedMicroscaleDomains++;
-//                    indx++;
-//
-//                }
-//
-//                indx = 0;
-//                _non_overlapped_micro_surface_sets = stringVector( nNonOverlappedMicroscaleDomains );
-//
-//                for ( auto domain = _config[ "non_overlapped_microscale_domains" ].begin( );
-//                      domain != _config[ "non_overlapped_microscale_domains" ].end( );
-//                      domain++ ){
-//
-//                    _non_overlapped_micro_surface_sets[ indx ] = domain->as< std::string >( );
-//                    indx++;
-//
-//                }
-//
-//            }
-//
-//        }
-
-//        //Make sure that no nodeset that appears in the ghost micro-scale also appears in the free or non-overlapped micro-scales
-//        for ( auto nodeset = _ghost_micro_surface_sets.begin( ); nodeset != _ghost_micro_surface_sets.end( ); nodeset++ ){
-//
-//            if ( std::find( _free_micro_surface_sets.begin( ), _free_micro_surface_sets.end( ), *nodeset ) != _free_micro_surface_sets.end( ) ){
-//                return new errorNode( "initializeCouplingDomains",
-//                                      *nodeset + " appears in the ghost and free micro-surface nodeset definitions" );
-//            }
-//
-//            if ( std::find( _non_overlapped_micro_surface_sets.begin( ), _non_overlapped_micro_surface_sets.end( ), *nodeset ) != _non_overlapped_micro_surface_sets.end( ) ){
-//                return new errorNode( "initializeCouplingDomains",
-//                                      *nodeset + " appears in the ghost and free micro-surface nodeset definitions" );
-//            }
-//        }
-//
-//        for ( auto nodeset = _free_micro_surface_sets.begin( ); nodeset != _free_micro_surface_sets.end( ); nodeset++ ){
-//
-//            if ( std::find( _non_overlapped_micro_surface_sets.begin( ), _non_overlapped_micro_surface_sets.end( ), *nodeset ) != _non_overlapped_micro_surface_sets.end( ) ){
-//                return new errorNode( "initializeCouplingDomains",
-//                                      *nodeset + " appears in the free and non-overlapped micro-surface nodeset definitions" );
-//            }
-//
-//        }
 
         //Make sure that no volume nodeset that appears in the ghost micro-scale also appears in the free micro-scale
         for ( auto nodeset = _ghost_micro_volume_sets.begin( ); nodeset != _ghost_micro_volume_sets.end( ); nodeset++ ){
