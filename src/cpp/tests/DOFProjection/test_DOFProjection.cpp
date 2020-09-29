@@ -5605,6 +5605,10 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
     //Test map version
     std::unordered_map< uIntType, floatType > microVolumesMap, microDensitiesMap, microWeightsMap;
     std::unordered_map< uIntType, floatVector > domainReferenceXisMap;
+    std::unordered_map< uIntType, floatVector > domainInterpolationFunctionValuesMap;
+    std::unordered_map< uIntType, floatType > domainMacroNodeProjectedMassMap;
+    std::unordered_map< uIntType, floatVector > domainMacroNodeProjectedMassMomentOfInertiaMap;
+    std::unordered_map< uIntType, floatVector > domainMacroNodeMassRelativePositionConstantMap;
 
     for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
 
@@ -5616,14 +5620,28 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
         domainReferenceXisMap.emplace( *index, floatVector( domainReferenceXis.begin( ) + dim * inc,
                                                             domainReferenceXis.begin( ) + dim * ( inc + 1 ) ) );
 
+        domainInterpolationFunctionValuesMap.emplace( *index, floatVector( domainInterpolationFunctionValues.begin( ) + 8 * inc,
+                                                                           domainInterpolationFunctionValues.begin( ) + 8 * ( inc + 1 ) ) );
+
+    }
+    for ( auto index = domainMacroNodeIndices.begin( ); index != domainMacroNodeIndices.end( ); index++ ){
+
+        uIntType inc = index - domainMacroNodeIndices.begin( );
+
+        domainMacroNodeProjectedMassMomentOfInertiaMap.emplace( *index, floatVector( domainMacroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * inc,
+                                                                                     domainMacroNodeProjectedMassMomentOfInertia.begin( ) + dim * dim * ( inc + 1 ) ) );
+        domainMacroNodeMassRelativePositionConstantMap.emplace( *index, floatVector( domainMacroNodeMassRelativePositionConstant.begin( ) + dim * inc,
+                                                                                     domainMacroNodeMassRelativePositionConstant.begin( ) + dim * ( inc + 1 ) ) );
+        domainMacroNodeProjectedMassMap.emplace( *index, domainMacroNodeProjectedMass[ inc ] );
+
     }
     error = DOFProjection::formMicroDomainToMacroProjectionMatrix( dim, 27, 137, domainMicroNodeIndices,
                                                                    domainMacroNodeIndices, microVolumesMap, microDensitiesMap,
                                                                    microWeightsMap, domainReferenceXisMap,
-                                                                   domainInterpolationFunctionValues,
-                                                                   domainMacroNodeProjectedMass,
-                                                                   domainMacroNodeProjectedMassMomentOfInertia,
-                                                                   domainMacroNodeMassRelativePositionConstant, projector,
+                                                                   domainInterpolationFunctionValuesMap,
+                                                                   domainMacroNodeProjectedMassMap,
+                                                                   domainMacroNodeProjectedMassMomentOfInertiaMap,
+                                                                   domainMacroNodeMassRelativePositionConstantMap, projector,
                                                                    &microNodeToLocalIndex, &macroNodeToLocalIndex );
 
     if ( error ){
