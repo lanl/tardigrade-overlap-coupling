@@ -12,12 +12,19 @@
 
 typedef overlapCoupling::errorNode errorNode; //!Redefinition for the error node
 typedef overlapCoupling::errorOut errorOut; //!Redefinition for a pointer to the error node
+typedef overlapCoupling::uIntType uIntType; //!Define a type for an unsigned int
+typedef overlapCoupling::uIntVector uIntVector; //!Define a type for a vector of unsigned ints
 typedef overlapCoupling::floatType floatType; //!Define the float values type.
 typedef overlapCoupling::floatVector floatVector; //! Define a vector of floats
 typedef overlapCoupling::floatMatrix floatMatrix; //!Define a matrix of floats
 typedef overlapCoupling::uIntVector uIntVector; //!Define a vector of unsigned ints
 typedef overlapCoupling::SparseMatrix SparseMatrix; //!Define a sparse matrix
 typedef DOFProjection::T T; //!Define the triplet
+
+typedef overlapCoupling::domainFloatMap domainFloatMap; //!Define a map from a micro domain to a float property
+typedef overlapCoupling::domainFloatVectorMap domainFloatVectorMap; //!Define a map from a micro domain to a float vector property
+typedef overlapCoupling::cellDomainFloatMap cellDomainFloatMap; //!Define a map from a macro cell to a micro domain float property
+typedef overlapCoupling::cellDomainFloatVectorMap cellDomainFloatVectorMap; //!Define a map from a macro cell to a micro domain float vector property
 
 errorOut readMatrixFromFile( const std::string filename, floatVector &data, Eigen::MatrixXd &matrix ){
     /*!
@@ -83,6 +90,107 @@ errorOut readMatrixFromFile( const std::string filename, floatVector &data, Eige
     return NULL;
 
 }
+
+template< class T >
+int _compare_domainMaps( std::ofstream &results,
+                         const std::unordered_map< std::string, T > &answer,
+                         const std::unordered_map< std::string, T > &result,
+                         const std::string testName,
+                         uIntType &testNum ){
+    /*!
+     * Compare domain maps to eachother
+     *
+     * :param std::ofstream &results: The output file
+     * :param const std::unordered_map< std::string, T > &answer: The answer map
+     * :param const std::unordered_map< std::string, T > &result: The result map
+     * :param const std::string testName: The name of the test
+     * :param uIntType &testNum: The number of the test
+     */
+
+    for ( auto a_domain = answer.begin( ); a_domain != answer.end( ); a_domain++ ){
+
+        auto r_domain = result.find( a_domain->first );
+
+        if ( r_domain == result.end( ) ){
+
+            std::string outstr = "test_";
+            outstr += testName;
+            outstr += " (test ";
+            outstr += std::to_string( testNum + 1 );
+            outstr += ") & False\n";
+            results << outstr;
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( r_domain->second, a_domain->second ) ){
+
+            std::string outstr = "test_";
+            outstr += testName;
+            outstr += " (test ";
+            outstr += std::to_string( testNum + 2 );
+            outstr += ") & False\n";
+            results << outstr;
+            return 1;
+
+        }
+
+    }
+
+    testNum += 2;
+
+    return 0;
+
+}
+
+template< class T >
+int _compare_cellDomainMaps( std::ofstream &results,
+                             const std::unordered_map< uIntType, std::unordered_map< std::string, T > > &answer,
+                             const std::unordered_map< uIntType, std::unordered_map< std::string, T > > &result,
+                             const std::string testName,
+                             uIntType &testNum ){
+    /*!
+     * Compare cell domain maps to eachother
+     *
+     * :param std::ofstream &results: The output file
+     * :param const std::unordered_map< uIntType, std::unordered_map< std::string, T > > &answer: The answer map
+     * :param const std::unordered_map< uIntType, std::unordered_map< std::string, T > > &result: The result map
+     * :param const std::string testName: The name of the test
+     * :param uIntType &testNum: The number of the test
+     */
+
+    uIntType tmp;
+    for ( auto a_cell = answer.begin( ); a_cell != answer.end( ); a_cell++ ){
+
+        auto r_cell = result.find( a_cell->first );
+
+        if ( r_cell == result.end( ) ){
+
+            std::string outstr = "test_";
+            outstr += testName;
+            outstr += " (test ";
+            outstr += std::to_string( testNum + 1 );
+            outstr += ") & False\n";
+            results << outstr;
+            return 1;
+
+        }
+
+        tmp = testNum + 1;
+        if ( _compare_domainMaps( results, a_cell->second, r_cell->second, testName, tmp ) ){
+
+            return 1;
+
+        }
+
+    }
+
+    testNum = tmp;
+
+    return 0;
+
+}
+
 
 int test_overlapCoupling_constructor( std::ostream &results ){
     /*!
@@ -237,6 +345,9 @@ int test_overlapCoupling_getReferenceFreeMicroDomainMasses( std::ofstream &resul
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
 
+    std::string testName = "overlapCoupling_getReferenceFreeMicroDomainMasses";
+    uIntType testNum = 0;
+
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
 
@@ -254,16 +365,26 @@ int test_overlapCoupling_getReferenceFreeMicroDomainMasses( std::ofstream &resul
         return 1;
     }
 
-    floatVector referenceFreeMicroDomainMassesAnswer = { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
-    referenceFreeMicroDomainMassesAnswer *= 2;
+    const cellDomainFloatMap referenceFreeMicroDomainMassesAnswer
+        =
+        { { 1,
+              { 
+                  { "free_nodeset_volume_1", 0.25 },
+                  { "free_nodeset_volume_2", 0.25 },
+                  { "free_nodeset_volume_3", 0.25 },
+                  { "free_nodeset_volume_4", 0.25 },
+                  { "free_nodeset_volume_5", 0.25 },
+                  { "free_nodeset_volume_6", 0.25 },
+                  { "free_nodeset_volume_7", 0.25 },
+                  { "free_nodeset_volume_8", 0.25 },
+              }
+          }
+        };
 
-    const floatVector *referenceFreeMicroDomainMassesResult = oc.getReferenceFreeMicroDomainMasses( );
+    const cellDomainFloatMap *referenceFreeMicroDomainMassesResult = oc.getReferenceFreeMicroDomainMasses( );
 
-    if ( !vectorTools::fuzzyEquals( referenceFreeMicroDomainMassesAnswer, *referenceFreeMicroDomainMassesResult ) ){
-        vectorTools::print( referenceFreeMicroDomainMassesAnswer );
-        vectorTools::print( *referenceFreeMicroDomainMassesResult );
-        std::cout << referenceFreeMicroDomainMassesResult->size( ) << "\n";
-        results << "test_overlapCoupling_getReferenceFreeMicroDomainMasses (test 1) & False\n";
+    if ( _compare_cellDomainMaps( results, referenceFreeMicroDomainMassesAnswer, *referenceFreeMicroDomainMassesResult,
+                                  testName, testNum ) ){
         return 1;
     }
 
@@ -290,6 +411,9 @@ int test_overlapCoupling_getReferenceGhostMicroDomainMasses( std::ofstream &resu
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
 
+    std::string testName = "overlapCoupling_getReferenceGhostMicroDomainMasses";
+    uIntType testNum = 0;
+
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
 
@@ -307,13 +431,26 @@ int test_overlapCoupling_getReferenceGhostMicroDomainMasses( std::ofstream &resu
         return 1;
     }
 
-    floatVector referenceGhostMicroDomainMassesAnswer = { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
-    referenceGhostMicroDomainMassesAnswer *= 2;
+    const cellDomainFloatMap referenceGhostMicroDomainMassesAnswer
+        =
+        { { 2,
+              { 
+                  { "ghost_nodeset_volume_1", 0.25 },
+                  { "ghost_nodeset_volume_2", 0.25 },
+                  { "ghost_nodeset_volume_3", 0.25 },
+                  { "ghost_nodeset_volume_4", 0.25 },
+                  { "ghost_nodeset_volume_5", 0.25 },
+                  { "ghost_nodeset_volume_6", 0.25 },
+                  { "ghost_nodeset_volume_7", 0.25 },
+                  { "ghost_nodeset_volume_8", 0.25 },
+              }
+          }
+        };
 
-    const floatVector *referenceGhostMicroDomainMassesResult = oc.getReferenceGhostMicroDomainMasses( );
+    const cellDomainFloatMap *referenceGhostMicroDomainMassesResult = oc.getReferenceGhostMicroDomainMasses( );
 
-    if ( !vectorTools::fuzzyEquals( referenceGhostMicroDomainMassesAnswer, *referenceGhostMicroDomainMassesResult ) ){
-        results << "test_overlapCoupling_getReferenceGhostMicroDomainMasses (test 1) & False\n";
+    if ( _compare_cellDomainMaps( results, referenceGhostMicroDomainMassesAnswer, *referenceGhostMicroDomainMassesResult,
+                                  testName, testNum ) ){
         return 1;
     }
 
@@ -339,6 +476,9 @@ int test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( std::ofstream
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
 
+    std::string testName = "overlapCoupling_getReferenceFreeMicroDomainCentersOfMass";
+    uIntType testNum = 0;
+
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
 
@@ -356,21 +496,27 @@ int test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( std::ofstream
         return 1;
     }
 
-    floatVector referenceFreeMicroDomainCentersOfMassAnswer = { 0.75, 0.25, 2.75,
-                                                                0.75, 0.25, 2.25,
-                                                                0.25, 0.25, 2.75,
-                                                                0.25, 0.25, 2.25,
-                                                                0.75, 0.75, 2.75,
-                                                                0.75, 0.75, 2.25,
-                                                                0.25, 0.75, 2.75,
-                                                                0.25, 0.75, 2.25 };
+    const cellDomainFloatVectorMap referenceFreeMicroDomainCentersOfMassAnswer
+        =
+        {
+            { 1,
+                {
+                    { "free_nodeset_volume_1", { 0.75, 0.25, 2.75 } },
+                    { "free_nodeset_volume_2", { 0.75, 0.25, 2.25 } },
+                    { "free_nodeset_volume_3", { 0.25, 0.25, 2.75 } },
+                    { "free_nodeset_volume_4", { 0.25, 0.25, 2.25 } },
+                    { "free_nodeset_volume_5", { 0.75, 0.75, 2.75 } },
+                    { "free_nodeset_volume_6", { 0.75, 0.75, 2.25 } },
+                    { "free_nodeset_volume_7", { 0.25, 0.75, 2.75 } },
+                    { "free_nodeset_volume_8", { 0.25, 0.75, 2.25 } }
+                }
+            }
+        };
 
-    const floatVector *referenceFreeMicroDomainCentersOfMassResult = oc.getReferenceFreeMicroDomainCentersOfMass( );
+    const cellDomainFloatVectorMap *referenceFreeMicroDomainCentersOfMassResult = oc.getReferenceFreeMicroDomainCentersOfMass( );
 
-    if ( !vectorTools::fuzzyEquals( referenceFreeMicroDomainCentersOfMassAnswer, *referenceFreeMicroDomainCentersOfMassResult ) ){
-        vectorTools::print( *referenceFreeMicroDomainCentersOfMassResult );
-        vectorTools::print(  referenceFreeMicroDomainCentersOfMassAnswer );
-        results << "test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass (test 1) & False\n";
+    if ( _compare_cellDomainMaps( results, referenceFreeMicroDomainCentersOfMassAnswer, *referenceFreeMicroDomainCentersOfMassResult,
+                                  testName, testNum ) ){
         return 1;
     }
 
@@ -397,6 +543,9 @@ int test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( std::ofstrea
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
 
+    std::string testName = "overlapCoupling_getReferenceGhostMicroDomainCentersOfMass";
+    uIntType testNum = 0;
+
     std::string filename = "../testFiles/testConfig.yaml";
     overlapCoupling::overlapCoupling oc( filename );
 
@@ -414,21 +563,27 @@ int test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( std::ofstrea
         return 1;
     }
 
-    floatVector referenceGhostMicroDomainCentersOfMassAnswer = { 0.75, 0.25, 1.75,
-                                                                 0.75, 0.25, 1.25,
-                                                                 0.25, 0.25, 1.75,
-                                                                 0.25, 0.25, 1.25,
-                                                                 0.75, 0.75, 1.75,
-                                                                 0.75, 0.75, 1.25,
-                                                                 0.25, 0.75, 1.75,
-                                                                 0.25, 0.75, 1.25 };
+    const cellDomainFloatVectorMap referenceFreeMicroDomainCentersOfMassAnswer
+        =
+        {
+            { 1,
+                {
+                    { "free_nodeset_volume_1", { 0.75, 0.25, 2.75 } },
+                    { "free_nodeset_volume_2", { 0.75, 0.25, 2.25 } },
+                    { "free_nodeset_volume_3", { 0.25, 0.25, 2.75 } },
+                    { "free_nodeset_volume_4", { 0.25, 0.25, 2.25 } },
+                    { "free_nodeset_volume_5", { 0.75, 0.75, 2.75 } },
+                    { "free_nodeset_volume_6", { 0.75, 0.75, 2.25 } },
+                    { "free_nodeset_volume_7", { 0.25, 0.75, 2.75 } },
+                    { "free_nodeset_volume_8", { 0.25, 0.75, 2.25 } }
+                }
+            }
+        };
 
-    const floatVector *referenceGhostMicroDomainCentersOfMassResult = oc.getReferenceGhostMicroDomainCentersOfMass( );
+    const cellDomainFloatVectorMap *referenceFreeMicroDomainCentersOfMassResult = oc.getReferenceFreeMicroDomainCentersOfMass( );
 
-    if ( !vectorTools::fuzzyEquals( referenceGhostMicroDomainCentersOfMassAnswer, *referenceGhostMicroDomainCentersOfMassResult ) ){
-        vectorTools::print( *referenceGhostMicroDomainCentersOfMassResult );
-        vectorTools::print(  referenceGhostMicroDomainCentersOfMassAnswer );
-        results << "test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass (test 1) & False\n";
+    if ( _compare_cellDomainMaps( results, referenceFreeMicroDomainCentersOfMassAnswer, *referenceFreeMicroDomainCentersOfMassResult,
+                                  testName, testNum ) ){
         return 1;
     }
 
@@ -442,127 +597,127 @@ int test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( std::ofstrea
     return 0;
 }
 
-int test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( std::ofstream &results ){
-    /*!
-     * Test of the retrieval of the reference free micro domain centers of mass shape functions
-     */
-
-    remove( "reference_information.xdmf" );
-    remove( "reference_information.h5" );
-
-    remove( "homogenized_response.xdmf" );
-    remove( "homogenized_response.h5" );
-
-    std::string filename = "../testFiles/testConfig.yaml";
-    overlapCoupling::overlapCoupling oc( filename );
-
-    if ( oc.getConstructorError( ) ){
-        oc.getConstructorError( )->print( );
-        results << "test_overlapCoupling_ & False\n";
-        return 1;
-    }
-
-    errorOut error = oc.initializeCoupling( );
-
-    if ( error ){
-        error->print( );
-        results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions & False\n";
-        return 1;
-    }
-
-    const floatVector referenceFreeMicroDomainCenterOfMassShapeFunctionsAnswer =
-        {
-            0.140625, 0.046875, 0.140625, 0.421875, 0.046875, 0.015625, 0.046875, 0.140625,
-            0.046875, 0.015625, 0.046875, 0.140625, 0.140625, 0.046875, 0.140625, 0.421875,
-            0.421875, 0.140625, 0.046875, 0.140625, 0.140625, 0.046875, 0.015625, 0.046875,
-            0.140625, 0.046875, 0.015625, 0.046875, 0.421875, 0.140625, 0.046875, 0.140625,
-            0.046875, 0.140625, 0.421875, 0.140625, 0.015625, 0.046875, 0.140625, 0.046875,
-            0.015625, 0.046875, 0.140625, 0.046875, 0.046875, 0.140625, 0.421875, 0.140625,
-            0.140625, 0.421875, 0.140625, 0.046875, 0.046875, 0.140625, 0.046875, 0.015625,
-            0.046875, 0.140625, 0.046875, 0.015625, 0.140625, 0.421875, 0.140625, 0.046875
-        };
-
-    const floatVector *referenceFreeMicroDomainCenterOfMassShapeFunctionsResult =
-        oc.getReferenceFreeMicroDomainCenterOfMassShapeFunctions( );
-
-    if ( !vectorTools::fuzzyEquals( referenceFreeMicroDomainCenterOfMassShapeFunctionsAnswer,
-                                   *referenceFreeMicroDomainCenterOfMassShapeFunctionsResult ) ){
-        vectorTools::print( *referenceFreeMicroDomainCenterOfMassShapeFunctionsResult );
-        results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions (test 1) & False\n";
-        return 1;
-    } 
-
-    remove( "reference_information.xdmf" );
-    remove( "reference_information.h5" );
-
-    remove( "homogenized_response.xdmf" );
-    remove( "homogenized_response.h5" );
-
-    results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions & True\n";
-    return 0;
-
-}
-
-int test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( std::ofstream &results ){
-    /*!
-     * Test of the retrieval of the reference ghost micro domain centers of mass shape functions
-     */
-
-    remove( "reference_information.xdmf" );
-    remove( "reference_information.h5" );
-
-    remove( "homogenized_response.xdmf" );
-    remove( "homogenized_response.h5" );
-
-    std::string filename = "../testFiles/testConfig.yaml";
-    overlapCoupling::overlapCoupling oc( filename );
-
-    if ( oc.getConstructorError( ) ){
-        oc.getConstructorError( )->print( );
-        results << "test_overlapCoupling_ & False\n";
-        return 1;
-    }
-
-    errorOut error = oc.initializeCoupling( );
-
-    if ( error ){
-        error->print( );
-        results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions & False\n";
-        return 1;
-    }
-
-    const floatVector referenceGhostMicroDomainCenterOfMassShapeFunctionsAnswer =
-        {
-            0.046875, 0.015625, 0.046875, 0.140625, 0.140625, 0.046875, 0.140625, 0.421875,
-            0.015625, 0.046875, 0.140625, 0.046875, 0.046875, 0.140625, 0.421875, 0.140625,
-            0.140625, 0.046875, 0.015625, 0.046875, 0.421875, 0.140625, 0.046875, 0.140625,
-            0.046875, 0.140625, 0.046875, 0.015625, 0.140625, 0.421875, 0.140625, 0.046875,
-            0.140625, 0.046875, 0.140625, 0.421875, 0.046875, 0.015625, 0.046875, 0.140625,
-            0.046875, 0.140625, 0.421875, 0.140625, 0.015625, 0.046875, 0.140625, 0.046875,
-            0.421875, 0.140625, 0.046875, 0.140625, 0.140625, 0.046875, 0.015625, 0.046875,
-            0.140625, 0.421875, 0.140625, 0.046875, 0.046875, 0.140625, 0.046875, 0.015625
-        };
-
-    const floatVector *referenceGhostMicroDomainCenterOfMassShapeFunctionsResult =
-        oc.getReferenceGhostMicroDomainCenterOfMassShapeFunctions( );
-
-    if ( !vectorTools::fuzzyEquals( referenceGhostMicroDomainCenterOfMassShapeFunctionsAnswer,
-                                   *referenceGhostMicroDomainCenterOfMassShapeFunctionsResult ) ){
-        vectorTools::print( *referenceGhostMicroDomainCenterOfMassShapeFunctionsResult );
-        results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions (test 1) & False\n";
-        return 1;
-    } 
-
-    remove( "reference_information.xdmf" );
-    remove( "reference_information.h5" );
-
-    remove( "homogenized_response.xdmf" );
-    remove( "homogenized_response.h5" );
-
-    results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions & True\n";
-    return 0;
-
-}
+//int test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( std::ofstream &results ){
+//    /*!
+//     * Test of the retrieval of the reference free micro domain centers of mass shape functions
+//     */
+//
+//    remove( "reference_information.xdmf" );
+//    remove( "reference_information.h5" );
+//
+//    remove( "homogenized_response.xdmf" );
+//    remove( "homogenized_response.h5" );
+//
+//    std::string filename = "../testFiles/testConfig.yaml";
+//    overlapCoupling::overlapCoupling oc( filename );
+//
+//    if ( oc.getConstructorError( ) ){
+//        oc.getConstructorError( )->print( );
+//        results << "test_overlapCoupling_ & False\n";
+//        return 1;
+//    }
+//
+//    errorOut error = oc.initializeCoupling( );
+//
+//    if ( error ){
+//        error->print( );
+//        results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions & False\n";
+//        return 1;
+//    }
+//
+//    const floatVector referenceFreeMicroDomainCenterOfMassShapeFunctionsAnswer =
+//        {
+//            0.140625, 0.046875, 0.140625, 0.421875, 0.046875, 0.015625, 0.046875, 0.140625,
+//            0.046875, 0.015625, 0.046875, 0.140625, 0.140625, 0.046875, 0.140625, 0.421875,
+//            0.421875, 0.140625, 0.046875, 0.140625, 0.140625, 0.046875, 0.015625, 0.046875,
+//            0.140625, 0.046875, 0.015625, 0.046875, 0.421875, 0.140625, 0.046875, 0.140625,
+//            0.046875, 0.140625, 0.421875, 0.140625, 0.015625, 0.046875, 0.140625, 0.046875,
+//            0.015625, 0.046875, 0.140625, 0.046875, 0.046875, 0.140625, 0.421875, 0.140625,
+//            0.140625, 0.421875, 0.140625, 0.046875, 0.046875, 0.140625, 0.046875, 0.015625,
+//            0.046875, 0.140625, 0.046875, 0.015625, 0.140625, 0.421875, 0.140625, 0.046875
+//        };
+//
+//    const floatVector *referenceFreeMicroDomainCenterOfMassShapeFunctionsResult =
+//        oc.getReferenceFreeMicroDomainCenterOfMassShapeFunctions( );
+//
+//    if ( !vectorTools::fuzzyEquals( referenceFreeMicroDomainCenterOfMassShapeFunctionsAnswer,
+//                                   *referenceFreeMicroDomainCenterOfMassShapeFunctionsResult ) ){
+//        vectorTools::print( *referenceFreeMicroDomainCenterOfMassShapeFunctionsResult );
+//        results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions (test 1) & False\n";
+//        return 1;
+//    } 
+//
+//    remove( "reference_information.xdmf" );
+//    remove( "reference_information.h5" );
+//
+//    remove( "homogenized_response.xdmf" );
+//    remove( "homogenized_response.h5" );
+//
+//    results << "test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions & True\n";
+//    return 0;
+//
+//}
+//
+//int test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( std::ofstream &results ){
+//    /*!
+//     * Test of the retrieval of the reference ghost micro domain centers of mass shape functions
+//     */
+//
+//    remove( "reference_information.xdmf" );
+//    remove( "reference_information.h5" );
+//
+//    remove( "homogenized_response.xdmf" );
+//    remove( "homogenized_response.h5" );
+//
+//    std::string filename = "../testFiles/testConfig.yaml";
+//    overlapCoupling::overlapCoupling oc( filename );
+//
+//    if ( oc.getConstructorError( ) ){
+//        oc.getConstructorError( )->print( );
+//        results << "test_overlapCoupling_ & False\n";
+//        return 1;
+//    }
+//
+//    errorOut error = oc.initializeCoupling( );
+//
+//    if ( error ){
+//        error->print( );
+//        results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions & False\n";
+//        return 1;
+//    }
+//
+//    const floatVector referenceGhostMicroDomainCenterOfMassShapeFunctionsAnswer =
+//        {
+//            0.046875, 0.015625, 0.046875, 0.140625, 0.140625, 0.046875, 0.140625, 0.421875,
+//            0.015625, 0.046875, 0.140625, 0.046875, 0.046875, 0.140625, 0.421875, 0.140625,
+//            0.140625, 0.046875, 0.015625, 0.046875, 0.421875, 0.140625, 0.046875, 0.140625,
+//            0.046875, 0.140625, 0.046875, 0.015625, 0.140625, 0.421875, 0.140625, 0.046875,
+//            0.140625, 0.046875, 0.140625, 0.421875, 0.046875, 0.015625, 0.046875, 0.140625,
+//            0.046875, 0.140625, 0.421875, 0.140625, 0.015625, 0.046875, 0.140625, 0.046875,
+//            0.421875, 0.140625, 0.046875, 0.140625, 0.140625, 0.046875, 0.015625, 0.046875,
+//            0.140625, 0.421875, 0.140625, 0.046875, 0.046875, 0.140625, 0.046875, 0.015625
+//        };
+//
+//    const floatVector *referenceGhostMicroDomainCenterOfMassShapeFunctionsResult =
+//        oc.getReferenceGhostMicroDomainCenterOfMassShapeFunctions( );
+//
+//    if ( !vectorTools::fuzzyEquals( referenceGhostMicroDomainCenterOfMassShapeFunctionsAnswer,
+//                                   *referenceGhostMicroDomainCenterOfMassShapeFunctionsResult ) ){
+//        vectorTools::print( *referenceGhostMicroDomainCenterOfMassShapeFunctionsResult );
+//        results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions (test 1) & False\n";
+//        return 1;
+//    } 
+//
+//    remove( "reference_information.xdmf" );
+//    remove( "reference_information.h5" );
+//
+//    remove( "homogenized_response.xdmf" );
+//    remove( "homogenized_response.h5" );
+//
+//    results << "test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions & True\n";
+//    return 0;
+//
+//}
 
 int test_overlapCoupling_processIncrement( std::ofstream &results ){
     /*!
