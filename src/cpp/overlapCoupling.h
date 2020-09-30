@@ -31,6 +31,11 @@ namespace overlapCoupling{
     typedef DOFProjection::SparseMatrix SparseMatrix;
     typedef std::vector< DOFProjection::T > tripletVector;
 
+    typedef std::unordered_map< std::string, floatType > domainFloatMap;
+    typedef std::unordered_map< std::string, floatVector > domainFloatVectorMap;
+    typedef std::unordered_map< uIntType, domainFloatMap > cellDomainFloatMap;
+    typedef std::unordered_map< uIntType, domainFloatVectorMap > cellDomainFloatVectorMap;
+
     //!The different strategies for the partitioning coefficient
     enum partitioningCoefficient { VOLUME_FRACTION };
     const std::map< std::string, partitioningCoefficient > partitioningCoefficientStrategies =
@@ -63,18 +68,18 @@ namespace overlapCoupling{
             errorOut processLastIncrements( );
 
             //Access functions
-            const floatVector* getReferenceFreeMicroDomainMasses( );
-            const floatVector* getReferenceGhostMicroDomainMasses( );
-            const floatVector* getReferenceFreeMicroDomainCentersOfMass( );
-            const floatVector* getReferenceGhostMicroDomainCentersOfMass( );
+            const cellDomainFloatMap* getReferenceFreeMicroDomainMasses( );
+            const cellDomainFloatMap* getReferenceGhostMicroDomainMasses( );
+            const cellDomainFloatVectorMap* getReferenceFreeMicroDomainCentersOfMass( );
+            const cellDomainFloatVectorMap* getReferenceGhostMicroDomainCentersOfMass( );
 
-            const floatVector* getFreeMicroDomainMasses( );
-            const floatVector* getGhostMicroDomainMasses( );
-            const floatVector* getFreeMicroDomainCentersOfMass( );
-            const floatVector* getGhostMicroDomainCentersOfMass( );
+            const domainFloatMap* getFreeMicroDomainMasses( );
+            const domainFloatMap* getGhostMicroDomainMasses( );
+            const domainFloatVectorMap* getFreeMicroDomainCentersOfMass( );
+            const domainFloatVectorMap* getGhostMicroDomainCentersOfMass( );
 
-            const floatVector* getReferenceFreeMicroDomainCenterOfMassShapeFunctions( );
-            const floatVector* getReferenceGhostMicroDomainCenterOfMassShapeFunctions( );
+            const cellDomainFloatVectorMap* getReferenceFreeMicroDomainCenterOfMassShapeFunctions( );
+            const cellDomainFloatVectorMap* getReferenceGhostMicroDomainCenterOfMassShapeFunctions( );
 
             const floatVector* getProjectedGhostMacroDisplacement( );
             const floatVector* getProjectedGhostMicroDisplacement( );
@@ -96,32 +101,46 @@ namespace overlapCoupling{
             floatType _absoluteTolerance = 1e-9;
 
             //Domain mass properties
-            floatVector _referenceFreeMicroDomainMasses;
-            floatVector _referenceGhostMicroDomainMasses;
-            floatVector _referenceFreeMicroDomainCentersOfMass;
-            floatVector _referenceGhostMicroDomainCentersOfMass;
+//            floatVector _referenceFreeMicroDomainMasses;
+//            floatVector _referenceGhostMicroDomainMasses;
+//            floatVector _referenceFreeMicroDomainCentersOfMass;
+//            floatVector _referenceGhostMicroDomainCentersOfMass;
+            cellDomainFloatMap _referenceFreeMicroDomainMasses;
+            cellDomainFloatMap _referenceGhostMicroDomainMasses;
+            cellDomainFloatVectorMap _referenceFreeMicroDomainCentersOfMass;
+            cellDomainFloatVectorMap _referenceGhostMicroDomainCentersOfMass;
 
-            floatVector _freeMicroDomainMasses;
-            floatVector _ghostMicroDomainMasses;
-            floatVector _freeMicroDomainCentersOfMass;
-            floatVector _ghostMicroDomainCentersOfMass;
+//            floatVector _freeMicroDomainMasses;
+//            floatVector _ghostMicroDomainMasses;
+//            floatVector _freeMicroDomainCentersOfMass;
+//            floatVector _ghostMicroDomainCentersOfMass;
+            domainFloatMap       _freeMicroDomainMasses;
+            domainFloatMap       _ghostMicroDomainMasses;
+            domainFloatVectorMap _freeMicroDomainCentersOfMass;
+            domainFloatVectorMap _ghostMicroDomainCentersOfMass;
 
-            floatVector _referenceFreeMicroDomainCenterOfMassShapeFunctions;
-            floatVector _referenceGhostMicroDomainCenterOfMassShapeFunctions;
+//            floatVector _referenceFreeMicroDomainCenterOfMassShapeFunctions;
+//            floatVector _referenceGhostMicroDomainCenterOfMassShapeFunctions;
+            cellDomainFloatVectorMap _referenceFreeMicroDomainCenterOfMassShapeFunctions;
+            cellDomainFloatVectorMap _referenceGhostMicroDomainCenterOfMassShapeFunctions;
 
             floatVector _projected_ghost_macro_displacement;
             floatVector _projected_ghost_micro_displacement;
 
-            floatVector _macroNodeProjectedMass;
-            floatVector _macroNodeProjectedMassMomentOfInertia;
-            floatVector _macroNodeMassRelativePositionConstant;
+//            floatVector _macroNodeProjectedMass;
+//            floatVector _macroNodeProjectedMassMomentOfInertia;
+//            floatVector _macroNodeMassRelativePositionConstant;
+            std::unordered_map< uIntType, floatType >   _macroNodeProjectedMass;
+            std::unordered_map< uIntType, floatVector > _macroNodeProjectedMassMomentOfInertia;
+            std::unordered_map< uIntType, floatVector > _macroNodeMassRelativePositionConstant;
+
 
             std::unordered_map< uIntType, floatVector > _macroReferencePositions;
             std::unordered_map< uIntType, floatVector > _microReferencePositions;
 
             //Private functions
             errorOut processDomainMassData( const unsigned int &microIncrement, const std::string &domainName,
-                                            floatType &domainMass, floatVector &domainCenterOfMass,
+                                            domainFloatMap &domainMass, domainFloatVectorMap &domainCenterOfMass,
                                             std::unordered_map< uIntType, floatVector > &domainXiVectors );
 
             //Compute initial values
@@ -129,21 +148,19 @@ namespace overlapCoupling{
 
             //Compute the increment's values
             errorOut computeIncrementCentersOfMass( const unsigned int microIncrement, const unsigned int macroIncrement,
-                                                    floatVector &freeDomainMass, floatVector &ghostDomainMass,
-                                                    floatVector &freeDomainCM, floatVector &ghostDomainCM );
+                                                    domainFloatMap &freeDomainMass, domainFloatMap &ghostDomainMass,
+                                                    domainFloatVectorMap &freeDomainCM, domainFloatVectorMap &ghostDomainCM );
 
             //Compute the shape functions at the centers of mass
             errorOut buildMacroDomainElement( const unsigned int cellID,
                                               const std::unordered_map< uIntType, floatVector > &nodeLocations,
-                                              const uIntVector &connectivity,
-                                              const uIntVector &connectivityCellIndices,
+                                              const std::unordered_map< uIntType, uIntVector > &connectivity,
                                               std::unique_ptr< elib::Element > &element );            
 
             errorOut buildMacroDomainElement( const unsigned int cellID,
-                                              const floatVector &nodeReferenceLocations,
-                                              const floatVector &nodeDisplacements,
-                                              const uIntVector &connectivity,
-                                              const uIntVector &connectivityCellIndices,
+                                              const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
+                                              const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
+                                              const std::unordered_map< uIntType, uIntVector > &connectivity,
                                               std::unique_ptr< elib::Element > &element );            
 
             errorOut computeShapeFunctionsAtPoint( const unsigned int cellID,
@@ -170,6 +187,13 @@ namespace overlapCoupling{
                                                     const std::unordered_map< uIntType, floatVector > &points,
                                                     std::unordered_map< uIntType, floatVector > &shapeFunctions );
 
+            errorOut computeShapeFunctionGradientsAtPoints( const unsigned int cellID,
+                                                            const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
+                                                            const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
+                                                            const std::unordered_map< uIntType, uIntVector > &connectivity,
+                                                            const std::unordered_map< uIntType, floatVector > points,
+                                                            std::unordered_map< uIntType, floatVector > &shapeFunctionGradients );
+
             errorOut computeShapeFunctionsAtReferenceCentersOfMass( );
 
             errorOut computeDomainShapeFunctionInformation( const unsigned int &cellID,
@@ -187,8 +211,8 @@ namespace overlapCoupling{
             errorOut processDomainReference( const unsigned int &microIncrement,
                                              const unsigned int &domainIndex, const std::string &domainName,
                                              const unsigned int cellID, const uIntVector &macroNodes,
-                                             floatType   &referenceMicroDomainMass,
-                                             floatVector &referenceMicroDomainCentersOfMass,
+                                             domainFloatMap       &referenceMicroDomainMass,
+                                             domainFloatVectorMap &referenceMicroDomainCentersOfMass,
                                              std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
                                              floatVector &domainCenterOfMassShapeFunctionValues,
                                              std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues );
@@ -218,11 +242,13 @@ namespace overlapCoupling{
                                         uIntVector &microDomainNodeIds, floatVector &microNodePositions,
                                         std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
-            errorOut computeDomainVolumeAverages( const uIntType &macroCellID, const uIntVector &microDomainNodeIDs,
+            errorOut computeDomainVolumeAverages( const uIntType &macroCellID, const std::string &microDomainName,
+                                                  const uIntVector &microDomainNodeIDs,
                                                   std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume, 
                                                   const floatVector *microDomainCenterOfMass = NULL );
 
-            errorOut computeDomainSurfaceAverages( const uIntType &macroCellID, const uIntVector &microDomainNodeIDs,
+            errorOut computeDomainSurfaceAverages( const uIntType &macroCellID, const std::string &microDomainName,
+                                                   const uIntVector &microDomainNodeIDs,
                                                    const uIntType &microDomainSurfaceDecompositionCount,
                                                    std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
@@ -276,21 +302,21 @@ namespace overlapCoupling{
             SparseMatrix _DP_BDhatD;
 
             //The homogenized values
-            std::unordered_map< uIntType, floatVector > homogenizedVolumes;
-            std::unordered_map< uIntType, floatVector > homogenizedSurfaceAreas;
-            std::unordered_map< uIntType, floatVector > homogenizedDensities;
-            std::unordered_map< uIntType, floatVector > homogenizedMicroInertias;
-            std::unordered_map< uIntType, floatVector > homogenizedCentersOfMass;
-            std::unordered_map< uIntType, floatVector > homogenizedBodyForces;
-            std::unordered_map< uIntType, floatVector > homogenizedBodyForceCouples;
-            std::unordered_map< uIntType, floatVector > homogenizedAccelerations;
-            std::unordered_map< uIntType, floatVector > homogenizedMicroSpinInertias;
-            std::unordered_map< uIntType, floatVector > homogenizedSymmetricMicroStresses;
-            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionAreas;
-            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionDensities;
-            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionCentersOfMass;
-            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionTractions;
-            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionCouples;
+            cellDomainFloatMap homogenizedVolumes;
+            cellDomainFloatMap homogenizedSurfaceAreas;
+            cellDomainFloatMap homogenizedDensities;
+            cellDomainFloatVectorMap homogenizedMicroInertias;
+            cellDomainFloatVectorMap homogenizedCentersOfMass;
+            cellDomainFloatVectorMap homogenizedBodyForces;
+            cellDomainFloatVectorMap homogenizedBodyForceCouples;
+            cellDomainFloatVectorMap homogenizedAccelerations;
+            cellDomainFloatVectorMap homogenizedMicroSpinInertias;
+            cellDomainFloatVectorMap homogenizedSymmetricMicroStresses;
+            cellDomainFloatVectorMap homogenizedSurfaceRegionAreas;
+//            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionDensities;
+            cellDomainFloatVectorMap homogenizedSurfaceRegionCentersOfMass;
+            cellDomainFloatVectorMap homogenizedSurfaceRegionTractions;
+            cellDomainFloatVectorMap homogenizedSurfaceRegionCouples;
 
             //The values at the macro cell quadrature points
             std::unordered_map< uIntType, floatVector > quadraturePointDensities;
