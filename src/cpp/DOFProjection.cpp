@@ -9,6 +9,8 @@
 
 #include<DOFProjection.h>
 
+#include<boost/algorithm/string.hpp>
+
 namespace DOFProjection{
 
     /*==================================================================
@@ -2981,4 +2983,76 @@ namespace DOFProjection{
         return NULL;
 
     }
+
+    errorOut formMoorePenrosePseudoInverse( const Eigen::MatrixXd &A, Eigen::MatrixXd &Ainv, const floatType atol, const floatType rtol,
+                                            const std::string method ){
+        /*!
+         * Form the Moore-Penrose pseudo inverse of the matrix A
+         *
+         * :param const Eigen::MatrixXd &A: The matrix to compute the pseudo-inverse of
+         * :param Eigen::MatrixXd &Ainv: The computed pseudo-inverse
+         * :param const floatType atol: The absolute tolerance on the singular value. Directly related to the condition number
+         * :param const floatType rtol: The relative tolerance on the singular value. Directly related to the condition number
+         * :param const std::string method: The method of decomposition to use ( jacobi or bdc )
+         */
+
+        Eigen::VectorXd S;
+        Eigen::MatrixXd U;
+        Eigen::MatrixXd V;
+
+        if ( boost::algorithm::to_lower_copy( method ).compare( "jacobi" ) ){
+
+            //Form the solver object
+            Eigen::JacobiSVD< Eigen::MatrixXd > svd( A, Eigen::ComputeThinU | Eigen::ComputeThinV );
+
+            //Extract the values
+            S = svd.singularValues( );
+            U = svd.matrixU( );
+            V = svd.matrixV( );
+
+        }
+        else if ( boost::algorithm::to_lower_copy( method ).compare( "bdc" ) ){
+
+            //Form the solver object
+            Eigen::BDCSVD< Eigen::MatrixXd > svd( A, Eigen::ComputeThinU | Eigen::ComputeThinV );
+
+            //Extract the values
+            S = svd.singularValues( );
+            U = svd.matrixU( );
+            V = svd.matrixV( );
+
+        }
+        else{
+
+            return new errorNode( "formMoorePenrosePseudoInverse",
+                                  "The mode ( " + method + " ) is not recognized" );
+
+        }
+
+        //Form the inverse of the singular values
+        Eigen::VectorXd invS( S.size( ), 1 );
+
+        floatType tol = rtol * S.norm( ) + atol;
+
+        for ( uIntType i = 0; i < S.size( ); i++ ){
+
+            if ( std::fabs( S( i, 0 ) ) < tol ){
+
+                invS( i, 0 ) = 0.;
+
+            }
+            else{
+
+                invS( i, 0 ) = 1. / S( i, 0 );
+
+            }
+
+        }        
+
+        Ainv = V * invS.asDiagonal( ) * U.transpose( );
+
+        return NULL;
+
+    }
+
 }

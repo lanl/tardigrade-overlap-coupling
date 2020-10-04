@@ -306,6 +306,10 @@ namespace DOFProjection{
                                                                        const std::unordered_map< std::string, uIntType > &domainToLocalIndex,
                                                                        SparseMatrix &COMN
                                                                      );
+
+    errorOut formMoorePenrosePseudoInverse( const Eigen::MatrixXd &A, Eigen::MatrixXd &Ainv,
+                                            const floatType atol = 1e-8, const floatType rtol = 1e-8,
+                                            const std::string method = "jacobi" );
 }
 
 

@@ -5953,6 +5953,178 @@ int test_constructCellCenterOfMassInterpolationMatrixContribution( std::ofstream
 
     results << "test_constructCellCenterOfMassInterpolationMatrixContribution & True\n";
     return 0;
+
+}
+
+int test_formMoorePenrosePseudoInverse( std::ofstream &results ){
+    /*!
+     * Test the formation of the Moore-Penrose pseudo inverse matrix
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    Eigen::MatrixXd answer( 4, 10 );
+    answer << -0.07175128, -0.09129542, -0.29282643, -0.0824509 , -0.00982364,
+               0.2669165 ,  0.04748368, -0.32461632,  0.10265059, -0.22284682,
+              -0.20861016, -0.14037432,  0.19325913, -0.45439708, -0.21291166,
+              -0.13748916, -0.07487151,  0.06566935, -0.52175706,  0.19307317,
+              -0.2582096 ,  0.2015148 ,  0.14475545, -0.0128512 ,  0.26035714,
+              -0.16367902, -0.09100787, -0.19716182, -0.24156225, -0.12188319,
+               0.09774222,  0.05999453, -0.23164957, -0.03007558,  0.18163865,
+               0.08962678, -0.45764105,  0.01970791, -0.27165439,  0.33992254;
+
+    Eigen::MatrixXd A( 10, 4 );
+    A << -3.45807347e-01, -3.07722559e-01, -7.10388506e-01,  3.04680384e-01,
+         -3.78823898e-01, -4.31807406e-01,  6.95725918e-01,  1.25584677e-01,
+         -8.49466539e-01,  1.46750654e-01,  3.93202586e-01, -6.18241556e-01,
+         -5.66457016e-01, -8.30669166e-01,  2.06699891e-01,  7.92708789e-02,
+         -1.47788367e-01, -5.77083615e-01,  8.96557453e-01,  4.07316861e-01,
+          7.81163839e-01, -8.54234064e-03, -4.58336780e-01,  3.01922522e-01,
+          3.24731421e-02,  1.02625043e-01, -1.71687076e-01, -9.08067093e-01,
+         -9.88342121e-01, -7.17754963e-04, -6.47064712e-01, -3.06886056e-04,
+         -5.19211033e-02, -6.24537250e-01, -4.36680307e-01, -3.36301973e-01,
+         -5.30186250e-01,  1.40923401e-01, -5.33115848e-01,  6.29227859e-01;
+
+    Eigen::MatrixXd result;
+    floatType atol = 1e-8;
+    floatType rtol = 1e-8;
+    std::string method = "jacobi";
+    errorOut error = DOFProjection::formMoorePenrosePseudoInverse( A, result, atol, rtol, method );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_formMoorePenrosePseudoInverse & False\n";
+        return 1;
+
+    }
+
+    if ( ( result - answer ).norm( ) > 1e-6 * ( answer.norm( ) + 1 ) ){
+
+        results << "test_formMoorePenrosePseudoInverse (test 1) & False\n";
+        return 1;
+
+    }
+
+    method = "bdc";
+    error = DOFProjection::formMoorePenrosePseudoInverse( A, result, atol, rtol, method );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_formMoorePenrosePseudoInverse & False\n";
+        return 1;
+
+    }
+
+    if ( ( result - answer ).norm( ) > 1e-6 * ( answer.norm( ) + 1 ) ){
+
+        results << "test_formMoorePenrosePseudoInverse (test 2) & False\n";
+        return 1;
+
+    }
+
+    Eigen::MatrixXd answer2( 10, 4 );
+    answer2 << -0.07175128, -0.20861016, -0.2582096 ,  0.09774222, -0.09129542,
+               -0.14037432,  0.2015148 ,  0.05999453, -0.29282643,  0.19325913,
+                0.14475545, -0.23164957, -0.0824509 , -0.45439708, -0.0128512 ,
+               -0.03007558, -0.00982364, -0.21291166,  0.26035714,  0.18163865,
+                0.2669165 , -0.13748916, -0.16367902,  0.08962678,  0.04748368,
+               -0.07487151, -0.09100787, -0.45764105, -0.32461632,  0.06566935,
+               -0.19716182,  0.01970791,  0.10265059, -0.52175706, -0.24156225,
+               -0.27165439, -0.22284682,  0.19307317, -0.12188319,  0.33992254;
+
+    method = "jacobi";
+    error = DOFProjection::formMoorePenrosePseudoInverse( A.transpose( ), result, atol, rtol, method );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_formMoorePenrosePseudoInverse & False\n";
+        return 1;
+
+    }
+
+    if ( ( result - answer2 ).norm( ) > 1e-6 * ( answer2.norm( ) + 1 ) ){
+
+        results << "test_formMoorePenrosePseudoInverse (test 3) & False\n";
+        return 1;
+
+    }
+
+    method = "bdc";
+    error = DOFProjection::formMoorePenrosePseudoInverse( A.transpose( ), result, atol, rtol, method );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_formMoorePenrosePseudoInverse & False\n";
+        return 1;
+
+    }
+
+    if ( ( result - answer2 ).norm( ) > 1e-6 * ( answer2.norm( ) + 1 ) ){
+
+        results << "test_formMoorePenrosePseudoInverse (test 4) & False\n";
+        return 1;
+
+    }
+
+    Eigen::MatrixXd A2( 10, 3 );
+    A2 << 0.32709633, 0.69660129, 0.65419265, 0.34613872, 0.19087922,
+          0.69227744, 0.14480575, 0.21677149, 0.28961149, 0.65234019,
+          0.08466542, 1.30468038, 0.31058805, 0.60334995, 0.6211761 ,
+          0.2840963 , 0.53963544, 0.56819259, 0.84786296, 0.42610582,
+          1.69572592, 0.56279234, 0.21145819, 1.12558468, 0.07526673,
+          0.94827873, 0.15053346, 0.57337533, 0.70365843, 1.14675065;
+
+    Eigen::MatrixXd answer3( 3, 10 );
+    answer3 << -0.01334246,  0.03788105,  0.0028141 ,  0.0975754 , -0.00713903,
+               -0.00536388,  0.09673492,  0.07100527, -0.07807902,  0.02586622,
+                0.28348933, -0.04440594,  0.06774273, -0.25710567,  0.23255626,
+                0.20499633, -0.13490443, -0.13454876,  0.56201804,  0.17072141,
+               -0.02668491,  0.07576209,  0.0056282 ,  0.1951508 , -0.01427807,
+               -0.01072776,  0.19346983,  0.14201055, -0.15615804,  0.05173244;
+
+    method = "jacobi";
+    error = DOFProjection::formMoorePenrosePseudoInverse( A2, result, atol, rtol, method );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_formMoorePenrosePseudoInverse & False\n";
+        return 1;
+
+    }
+
+    if ( ( result - answer3 ).norm( ) > 1e-6 * ( answer3.norm( ) + 1 ) ){
+
+        results << "test_formMoorePenrosePseudoInverse (test 3) & False\n";
+        return 1;
+
+    }
+
+    method = "bdc";
+    error = DOFProjection::formMoorePenrosePseudoInverse( A2, result, atol, rtol, method );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_formMoorePenrosePseudoInverse & False\n";
+        return 1;
+
+    }
+
+    if ( ( result - answer3 ).norm( ) > 1e-6 * ( answer3.norm( ) + 1 ) ){
+
+        results << "test_formMoorePenrosePseudoInverse (test 4) & False\n";
+        return 1;
+
+    }
+
+    results << "test_formMoorePenrosePseudoInverse & True\n";
+    return 0;
+
 }
 
 int main(){
@@ -5980,6 +6152,7 @@ int main(){
     test_computeDomainXis( results );
     test_formMicroDomainToMacroProjectionMatrix( results );
     test_constructCellCenterOfMassInterpolationMatrixContribution( results );
+    test_formMoorePenrosePseudoInverse( results );
 
     //Close the results file
     results.close();
