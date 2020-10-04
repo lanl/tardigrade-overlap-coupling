@@ -126,8 +126,8 @@ namespace inputFileProcessor{
             const uIntVector* getFreeMacroCellIds( );
             const uIntVector* getGhostMacroCellIds( );
 
-            const uIntVector* getFreeMacroCellMicroDomainCounts( );
-            const uIntVector* getGhostMacroCellMicroDomainCounts( );
+//            const uIntVector* getFreeMacroCellMicroDomainCounts( );
+//            const uIntVector* getGhostMacroCellMicroDomainCounts( );
 
 //            const uIntVector* getNonOverlappedMicroNodeIds( );
             const uIntVector* getFreeMicroNodeIds( );
@@ -203,7 +203,7 @@ namespace inputFileProcessor{
             errorOut setSurfaceSets( const unsigned int microIncrement );
             errorOut checkCommonDomainConfiguration( YAML::Node domainConfig,
                                                      uIntVector &macroCellIds,
-                                                     uIntVector &macroCellMicroDomainCounts,
+//                                                     uIntVector &macroCellMicroDomainCounts,
                                                      stringVector &macroVolumeNodesets,
                                                      stringVector &microVolumeNodesets,
                                                      uIntVector &microSurfaceDomainCount,
@@ -211,7 +211,7 @@ namespace inputFileProcessor{
 
             errorOut checkCommonDomainConfiguration( YAML::Node domainConfig,
                                                      uIntVector &macroCellIds,
-                                                     uIntVector &macroCellMicroDomainCounts,
+//                                                     uIntVector &macroCellMicroDomainCounts,
                                                      stringVector &macroVolumeNodesets,
                                                      stringVector &microVolumeNodesets,
                                                      uIntVector &microSurfaceDomainCount,
@@ -369,8 +369,8 @@ namespace inputFileProcessor{
             uIntVector _free_macro_cell_ids;
             uIntVector _ghost_macro_cell_ids;
 
-            uIntVector _free_macro_cell_micro_domain_counts;
-            uIntVector _ghost_macro_cell_micro_domain_counts;
+//            uIntVector _free_macro_cell_micro_domain_counts;
+//            uIntVector _ghost_macro_cell_micro_domain_counts;
 
 //            uIntVector _unique_non_overlapped_micro_nodes;
             uIntVector _unique_free_micro_nodes;

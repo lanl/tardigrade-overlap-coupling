@@ -683,7 +683,8 @@ namespace inputFileProcessor{
         if ( _config[ "free_macroscale_domains" ] ){
 
             errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ],
-                                                             _free_macro_cell_ids, _free_macro_cell_micro_domain_counts,
+                                                             _free_macro_cell_ids,
+//                                                             _free_macro_cell_micro_domain_counts,
                                                              _free_macro_volume_sets,
                                                              _ghost_micro_volume_sets,
                                                              _ghost_micro_surface_approximate_split_count,
@@ -705,7 +706,8 @@ namespace inputFileProcessor{
         if ( _config[ "ghost_macroscale_domains" ] ){
 
             errorOut error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ],
-                                                             _ghost_macro_cell_ids, _ghost_macro_cell_micro_domain_counts,
+                                                             _ghost_macro_cell_ids,
+//                                                             _ghost_macro_cell_micro_domain_counts,
                                                              _ghost_macro_volume_sets,
                                                              _free_micro_volume_sets,
                                                              _free_micro_surface_approximate_split_count,
@@ -750,7 +752,7 @@ namespace inputFileProcessor{
 
     errorOut inputFileProcessor::checkCommonDomainConfiguration( YAML::Node domainConfig,
                                                                  uIntVector &macroCellIds,
-                                                                 uIntVector &macroCellMicroDomainCounts,
+//                                                                 uIntVector &macroCellMicroDomainCounts,
                                                                  stringVector &macroVolumeNodesets,
                                                                  stringVector &microVolumeNodesets,
                                                                  uIntVector &microSurfaceDomainCount,
@@ -760,7 +762,6 @@ namespace inputFileProcessor{
          *
          * :param YAML::Node domainConfig: The configuration of a particular domain.
          * :param uIntVector &macroCellIds: The macro-cell Ids corresponding to the domain
-         * :param uIntVector &macroCellMicroDomainCounts: The number of micro domains in each macro domain
          * :param stringVector &macroVolumeNodesets: The nodeset names for the nodes in the
          *     macro domains
          * :param stringVector &microVolumeNodesets: The nodeset names for the nodes in the
@@ -775,7 +776,7 @@ namespace inputFileProcessor{
         std::unordered_map< unsigned int, std::string > densityTypes;
         std::unordered_map< unsigned int, std::string > microInertiaTypes;
 
-        return checkCommonDomainConfiguration( domainConfig, macroCellIds, macroCellMicroDomainCounts,
+        return checkCommonDomainConfiguration( domainConfig, macroCellIds,// macroCellMicroDomainCounts,
                                                macroVolumeNodesets, microVolumeNodesets,
                                                microSurfaceDomainCount, macroCellDomainMap, massPropertyDefinitionRequired,
                                                densityTypes, microInertiaTypes, density, microInertia );
@@ -784,7 +785,7 @@ namespace inputFileProcessor{
 
     errorOut inputFileProcessor::checkCommonDomainConfiguration( YAML::Node domainConfig,
                                                                  uIntVector &macroCellIds,
-                                                                 uIntVector &macroCellMicroDomainCounts,
+//                                                                 uIntVector &macroCellMicroDomainCounts,
                                                                  stringVector &macroVolumeNodesets,
                                                                  stringVector &microVolumeNodesets,
                                                                  uIntVector &microSurfaceDomainCount,
@@ -799,7 +800,6 @@ namespace inputFileProcessor{
          *
          * :param YAML::Node domainConfig: The configuration of a particular domain.
          * :param uIntVector &macroCellIds: The macro-cell Ids corresponding to the domain
-         * :param uIntVector &macroCellMicroDomainCounts: The number of micro domains in each macro domain
          * :param stringVector &macroVolumeNodesets: The nodeset names for the nodes in the
          *     macro domains
          * :param stringVector &microVolumeNodesets: The nodeset names for the nodes in the
@@ -1108,14 +1108,14 @@ namespace inputFileProcessor{
 
         //Extract the volume nodesets
         macroCellIds.reserve( domainConfig.size( ) );
-        macroCellMicroDomainCounts.reserve( domainConfig.size( ) );
+//        macroCellMicroDomainCounts.reserve( domainConfig.size( ) );
         macroVolumeNodesets.reserve( domainConfig.size( ) );
         microVolumeNodesets.reserve( nVolumeNodesets );
         for ( auto domain = domainConfig.begin( ); domain != domainConfig.end( ); domain++ ){
 
             macroCellIds.push_back( ( *domain )[ "macro_cell" ].as< unsigned int >( ) );
             macroVolumeNodesets.push_back( ( *domain )[ "macro_nodeset" ].as< std::string >( ) );
-            macroCellMicroDomainCounts.push_back( ( *domain )[ "micro_nodesets" ].size( ) );
+//            macroCellMicroDomainCounts.push_back( ( *domain )[ "micro_nodesets" ].size( ) );
 
             for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
 
@@ -4501,21 +4501,21 @@ namespace inputFileProcessor{
         return &_ghost_macro_cell_ids;
     }
 
-    const uIntVector* inputFileProcessor::getFreeMacroCellMicroDomainCounts( ){
-        /*!
-         * Get the free macro cell ids
-         */
-
-        return &_free_macro_cell_micro_domain_counts;
-    }
-
-    const uIntVector* inputFileProcessor::getGhostMacroCellMicroDomainCounts( ){
-        /*!
-         * Get the ghost macro cell ids
-         */
-
-        return &_ghost_macro_cell_micro_domain_counts;
-    }
+//    const uIntVector* inputFileProcessor::getFreeMacroCellMicroDomainCounts( ){
+//        /*!
+//         * Get the free macro cell ids
+//         */
+//
+//        return &_free_macro_cell_micro_domain_counts;
+//    }
+//
+//    const uIntVector* inputFileProcessor::getGhostMacroCellMicroDomainCounts( ){
+//        /*!
+//         * Get the ghost macro cell ids
+//         */
+//
+//        return &_ghost_macro_cell_micro_domain_counts;
+//    }
 
     bool inputFileProcessor::computeMicroShapeFunctions( ){
         /*!
