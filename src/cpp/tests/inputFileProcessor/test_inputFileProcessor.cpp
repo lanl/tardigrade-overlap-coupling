@@ -2650,6 +2650,48 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const std::unordered_map< uIntType, stringVector > macroCellToDomainMapAnswer
+        =
+        {
+            { 1, { "ghost_nodeset_volume_1", "ghost_nodeset_volume_2", "ghost_nodeset_volume_3", "ghost_nodeset_volume_4",
+                   "ghost_nodeset_volume_5", "ghost_nodeset_volume_6", "ghost_nodeset_volume_7", "ghost_nodeset_volume_8" } },
+            { 2, { "free_nodeset_volume_1", "free_nodeset_volume_2", "free_nodeset_volume_3", "free_nodeset_volume_4",
+                   "free_nodeset_volume_5", "free_nodeset_volume_6", "free_nodeset_volume_7", "free_nodeset_volume_8" } },
+        };
+
+    const std::unordered_map< uIntType, stringVector > *macroCellToDomainMapResult = reader.getMacroCellToDomainMap( );
+
+    for ( auto a = macroCellToDomainMapAnswer.begin( ); a != macroCellToDomainMapAnswer.end( ); a++ ){
+
+        auto r = macroCellToDomainMapResult->find( a->first );
+
+        if ( r == macroCellToDomainMapResult->end( ) ){
+
+            results << "test_initializeIncrement (test 107) & False\n";
+            return 1;
+
+        }
+
+        if ( a->second.size( ) != r->second.size( ) ){
+
+            results << "test_initializeIncrement (test 108) & False\n";
+            return 1;
+
+        }
+
+        for ( unsigned int i = 0; i < a->second.size( ); i++ ){
+
+            if ( a->second[ i ].compare( r->second[ i ] ) != 0 ){
+
+                results << "test_initializeIncrement (test 109) & False\n";
+                return 1;
+
+            }
+
+        }        
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

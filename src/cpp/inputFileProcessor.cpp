@@ -687,6 +687,7 @@ namespace inputFileProcessor{
                                                              _free_macro_volume_sets,
                                                              _ghost_micro_volume_sets,
                                                              _ghost_micro_surface_approximate_split_count,
+                                                             _macroCellDomainMap,
                                                              _freeMacroMassPropertiesRequired,
                                                              _macroReferenceDensityTypes,
                                                              _macroReferenceMomentOfInertiaTypes,
@@ -707,7 +708,8 @@ namespace inputFileProcessor{
                                                              _ghost_macro_cell_ids, _ghost_macro_cell_micro_domain_counts,
                                                              _ghost_macro_volume_sets,
                                                              _free_micro_volume_sets,
-                                                             _free_micro_surface_approximate_split_count );
+                                                             _free_micro_surface_approximate_split_count,
+                                                             _macroCellDomainMap );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the ghost macroscale domains" );
@@ -736,7 +738,8 @@ namespace inputFileProcessor{
                                                                  uIntVector &macroCellMicroDomainCounts,
                                                                  stringVector &macroVolumeNodesets,
                                                                  stringVector &microVolumeNodesets,
-                                                                 uIntVector &microSurfaceDomainCount ){
+                                                                 uIntVector &microSurfaceDomainCount,
+                                                                 std::unordered_map< uIntType, stringVector > &macroCellDomainMap ){
         /*!
          * Extract common values in the configuration of a domain
          *
@@ -759,7 +762,7 @@ namespace inputFileProcessor{
 
         return checkCommonDomainConfiguration( domainConfig, macroCellIds, macroCellMicroDomainCounts,
                                                macroVolumeNodesets, microVolumeNodesets,
-                                               microSurfaceDomainCount, massPropertyDefinitionRequired,
+                                               microSurfaceDomainCount, macroCellDomainMap, massPropertyDefinitionRequired,
                                                densityTypes, microInertiaTypes, density, microInertia );
 
     }
@@ -770,6 +773,7 @@ namespace inputFileProcessor{
                                                                  stringVector &macroVolumeNodesets,
                                                                  stringVector &microVolumeNodesets,
                                                                  uIntVector &microSurfaceDomainCount,
+                                                                 std::unordered_map< unsigned int, stringVector > &macroCellToDomainMap,
                                                                  const bool &massPropertyDefinitionRequired,
                                                                  std::unordered_map< unsigned int, std::string > &densityTypes,
                                                                  std::unordered_map< unsigned int, std::string > &microInertiaTypes,
@@ -796,7 +800,9 @@ namespace inputFileProcessor{
          * :param std::unordered_map< unsigned int, floatVector > &density: The density of the element. Either a single value if it is constant
          *     or multiple defined at each gauss point.
          * :param std::unordered_map< unsigned int, floatVector > &microInertia: The micro inertia of the element. Either a single symmetric matrix if it is 
-         *     constant or multiple if defined for each gauss point. 
+         *     constant or multiple if defined for each gauss point.
+         * :param std::unordered_map< unsigned int, &macroCellToDomainMap: The map from the macro cell to all of the micro 
+         *     domains it contains 
          */
 
         if ( ( !domainConfig.IsSequence() ) && ( !domainConfig.IsNull( ) ) ){
@@ -1113,7 +1119,18 @@ namespace inputFileProcessor{
 
             }
 
+            if ( macroCellToDomainMap.find( macroCellIds.back( ) ) == macroCellToDomainMap.end( ) ){
+    
+                macroCellToDomainMap.emplace( macroCellIds.back( ), microVolumeNodesets );
+    
+            }
+            else{
+                return new errorNode( "checkCommonDomainConfiguration",
+                                      "Macro cell " + std::to_string( macroCellIds.back( ) ) + " appears more than once in the coupling definition" );
+            }
+
         }
+            
 
         return NULL;
 
@@ -4677,6 +4694,14 @@ namespace inputFileProcessor{
 
         return &_microGlobalNodeIDOutputIndex;
 
+    }
+
+    const std::unordered_map< uIntType, stringVector >* inputFileProcessor::getMacroCellToDomainMap( ){
+        /*!
+         * Returns a constant reference to the macro cell to micro domain map
+         */
+
+        return &_macroCellDomainMap;
     }
 
 }

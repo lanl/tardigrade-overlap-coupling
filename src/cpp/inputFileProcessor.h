@@ -184,6 +184,8 @@ namespace inputFileProcessor{
             const DOFMap *getMacroNodeIDOutputIndex( );
             const DOFMap *getMicroNodeIDOutputIndex( );
 
+            const std::unordered_map< uIntType, stringVector > *getMacroCellToDomainMap( );
+
         private:
 
             uIntType _dim = 3;
@@ -203,7 +205,8 @@ namespace inputFileProcessor{
                                                      uIntVector &macroCellMicroDomainCounts,
                                                      stringVector &macroVolumeNodesets,
                                                      stringVector &microVolumeNodesets,
-                                                     uIntVector &microSurfaceDomainCount );
+                                                     uIntVector &microSurfaceDomainCount,
+                                                     std::unordered_map< uIntType, stringVector > &macroCellDomainMap );
 
             errorOut checkCommonDomainConfiguration( YAML::Node domainConfig,
                                                      uIntVector &macroCellIds,
@@ -211,6 +214,7 @@ namespace inputFileProcessor{
                                                      stringVector &macroVolumeNodesets,
                                                      stringVector &microVolumeNodesets,
                                                      uIntVector &microSurfaceDomainCount,
+                                                     std::unordered_map< uIntType, stringVector > &macroCellDomainMap,
                                                      const bool &massPropertyDefinitionRequired,
                                                      std::unordered_map< unsigned int, std::string > &densityTypes,
                                                      std::unordered_map< unsigned int, std::string > &microInertiaTypes,
@@ -403,6 +407,8 @@ namespace inputFileProcessor{
 
             DOFMap _microGlobalNodeIDOutputIndex;
             DOFMap _macroGlobalNodeIDOutputIndex;
+
+            std::unordered_map< unsigned int, stringVector > _macroCellDomainMap;
 
     };
 
