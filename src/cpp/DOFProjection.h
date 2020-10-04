@@ -31,6 +31,7 @@ namespace DOFProjection{
     typedef std::vector< std::vector< floatType > > floatMatrix; //!Define a matrix of floats
     typedef unsigned int uIntType; //!Define the unsigned int type
     typedef std::vector< uIntType > uIntVector; //!Define a vector of unsigned ints
+    typedef std::vector< std::string > stringVector; //!Define a vector of strings
 
     //Eigen Typedefs
     typedef Eigen::SparseMatrix< floatType > SparseMatrix;
@@ -290,6 +291,21 @@ namespace DOFProjection{
                                                      SparseMatrix &projector,
                                                      const std::unordered_map< uIntType, uIntType >* microNodeToLocalIndex = NULL,
                                                      const std::unordered_map< uIntType, uIntType >* macroNodeToLocalIndex = NULL );
+
+    errorOut constructCenterOfMassInerpolationMatrix( const std::unordered_map< std::string, floatVector > &domainCOMShapefunctions,
+                                                      const std::unordered_map< uIntType, uIntType > &macroNodeToLocalIndex,
+                                                      const std::unordered_map< std::string, uIntType > &domainToLocalIndex,
+                                                      SparseMatrix &domainCOMN
+                                                    );
+
+    errorOut constructCellCenterOfMassInterpolationMatrixContribution( const uIntType &nDOF, const uIntType &cellID,
+                                                                       const uIntVector &cellNodeIds,
+                                                                       const std::unordered_map< uIntType, stringVector > &cellDomains,
+                                                                       const std::unordered_map< uIntType, std::unordered_map< std::string, floatVector > > &domainCOMShapefunctions,
+                                                                       const std::unordered_map< uIntType, uIntType > &macroNodeToLocalIndex,
+                                                                       const std::unordered_map< std::string, uIntType > &domainToLocalIndex,
+                                                                       SparseMatrix &COMN
+                                                                     );
 }
 
 

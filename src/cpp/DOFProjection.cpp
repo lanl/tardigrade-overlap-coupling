@@ -2883,4 +2883,102 @@ namespace DOFProjection{
 
         return NULL;
     }
+
+    errorOut constructCellCenterOfMassInterpolationMatrixContribution( const uIntType &nDOF, const uIntType &cellID,
+                                                                       const uIntVector &cellNodeIds,
+                                                                       const std::unordered_map< uIntType, stringVector > &cellDomains,
+                                                                       const std::unordered_map< uIntType, std::unordered_map< std::string, floatVector > > &cellDomainCOMShapefunctions,
+                                                                       const std::unordered_map< uIntType, uIntType > &macroNodeToLocalIndex,
+                                                                       const std::unordered_map< std::string, uIntType > &domainToLocalIndex,
+                                                                       SparseMatrix &COMN
+                                                                     ){
+        /*!
+         * Construct the interpolation matrix which projects from the macro nodes to the centers of mass of the micro-domains
+         *
+         * :param const uIntType &nDOF: The number of degrees of freedom at the macro-scale
+         * :param const uIntType &cellID: The id number of the macro cell
+         * :param const uIntVector &cellNodeIds: The id numbers of the macro cell nodes
+         * :param const std::unordered_map< uIntType, stringVector > &cellDomains: The domains contained within each macro-cell
+         * :param const std::unordered_map< uIntType, std::unordered_map< std::string, floatVector > > &cellDomainCOMShapefunctions: The shapefunction values at the 
+         *     domain centers of mass
+         * :param const std::unordered_map< uIntType, uIntType > &macroNodeToLocalIndex: The map from the macro nodes to the 
+         *     local index
+         * :param const std::unordered_map< std::string, uIntType > &domainToLocalIndex: The map from the domain name to the
+         *     local index
+         * :param SparseMatrix &COMN: The center of mass interpolation matrix
+         */
+
+        auto domains = cellDomains.find( cellID );
+
+        if ( domains == cellDomains.end( ) ){
+
+            return new errorNode( "constructCenterOfMassInterpolationMatrix",
+                                  "Cell " + std::to_string( cellID ) + " not found in cell to domain map" );
+
+        }
+
+        auto domainCOMShapefunctions = cellDomainCOMShapefunctions.find( cellID );
+
+        if ( domainCOMShapefunctions == cellDomainCOMShapefunctions.end( ) ){
+
+            return new errorNode( "constructCenterOfMassInterpolationMatrix",
+                                  "Cell " + std::to_string( cellID ) + " not found in cell to domain shapefunction map" );
+
+        }
+
+        //Initialize the triplet vector
+        std::vector< T > triplets;
+        triplets.reserve( nDOF * cellNodeIds.size( ) * domains->second.size( ) );
+
+        //Iterate over the domains in the macro cell ( the rows )
+        for ( auto domain = domains->second.begin( ); domain != domains->second.end( ); domain++ ){
+
+            auto localDomainIndex = domainToLocalIndex.find( *domain );
+
+            if ( localDomainIndex == domainToLocalIndex.end( ) ){
+
+                return new errorNode( "constructCenterOfMassInterpolationMatrix",
+                                      "Micro domain " + *domain + " not found in domain to local index map" );
+
+            }
+
+            auto shapefunctions = domainCOMShapefunctions->second.find( *domain );
+
+            if ( shapefunctions == domainCOMShapefunctions->second.end( ) ){
+
+                return new errorNode( "constructCenterOfMassInterpolationMatrix",
+                                      "The shapefunction values for the averaging domain " + *domain + " were not found" );
+
+            }
+
+            //Iterate over the macro nodes ( the columns )
+            uIntType index = 0;
+            for ( auto node = cellNodeIds.begin( ); node != cellNodeIds.end( ); node++, index++ ){
+
+                auto localNodeIndex = macroNodeToLocalIndex.find( *node );
+
+                if ( localNodeIndex == macroNodeToLocalIndex.end( ) ){
+
+                    return new errorNode( "constructCenterOfMassInterpolationMatrix",
+                                          "The macro node " + std::to_string( *node ) + " was not found in the macro node to local index map" );
+
+                }
+
+                for ( uIntType i = 0; i < nDOF; i++ ){
+
+                    triplets.push_back( T( nDOF * localDomainIndex->second + i, nDOF * localNodeIndex->second + i, shapefunctions->second[ index ] ) );
+
+                }
+
+            }
+
+        }
+
+        COMN = SparseMatrix( nDOF * domainToLocalIndex.size( ), nDOF * macroNodeToLocalIndex.size( ) );
+
+        COMN.setFromTriplets( triplets.begin( ), triplets.end( ) );
+
+        return NULL;
+
+    }
 }
