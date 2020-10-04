@@ -2858,7 +2858,7 @@ int test_getCouplingInitialization( std::ofstream &results ){
         return 1;
     }
 
-    std::string projectionTypeAnswer = "direct_projection";
+    std::string projectionTypeAnswer = "averaged_l2_projection";
     bool useReconstructedMassCentersAnswer = false;
     floatType potentialWeightingFactorAnswer = 0.5;
     floatType kineticWeightingFactorAnswer = 0.5;

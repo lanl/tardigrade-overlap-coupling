@@ -3218,13 +3218,21 @@ namespace inputFileProcessor{
 
         if ( !_config[ "coupling_initialization" ][ "projection_type" ] ){
 
-            _config[ "coupling_initialization" ][ "projection_type" ] = "direct_projection";
+            _config[ "coupling_initialization" ][ "projection_type" ] = "averaged_l2_projection";
 
         }
 
         if ( _config[ "coupling_initialization" ][ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
 
             _computeMicroShapeFunctions = true;
+
+        }
+
+        if ( _config[ "coupling_initialization" ][ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+
+            std::cerr << "WARNING: direct_projection can give unexpected results.\n";
+            std::cerr << "         It is suggested that either l2_projection or\n"; 
+            std::cerr << "         averaged_l2_projection ( recommended ) are used\n";
 
         }
 
