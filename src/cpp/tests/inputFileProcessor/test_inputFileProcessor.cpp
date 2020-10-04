@@ -2692,6 +2692,49 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const std::unordered_map< std::string, uIntType > microDomainIDMapAnswer
+        =
+        {
+            { "free_nodeset_volume_1",   0 },
+            { "free_nodeset_volume_2",   1 },
+            { "free_nodeset_volume_3",   2 },
+            { "free_nodeset_volume_4",   3 },
+            { "free_nodeset_volume_5",   4 },
+            { "free_nodeset_volume_6",   5 },
+            { "free_nodeset_volume_7",   6 },
+            { "free_nodeset_volume_8",   7 },
+            { "ghost_nodeset_volume_1",  8 },
+            { "ghost_nodeset_volume_2",  9 },
+            { "ghost_nodeset_volume_3", 10 },
+            { "ghost_nodeset_volume_4", 11 },
+            { "ghost_nodeset_volume_5", 12 },
+            { "ghost_nodeset_volume_6", 13 },
+            { "ghost_nodeset_volume_7", 14 },
+            { "ghost_nodeset_volume_8", 15 },
+        };
+
+    const std::unordered_map< std::string, uIntType > *microDomainIDMapResult = reader.getMicroDomainIDMap( );
+
+    for ( auto a = microDomainIDMapAnswer.begin( ); a != microDomainIDMapAnswer.end( ); a++ ){
+
+        auto r = microDomainIDMapResult->find( a->first );
+
+        if ( r == microDomainIDMapResult->end( ) ){
+
+            results << "test_initializeIncrement (test 110) & False\n";
+            return 1;
+
+        }
+
+        if ( r->second != a->second ){
+
+            results << "test_initializeIncrement (test 111) & False\n";
+            return 1;
+
+        }
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

@@ -185,6 +185,7 @@ namespace inputFileProcessor{
             const DOFMap *getMicroNodeIDOutputIndex( );
 
             const std::unordered_map< uIntType, stringVector > *getMacroCellToDomainMap( );
+            const std::unordered_map< std::string, uIntType > *getMicroDomainIDMap( );
 
         private:
 
@@ -409,6 +410,7 @@ namespace inputFileProcessor{
             DOFMap _macroGlobalNodeIDOutputIndex;
 
             std::unordered_map< unsigned int, stringVector > _macroCellDomainMap;
+            std::unordered_map< std::string, uIntType > _microDomainIDMap;
 
     };
 

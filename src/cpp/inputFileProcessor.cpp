@@ -729,6 +729,21 @@ namespace inputFileProcessor{
 
         }
 
+        //Initialize the internal ID number of the micro domains
+        _microDomainIDMap.reserve( _free_micro_volume_sets.size( ) + _ghost_micro_volume_sets.size( ) );
+
+        uIntType index = 0;
+        for ( auto nodeset = _free_micro_volume_sets.begin( ); nodeset != _free_micro_volume_sets.end( ); nodeset++, index++ ){
+
+            _microDomainIDMap.emplace( *nodeset, index );
+
+        }
+        for ( auto nodeset = _ghost_micro_volume_sets.begin( ); nodeset != _ghost_micro_volume_sets.end( ); nodeset++, index++ ){
+
+            _microDomainIDMap.emplace( *nodeset, index );
+
+        }
+
         return NULL;
 
     }
@@ -4702,6 +4717,14 @@ namespace inputFileProcessor{
          */
 
         return &_macroCellDomainMap;
+    }
+
+    const std::unordered_map< std::string, uIntType >* inputFileProcessor::getMicroDomainIDMap( ){
+        /*!
+         * Returns a constant reference to the micro domain id map
+         */
+
+        return &_microDomainIDMap;
     }
 
 }
