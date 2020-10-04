@@ -116,8 +116,8 @@ namespace inputFileProcessor{
             const stringVector* getFreeMicroDomainNames( );
             const stringVector* getGhostMicroDomainNames( );
 
-            const uIntVector* getFreeMicroSurfaceApproximateSplitCount( );
-            const uIntVector* getGhostMicroSurfaceApproximateSplitCount( );
+//            const uIntVector* getFreeMicroSurfaceApproximateSplitCount( );
+//            const uIntVector* getGhostMicroSurfaceApproximateSplitCount( );
 
 //            const stringVector* getFreeMicroSurfaceNames( );
 //            const stringVector* getGhostMicroSurfaceNames( );
@@ -186,6 +186,7 @@ namespace inputFileProcessor{
 
             const std::unordered_map< uIntType, stringVector > *getMacroCellToDomainMap( );
             const std::unordered_map< std::string, uIntType > *getMicroDomainIDMap( );
+            const std::unordered_map< std::string, uIntType > *getMicroDomainSurfaceApproximateSplitCount( );
 
         private:
 
@@ -206,7 +207,7 @@ namespace inputFileProcessor{
 //                                                     uIntVector &macroCellMicroDomainCounts,
                                                      stringVector &macroVolumeNodesets,
                                                      stringVector &microVolumeNodesets,
-                                                     uIntVector &microSurfaceDomainCount,
+                                                     std::unordered_map< std::string, uIntType > &microSurfaceDomainCount,
                                                      std::unordered_map< uIntType, stringVector > &macroCellDomainMap );
 
             errorOut checkCommonDomainConfiguration( YAML::Node domainConfig,
@@ -214,7 +215,7 @@ namespace inputFileProcessor{
 //                                                     uIntVector &macroCellMicroDomainCounts,
                                                      stringVector &macroVolumeNodesets,
                                                      stringVector &microVolumeNodesets,
-                                                     uIntVector &microSurfaceDomainCount,
+                                                     std::unordered_map< std::string, uIntType > &microSurfaceDomainCount,
                                                      std::unordered_map< uIntType, stringVector > &macroCellDomainMap,
                                                      const bool &massPropertyDefinitionRequired,
                                                      std::unordered_map< unsigned int, std::string > &densityTypes,
@@ -360,8 +361,8 @@ namespace inputFileProcessor{
             stringVector _free_micro_volume_sets;
             stringVector _ghost_micro_volume_sets;
             
-            uIntVector _free_micro_surface_approximate_split_count;
-            uIntVector _ghost_micro_surface_approximate_split_count;
+//            uIntVector _free_micro_surface_approximate_split_count;
+//            uIntVector _ghost_micro_surface_approximate_split_count;
 
             stringVector _free_macro_volume_sets;
             stringVector _ghost_macro_volume_sets;
@@ -411,6 +412,7 @@ namespace inputFileProcessor{
 
             std::unordered_map< unsigned int, stringVector > _macroCellDomainMap;
             std::unordered_map< std::string, uIntType > _microDomainIDMap;
+            std::unordered_map< std::string, uIntType > _microDomainSurfaceCount;
 
     };
 

@@ -3400,10 +3400,10 @@ int test_getGhostMacroDomainNames( std::ofstream &results ){
 
 }
 
-int test_getFreeMicroSurfaceApproximateSplitCount( std::ostream &results ){
+int test_getMicroDomainSurfaceApproximateSplitCount( std::ostream &results ){
     /*!
-     * Test getting a pointer to the approximate number of surfaces to split a micro
-     * domain into.
+     * Test getting a pointer to the approximate number of surfaces to split the micro
+     * domains into
      *
      * :param std::ofstream &results: The output file
      */
@@ -3413,70 +3413,135 @@ int test_getFreeMicroSurfaceApproximateSplitCount( std::ostream &results ){
 
     if ( reader.getError( ) ){
         reader.getError( )->print( );
-        results << "test_getFreeMicroSurfaceApproximateSplitCount & False\n";
+        results << "test_getMicroDomainSurfaceApproximateSplitCount & False\n";
         return 1;
     }
 
-    uIntVector answer( 8, 6 );
+    std::unordered_map< std::string, uIntType > answer
+        =
+        {
+            { "free_nodeset_volume_1", 6 },
+            { "free_nodeset_volume_2", 6 },
+            { "free_nodeset_volume_3", 6 },
+            { "free_nodeset_volume_4", 6 },
+            { "free_nodeset_volume_5", 6 },
+            { "free_nodeset_volume_6", 6 },
+            { "free_nodeset_volume_7", 6 },
+            { "free_nodeset_volume_8", 6 },
+            { "ghost_nodeset_volume_1", 6 },
+            { "ghost_nodeset_volume_2", 6 },
+            { "ghost_nodeset_volume_3", 6 },
+            { "ghost_nodeset_volume_4", 6 },
+            { "ghost_nodeset_volume_5", 6 },
+            { "ghost_nodeset_volume_6", 6 },
+            { "ghost_nodeset_volume_7", 6 },
+            { "ghost_nodeset_volume_8", 6 },
+        };
 
-    const uIntVector *result = reader.getFreeMicroSurfaceApproximateSplitCount( );
+    const std::unordered_map< std::string, uIntType > *result = reader.getMicroDomainSurfaceApproximateSplitCount( );
 
-    unsigned int indx = 0;
-    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+    for ( auto a = answer.begin( ); a != answer.end( ); a++ ){
 
-        if ( !vectorTools::fuzzyEquals( *it, answer[ indx ] ) ){
+        auto r = result->find( a->first );
 
-            results << "test_getFreeMicroSurfaceApproximateSplitCount (test 1) & False\n";
+        if ( r == result->end( ) ){
+
+            results << "test_getMicroDomainSurfaceApproximateSplitCount (test 1) & False\n";
             return 1;
 
         }
 
-        indx++;
+        if ( r->second != a->second ){
 
-    }
-
-    results << "test_getFreeMicroSurfaceApproximateSplitCount & True\n";
-    return 0;
-}
-
-int test_getGhostMicroSurfaceApproximateSplitCount( std::ostream &results ){
-    /*!
-     * Test getting a pointer to the approximate number of surfaces to split a micro
-     * domain into.
-     *
-     * :param std::ofstream &results: The output file
-     */
-
-    std::string filename = "testConfig.yaml";
-    inputFileProcessor::inputFileProcessor reader( filename );
-
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getGhostMicroSurfaceApproximateSplitCount & False\n";
-        return 1;
-    }
-
-    uIntVector answer( 8, 6 );
-
-    const uIntVector *result = reader.getGhostMicroSurfaceApproximateSplitCount( );
-
-    unsigned int indx = 0;
-    for ( auto it = result->begin( ); it != result->end( ); it++ ){
-
-        if ( !vectorTools::fuzzyEquals( *it, answer[ indx ] ) ){
-
-            results << "test_getGhostMicroSurfaceApproximateSplitCount (test 1) & False\n";
+            results << "test_getMicroDomainSurfaceApproximateSplitCount (test 2) & False\n";
             return 1;
 
         }
 
-        indx++;
-
     }
 
-    results << "test_getGhostMicroSurfaceApproximateSplitCount & True\n";
+    results << "test_getMicroDomainSurfaceApproximateSplitCount & True\n";
     return 0;
+
 }
+
+//int test_getFreeMicroSurfaceApproximateSplitCount( std::ostream &results ){
+//    /*!
+//     * Test getting a pointer to the approximate number of surfaces to split a micro
+//     * domain into.
+//     *
+//     * :param std::ofstream &results: The output file
+//     */
+//
+//    std::string filename = "testConfig.yaml";
+//    inputFileProcessor::inputFileProcessor reader( filename );
+//
+//    if ( reader.getError( ) ){
+//        reader.getError( )->print( );
+//        results << "test_getFreeMicroSurfaceApproximateSplitCount & False\n";
+//        return 1;
+//    }
+//
+//    uIntVector answer( 8, 6 );
+//
+//    const uIntVector *result = reader.getFreeMicroSurfaceApproximateSplitCount( );
+//
+//    unsigned int indx = 0;
+//    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+//
+//        if ( !vectorTools::fuzzyEquals( *it, answer[ indx ] ) ){
+//
+//            results << "test_getFreeMicroSurfaceApproximateSplitCount (test 1) & False\n";
+//            return 1;
+//
+//        }
+//
+//        indx++;
+//
+//    }
+//
+//    results << "test_getFreeMicroSurfaceApproximateSplitCount & True\n";
+//    return 0;
+//}
+//
+//int test_getGhostMicroSurfaceApproximateSplitCount( std::ostream &results ){
+//    /*!
+//     * Test getting a pointer to the approximate number of surfaces to split a micro
+//     * domain into.
+//     *
+//     * :param std::ofstream &results: The output file
+//     */
+//
+//    std::string filename = "testConfig.yaml";
+//    inputFileProcessor::inputFileProcessor reader( filename );
+//
+//    if ( reader.getError( ) ){
+//        reader.getError( )->print( );
+//        results << "test_getGhostMicroSurfaceApproximateSplitCount & False\n";
+//        return 1;
+//    }
+//
+//    uIntVector answer( 8, 6 );
+//
+//    const uIntVector *result = reader.getGhostMicroSurfaceApproximateSplitCount( );
+//
+//    unsigned int indx = 0;
+//    for ( auto it = result->begin( ); it != result->end( ); it++ ){
+//
+//        if ( !vectorTools::fuzzyEquals( *it, answer[ indx ] ) ){
+//
+//            results << "test_getGhostMicroSurfaceApproximateSplitCount (test 1) & False\n";
+//            return 1;
+//
+//        }
+//
+//        indx++;
+//
+//    }
+//
+//    results << "test_getGhostMicroSurfaceApproximateSplitCount & True\n";
+//    return 0;
+//}
 
 int test_outputReferenceInformation( std::ofstream &results ){
     /*!
@@ -3594,8 +3659,7 @@ int main(){
     test_getGhostMacroDomainNames( results );
     test_getCouplingInitialization( results );
     test_getVolumeReconstructionConfig( results );
-    test_getFreeMicroSurfaceApproximateSplitCount( results );
-    test_getGhostMicroSurfaceApproximateSplitCount( results );
+    test_getMicroDomainSurfaceApproximateSplitCount( results );
     test_outputReferenceInformation( results );
     test_outputHomogenizedInformation( results );
     test_outputUpdatedDOF( results );

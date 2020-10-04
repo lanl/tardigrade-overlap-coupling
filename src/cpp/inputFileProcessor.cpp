@@ -687,7 +687,8 @@ namespace inputFileProcessor{
 //                                                             _free_macro_cell_micro_domain_counts,
                                                              _free_macro_volume_sets,
                                                              _ghost_micro_volume_sets,
-                                                             _ghost_micro_surface_approximate_split_count,
+//                                                             _ghost_micro_surface_approximate_split_count,
+                                                             _microDomainSurfaceCount,
                                                              _macroCellDomainMap,
                                                              _freeMacroMassPropertiesRequired,
                                                              _macroReferenceDensityTypes,
@@ -710,7 +711,8 @@ namespace inputFileProcessor{
 //                                                             _ghost_macro_cell_micro_domain_counts,
                                                              _ghost_macro_volume_sets,
                                                              _free_micro_volume_sets,
-                                                             _free_micro_surface_approximate_split_count,
+                                                             _microDomainSurfaceCount,
+                                                             //_free_micro_surface_approximate_split_count,
                                                              _macroCellDomainMap );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
@@ -755,7 +757,7 @@ namespace inputFileProcessor{
 //                                                                 uIntVector &macroCellMicroDomainCounts,
                                                                  stringVector &macroVolumeNodesets,
                                                                  stringVector &microVolumeNodesets,
-                                                                 uIntVector &microSurfaceDomainCount,
+                                                                 std::unordered_map< std::string, uIntType > &microSurfaceDomainCount,
                                                                  std::unordered_map< uIntType, stringVector > &macroCellDomainMap ){
         /*!
          * Extract common values in the configuration of a domain
@@ -766,7 +768,7 @@ namespace inputFileProcessor{
          *     macro domains
          * :param stringVector &microVolumeNodesets: The nodeset names for the nodes in the
          *     micro domains
-         * :param uIntVector &microSurfaceDomainCount: The approximate number of subdomains to split the
+         * :param std::unordered_map< std::string, uIntType > &microSurfaceDomainCount: The approximate number of subdomains to split the
          *     micro domain's surface into
          */
 
@@ -788,7 +790,7 @@ namespace inputFileProcessor{
 //                                                                 uIntVector &macroCellMicroDomainCounts,
                                                                  stringVector &macroVolumeNodesets,
                                                                  stringVector &microVolumeNodesets,
-                                                                 uIntVector &microSurfaceDomainCount,
+                                                                 std::unordered_map< std::string, uIntType > &microSurfaceDomainCount,
                                                                  std::unordered_map< unsigned int, stringVector > &macroCellToDomainMap,
                                                                  const bool &massPropertyDefinitionRequired,
                                                                  std::unordered_map< unsigned int, std::string > &densityTypes,
@@ -804,7 +806,7 @@ namespace inputFileProcessor{
          *     macro domains
          * :param stringVector &microVolumeNodesets: The nodeset names for the nodes in the
          *     micro domains
-         * :param uIntVector &microSurfaceDomainCount: The approximate number of subdomains to split the
+         * :param std::unordered_map< std::string, uIntType > &microSurfaceDomainCount: The approximate number of subdomains to split the
          *     micro domain's surface into
          * :param const bool &massPropertyDefinitionRequired: Flag which indicates if the mass properties
          *     must be defined for the element
@@ -1130,7 +1132,7 @@ namespace inputFileProcessor{
                 }
 
                 microVolumeNodesets.push_back( nodesetName );
-                microSurfaceDomainCount.push_back( numberOfSurfaceMicroDomains );
+                microSurfaceDomainCount.emplace( nodesetName, numberOfSurfaceMicroDomains );
 
             }
 
@@ -3136,24 +3138,31 @@ namespace inputFileProcessor{
         return &_ghost_micro_volume_sets;
     }
 
-    const uIntVector* inputFileProcessor::getFreeMicroSurfaceApproximateSplitCount( ){
+    const std::unordered_map< std::string, uIntType > *inputFileProcessor::getMicroDomainSurfaceApproximateSplitCount( ){
         /*!
-         * Get the free micro-surface approximate split counts. I.e. the number of 
-         * surfaces a given micro domain should be split into ( approximately )
+         * Get a constant reference to the micro-domain to approximate surface split count map
          */
-
-        return &_free_micro_surface_approximate_split_count;
+        return &_microDomainSurfaceCount;
     }
 
-    const uIntVector* inputFileProcessor::getGhostMicroSurfaceApproximateSplitCount( ){
-        /*!
-         * Get the ghost micro-surface approximate split counts. I.e. the number of 
-         * surfaces a given micro domain should be split into ( approximately )
-         */
-
-        return &_ghost_micro_surface_approximate_split_count;
-    }
-
+//    const uIntVector* inputFileProcessor::getFreeMicroSurfaceApproximateSplitCount( ){
+//        /*!
+//         * Get the free micro-surface approximate split counts. I.e. the number of 
+//         * surfaces a given micro domain should be split into ( approximately )
+//         */
+//
+//        return &_free_micro_surface_approximate_split_count;
+//    }
+//
+//    const uIntVector* inputFileProcessor::getGhostMicroSurfaceApproximateSplitCount( ){
+//        /*!
+//         * Get the ghost micro-surface approximate split counts. I.e. the number of 
+//         * surfaces a given micro domain should be split into ( approximately )
+//         */
+//
+//        return &_ghost_micro_surface_approximate_split_count;
+//    }
+//
 //    const stringVector* inputFileProcessor::getFreeMicroSurfaceNames( ){
 //        /*!
 //         * Get the free domain names
