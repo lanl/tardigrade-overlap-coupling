@@ -92,6 +92,22 @@ namespace overlapCoupling{
 
             floatVector getUpdatedMacroDisplacementDOF( );
 
+#ifdef TESTACCESS
+            //Functions and attributes that will ONLY be accessible when compiled with TESTACCESS defined
+            cellDomainFloatMap _test_domainMass;
+            cellDomainFloatVectorMap _test_domainCOM;
+            std::unordered_map< uIntType, std::unordered_map< std::string, std::unordered_map< uIntType, floatVector > > > _test_domainXi;
+            cellDomainFloatVectorMap _test_domainCOMSF;
+            std::unordered_map< uIntType, std::unordered_map< std::string, std::unordered_map< uIntType, floatVector > > > _test_domainMUP;
+
+            const std::unordered_map< uIntType, floatType >* getMacroNodeProjectedMass( );
+            const std::unordered_map< uIntType, floatVector >* getMacroNodeProjectedMassMomentOfInertia( );
+            const std::unordered_map< uIntType, floatVector >* getMacroNodeMassRelativePositionConstant( );
+
+            const std::unordered_map< uIntType, floatVector >* getMacroReferencePositions( );
+            const std::unordered_map< uIntType, floatVector >* getMicroReferencePositions( );
+#endif
+
         private:
 
             //Private attributes
@@ -109,6 +125,8 @@ namespace overlapCoupling{
             cellDomainFloatMap _referenceGhostMicroDomainMasses;
             cellDomainFloatVectorMap _referenceFreeMicroDomainCentersOfMass;
             cellDomainFloatVectorMap _referenceGhostMicroDomainCentersOfMass;
+            cellDomainFloatVectorMap _referenceFreeMicroDomainMomentsOfInertia;
+            cellDomainFloatVectorMap _referenceGhostMicroDomainMomentsOfInertia;
 
 //            floatVector _freeMicroDomainMasses;
 //            floatVector _ghostMicroDomainMasses;
@@ -141,6 +159,7 @@ namespace overlapCoupling{
             //Private functions
             errorOut processDomainMassData( const unsigned int &microIncrement, const std::string &domainName,
                                             domainFloatMap &domainMass, domainFloatVectorMap &domainCenterOfMass,
+                                            domainFloatVectorMap &domainMomentsOfInertia,
                                             std::unordered_map< uIntType, floatVector > &domainXiVectors );
 
             //Compute initial values
@@ -209,10 +228,11 @@ namespace overlapCoupling{
                                                                  const floatVector &domainCenterOfMassShapeFunctionValues );
 
             errorOut processDomainReference( const unsigned int &microIncrement,
-                                             const unsigned int &domainIndex, const std::string &domainName,
+                                             const std::string &domainName,
                                              const unsigned int cellID, const uIntVector &macroNodes,
                                              domainFloatMap       &referenceMicroDomainMass,
                                              domainFloatVectorMap &referenceMicroDomainCentersOfMass,
+                                             domainFloatVectorMap &referenceMicroDomainMomentsOfInertia,
                                              std::unordered_map< uIntType, floatVector > &domainReferenceXiVectors,
                                              floatVector &domainCenterOfMassShapeFunctionValues,
                                              std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues );
