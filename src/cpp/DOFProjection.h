@@ -220,18 +220,30 @@ namespace DOFProjection{
 
     errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microPositions,
-                               const floatVector &domainCM, floatVector &domainXis );
+                               const floatVector &microVolumes,
+                               const floatVector &microDensities,
+                               const floatVector &microWeights,
+                               const floatVector &domainCM, floatVector &domainXis, floatVector &momentOfInertia );
 
     errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microReferencePositions,
-                               const floatVector &microDisplacements, const floatVector &domainCM, floatVector &domainXis );
+                               const floatVector &microDisplacements,
+                               const floatVector &microVolumes,
+                               const floatVector &microDensities,
+                               const floatVector &microWeights,
+                               const floatVector &domainCM, floatVector &domainXis,
+                               floatVector &momentOfInertia );
 
     errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices,
                                const std::unordered_map< uIntType, floatVector > &microReferencePositions,
                                const std::unordered_map< uIntType, floatVector > &microDisplacements,
+                               const std::unordered_map< uIntType, floatType > &microVolumes,
+                               const std::unordered_map< uIntType, floatType > &microDensities,
+                               const std::unordered_map< uIntType, floatType > &microWeights,
                                const floatVector &domainCM,
-                               std::unordered_map< uIntType, floatVector > &domainXis );
+                               std::unordered_map< uIntType, floatVector > &domainXis,
+                               floatVector &momentOfInertia );
 
     /*===================================================
     |                Projection Matrices                |

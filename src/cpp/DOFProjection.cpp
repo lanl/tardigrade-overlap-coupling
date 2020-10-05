@@ -2196,7 +2196,10 @@ namespace DOFProjection{
 
     errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microPositions,
-                               const floatVector &domainCM, floatVector &domainXis ){
+                               const floatVector &microVolumes,
+                               const floatVector &microDensities,
+                               const floatVector &microWeights,
+                               const floatVector &domainCM, floatVector &domainXis, floatVector &momentOfInertia ){
         /*
          * Compute the relative position vector between the center of mass of a micro domain and the 
          * micro position.
@@ -2204,8 +2207,12 @@ namespace DOFProjection{
          * :param const uIntType &dim: The dimension of the problem
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microPositions: The positions of the micro-nodes.
+         * :param const floatVector &microVolumes: The volumes of the micro nodes
+         * :param const floatVector &microDensities: The densities of the micro nodes
+         * :param const floatVector &microWeights: The weights of the micro nodes
          * :param floatVector &domainCM: The center of mass of the domain
          * :param floatVector &domainXis: The relative positions of the micro nodes.
+         * :param floatVector &momentOfInertia: The moment of inertia of the domain
          */
 
         //Error Handling
@@ -2219,7 +2226,31 @@ namespace DOFProjection{
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-positions vector is not consistent with the micro indices" );
             }
+
+            if ( microVolumes.size( ) <= domainMicroNodeIndices[ i ] ){
+    
+                return new errorNode( "computeDomainXis",
+                                      "The size of the micro-volumes vector is not consistent with the micro indices" );
+    
+            }
+    
+            if ( microDensities.size( ) <= domainMicroNodeIndices[ i ] ){
+    
+                return new errorNode( "computeDomainXis",
+                                      "The size of the micro-densities vector is not consistent with the micro indices" );
+    
+            }
+    
+            if ( microWeights.size( ) <= domainMicroNodeIndices[ i ] ){
+    
+                return new errorNode( "computeDomainXis",
+                                      "The size of the micro-weights vector is not consistent with the micro indices" );
+    
+            }
         }
+
+        floatType mass = 0;
+        momentOfInertia = floatVector( dim * dim, 0 );
 
         //Resize the Xi vector
         domainXis.resize( dim * domainMicroNodeIndices.size() );
@@ -2233,7 +2264,22 @@ namespace DOFProjection{
 
             }
 
+            floatVector Xi( domainXis.begin( ) + dim * i,
+                            domainXis.begin( ) + dim * ( i + 1 ) );
+
+
+            mass += microDensities[ domainMicroNodeIndices[ i ] ]
+                  * microVolumes[ domainMicroNodeIndices[ i ] ]
+                  * microWeights[ domainMicroNodeIndices[ i ] ];
+
+            momentOfInertia += microDensities[ domainMicroNodeIndices[ i ] ]
+                             * microVolumes[ domainMicroNodeIndices[ i ] ]
+                             * microWeights[ domainMicroNodeIndices[ i ] ]
+                             * vectorTools::matrixMultiply( Xi, Xi, dim, 1, 1, dim );
+
         }
+
+        momentOfInertia /= mass;
 
         return NULL;
 
@@ -2241,7 +2287,12 @@ namespace DOFProjection{
 
     errorOut computeDomainXis( const uIntType &dim,
                                const uIntVector &domainMicroNodeIndices, const floatVector &microReferencePositions,
-                               const floatVector &microDisplacements, const floatVector &domainCM, floatVector &domainXis ){
+                               const floatVector &microDisplacements,
+                               const floatVector &microVolumes,
+                               const floatVector &microDensities,
+                               const floatVector &microWeights,
+                               const floatVector &domainCM, floatVector &domainXis,
+                               floatVector &momentOfInertia ){
         /*
          * Compute the relative position vector between the center of mass of a micro domain and the 
          * micro position.
@@ -2250,8 +2301,12 @@ namespace DOFProjection{
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const floatVector &microReferencePositions: The reference positions of the micro-nodes.
          * :param const floatVector &microDisplacements: The displacements of the micro-nodes.
+         * :param const floatVector &microVolumes: The volumes of the micro nodes
+         * :param const floatVector &microDensities: The densities of the micro nodes
+         * :param const floatVector &microWeights: The weights of the micro nodes
          * :param floatVector &domainCM: The center of mass of the domain
          * :param floatVector &domainXis: The relative positions of the micro nodes.
+         * :param floatVector &momentOfInertia: The moment of inertia of the domain
          */
 
         //Error Handling
@@ -2269,7 +2324,31 @@ namespace DOFProjection{
                 return new errorNode( "computeDomainCenterOfMass",
                                       "The size of the micro-displacements vector is not consistent with the micro indices" );
             }
+
+            if ( microVolumes.size( ) <= domainMicroNodeIndices[ i ] ){
+    
+                return new errorNode( "computeDomainXis",
+                                      "The size of the micro-volumes vector is not consistent with the micro indices" );
+    
+            }
+    
+            if ( microDensities.size( ) <= domainMicroNodeIndices[ i ] ){
+    
+                return new errorNode( "computeDomainXis",
+                                      "The size of the micro-densities vector is not consistent with the micro indices" );
+    
+            }
+    
+            if ( microWeights.size( ) <= domainMicroNodeIndices[ i ] ){
+    
+                return new errorNode( "computeDomainXis",
+                                      "The size of the micro-weights vector is not consistent with the micro indices" );
+    
+            }
         }
+
+        floatType mass = 0;
+        momentOfInertia = floatVector( dim * dim, 0 );
 
         //Resize the Xi vector
         domainXis.resize( dim * domainMicroNodeIndices.size() );
@@ -2284,7 +2363,22 @@ namespace DOFProjection{
 
             }
 
+            floatVector Xi( domainXis.begin( ) + dim * i,
+                            domainXis.begin( ) + dim * ( i + 1 ) );
+
+
+            mass += microDensities[ domainMicroNodeIndices[ i ] ]
+                  * microVolumes[ domainMicroNodeIndices[ i ] ]
+                  * microWeights[ domainMicroNodeIndices[ i ] ];
+
+            momentOfInertia += microDensities[ domainMicroNodeIndices[ i ] ]
+                             * microVolumes[ domainMicroNodeIndices[ i ] ]
+                             * microWeights[ domainMicroNodeIndices[ i ] ]
+                             * vectorTools::matrixMultiply( Xi, Xi, dim, 1, 1, dim );
+
         }
+
+        momentOfInertia /= mass;
 
         return NULL;
 
@@ -2294,8 +2388,12 @@ namespace DOFProjection{
                                const uIntVector &domainMicroNodeIndices,
                                const std::unordered_map< uIntType, floatVector > &microReferencePositions,
                                const std::unordered_map< uIntType, floatVector > &microDisplacements,
+                               const std::unordered_map< uIntType, floatType > &microVolumes,
+                               const std::unordered_map< uIntType, floatType > &microDensities,
+                               const std::unordered_map< uIntType, floatType > &microWeights,
                                const floatVector &domainCM,
-                               std::unordered_map< uIntType, floatVector > &domainXis ){
+                               std::unordered_map< uIntType, floatVector > &domainXis,
+                               floatVector &momentOfInertia ){
         /*
          * Compute the relative position vector between the center of mass of a micro domain and the 
          * micro position.
@@ -2304,8 +2402,12 @@ namespace DOFProjection{
          * :param const uIntVector &domainMicroNodeIndices: The indices of the micro-nodes in the domain.
          * :param const std::unordered_map< uIntType, floatVector > &microReferencePositions: The reference positions of the micro-nodes.
          * :param const std::unordered_map< uIntType, floatVector > &microDisplacements: The displacements of the micro-nodes.
+         * :param const std::unordered_map< uIntType, floatType > &microVolumes: The volumes of the micro-nodes
+         * :param const std::unordered_map< uIntType, floatType > &microDensities: The densities of the micro-nodes
+         * :param const std::unordered_map< uIntType, floatType > &microWeights: The weights of the micro-nodes
          * :param floatVector &domainCM: The center of mass of the domain
          * :param std::unordered_map< uIntType, floatVector > &domainXis: The relative positions of the micro nodes.
+         * :param floatVector &momentOfInertia: The moment of inertia of the domain
          */
 
         //Error Handling
@@ -2313,6 +2415,9 @@ namespace DOFProjection{
             return new errorNode( "computeDomainXis",
                                   "The center of mass is not consistent with the dimension" );
         }
+
+        floatType mass = 0;
+        momentOfInertia = floatVector( dim * dim, 0 );
 
         //Resize the Xi map
         domainXis.reserve( domainMicroNodeIndices.size() );
@@ -2335,10 +2440,41 @@ namespace DOFProjection{
 
             }
 
+            auto density = microDensities.find( *index );
+
+            if ( density == microDensities.end( ) ){
+
+                return new errorNode( "computeDomainXis", "Micro node " + std::to_string( *index ) + " was not found in the micro densities map" );
+
+            }
+
+            auto volume = microVolumes.find( *index );
+
+            if ( volume == microVolumes.end( ) ){
+
+                return new errorNode( "computeDomainXis", "Micro node " + std::to_string( *index ) + " was not found in the micro volumes map" );
+
+            }
+
+            auto weight = microWeights.find( *index );
+
+            if ( weight == microWeights.end( ) ){
+
+                return new errorNode( "computeDomainXis", "Micro node " + std::to_string( *index ) + " was not found in the micro weights map" );
+
+            }
+
             //Compute the relative position vector 
             domainXis.emplace( *index, ( microReferencePosition->second + microDisplacement->second ) - domainCM );
 
+            mass += density->second * volume->second * weight->second;
+            momentOfInertia += density->second * volume->second * weight->second
+                             * vectorTools::matrixMultiply( domainXis[ *index ], domainXis[ *index ], dim, 1, 1, dim );
+
+
         }
+
+        momentOfInertia /= mass;
 
         return NULL;
 

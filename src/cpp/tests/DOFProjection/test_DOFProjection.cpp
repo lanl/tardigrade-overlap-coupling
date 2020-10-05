@@ -5286,6 +5286,12 @@ int test_computeDomainXis( std::ofstream &results ){
     floatVector microMasses;
     _getTestMicroMasses( microMasses );
 
+    floatVector microDensities;
+    _getTestMicroDensities( microDensities );
+
+    floatVector microVolumes;
+    _getTestMicroVolumes( microVolumes );
+
     floatVector domainCM = { -0.31415104, -0.12236504,  0.35297997 };
 
     floatVector domainXiAnswer = {  0.22736644,  0.10072434,  0.29239908, -0.19475328,  0.34886294,
@@ -5295,9 +5301,16 @@ int test_computeDomainXis( std::ofstream &results ){
                                    -1.02966828,  0.97697383, -0.37834494,  0.11389406,  0.82520443,
                                    -0.45311879, -0.32833682,  0.6617871 , -0.43811679, -0.79900436 };
 
-    floatVector domainXiResult;
+    floatVector domainMomentOfInertiaAnswer = { 0.159133, -0.097495, -0.064816,
+                                               -0.097495, 0.230737 , -0.0615532,
+                                               -0.064816, -0.0615532, 0.239774 };
 
-    errorOut error = DOFProjection::computeDomainXis( dim, domainMicroNodeIndices, microPositions, domainCM, domainXiResult );
+    floatVector domainXiResult;
+    floatVector domainMomentOfInertiaResult;
+
+    errorOut error = DOFProjection::computeDomainXis( dim, domainMicroNodeIndices, microPositions,
+                                                      microVolumes, microDensities, microWeights,
+                                                      domainCM, domainXiResult, domainMomentOfInertiaResult );
 
     if ( error ){
         error->print();
@@ -5310,11 +5323,17 @@ int test_computeDomainXis( std::ofstream &results ){
         return 1;
     }
 
+    if ( !vectorTools::fuzzyEquals( domainMomentOfInertiaAnswer, domainMomentOfInertiaResult ) ){
+        results << "test_computeDomainXis (test 2) & False\n";
+    }
+
     domainXiResult.clear( );
+    domainMomentOfInertiaResult.clear( );
 
     error = DOFProjection::computeDomainXis( dim, domainMicroNodeIndices, 
                                              microReferencePositions, microDisplacements,
-                                             domainCM, domainXiResult );
+                                             microVolumes, microDensities, microWeights,
+                                             domainCM, domainXiResult, domainMomentOfInertiaResult );
 
     if ( error ){
         error->print();
@@ -5323,11 +5342,15 @@ int test_computeDomainXis( std::ofstream &results ){
     }
 
     if ( !vectorTools::fuzzyEquals( domainXiAnswer, domainXiResult ) ){
-        results << "test_computeDomainXis (test 2) & False\n";
+        results << "test_computeDomainXis (test 3) & False\n";
         return 1;
+    }
+    if ( !vectorTools::fuzzyEquals( domainMomentOfInertiaAnswer, domainMomentOfInertiaResult ) ){
+        results << "test_computeDomainXis (test 4) & False\n";
     }
 
     std::unordered_map< uIntType, floatVector > microReferencePositionsMap, microDisplacementsMap, domainXiAnswerMap, domainXiResultMap;
+    std::unordered_map< uIntType, floatType > microVolumesMap, microDensitiesMap, microWeightsMap;
 
     for ( auto index = domainMicroNodeIndices.begin( ); index != domainMicroNodeIndices.end( ); index++ ){
 
@@ -5342,11 +5365,17 @@ int test_computeDomainXis( std::ofstream &results ){
         domainXiAnswerMap.emplace( *index, floatVector( domainXiAnswer.begin( ) + dim * inc,
                                                         domainXiAnswer.begin( ) + dim * ( inc + 1 ) ) );
 
+        microVolumesMap.emplace( *index, microVolumes[ *index ] );
+        microDensitiesMap.emplace( *index, microDensities[ *index ] );
+        microWeightsMap.emplace( *index, microWeights[ *index ] );
 
     }
 
+    domainMomentOfInertiaResult.clear( );
+
     error = DOFProjection::computeDomainXis( dim, domainMicroNodeIndices, microReferencePositionsMap,
-                                             microDisplacementsMap, domainCM, domainXiResultMap );
+                                             microDisplacementsMap, microVolumesMap, microDensitiesMap,
+                                             microWeightsMap, domainCM, domainXiResultMap, domainMomentOfInertiaResult );
 
     if ( error ){
         error->print();
@@ -5360,7 +5389,7 @@ int test_computeDomainXis( std::ofstream &results ){
 
         if ( m == domainXiResultMap.end( ) ){
 
-            results << "test_computeDomainXis (test 3) & False\n";
+            results << "test_computeDomainXis (test 5) & False\n";
             return 1;
 
         }
@@ -5368,11 +5397,14 @@ int test_computeDomainXis( std::ofstream &results ){
 
             vectorTools::print( n->second );
             vectorTools::print( m->second );
-            results << "test_computeDomainXis (test 4) & False\n";
+            results << "test_computeDomainXis (test 6) & False\n";
             return 1;
 
         }
 
+    }
+    if ( !vectorTools::fuzzyEquals( domainMomentOfInertiaAnswer, domainMomentOfInertiaResult ) ){
+        results << "test_computeDomainXis (test 7) & False\n";
     }
 
     results << "test_computeDomainXis & True\n";
