@@ -72,6 +72,8 @@ namespace overlapCoupling{
             const cellDomainFloatMap* getReferenceGhostMicroDomainMasses( );
             const cellDomainFloatVectorMap* getReferenceFreeMicroDomainCentersOfMass( );
             const cellDomainFloatVectorMap* getReferenceGhostMicroDomainCentersOfMass( );
+            const cellDomainFloatVectorMap* getReferenceFreeMicroDomainMomentsOfInertia( );
+            const cellDomainFloatVectorMap* getReferenceGhostMicroDomainMomentsOfInertia( );
 
             const domainFloatMap* getFreeMicroDomainMasses( );
             const domainFloatMap* getGhostMicroDomainMasses( );

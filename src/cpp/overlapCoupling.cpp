@@ -3885,6 +3885,22 @@ namespace overlapCoupling{
         return &_referenceGhostMicroDomainCentersOfMass;
     }
 
+    const cellDomainFloatVectorMap* overlapCoupling::getReferenceFreeMicroDomainMomentsOfInertia( ){
+        /*!
+         * Get access to the reference free micro-domain moments of inertia
+         */
+
+        return &_referenceFreeMicroDomainMomentsOfInertia;
+    }
+
+    const cellDomainFloatVectorMap* overlapCoupling::getReferenceGhostMicroDomainMomentsOfInertia( ){
+        /*!
+         * Get access to the reference ghost micro-domain moments of inertia
+         */
+
+        return &_referenceGhostMicroDomainMomentsOfInertia;
+    }
+
     const domainFloatMap* overlapCoupling::getFreeMicroDomainMasses( ){
         /*!
          * Get access to the free micro-domain mass
