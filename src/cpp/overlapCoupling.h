@@ -74,6 +74,7 @@ namespace overlapCoupling{
             const cellDomainFloatVectorMap* getReferenceGhostMicroDomainCentersOfMass( );
             const cellDomainFloatVectorMap* getReferenceFreeMicroDomainMomentsOfInertia( );
             const cellDomainFloatVectorMap* getReferenceGhostMicroDomainMomentsOfInertia( );
+            const cellDomainFloatVectorMap* getReferenceCellDomainCenterOfMassShapeFunctions( );
 
             const domainFloatMap* getFreeMicroDomainMasses( );
             const domainFloatMap* getGhostMicroDomainMasses( );
@@ -99,7 +100,6 @@ namespace overlapCoupling{
             cellDomainFloatMap _test_domainMass;
             cellDomainFloatVectorMap _test_domainCOM;
             std::unordered_map< uIntType, std::unordered_map< std::string, std::unordered_map< uIntType, floatVector > > > _test_domainXi;
-            cellDomainFloatVectorMap _test_domainCOMSF;
             std::unordered_map< uIntType, std::unordered_map< std::string, std::unordered_map< uIntType, floatVector > > > _test_domainMUP;
 
             const std::unordered_map< uIntType, floatType >* getMacroNodeProjectedMass( );
@@ -108,6 +108,10 @@ namespace overlapCoupling{
 
             const std::unordered_map< uIntType, floatVector >* getMacroReferencePositions( );
             const std::unordered_map< uIntType, floatVector >* getMicroReferencePositions( );
+
+            const SparseMatrix *getCenterOfMassNMatrix( );
+            const Eigen::MatrixXd *getCenterOfMassProjector( );
+            const SparseMatrix *getHomogenizationMatrix( );
 #endif
 
         private:
@@ -249,6 +253,8 @@ namespace overlapCoupling{
 
             errorOut formL2Projectors( );
 
+            errorOut formAveragedL2Projectors( );
+
             errorOut formDirectProjectionProjectors( const unsigned int &microIncrement, const unsigned int &macroIncrement );
 
             errorOut addDomainContributionToDirectFreeMicroToGhostMacroProjector( const unsigned int &cellIndex,
@@ -375,6 +381,13 @@ namespace overlapCoupling{
             floatVector _updatedFreeMacroDispDOFValues;
             bool _freeDOFValuesUpdated;
             uIntType _currentReferenceOutputIncrement = 0;
+            cellDomainFloatVectorMap _referenceCellDomainCenterOfMassShapefunctions;
+
+            SparseMatrix _centerOfMassN;
+            Eigen::MatrixXd _centerOfMassProjector;
+            SparseMatrix _homogenizationMatrix;
+
+            bool _homogenizationMatrix_initialized = false;
 
     };
 

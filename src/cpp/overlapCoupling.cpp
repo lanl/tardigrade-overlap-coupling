@@ -441,6 +441,10 @@ namespace overlapCoupling{
         _referenceFreeMicroDomainMasses.clear( );
         _referenceGhostMicroDomainCentersOfMass.clear( );
         _referenceFreeMicroDomainCentersOfMass.clear( );
+        _referenceCellDomainCenterOfMassShapefunctions.clear( );
+
+        _homogenizationMatrix_initialized = false;
+        bool centerOfMassN_initialized = false;
 
         for ( auto cellID  = freeMacroCellIDs->begin( );
                    cellID != freeMacroCellIDs->end( );
@@ -476,6 +480,20 @@ namespace overlapCoupling{
                 domainFloatVectorMap domainCentersOfMass;
                 domainFloatVectorMap domainMomentsOfInertia;
 
+                if ( _referenceCellDomainCenterOfMassShapefunctions.find( *cellID ) !=
+                     _referenceCellDomainCenterOfMassShapefunctions.end( ) ){
+
+                    return new errorNode( "setReferenceStateFromIncrement",
+                                          "Macro cell " + std::to_string( *cellID ) + " was found twice in the reference cell domain center of mass shapefunctions map" );
+
+                }
+                else{
+
+                    domainFloatVectorMap tmpDomainFloatVectorMap;
+                    _referenceCellDomainCenterOfMassShapefunctions.emplace( *cellID, tmpDomainFloatVectorMap );
+
+                }
+
 #ifdef TESTACCESS
                 domainFloatMap _test_floatMap;
                 domainFloatVectorMap _test_floatVectorMap;
@@ -506,13 +524,41 @@ namespace overlapCoupling{
 
                     }
 
-
                 }
 
                 _referenceGhostMicroDomainMasses.emplace( *cellID, domainMass );
                 _referenceGhostMicroDomainCentersOfMass.emplace( *cellID, domainCentersOfMass );
                 _referenceGhostMicroDomainMomentsOfInertia.emplace( *cellID, domainMomentsOfInertia );
 
+                SparseMatrix domainCOMN;
+                error = DOFProjection::constructCellCenterOfMassInterpolationMatrixContribution( 1, *cellID, macroNodes,
+                                                                                                 *macroCellToMicroDomainMap,
+                                                                                                 _referenceCellDomainCenterOfMassShapefunctions,
+                                                                                                 *_inputProcessor.getMacroGlobalToLocalDOFMap( ),
+                                                                                                 *_inputProcessor.getMicroDomainIDMap( ),
+                                                                                                 domainCOMN );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                                     "Error in forming the contribution of macro element " + std::to_string( *cellID ) +
+                                                     " to the center of mass shapefunction matrix" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                if ( centerOfMassN_initialized ){
+
+                    _centerOfMassN += domainCOMN;
+
+                }
+                else{
+
+                    _centerOfMassN = domainCOMN;
+                    centerOfMassN_initialized = true;
+
+                } 
         }
 
         //Loop over the ghost macro-scale cells
@@ -546,6 +592,20 @@ namespace overlapCoupling{
 
                 }
 
+                if ( _referenceCellDomainCenterOfMassShapefunctions.find( *cellID ) !=
+                     _referenceCellDomainCenterOfMassShapefunctions.end( ) ){
+
+                    return new errorNode( "setReferenceStateFromIncrement",
+                                          "Macro cell " + std::to_string( *cellID ) + " was found twice in the reference cell domain center of mass shapefunctions map" );
+
+                }
+                else{
+
+                    domainFloatVectorMap tmpDomainFloatVectorMap;
+                    _referenceCellDomainCenterOfMassShapefunctions.emplace( *cellID, tmpDomainFloatVectorMap );
+
+                }
+
                 //Loop over the micro-domains
                 domainFloatMap       domainMass;
                 domainFloatVectorMap domainCentersOfMass;
@@ -576,10 +636,52 @@ namespace overlapCoupling{
                 _referenceFreeMicroDomainCentersOfMass.emplace( *cellID, domainCentersOfMass );
                 _referenceFreeMicroDomainMomentsOfInertia.emplace( *cellID, domainMomentsOfInertia );
 
+                SparseMatrix domainCOMN;
+                error = DOFProjection::constructCellCenterOfMassInterpolationMatrixContribution( 1, *cellID, macroNodes,
+                                                                                                 *macroCellToMicroDomainMap,
+                                                                                                 _referenceCellDomainCenterOfMassShapefunctions,
+                                                                                                 *_inputProcessor.getMacroGlobalToLocalDOFMap( ),
+                                                                                                 *_inputProcessor.getMicroDomainIDMap( ),
+                                                                                                 domainCOMN );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                                     "Error in forming the contribution of macro element " + std::to_string( *cellID ) +
+                                                     " to the center of mass shapefunction matrix" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                if ( centerOfMassN_initialized ){
+
+                    _centerOfMassN += domainCOMN;
+
+                }
+                else{
+
+                    _centerOfMassN = domainCOMN;
+                    centerOfMassN_initialized = true;
+
+                } 
         }
 
         //Compress the shape-function matrix
         _N.makeCompressed( );
+
+        //Compute the center of mass to domain projector
+        std::cout << "computing the inverse of the center of mass shapefunction matrix\n";
+        error = DOFProjection::formMoorePenrosePseudoInverse( _centerOfMassN.toDense( ), _centerOfMassProjector );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                                             "Error in the formation of the center of mass to macro node projector" );
+            result->addNext( error );
+            return result;
+
+        }
 
         //Form the projectors
         std::cout << "forming the projectors\n";
@@ -635,6 +737,20 @@ namespace overlapCoupling{
             }
 
         }
+        else if ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 ){
+
+            errorOut error = formAveragedL2Projectors( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formTheProjectors",
+                                                 "Error in the formation of the averaged L2 projectors" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
         else{
 
             return new errorNode( "formTheProjectors",
@@ -668,24 +784,16 @@ namespace overlapCoupling{
         std::cout << "Performing QR decomposition of NQDhat\n";
         SparseMatrix NQDhat = _N.block( 0, nFreeMacroDOF, nFreeMicroDOF, nGhostMacroDOF );
         NQDhat.makeCompressed( );
-        solver.compute( NQDhat );//_N.block( 0, nFreeMacroDOF, nFreeMicroDOF, nGhostMacroDOF ) );
+        errorOut error = DOFProjection::formMoorePenrosePseudoInverse( NQDhat.toDense( ), _L2_BDhatQ );
 
-        if ( solver.info( ) != Eigen::Success ){
+        if ( error ){
 
-            return new errorNode( "formL2Projectors",
-                                  "The QR decomposition of the ghost macro to free micro interpolation matrix failed" );
+            errorOut result = new errorNode( "formL2Projectors", "Error in solving for _L2_BDhatQ" );
+            result->addNext( error );
+            return result;
 
         }
 
-        //Form the identity matrix
-        SparseMatrix I( nFreeMicroDOF, nFreeMicroDOF );
-        I.reserve( nFreeMicroDOF );
-        for ( unsigned int i = 0; i < nFreeMicroDOF; i++ ){
-            I.insert( i, i ) = 1;
-        }
-
-        std::cout << "Performing linear solve for BDhatQ\n";
-        _L2_BDhatQ = solver.solve( I.toDense( ) );
         _L2_BDhatD = -_L2_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
 
         _L2_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatQ;
@@ -695,6 +803,83 @@ namespace overlapCoupling{
         return NULL;
     }
 
+    errorOut overlapCoupling::formAveragedL2Projectors( ){
+        /*!
+         * Form the projectors using the averaged micro domain values at the centers of mass.
+         *
+         * This is the currently recommended projection method
+         */
+
+        //Form the micro to macro projection matrix
+        //Note: This is the FULL matrix not just the part we need for the overlap coupling.
+        //      We will select sub-blocks of it to use in the actual projectors
+
+        Eigen::MatrixXd microMacroProjector;
+        SparseMatrix S, T;
+
+        uIntType nMicroDOF = _dim;
+        uIntType nMacroDOF = _dim + _dim * _dim;
+
+        errorOut error;
+
+        std::cerr << "ASSEMBLING MICRO-TO-MACRO PROJECTOR\n";
+        for ( uIntType i = 0; i < nMacroDOF; i++ ){
+
+            error = DOFProjection::formDomainSelectionMatrix( i, nMacroDOF, *_inputProcessor.getMicroDomainIDMap( ), S );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formAveragedL2Projectors", "Error in the formation of the selection matrix" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            error = DOFProjection::formMacroNodeExpansionMatrix( i, nMacroDOF, *_inputProcessor.getMacroGlobalToLocalDOFMap( ), T );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "formAveragedL2Projectors", "Error in the formation of the expansion matrix" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            if ( i == 0 ){
+
+                microMacroProjector = T * _centerOfMassProjector * S;
+
+            }
+            else{
+
+                microMacroProjector += T * _centerOfMassProjector * S;
+
+            }
+
+        }
+
+        //Add the homogenization matrix
+        microMacroProjector *= _homogenizationMatrix;
+
+        //Set the DOF type sizes
+        uIntType nFreeMacroDOF  = nMacroDOF * _inputProcessor.getFreeMacroNodeIds( )->size( );        
+        uIntType nGhostMacroDOF = nMacroDOF * _inputProcessor.getGhostMacroNodeIds( )->size( );
+
+        uIntType nFreeMicroDOF  = nMicroDOF * _inputProcessor.getFreeMicroNodeIds( )->size( );
+        uIntType nGhostMicroDOF = nMicroDOF * _inputProcessor.getGhostMicroNodeIds( )->size( );
+
+        //Compute the projectors
+        _L2_BDhatQ = microMacroProjector.bottomLeftCorner( nGhostMacroDOF, nFreeMicroDOF );
+
+        _L2_BDhatD = -_L2_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
+
+        _L2_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatQ;
+        _L2_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF )
+                   + _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
+
+        return new errorNode( "formAveragedL2Projectors", "Not implemented" );
+    }
+
     errorOut overlapCoupling::formDirectProjectionProjectors( const unsigned int &microIncrement, const unsigned int &macroIncrement ){
         /*!
          * Form the projectors if the direct projection is to be used
@@ -702,6 +887,9 @@ namespace overlapCoupling{
          * :param const unsigned int &microIncrement: The micro increment at which to form the projectors
          * :param const unsigned int &macroIncrement: The macro increment at which to form the projectors
          */
+
+        return new errorNode( "formDirectProjectionProjectors",
+                              "This subroutine, and the routines it calls, requires extensive re-working to obtain the expected results. The method is not recommended so this has not been done yet." );
 
         //Get the ghost macro cell IDs
         const uIntVector *ghostMacroCellIDs = _inputProcessor.getGhostMacroCellIds( );
@@ -851,8 +1039,9 @@ namespace overlapCoupling{
                                                        domainCenterOfMassShapeFunctionValues,
                                                        domainMicroPositionShapeFunctionValues );
 
+        _referenceCellDomainCenterOfMassShapefunctions[ cellID ].emplace( domainName, domainCenterOfMassShapeFunctionValues );
+
 #ifdef TESTACCESS
-        _test_domainCOMSF[ cellID ].emplace( domainName, domainCenterOfMassShapeFunctionValues );
         _test_domainMUP[ cellID ].emplace( domainName, domainMicroPositionShapeFunctionValues );
 #endif
 
@@ -902,6 +1091,33 @@ namespace overlapCoupling{
             }
 
         }
+        if ( _inputProcessor.getCouplingInitialization( )[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 ){
+
+            SparseMatrix domainE;
+            error = DOFProjection::assembleMicroDomainHomogenizationMatrixContribution( domainName, domainNodes,
+                                                                                        *_inputProcessor.getMicroDensities( ),
+                                                                                        *_inputProcessor.getMicroVolumes( ),
+                                                                                        *_inputProcessor.getMicroWeights( ),
+                                                                                        domainReferenceXiVectors,
+                                                                                        *_inputProcessor.getMicroGlobalToLocalDOFMap( ),
+                                                                                        referenceMicroDomainMass, referenceMicroDomainMomentsOfInertia,
+                                                                                        *_inputProcessor.getMicroDomainIDMap( ),
+                                                                                        domainE );
+
+            if ( _homogenizationMatrix_initialized ){
+
+                _homogenizationMatrix += domainE;
+
+            }
+            else{
+
+                _homogenizationMatrix = domainE;
+                _homogenizationMatrix_initialized = true;
+
+            }
+
+        }
+
 
         return NULL;
 
@@ -6591,7 +6807,7 @@ namespace overlapCoupling{
         //Save the projection matrices
 
         std::string projectionType = couplingInitialization[ "projection_type" ].as< std::string >( );
-        if ( projectionType.compare( "l2_projection" ) == 0 ){
+        if ( ( projectionType.compare( "l2_projection" ) == 0 ) ) {//|| ( projectionType.compare( "averaged_l2_projection" ) == 0 ) ){
 
             //Initialize the projection matrix attributes
             shared_ptr< XdmfAttribute > BQhatQ = XdmfAttribute::New( );
@@ -7847,6 +8063,15 @@ namespace overlapCoupling{
 
     }
 
+    const cellDomainFloatVectorMap* overlapCoupling::getReferenceCellDomainCenterOfMassShapeFunctions( ){
+        /*!
+         * Get a constant reference to the shapefunctions of the centers of mass at each macro cell
+         */
+
+        return &_referenceCellDomainCenterOfMassShapefunctions;
+
+    }
+
 #ifdef TESTACCESS
     const std::unordered_map< uIntType, floatType >* overlapCoupling::getMacroNodeProjectedMass( ){
         /*!
@@ -7886,6 +8111,30 @@ namespace overlapCoupling{
          */
 
         return &_microReferencePositions;
+
+    }
+    const SparseMatrix *overlapCoupling::getCenterOfMassNMatrix( ){
+        /*!
+         * Get a constant reference to the center of mass interpolation matrix
+         */
+
+        return &_centerOfMassN;
+
+    }
+    const Eigen::MatrixXd *overlapCoupling::getCenterOfMassProjector( ){
+        /*!
+         * Get a constant reference to the center of mass projector
+         */
+
+        return &_centerOfMassProjector;
+
+    }
+    const SparseMatrix *overlapCoupling::getHomogenizationMatrix( ){
+        /*!
+         * Get a constant reference to the homogenization matrix
+         */
+
+        return &_homogenizationMatrix;
 
     }
 #endif
