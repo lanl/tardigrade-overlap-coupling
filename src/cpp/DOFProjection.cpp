@@ -3249,7 +3249,7 @@ namespace DOFProjection{
 
         }
 
-        E = SparseMatrix( nDOF * macroNodeToLocalIndex.size( ), nDOF );
+        E = SparseMatrix( nDOF * macroNodeToLocalIndex.size( ), macroNodeToLocalIndex.size( ) );
         E.setFromTriplets( triplets.begin( ), triplets.end( ) );
 
         return NULL;

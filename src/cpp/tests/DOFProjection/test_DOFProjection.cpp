@@ -6830,6 +6830,78 @@ int test_formDomainSelectionMatrix( std::ofstream &results ){
 
 }
 
+int test_formMacroNodeExpansionMatrix( std::ofstream &results ){
+    /*!
+     * Test the formation of the macro node expansion matrix
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::unordered_map< uIntType, uIntType > macroNodeToLocalIndex
+        =
+        {
+            {  5,  0 },
+            {  9,  1 },
+            {  8,  2 },
+            { 11,  3 },
+            {  3,  4 },
+            {  1,  5 },
+            {  6,  6 },
+            { 15,  7 },
+            { 12,  8 },
+            {  2,  9 },
+            { 13, 10 },
+            { 14, 11 },
+        };
+
+    errorOut error;
+    uIntType DOFIndex = 5;
+    uIntType nDOF = 12;
+    SparseMatrix E;
+
+    error = DOFProjection::formMacroNodeExpansionMatrix( DOFIndex, nDOF, macroNodeToLocalIndex, E );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_formMacroNodeExpansionMatrix & False\n";
+        return 1;
+
+    }
+
+    Eigen::MatrixXd X( 12, 1 );
+    X << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12;
+
+    Eigen::MatrixXd answer( 144, 1 );
+    answer << 0.,  0.,  0.,  0.,  0.,  1.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+              0.,  0.,  0.,  0.,  2.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+              0.,  0.,  0.,  3.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+              0.,  0.,  4.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+              0.,  5.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+              6.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  7.,
+              0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  8.,  0.,
+              0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  9.,  0.,  0.,
+              0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., 10.,  0.,  0.,  0.,
+              0.,  0.,  0.,  0.,  0.,  0.,  0.,  0., 11.,  0.,  0.,  0.,  0.,
+              0.,  0.,  0.,  0.,  0.,  0.,  0., 12.,  0.,  0.,  0.,  0.,  0.,
+              0.;
+              
+
+    Eigen::MatrixXd result = E * X;
+
+    if ( ( result - answer ).norm( ) > 1e-5 * ( answer.norm( ) + 1 ) ){
+
+        results << "test_formMacroNodeExpansionMatrix (test 1) & False\n";
+        return 1;
+
+    }
+     
+
+    results << "test_formMacroNodeExpansionMatrix & True\n";
+    return 0;
+
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -6858,6 +6930,7 @@ int main(){
     test_formMoorePenrosePseudoInverse( results );
     test_assembleMicroDomainHomogenizationMatrixContribution( results );
     test_formDomainSelectionMatrix( results );
+    test_formMacroNodeExpansionMatrix( results );
 
     //Close the results file
     results.close();
