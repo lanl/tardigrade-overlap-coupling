@@ -3197,4 +3197,63 @@ namespace DOFProjection{
 
     }
 
+    errorOut formDomainSelectionMatrix( const uIntType DOFIndex, const uIntType nDOF,
+                                        const std::unordered_map< std::string, uIntType > domainToLocalIndex, 
+                                        SparseMatrix &S ){
+        /*!
+         * Form the domain selection matrix to extract degree of freedom DOFINDEX of nDOF from the values
+         * at the micro domains. Used in conjunction with the compressed view of the micro-to-macro projector
+         *
+         * :param const uIntType DOFINDEX: The index of the degree of freedom to extract
+         * :param const uIntType nDOF: The total number of degrees of freedom at the macro nodes being interpolated
+         * :param const std::unordered_map< std::string, uIntType > domainToLocalIndex
+         * :param SparseMatrix &S: The selection matrix 
+         */
+
+        std::vector< T > triplets;
+        triplets.reserve( domainToLocalIndex.size( ) );
+
+        for ( unsigned int i = 0; i < domainToLocalIndex.size( ); i++ ){
+
+            triplets.push_back( T( i, nDOF * i + DOFIndex, 1 ) );
+
+        }
+
+        S = SparseMatrix( domainToLocalIndex.size( ), nDOF * domainToLocalIndex.size( ) );
+        S.setFromTriplets( triplets.begin( ), triplets.end( ) );
+
+        return NULL;
+
+    }
+
+    errorOut formMacroNodeExpansionMatrix( const uIntType DOFIndex, const uIntType nDOF,
+                                           const std::unordered_map< uIntType, uIntType > &macroNodeToLocalIndex,
+                                           SparseMatrix &E ){
+        /*!
+         * Form the macro node expansion matrix to set degree of freedom DOFINDEX of nDOF on the macro node
+         * from the values after being solved for. Used in conjunction with the compressed view of the 
+         * micro-to-macro projector.
+         *
+         * :param const uIntType DOFINDEX: The index of the degree of freedom to extract
+         * :param const uIntType nDOF: The total number of degrees of freedom at the macro nodes being interpolated
+         * :param const std::unordered_map< uIntType, uIntType > macroNodeToLocalIndex
+         * :param SparseMatrix &E: The expansion matrix
+         */
+
+        std::vector< T > triplets;
+        triplets.reserve( macroNodeToLocalIndex.size( ) );
+
+        for ( unsigned int i = 0; i < macroNodeToLocalIndex.size( ); i++ ){
+
+            triplets.push_back( T( nDOF * i + DOFIndex, i, 1 ) );
+
+        }
+
+        E = SparseMatrix( nDOF * macroNodeToLocalIndex.size( ), nDOF );
+        E.setFromTriplets( triplets.begin( ), triplets.end( ) );
+
+        return NULL;
+
+    } 
+
 }

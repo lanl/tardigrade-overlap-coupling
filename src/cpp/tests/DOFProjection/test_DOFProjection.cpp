@@ -6649,6 +6649,7 @@ int test_assembleMicroDomainHomogenizationMatrixContribution( std::ofstream &res
 
         if ( error ){
 
+            error->print( );
             results << "test_assembleMicroDomainHomogenizationMatrixContribution & False\n";
             return 1;
 
@@ -6750,6 +6751,85 @@ int test_assembleMicroDomainHomogenizationMatrixContribution( std::ofstream &res
     return 0;
 }
 
+int test_formDomainSelectionMatrix( std::ofstream &results ){
+    /*!
+     * Test the formation of the domain selection matrix
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    std::unordered_map< std::string, uIntType > domainToLocalIndex
+        =
+        {
+            { "ghost_nodeset_volume_1",  0 },
+            { "ghost_nodeset_volume_2",  1 },
+            { "ghost_nodeset_volume_3",  2 },
+            { "ghost_nodeset_volume_4",  3 },
+            { "ghost_nodeset_volume_5",  4 },
+            { "ghost_nodeset_volume_6",  5 },
+            { "ghost_nodeset_volume_7",  6 },
+            { "ghost_nodeset_volume_8",  7 },
+            { "free_nodeset_volume_1",   8 },
+            { "free_nodeset_volume_2",   9 },
+            { "free_nodeset_volume_3",  10 },
+            { "free_nodeset_volume_4",  11 },
+            { "free_nodeset_volume_5",  12 },
+            { "free_nodeset_volume_6",  13 },
+            { "free_nodeset_volume_7",  14 },
+            { "free_nodeset_volume_8",  15 },
+        };
+
+    errorOut error;
+    uIntType DOFIndex = 3;
+    uIntType nDOF = 12;
+    SparseMatrix S;
+
+    error = DOFProjection::formDomainSelectionMatrix( DOFIndex, nDOF, domainToLocalIndex, S );
+
+    if ( error ){
+
+        error->print( );
+        results << "test_formDomainSelectionMatrix & False\n";
+        return 1;
+
+    }
+
+    Eigen::MatrixXd X( 192, 1 );
+    X <<   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,
+          13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,
+          26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,
+          39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,
+          52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,
+          65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,
+          78,  79,  80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,
+          91,  92,  93,  94,  95,  96,  97,  98,  99, 100, 101, 102, 103,
+         104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+         117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129,
+         130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,
+         143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155,
+         156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168,
+         169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181,
+         182, 183, 184, 185, 186, 187, 188, 189, 190, 191;
+
+    Eigen::MatrixXd answer( 16, 1 );
+    answer <<   3.,  15.,  27.,  39.,  51.,  63.,  75.,  87.,  99., 111., 123.,
+              135., 147., 159., 171., 183.;
+
+    Eigen::MatrixXd result = S * X;
+
+    if ( ( result - answer ).norm( ) > 1e-5 * ( answer.norm( ) + 1 ) ){
+
+        results << "test_formDomainSelectionMatrix (test 1) & False\n";
+        return 1;
+
+    }
+     
+
+    results << "test_formDomainSelectionMatrix & True\n";
+    return 0;
+
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -6777,6 +6857,7 @@ int main(){
     test_constructCellCenterOfMassInterpolationMatrixContribution( results );
     test_formMoorePenrosePseudoInverse( results );
     test_assembleMicroDomainHomogenizationMatrixContribution( results );
+    test_formDomainSelectionMatrix( results );
 
     //Close the results file
     results.close();

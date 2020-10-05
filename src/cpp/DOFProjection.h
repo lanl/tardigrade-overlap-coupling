@@ -35,7 +35,9 @@ namespace DOFProjection{
 
     //Eigen Typedefs
     typedef Eigen::SparseMatrix< floatType > SparseMatrix;
+    typedef Eigen::SparseMatrix< bool > SparseBoolMatrix;
     typedef Eigen::Triplet< floatType > T;
+    typedef Eigen::Triplet< bool > Tb;
 
     /*==================================================================
     |                       Projection Functions                       |
@@ -322,6 +324,14 @@ namespace DOFProjection{
                                                                   const std::unordered_map< std::string, floatVector > &domainInertias,
                                                                   const std::unordered_map< std::string, uIntType > &domainToLocalIndex,
                                                                   SparseMatrix &domainE );
+
+    errorOut formDomainSelectionMatrix( const uIntType DOFIndex, const uIntType nDOF,
+                                        const std::unordered_map< std::string, uIntType > domainToLocalIndex,
+                                        SparseMatrix &S );
+
+    errorOut formMacroNodeExpansionMatrix( const uIntType DOFIndex, const uIntType nDOF,
+                                           const std::unordered_map< uIntType, uIntType > &macroNodeToLocalIndex,
+                                           SparseMatrix &T );
 }
 
 
