@@ -3055,4 +3055,146 @@ namespace DOFProjection{
 
     }
 
+    errorOut assembleMicroDomainHomogenizationMatrixContribution( const std::string &domainName,
+                                                                  const uIntVector &domainNodeIds,
+                                                                  const std::unordered_map< uIntType, floatType > &microDensities,
+                                                                  const std::unordered_map< uIntType, floatType > &microVolumes,
+                                                                  const std::unordered_map< uIntType, floatType > &microWeights,
+                                                                  const std::unordered_map< uIntType, floatVector > &referenceXis,
+                                                                  const std::unordered_map< uIntType, uIntType > &microNodeToLocalIndex,
+                                                                  const std::unordered_map< std::string, floatType > &domainMasses,
+                                                                  const std::unordered_map< std::string, floatVector > &domainInertias,
+                                                                  const std::unordered_map< std::string, uIntType > &domainToLocalIndex,
+                                                                  SparseMatrix &domainE ){
+        /*!
+         * Assemble the micro-domain homogenization matrix that maps from the micro-scale
+         * displacement degrees of freedom to the degrees of freedom at the domain
+         * centers of mass.
+         *
+         * :param const std::string &domainName: The name of the micro domain
+         * :param const uIntVector &domainNodeIds: The nodes in the micro domain
+         * :param const std::unordered_map< uIntType, floatType > &microDensities: The densities of the micro nodes
+         * :param const std::unordered_map< uIntType, floatType > &microVolumes: The volumes of the micro nodes
+         * :param const std::unordered_map< uIntType, floatType > &microWeights: The weights of the micro nodes
+         * :param const std::unordered_map< uIntType, floatVector > &referenceXis: The reference Xis of the micro nodes
+         * :param const std::unordered_map< uIntType, uIntType > &microNodeToLocalIndex: The map of the micro node ids
+         *     to the local indices
+         * :param const std::unordered_map< std::string, floatType > &domainMasses: The masses of the micro domains
+         * :param const std::unordered_map< std::string, floatVector > &domainInertias: The inertias of the micro domains
+         * :param const std::unordered_map< std::string, uIntType > &domainToLocalIndex: The local index of the micro domain
+         */
+
+        //Find the micro domain
+        auto domain = domainToLocalIndex.find( domainName );
+        if ( domain == domainToLocalIndex.end( ) ){
+
+            return new errorNode( "assembleMicroDomainHomogenizationMatrixContribution",
+                                  "Micro domain " + domainName + " not found in domain local index map" );
+
+        }
+
+        if ( referenceXis.size( ) == 0 ){
+
+            return new errorNode( "assembleMicroDomainHomogenizationMatrixContribution",
+                                  "No values are found in the reference Xi map" );
+
+        }
+
+        uIntType dim = referenceXis.begin( )->second.size( );
+
+        uIntType nDOF = dim + dim * dim;
+
+        uIntType row0 = nDOF * domain->second;
+
+        auto mass = domainMasses.find( domainName );
+        if ( mass == domainMasses.end( ) ){
+
+            return new errorNode( "assembleMicroDomainHomogenizationMatrixContribution",
+                                  "Micro domain " + domainName + " not found in domain mass map" );
+
+        }
+
+        auto inertia = domainInertias.find( domainName );
+        if ( inertia == domainInertias.end( ) ){
+
+            return new errorNode( "assembleMicroDomainHomogenizationMatrixContribution",
+                                  "Micro domain " + domainName + " not found in domain inertia map" );
+
+        }
+
+        std::vector< T > triplets;
+        triplets.reserve( nDOF * domainNodeIds.size( ) );
+
+        floatVector invI = vectorTools::inverse( mass->second * inertia->second, dim, dim );
+
+        for ( auto node = domainNodeIds.begin( ); node != domainNodeIds.end( ); node++ ){
+
+            auto localNode = microNodeToLocalIndex.find( *node );
+
+            if ( localNode == microNodeToLocalIndex.end( ) ){
+
+                return new errorNode( "assembleMicroDomainHomogenizationMatrixContribution",
+                                      "Micro node " + std::to_string( *node ) + " not found in local node map" );
+
+            }
+
+            auto density = microDensities.find( *node );
+
+            if ( density == microDensities.end( ) ){
+
+                return new errorNode( "assembleMicroDomainHomogenizationMatrixContribution",
+                                      "Micro node " + std::to_string( *node ) + " not found in density map" );
+
+            }
+
+            auto volume = microVolumes.find( *node );
+
+            if ( volume == microVolumes.end( ) ){
+
+                return new errorNode( "assembleMicroDomainHomogenizationMatrixContribution",
+                                      "Micro node " + std::to_string( *node ) + " not found in volume map" );
+
+            }
+
+            auto weight = microWeights.find( *node );
+
+            if ( weight == microWeights.end( ) ){
+
+                return new errorNode( "assembleMicroDomainHomogenizationMatrixContribution",
+                                      "Micro node " + std::to_string( *node ) + " not found in weight map" );
+
+            }
+
+            auto Xi = referenceXis.find( *node );
+
+            if ( Xi == referenceXis.end( ) ){
+
+                return new errorNode( "assembleMicroDomainHomogenizationMatrixContribution",
+                                      "Micro node " + std::to_string( *node ) + " not found in Xi map" );
+
+            }
+
+            floatVector xiIinv = vectorTools::matrixMultiply( Xi->second, invI, 1, dim, dim, dim );
+
+            for ( uIntType j = 0; j < dim; j++ ){
+
+                triplets.push_back( T( row0 + j, dim * localNode->second + j, density->second * volume->second * weight->second / mass->second ) );
+
+                for ( uIntType I = 0; I < dim; I++ ){
+
+                    triplets.push_back( T( row0 + dim + dim * j + I, dim * localNode->second + j, density->second * volume->second * weight->second * xiIinv[ I ] ) );
+
+                }
+
+            }
+
+        }
+
+        domainE = SparseMatrix( nDOF * domainToLocalIndex.size( ), dim * microNodeToLocalIndex.size( ) ); 
+        domainE.setFromTriplets( triplets.begin( ), triplets.end( ) );
+
+        return NULL;
+
+    }
+
 }

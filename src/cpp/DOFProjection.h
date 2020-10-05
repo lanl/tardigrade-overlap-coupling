@@ -310,6 +310,18 @@ namespace DOFProjection{
     errorOut formMoorePenrosePseudoInverse( const Eigen::MatrixXd &A, Eigen::MatrixXd &Ainv,
                                             const floatType atol = 1e-8, const floatType rtol = 1e-8,
                                             const std::string method = "jacobi" );
+
+    errorOut assembleMicroDomainHomogenizationMatrixContribution( const std::string &domainName,
+                                                                  const uIntVector &domainNodeIds,
+                                                                  const std::unordered_map< uIntType, floatType > &microDensities,
+                                                                  const std::unordered_map< uIntType, floatType > &microVolumes,
+                                                                  const std::unordered_map< uIntType, floatType > &microWeights,
+                                                                  const std::unordered_map< uIntType, floatVector > &referenceXis,
+                                                                  const std::unordered_map< uIntType, uIntType > &microNodeToLocalIndex,
+                                                                  const std::unordered_map< std::string, floatType > &domainMasses,
+                                                                  const std::unordered_map< std::string, floatVector > &domainInertias,
+                                                                  const std::unordered_map< std::string, uIntType > &domainToLocalIndex,
+                                                                  SparseMatrix &domainE );
 }
 
 
