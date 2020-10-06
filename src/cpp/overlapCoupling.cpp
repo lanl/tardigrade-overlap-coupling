@@ -677,7 +677,6 @@ namespace overlapCoupling{
         _N.makeCompressed( );
 
         //Compute the center of mass to domain projector
-        std::cout << "computing the inverse of the center of mass shapefunction matrix\n";
         error = DOFProjection::formMoorePenrosePseudoInverse( _centerOfMassN.toDense( ), _centerOfMassProjector );
 
         if ( error ){
@@ -690,7 +689,6 @@ namespace overlapCoupling{
         }
 
         //Form the projectors
-        std::cout << "forming the projectors\n";
         error = formTheProjectors( microIncrement, macroIncrement );
 
         if ( error ){
@@ -6812,7 +6810,30 @@ namespace overlapCoupling{
 
         }
 
+        errorOut error;
+
         //Save the projection matrices
+        error = writeSparseMatrixToXDMF( _centerOfMassN, "centerOfMassInterpolator", reference_filename, domain, grid );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "outputReferenceInformation",
+                                             "Error when writing out the center of mass projection matrix" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = writeDenseMatrixToXDMF( _centerOfMassProjector, "centerOfMassProjector", reference_filename, domain, grid );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "outputReferenceInformation",
+                                             "Error when writing out the center of mass projection matrix" );
+            result->addNext( error );
+            return result;
+
+        }
 
         std::string projectionType = couplingInitialization[ "projection_type" ].as< std::string >( );
         if ( ( projectionType.compare( "l2_projection" ) == 0 ) || ( projectionType.compare( "averaged_l2_projection" ) == 0 ) ){
@@ -6826,8 +6847,6 @@ namespace overlapCoupling{
             //Write the matrix type to the output file
             shared_ptr< XdmfInformation > projectionType = XdmfInformation::New( "EIGEN_MATRIX_TYPE", "DENSE" );
             grid->insert( projectionType );
-
-            errorOut error;
 
             //Write BQhatQ
             error = writeDenseMatrixToXDMF( _L2_BQhatQ, "BQhatQ", reference_filename, domain, grid );
@@ -6883,8 +6902,6 @@ namespace overlapCoupling{
             //Write the matrix type to the output file
             shared_ptr< XdmfInformation > projectionType = XdmfInformation::New( "EIGEN_MATRIX_TYPE", "SPARSE" );
             domain->insert( projectionType );
-
-            errorOut error;
 
             //Write BQhatQ
             error = writeSparseMatrixToXDMF( _DP_BQhatQ, "BQhatQ", reference_filename, domain, grid );
@@ -7224,16 +7241,78 @@ namespace overlapCoupling{
 
         std::string projectionType = config[ "type" ].as< std::string >( );
 
+        errorOut error = readSparseMatrixFromXDMF( _readGrid, "centerOfMassInterpolator", _centerOfMassN );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractProjectionMatricesFromFile",
+                                             "Error in extracting the center of mass interpolation" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        error = readDenseMatrixFromXDMF( _readGrid, "centerOfMassProjector", _centerOfMassProjector );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractProjectionMatricesFromFile",
+                                             "Error in extracting the center of mass projector" );
+            result->addNext( error );
+            return result;
+
+        }
+
         if ( ( projectionType.compare( "l2_projection" ) ) || ( projectionType.compare( "averaged_l2_projection" ) ) ){
 
-            std::string outstr = projectionType;
-            outstr += " not implemented";
-            return new errorNode( "extractProjectionMatricesFromFile", outstr );
+            error = readDenseMatrixFromXDMF( _readGrid, "BQhatQ", _L2_BQhatQ );
+
+            if ( error ){
+
+                errorOut result
+                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BQhatQ from the XDMF file" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            error = readDenseMatrixFromXDMF( _readGrid, "BQhatD", _L2_BQhatD );
+
+            if ( error ){
+
+                errorOut result
+                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BQhatD from the XDMF file" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            error = readDenseMatrixFromXDMF( _readGrid, "BDhatQ", _L2_BDhatQ );
+
+            if ( error ){
+
+                errorOut result
+                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BDhatQ from the XDMF file" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            error = readDenseMatrixFromXDMF( _readGrid, "BDhatD", _L2_BDhatD );
+
+            if ( error ){
+
+                errorOut result
+                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BDhatD from the XDMF file" );
+                result->addNext( error );
+                return result;
+
+            }
 
         }
         else if ( projectionType.compare( "direct_projection" ) ){
 
-            errorOut error = readSparseMatrixFromXDMF( _readGrid, "BQhatQ", _DP_BQhatQ );
+            error = readSparseMatrixFromXDMF( _readGrid, "BQhatQ", _DP_BQhatQ );
 
             if ( error ){
 

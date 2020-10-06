@@ -1037,14 +1037,12 @@ int test_overlapCoupling_initializeCoupling( std::ofstream &results ){
 //        return 1;
 //    }
 
-    std::cout << "reading reference information\n";
     std::string xdmf_filename = "reference_information.xdmf";
     shared_ptr< XdmfReader > reader = XdmfReader::New( );
     shared_ptr< XdmfDomain > _readDomain = shared_dynamic_cast< XdmfDomain >( reader->read( xdmf_filename ) );
     shared_ptr< XdmfUnstructuredGrid > _readGrid = _readDomain->getUnstructuredGrid( 0 );
 
     SparseMatrix N;
-    std::cout << "getting N\n";
     overlapCoupling::readSparseMatrixFromXDMF( _readGrid, "N", N );
 
     Eigen::MatrixXd A( N.rows( ), 1 );
@@ -1109,8 +1107,59 @@ int test_overlapCoupling_initializeCoupling( std::ofstream &results ){
     }
     testNum += 1;
 
-    std::cout << "checking the projection constants\n";
-    //Check the direct projection constants
+    //Check the center of mass interpolation matrix and the center of mass projector
+    SparseMatrix centerOfMassInterpolator;
+    error = overlapCoupling::readSparseMatrixFromXDMF( _readGrid, "centerOfMassInterpolator", centerOfMassInterpolator );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_initializeCoupling & False\n";
+        return 1;
+    }
+
+    Eigen::MatrixXd DX( 12, 1 );
+    DX << -1.00911786,  1.51428288,  1.75159184, -0.77596151, -0.13860077,
+          -1.30538174, -1.11042458, -0.86808735,  0.47158175, -1.21084958,
+           1.4369616 , -0.41944997;
+
+    Eigen::MatrixXd PA( 16, 1 );
+    PA << -0.40381902, -0.85441036, -0.64758047, -0.59150002, -0.05132026,
+          -0.46167635,  0.26993602, -0.09548531, -0.37851177,  0.45119406,
+           0.53527639, -0.35298579, -0.4960972 , -0.53141861, -0.51544242,
+          -0.65371376;
+    
+    R = centerOfMassInterpolator * DX;
+
+    if ( ( R - PA ).norm( ) > 1e-6 * ( PA.norm( ) + 1 ) ){
+
+        results << "test_overlapCoupling_initializeCoupling (" + std::to_string( testNum + 1 ) + ") & False\n";
+        return 1;
+
+    }
+    testNum += 1;
+
+
+    Eigen::MatrixXd centerOfMassProjector;
+    error = overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "centerOfMassProjector", centerOfMassProjector );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_initializeCoupling & False\n";
+        return 1;
+    }
+
+    R = centerOfMassProjector * PA;
+
+    if ( ( R - DX ).norm( ) > 1e-6 * ( DX.norm( ) + 1 ) ){
+
+        results << "test_overlapCoupling_initializeCoupling (" + std::to_string( testNum + 1 ) + ") & False\n";
+        return 1;
+
+    }
+    testNum += 1;
+
+//    std::cout << "checking the projection constants\n";
+//    //Check the direct projection constants
 //    std::cout << "projected mass\n";
 //    std::unordered_map< uIntType, floatType > macroNodeProjectedMassAnswer
 //        =
@@ -1133,8 +1182,8 @@ int test_overlapCoupling_initializeCoupling( std::ofstream &results ){
 //                              testName, testNum ) ){
 //        return 1;
 //    }
-
-    //Check the projection constant
+//
+//    //Check the projection constant
 //    std::cout << "projected constant\n";
 //    std::unordered_map< uIntType, floatVector > macroNodeProjectedConstantAnswer
 //        =
@@ -1157,8 +1206,8 @@ int test_overlapCoupling_initializeCoupling( std::ofstream &results ){
 //                              testName, testNum ) ){
 //        return 1;
 //    }
-
-    //Check the mass-weighted moment of inertia
+//
+//    //Check the mass-weighted moment of inertia
 //    std::cout << "projected mass moment of inertia\n";
 //    std::unordered_map< uIntType, floatVector > macroNodeProjectedMassMomentOfInertiaAnswer
 //        =
@@ -1182,48 +1231,157 @@ int test_overlapCoupling_initializeCoupling( std::ofstream &results ){
 //        return 1;
 //    }
 
-    //Check the projection matrix
-    SparseMatrix BDhatQ;
-    std::cout << "reading BDhatQ\n";
-    overlapCoupling::readSparseMatrixFromXDMF( _readGrid, "BDhatQ", BDhatQ );
+    //Check the projection matrices
+    Eigen::MatrixXd BDhatQ;
+    overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "BDhatQ", BDhatQ );
 
     Eigen::MatrixXd Q( 81, 1 );
-    Q << 0.  , 0.  , 0.5 , 0.  , 0.  , 0.75, 0.  , 0.  , 0.5 , 0.  , 0.  ,
-         0.75, 0.  , 0.  , 0.5 , 0.  , 0.  , 0.75, 0.  , 0.  , 0.5 , 0.  ,
-         0.  , 0.75, 0.  , 0.  , 0.5 , 0.  , 0.  , 0.75, 0.  , 0.  , 0.5 ,
-         0.  , 0.  , 0.75, 0.  , 0.  , 0.5 , 0.  , 0.  , 0.75, 0.  , 0.  ,
-         0.5 , 0.  , 0.  , 0.75, 0.  , 0.  , 0.5 , 0.  , 0.  , 0.75, 0.  ,
-         0.  , 1.  , 0.  , 0.  , 1.  , 0.  , 0.  , 1.  , 0.  , 0.  , 1.  ,
-         0.  , 0.  , 1.  , 0.  , 0.  , 1.  , 0.  , 0.  , 1.  , 0.  , 0.  ,
-         1.  , 0.  , 0.  , 1.; 
+    Q << 1.6082461 ,  0.23123014,  0.62393882,  1.32988565, -1.20046325,
+        -1.49098297,  1.08575643, -0.27084579, -0.45887108,  1.13457348,
+         1.14212648, -1.34876558, -1.53954667, -0.6699138 ,  0.4062938 ,
+         1.51120934,  0.45950889, -0.3039844 ,  1.8313851 ,  1.41633787,
+         1.0965811 ,  1.50251364, -1.68657903, -1.87216511,  0.82496983,
+         0.21188063,  1.42106996,  1.81642989, -0.1000955 ,  0.19266961,
+         0.93810141,  0.15452743,  0.98045664,  0.3140218 , -1.29539698,
+         1.0298772 ,  1.79294532,  1.51096488,  1.42206134, -0.7942898 ,
+        -1.56131436,  1.62426425,  1.67991981, -0.33085656, -1.8824174 ,
+        -1.98883142, -1.86904329, -1.5365518 ,  1.39131847, -0.47607648,
+         0.00974553, -0.15420091, -0.6692329 , -0.29326975, -1.78084752,
+         1.97746862, -0.418282  , -1.04194253,  0.15101235,  1.55810889,
+         0.29150197, -0.99929398, -0.4581576 ,  1.09085781, -0.59822029,
+        -0.22436283, -0.34358714,  0.15518958,  1.67276323, -0.94694814,
+         1.11237832,  0.39840522, -1.04803035,  0.15294796, -0.5688733 ,
+        -0.3469194 ,  0.02140078, -1.85645887, -0.78465718,  1.49107402,
+         1.9616645;
 
-    Eigen::MatrixXd DhatAnswer( 96, 1 );
-    DhatAnswer <<  0.        ,  0.        ,  0.5       ,  0.        ,  0.        ,
-                   0.        ,  0.        ,  0.        ,  0.        ,  0.00126662,
-                   0.00126662, -0.07599747,  0.        ,  0.        ,  0.5       ,
-                   0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
-                   0.        , -0.00126662,  0.00126662, -0.07599747,  0.        ,
-                   0.        ,  0.5       ,  0.        ,  0.        ,  0.        ,
-                   0.        ,  0.        ,  0.        , -0.00126662, -0.00126662,
-                  -0.07599747,  0.        ,  0.        ,  0.5       ,  0.        ,
-                   0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
-                   0.00126662, -0.00126662, -0.07599747,  0.        ,  0.        ,
-                   0.91666667,  0.        ,  0.        ,  0.        ,  0.        ,
-                   0.        ,  0.        ,  0.10993325,  0.10993325,  0.70671378,
-                   0.        ,  0.        ,  0.91666667,  0.        ,  0.        ,
-                   0.        ,  0.        ,  0.        ,  0.        , -0.10993325,
-                   0.10993325,  0.70671378,  0.        ,  0.        ,  0.91666667,
-                   0.        ,  0.        ,  0.        ,  0.        ,  0.        ,
-                   0.        , -0.10993325, -0.10993325,  0.70671378,  0.        ,
-                   0.        ,  0.91666667,  0.        ,  0.        ,  0.        ,
-                   0.        ,  0.        ,  0.        ,  0.10993325, -0.10993325,
-                   0.70671378;
+    Eigen::MatrixXd D( 48, 1 );
+    D << -0.24194266,  1.25961845, -0.87935036, -1.71921134,  1.70558356,
+          0.75569485, -1.69431444,  0.7158976 ,  0.8212172 , -1.45008094,
+          1.56941873,  1.78945147, -1.65800529,  0.34847407, -0.42676962,
+         -0.19490982, -0.01828974,  1.7880325 ,  0.32964821, -1.07369484,
+          0.46494527, -1.86369121, -1.56866323,  0.00889209,  0.16946288,
+         -1.94731671, -1.81322178,  1.28646336,  0.85564197,  0.28811254,
+         -0.46973343,  0.14448512, -1.03384903,  0.15534826, -0.77913744,
+          1.22798127,  0.06452942,  0.09612534,  1.43803989, -0.57649306,
+         -1.68445039, -0.46275924,  1.60444853,  1.23426519, -1.0681013 ,
+          0.60927561, -0.21281336, -1.07731193;
+
+    Eigen::MatrixXd DhatAnswer1( 96, 1 );
+    DhatAnswer1 << 1.00753524,  -0.0959485 ,  -0.66625132,   2.44514371,
+                  -6.26144891,   3.6251003 ,   1.76774608,   2.15231818,
+                  -0.29617276,  -6.37111855,   1.42668662,  -4.2850262 ,
+                   1.44621962,   0.23464651,   0.55786313,  -1.56777495,
+                   2.62357923,   3.85130026,  -1.10655606,  -0.5841102 ,
+                   0.12926275,   8.81934745,   3.05590507,  -1.35489717,
+                   1.20926748,  -0.13574076,   0.16402413,  -3.63973743,
+                  -3.09748352,  -2.91303167,  -6.06361495,  -0.15666434,
+                  -5.47178654,  -9.22359596,  -3.84358307,   0.51947356,
+                   0.53768312,   0.16217523,   0.89769605,   4.98290614,
+                   5.32174467,   1.07605055,   5.46778297,  -1.63607072,
+                  -1.20007404,   7.75625213,   1.70120811,   0.39469567,
+                   0.16140048,   0.10547403,  -1.44956365,   2.275294  ,
+                  11.04128873,  -5.85944414,  -1.40348803,  -8.45642463,
+                   0.72614375,   2.71306206,  -3.90484329,   4.05830282,
+                   0.44395985,   0.19595009,   1.60498907,  -1.71017525,
+                  -0.28317691,  -5.91725792,   1.58444014,  -0.30921696,
+                   0.04658451,   3.3960434 ,  -2.78475037,   4.94243764,
+                  -1.30186081,  -1.01481543,  -1.67203878,  -2.9131604 ,
+                  -3.20846441,   1.05931864,   4.7149403 ,  -2.11231406,
+                   6.40715802,  -0.03511209,  -3.76930535,  -4.26232784,
+                   0.30771234,  -0.43832265,   0.76778491,  -0.3059859 ,
+                 -10.748665  ,  -1.36924381,  -5.86792585,   7.36883127,
+                   0.8484395 ,  -4.8445353 ,   8.33954043,   0.36725083;
 
     Eigen::MatrixXd DhatResult = BDhatQ * Q;
 
-    std::cout << "DhatResult:\n" << DhatResult << "\n";
+    if ( ( DhatAnswer1 - DhatResult ).norm( ) > 1e-6 * ( DhatAnswer1.norm( ) + 1 ) ){
 
-    if ( ( DhatAnswer - DhatResult ).norm( ) > 1e-6 * ( DhatAnswer.norm( ) + 1 ) ){
+        results << "test_overlapCoupling_initializeCoupling (test " + std::to_string( testNum + 1 ) + ") & False\n";
+        return 1;
+
+    }
+    testNum += 1;
+
+    Eigen::MatrixXd BDhatD;
+    overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "BDhatD", BDhatD );
+
+    Eigen::MatrixXd DhatAnswer2( 96, 1 );
+    DhatAnswer2 <<  0.01117404, -0.06213769, -0.00323124,  0.14326677, -0.11300732,
+                   -0.00151848,  0.10364709,  0.10441377,  0.00844412,  0.04219827,
+                   -0.0810997 ,  0.00043911,  0.080921  , -0.00415823,  0.05832703,
+                   -0.00377284, -0.08803151, -0.01099665,  0.01231181,  0.14838209,
+                    0.00056508,  0.08091828,  0.0346689 , -0.00792627,  0.00166544,
+                    0.09655481,  0.08629784, -0.08395274, -0.07047961, -0.00022632,
+                    0.13392157,  0.053044  , -0.01312119,  0.13885125,  0.02127272,
+                   -0.01172733,  0.00436115,  0.01059559, -0.03227229,  0.07856132,
+                    0.09938155, -0.00059265,  0.03799686,  0.04105279, -0.00143987,
+                    0.098289  ,  0.02301762,  0.0043856 , -0.00229423,  0.01275796,
+                    0.00066343, -0.02941519,  0.02320239, -0.00944099, -0.02128057,
+                   -0.02143798,  0.05250038, -0.00866405,  0.01665119,  0.00273009,
+                   -0.0166145 ,  0.00085376, -0.01197557,  0.00077463,  0.01807442,
+                   -0.06837048, -0.00252783, -0.03046545,  0.00351331, -0.01661395,
+                   -0.00711813, -0.04928074, -0.00034194, -0.0198244 , -0.01771846,
+                    0.01723697,  0.0144707 , -0.00140714, -0.02749645, -0.01089086,
+                   -0.08157954, -0.0285086 , -0.00436766, -0.07291339, -0.00089542,
+                   -0.00217546,  0.00662607, -0.01613002, -0.02040478, -0.00368476,
+                   -0.00780142, -0.00842886, -0.00895226, -0.02018046, -0.00472592,
+                    0.02726698;
+
+    DhatResult = BDhatD * D;
+
+    if ( ( DhatAnswer2 - DhatResult ).norm( ) > 1e-6 * ( DhatAnswer2.norm( ) + 1 ) ){
+
+        results << "test_overlapCoupling_initializeCoupling (test " + std::to_string( testNum + 1 ) + ") & False\n";
+        return 1;
+
+    }
+    testNum += 1;
+
+    Eigen::MatrixXd BQhatQ;
+    overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "BQhatQ", BQhatQ );
+
+    Eigen::MatrixXd QhatAnswer1( 54, 1 );
+    QhatAnswer1 <<  0.10712051, -0.0912848 ,  0.11184787,  0.38804931, -0.22690467,
+                    0.06382711,  0.27234912,  0.1258435 , -0.05194806,  0.70557497,
+                    0.19565114, -0.22893988, -0.13646913,  0.01526603,  0.13639149,
+                   -0.15542481, -0.04627468,  0.17507661,  0.2273456 ,  0.25597847,
+                    0.19916026,  0.54280712,  0.40510115,  0.32448061,  0.11474337,
+                    0.0280608 ,  0.23099898,  0.37743189, -0.01161507,  0.37177906,
+                    0.196299  ,  0.04651278,  0.20601083,  0.45131641, -0.04387927,
+                    0.36204822,  0.36553366,  0.28108397,  0.24323837,  0.74642245,
+                    0.40449223,  0.46384067,  0.19066721,  0.02580771, -0.13810142,
+                    0.3508261 , -0.15445757, -0.28593084,  0.07351183, -0.04908502,
+                    0.0659988 ,  0.20824225, -0.20744848,  0.09645349;
+
+    Eigen::MatrixXd QhatResult = BQhatQ * Q;
+
+    if ( ( QhatAnswer1 - QhatResult ).norm( ) > 1e-6 * ( QhatAnswer1.norm( ) + 1 ) ){
+
+        results << "test_overlapCoupling_initializeCoupling (test " + std::to_string( testNum + 1 ) + ") & False\n";
+        return 1;
+
+    }
+    testNum += 1;
+
+    Eigen::MatrixXd BQhatD;
+    overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "BQhatD", BQhatD );
+
+    Eigen::MatrixXd QhatAnswer2( 54, 1 );
+    QhatAnswer2 <<  -0.38024752,  0.46469597, -0.37771336, -0.11826487,  0.33930194,
+                    -0.08611647, -0.84585307,  0.17462444, -0.48222434, -0.36815128,
+                     0.14577774, -0.18211656, -0.01682891,  0.23384865,  0.01568758,
+                     0.05403782,  0.11812839,  0.08288495, -0.43687213, -0.04302016,
+                    -0.35728098, -0.17112188, -0.0618814 , -0.13942753, -1.0192094 ,
+                     0.06916286, -0.66372833, -0.43578057,  0.07161681, -0.32618026,
+                    -0.54903347, -0.32445362, -0.80910362, -0.20392506, -0.24474305,
+                    -0.41100596, -0.25659012, -0.10282278, -0.32256879, -0.11697756,
+                    -0.17092501, -0.15311257, -0.11072741, -0.52792405, -0.92599509,
+                     0.01220563, -0.44161753, -0.47551061, -0.0789383 ,  0.12853926,
+                     0.20014234, -0.04370486, -0.0252995 ,  0.11881716;
+
+    QhatResult = BQhatD * D;
+
+    if ( ( QhatAnswer2 - QhatResult ).norm( ) > 1e-6 * ( QhatAnswer2.norm( ) + 1 ) ){
 
         results << "test_overlapCoupling_initializeCoupling (test " + std::to_string( testNum + 1 ) + ") & False\n";
         return 1;
@@ -2629,8 +2787,8 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-//    test_overlapCoupling_constructor( results );
-//    test_overlapCoupling_initializeCoupling( results );
+    test_overlapCoupling_constructor( results );
+    test_overlapCoupling_initializeCoupling( results );
 //    test_overlapCoupling_processIncrement( results );
 //    test_overlapCoupling_processLastIncrements( results );
 //    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
