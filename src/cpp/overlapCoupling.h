@@ -420,9 +420,15 @@ namespace overlapCoupling{
                                                        floatType &J, floatType &Jxw,
                                                        floatVector &uQpt, floatVector &XiQpt );
 
+    errorOut writeDenseMatrixToXDMF( const Eigen::MatrixXd &A, const std::string matrixName,
+                                     const std::string &filename, shared_ptr< XdmfDomain > &domain,
+                                     shared_ptr< XdmfUnstructuredGrid > &grid );
+
     errorOut writeSparseMatrixToXDMF( const SparseMatrix &A, const std::string matrixName,
                                       const std::string &filename, shared_ptr< XdmfDomain > &domain,
                                       shared_ptr< XdmfUnstructuredGrid > &grid );
+
+    errorOut readDenseMatrixFromXDMF( const shared_ptr< XdmfUnstructuredGrid > &grid, const std::string &matrixName, Eigen::MatrixXd &A );
 
     errorOut readSparseMatrixFromXDMF( const shared_ptr< XdmfUnstructuredGrid > &grid, const std::string &matrixName, SparseMatrix &A );
 

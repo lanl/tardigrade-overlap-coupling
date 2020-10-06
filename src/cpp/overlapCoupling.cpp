@@ -502,6 +502,12 @@ namespace overlapCoupling{
                 _test_domainMass.emplace( *cellID, _test_floatMap );
                 _test_domainCOM.emplace( *cellID, _test_floatVectorMap );
                 _test_domainXi.emplace( *cellID, _test_XiMap );
+
+                if ( _inputProcessor.getCouplingInitialization( )[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+                    std::unordered_map< std::string, std::unordered_map< uIntType, floatVector > > _test_domainIntFloatVectorMap;
+                    _test_domainMUP.emplace( *cellID, _test_domainIntFloatVectorMap );
+
+                }
 #endif
 
                 for ( auto domain  = microDomains->second.begin( ); domain != microDomains->second.end( ); domain++ ){
@@ -877,7 +883,7 @@ namespace overlapCoupling{
         _L2_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF )
                    + _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
 
-        return new errorNode( "formAveragedL2Projectors", "Not implemented" );
+        return NULL;
     }
 
     errorOut overlapCoupling::formDirectProjectionProjectors( const unsigned int &microIncrement, const unsigned int &macroIncrement ){
@@ -1042,7 +1048,9 @@ namespace overlapCoupling{
         _referenceCellDomainCenterOfMassShapefunctions[ cellID ].emplace( domainName, domainCenterOfMassShapeFunctionValues );
 
 #ifdef TESTACCESS
-        _test_domainMUP[ cellID ].emplace( domainName, domainMicroPositionShapeFunctionValues );
+        if ( _inputProcessor.getCouplingInitialization( )[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+            _test_domainMUP[ cellID ].emplace( domainName, domainMicroPositionShapeFunctionValues );
+        }
 #endif
 
         if ( error ){
@@ -6807,7 +6815,7 @@ namespace overlapCoupling{
         //Save the projection matrices
 
         std::string projectionType = couplingInitialization[ "projection_type" ].as< std::string >( );
-        if ( ( projectionType.compare( "l2_projection" ) == 0 ) ) {//|| ( projectionType.compare( "averaged_l2_projection" ) == 0 ) ){
+        if ( ( projectionType.compare( "l2_projection" ) == 0 ) || ( projectionType.compare( "averaged_l2_projection" ) == 0 ) ){
 
             //Initialize the projection matrix attributes
             shared_ptr< XdmfAttribute > BQhatQ = XdmfAttribute::New( );
@@ -6819,44 +6827,55 @@ namespace overlapCoupling{
             shared_ptr< XdmfInformation > projectionType = XdmfInformation::New( "EIGEN_MATRIX_TYPE", "DENSE" );
             grid->insert( projectionType );
 
+            errorOut error;
+
             //Write BQhatQ
-            shared_ptr< XdmfInformation > BQhatQ_info
-                = XdmfInformation::New( "BQhatQ_shape",
-                                        std::to_string( _L2_BQhatQ.rows( ) ) + "," + std::to_string( _L2_BQhatQ.cols( ) ) );
-            BQhatQ->insert( BQhatQ_info );
-            BQhatQ->insert( 0, _L2_BQhatQ.data( ), _L2_BQhatQ.size( ), 1, 1 );
-            grid->insert( BQhatQ );
+            error = writeDenseMatrixToXDMF( _L2_BQhatQ, "BQhatQ", reference_filename, domain, grid );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out BQhatQ" );
+                result->addNext( error );
+                return result;
+
+            }
 
             //Write BQhatD
-            shared_ptr< XdmfInformation > BQhatD_info
-                = XdmfInformation::New( "BQhatD_shape",
-                                        std::to_string( _L2_BQhatD.rows( ) ) + "," + std::to_string( _L2_BQhatD.cols( ) ) );
-            BQhatD->insert( BQhatD_info );
-            BQhatD->insert( 0, _L2_BQhatD.data( ), _L2_BQhatD.size( ), 1, 1 );
-            grid->insert( BQhatD );
+            error = writeDenseMatrixToXDMF( _L2_BQhatD, "BQhatD", reference_filename, domain, grid );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out BQhatD" );
+                result->addNext( error );
+                return result;
+
+            }
 
             //Write BDhatQ
-            shared_ptr< XdmfInformation > BDhatQ_info
-                = XdmfInformation::New( "BDhatQ_shape",
-                                        std::to_string( _L2_BDhatQ.rows( ) ) + "," + std::to_string( _L2_BDhatQ.cols( ) ) );
-            BDhatQ->insert( BDhatQ_info );
-            BDhatQ->insert( 0, _L2_BDhatQ.data( ), _L2_BDhatQ.size( ), 1, 1 );
-            grid->insert( BDhatQ );
+            error = writeDenseMatrixToXDMF( _L2_BDhatQ, "BDhatQ", reference_filename, domain, grid );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out BDhatQ" );
+                result->addNext( error );
+                return result;
+
+            }
 
             //Write BDhatD
-            shared_ptr< XdmfInformation > BDhatD_info
-                = XdmfInformation::New( "BDhatD_shape",
-                                        std::to_string( _L2_BDhatD.rows( ) ) + "," + std::to_string( _L2_BDhatD.cols( ) ) );
-            BDhatD->insert( BDhatD_info );
-            BDhatD->insert( 0, _L2_BDhatD.data( ), _L2_BDhatD.size( ), 1, 1 );
-            grid->insert( BDhatD );
+            error = writeDenseMatrixToXDMF( _L2_BDhatD, "BDhatD", reference_filename, domain, grid );
 
-            //Initialize the writer
-            shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( reference_filename + ".h5", true );
-            heavyWriter->setReleaseData( true );
-            shared_ptr< XdmfWriter > writer = XdmfWriter::New( reference_filename + ".xdmf", heavyWriter );
+            if ( error ){
 
-            domain->accept( writer );
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out BDhatD" );
+                result->addNext( error );
+                return result;
+
+            }
 
         }
         else if ( projectionType.compare( "direct_projection" ) == 0 ){
@@ -6927,11 +6946,51 @@ namespace overlapCoupling{
 
     }
 
+    errorOut writeDenseMatrixToXDMF( const Eigen::MatrixXd &A, const std::string matrixName,
+                                     const std::string &filename, shared_ptr< XdmfDomain > &domain,
+                                     shared_ptr< XdmfUnstructuredGrid > &grid ){
+        /*!
+         * Write a dense matrix to a XDMF file ( not a standard XDMF format )
+         *
+         * :param const Eigen::MatrixXd &A: The matrix to write
+         * :param const std::string matrixName: The name of the matrix MUST BE UNIQUE IN THE OUTPUT FILE
+         * :param const std::string &filename: The name of the output file
+         * :param shared_ptr< XdmfDomain > &domain: The XDMF domain
+         * :param shared_ptr< XdmfDomain > &grid: The XDMF grid
+         */
+
+        //Initialize the writer
+        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( filename + ".h5", false );
+        heavyWriter->setReleaseData( true );
+        shared_ptr< XdmfWriter > writer = XdmfWriter::New( filename + ".xdmf", heavyWriter );
+
+        shared_ptr< XdmfAttribute > _A = XdmfAttribute::New( );
+        _A->setName( matrixName );
+
+        shared_ptr< XdmfInformation > A_info
+            = XdmfInformation::New( matrixName + "_shape",
+                                    std::to_string( A.rows( ) ) + "," + std::to_string( A.cols( ) ) );
+        _A->insert( A_info );
+        _A->insert( 0, A.data( ), A.size( ), 1, 1 );
+        grid->insert( _A );
+
+        domain->accept( writer );
+
+        return NULL;
+
+    }
+
     errorOut writeSparseMatrixToXDMF( const SparseMatrix &A, const std::string matrixName,
                                       const std::string &filename, shared_ptr< XdmfDomain > &domain,
                                       shared_ptr< XdmfUnstructuredGrid > &grid ){
         /*!
-         * Write a sparse matrix to a XDMF file
+         * Write a sparse matrix to a XDMF file ( not a standard XDMF format )
+         *
+         * :param const SparseMatrix &A: The matrix to write
+         * :param const std::string matrixName: The name of the matrix MUST BE UNIQUE IN THE OUTPUT FILE
+         * :param const std::string &filename: The name of the output file
+         * :param shared_ptr< XdmfDomain > &domain: The XDMF domain
+         * :param shared_ptr< XdmfDomain > &grid: The XDMF grid
          */
 
         //Initialize the writer
@@ -6983,6 +7042,64 @@ namespace overlapCoupling{
         grid->insert( _A_values );
 
         domain->accept( writer );
+        return NULL;
+    }
+
+    errorOut readDenseMatrixFromXDMF( const shared_ptr< XdmfUnstructuredGrid > &grid, const std::string &matrixName, Eigen::MatrixXd &A ){
+        /*!
+         * Read a dense matrix from a XDMF file attribute. This is not a standard use of a XDMF file.
+         *
+         * NOTE: Assumes default Eigen storage ( column major );
+         *
+         * :param const shared_ptr< XdmfUnstructuredGrid > &grid: The pointer to the grid object that contains the matrix
+         * :param const std::string &matrixName: The name of the matrix
+         * :param Eigen::MatrixXdx &A: The re-constructed matrix
+         */
+
+        shared_ptr< XdmfAttribute > _A = grid->getAttribute( matrixName );
+
+        if ( !_A ){
+
+            std::string outstr = matrixName;
+            outstr += " does not appear as an attribute in the provided grid\n";
+            return new errorNode( "readDenseMatrixFromXDMF", outstr );
+
+        }
+
+        shared_ptr< XdmfInformation > shapeInfo = _A->getInformation( 0 );
+
+        if ( !shapeInfo ){
+
+            std::string outstr = "There is no information defined for the matrix " + matrixName;
+            return new errorNode( "readDenseMatrixFromXDMF", outstr );
+
+        }
+
+        if ( shapeInfo->getKey( ).compare( matrixName + "_shape" ) != 0 ){
+
+            std::string outstr = matrixName;
+            outstr += "_shape is not in the information key";
+            return new errorNode( "readDenseMatrixFromXDMF", outstr );
+
+        }
+
+        std::string matrixDimensionString = shapeInfo->getValue( );
+
+        //Extract the rows and columns
+        uIntType rows = std::stoi( matrixDimensionString.substr( 0, matrixDimensionString.find( "," ) ) );
+        uIntType cols = std::stoi( matrixDimensionString.substr( matrixDimensionString.find( "," ) + 1, matrixDimensionString.size( ) ) );
+
+        _A->read( );
+
+        //Initialize the matrix
+        A = Eigen::MatrixXd( rows, cols );
+
+        for ( unsigned int i = 0; i < cols; i++ ){
+            for ( unsigned int j = 0; j < rows; j++ ){
+                A( j, i ) = _A->getValue< floatType >( rows * i + j );
+            }
+        }
+
         return NULL;
     }
 
@@ -7107,7 +7224,7 @@ namespace overlapCoupling{
 
         std::string projectionType = config[ "type" ].as< std::string >( );
 
-        if ( projectionType.compare( "l2_projection" ) ){
+        if ( ( projectionType.compare( "l2_projection" ) ) || ( projectionType.compare( "averaged_l2_projection" ) ) ){
 
             std::string outstr = projectionType;
             outstr += " not implemented";
