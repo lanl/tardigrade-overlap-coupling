@@ -121,7 +121,8 @@ int _compare_domainMaps( std::ofstream &results,
                          const std::unordered_map< T1, T2 > &answer,
                          const std::unordered_map< T1, T2 > &result,
                          const std::string testName,
-                         uIntType &testNum ){
+                         uIntType &testNum, const floatType tolr = 1e-6,
+                         const floatType tola = 1e-6 ){
     /*!
      * Compare domain maps to eachother
      *
@@ -130,6 +131,8 @@ int _compare_domainMaps( std::ofstream &results,
      * :param const std::unordered_map< T1, T2 > &result: The result map
      * :param const std::string testName: The name of the test
      * :param uIntType &testNum: The number of the test
+     * :param floatType &tolr: The relative tolerance
+     * :param flaotType &tola: The absolute tolerance
      */
 
     for ( auto a_domain = answer.begin( ); a_domain != answer.end( ); a_domain++ ){
@@ -148,7 +151,7 @@ int _compare_domainMaps( std::ofstream &results,
 
         }
 
-        if ( !vectorTools::fuzzyEquals( r_domain->second, a_domain->second ) ){
+        if ( !vectorTools::fuzzyEquals( r_domain->second, a_domain->second, tolr, tola ) ){
 
             std::string outstr = "test_";
             outstr += testName;
@@ -173,7 +176,8 @@ int _compare_cellDomainMaps( std::ofstream &results,
                              const std::unordered_map< uIntType, std::unordered_map< std::string, T > > &answer,
                              const std::unordered_map< uIntType, std::unordered_map< std::string, T > > &result,
                              const std::string testName,
-                             uIntType &testNum ){
+                             uIntType &testNum,
+                             const floatType tolr = 1e-6, const floatType tola = 1e-6 ){
     /*!
      * Compare cell domain maps to eachother
      *
@@ -182,6 +186,8 @@ int _compare_cellDomainMaps( std::ofstream &results,
      * :param const std::unordered_map< uIntType, std::unordered_map< std::string, T > > &result: The result map
      * :param const std::string testName: The name of the test
      * :param uIntType &testNum: The number of the test
+     * :param floatType &tolr: The relative tolerance
+     * :param floatType &tola: The absolute tolerance
      */
 
     uIntType tmp;
@@ -202,7 +208,7 @@ int _compare_cellDomainMaps( std::ofstream &results,
         }
 
         tmp = testNum + 1;
-        if ( _compare_domainMaps( results, a_cell->second, r_cell->second, testName, tmp ) ){
+        if ( _compare_domainMaps( results, a_cell->second, r_cell->second, testName, tmp, tolr, tola ) ){
 
             return 1;
 
@@ -2585,7 +2591,7 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     remove( "microscale_dof.h5" );
 
     std::string testName = "overlapCoupling_processIncrement";
-    uIntType testNum;
+    uIntType testNum = 0;
 
     std::string filename = "testConfig_averaged_l2_projection.yaml";
     overlapCoupling::overlapCoupling oc( filename );
@@ -2756,6 +2762,65 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     }
     testNum++;
+
+    const cellDomainFloatMap homogenizedVolumesAnswer
+        =
+        {
+            { 1,
+                {
+                    { "ghost_nodeset_volume_1", 0.125000 },
+                    { "ghost_nodeset_volume_2", 0.125000 },
+                    { "ghost_nodeset_volume_3", 0.125000 },
+                    { "ghost_nodeset_volume_4", 0.125000 },
+                    { "ghost_nodeset_volume_5", 0.125000 },
+                    { "ghost_nodeset_volume_6", 0.125000 },
+                    { "ghost_nodeset_volume_7", 0.125000 },
+                    { "ghost_nodeset_volume_8", 0.125000 },
+                }
+            }
+        };
+
+    for ( auto c = oc.getHomogenizedVolumes( )->begin( ); c != oc.getHomogenizedVolumes( )->end( ); c++ ){
+
+        std::cout << c->first << "\n";
+
+        for ( auto d = c->second.begin( ); d != c->second.end( ); d++ ){
+
+            std::cout << " " << d->first << ": " << d->second << "\n";
+
+        }
+
+    }
+
+    //Note higher tolerance because it's an approximate volume reconstruction value
+    if( _compare_cellDomainMaps( results, homogenizedVolumesAnswer, *oc.getHomogenizedVolumes( ), testName, testNum, 1e-6, 1e-3 ) ){
+
+        return 1;
+
+    }
+
+    const cellDomainFloatMap homogenizedDensitiesAnswer
+        =
+        {
+            { 1,
+                {
+                    { "ghost_nodeset_volume_1", 2. },
+                    { "ghost_nodeset_volume_2", 2. },
+                    { "ghost_nodeset_volume_3", 2. },
+                    { "ghost_nodeset_volume_4", 2. },
+                    { "ghost_nodeset_volume_5", 2. },
+                    { "ghost_nodeset_volume_6", 2. },
+                    { "ghost_nodeset_volume_7", 2. },
+                    { "ghost_nodeset_volume_8", 2. },
+                }
+            }
+        };
+
+    if( _compare_cellDomainMaps( results, homogenizedDensitiesAnswer, *oc.getHomogenizedDensities( ), testName, testNum ) ){
+
+        return 1;
+
+    }
 
     remove( "reference_information.xdmf" );
     remove( "reference_information.h5" );
