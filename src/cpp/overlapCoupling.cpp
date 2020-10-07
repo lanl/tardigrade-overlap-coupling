@@ -2708,17 +2708,16 @@ namespace overlapCoupling{
 
             //Compute the approximate stresses
             std::cout << "    computing the homogenized stresses\n";
-            return NULL; //Remove this!
-            error = computeHomogenizedStresses( *macroCell );
-
-            if ( error ){
-
-                errorOut result = new errorNode( "homogenizeMicroScale",
-                                                 "Error in the computation of the homogenized stresses" );
-                result->addNext( error );
-                return result;
-
-            }
+//            error = computeHomogenizedStresses( *macroCell );
+//
+//            if ( error ){
+//
+//                errorOut result = new errorNode( "homogenizeMicroScale",
+//                                                 "Error in the computation of the homogenized stresses" );
+//                result->addNext( error );
+//                return result;
+//
+//            }
 
         }
 
@@ -2813,6 +2812,7 @@ namespace overlapCoupling{
 
             //Compute the approximate stresses
             std::cout << "    computing homogenized stresses\n";
+            return NULL; //REMOVE THIS
             error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
