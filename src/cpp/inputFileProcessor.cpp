@@ -231,6 +231,7 @@ namespace inputFileProcessor{
          */
 
         //Initialize the weight map
+        _microDomainWeights.clear( );
         for ( auto n = _unique_free_micro_nodes.begin( ); n != _unique_free_micro_nodes.end( ); n++ ){
             _microDomainWeights.emplace( *n, 0 );
         }
@@ -682,6 +683,12 @@ namespace inputFileProcessor{
 
         if ( _config[ "free_macroscale_domains" ] ){
 
+            _microDomainSurfaceCount.clear( );
+            _macroCellDomainMap.clear( );
+            _macroReferenceDensityTypes.clear( );
+            _macroReferenceMomentOfInertiaTypes.clear( );
+            _macroReferenceDensities.clear( );
+            _macroReferenceMomentsOfInertia.clear( );
             errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ],
                                                              _free_macro_cell_ids,
 //                                                             _free_macro_cell_micro_domain_counts,
@@ -734,6 +741,7 @@ namespace inputFileProcessor{
         }
 
         //Initialize the internal ID number of the micro domains
+        _microDomainIDMap.clear( );
         _microDomainIDMap.reserve( _free_micro_volume_sets.size( ) + _ghost_micro_volume_sets.size( ) );
 
         uIntType index = 0;
@@ -1243,6 +1251,7 @@ namespace inputFileProcessor{
         }
 
         //Initialize the size of the micro densities map
+        _microDensities.clear( );
         _microDensities.reserve( _microGlobalNodeIDOutputIndex.size( ) );
 
         //Get the values of the micro densities from the output file
@@ -1317,6 +1326,7 @@ namespace inputFileProcessor{
 
         floatType _sign = _config[ "coupling_initialization" ][ "micro_body_force_sign" ].as< floatType >( );
 
+        _microBodyForces.clear( );
         _microBodyForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -1380,6 +1390,7 @@ namespace inputFileProcessor{
 
         floatType _sign = _config[ "coupling_initialization" ][ "micro_surface_force_sign" ].as< floatType >( );
 
+        _microSurfaceForces.clear( );
         _microSurfaceForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -1439,6 +1450,7 @@ namespace inputFileProcessor{
 
             if( _microSurfaceForceFlag && _microBodyForceFlag ){
 
+                _microExternalForces.clear( );
                 _microExternalForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
                 for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -1467,6 +1479,7 @@ namespace inputFileProcessor{
         }
         else{
 
+            _microExternalForces.clear( );
             _microExternalForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
             floatType _sign = _config[ "coupling_initialization" ][ "micro_external_force_sign" ].as< floatType >( );
 
@@ -1553,11 +1566,12 @@ namespace inputFileProcessor{
 
         if ( !flag ){
 
-            _microAccelerations.clear( );
+            microAccelerations.clear( );
             return NULL;
 
         }
 
+        microAccelerations.clear( );
         microAccelerations.reserve( _microGlobalNodeIDOutputIndex.size( ) );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -1641,11 +1655,12 @@ namespace inputFileProcessor{
 
         if ( !flag ){
 
-            _microVelocities.clear( );
+            microVelocities.clear( );
             return NULL;
 
         }
 
+        microVelocities.clear( );
         microVelocities.reserve( _microGlobalNodeIDOutputIndex.size( ) );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -1734,6 +1749,7 @@ namespace inputFileProcessor{
         }
         else{
 
+            macroVelocities.clear( );
             macroVelocities.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
             for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -1825,6 +1841,7 @@ namespace inputFileProcessor{
 
         }
 
+        macroAccelerations.clear( );
         macroAccelerations.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -1888,6 +1905,7 @@ namespace inputFileProcessor{
 
         }
 
+        _macroInternalForces.clear( );
         _macroInternalForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
         floatType _sign = _config[ "coupling_initialization" ][ "macro_internal_force_sign" ].as< floatType >( );
         for( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
@@ -1952,6 +1970,7 @@ namespace inputFileProcessor{
 
         }
 
+        _macroBodyForces.clear( );
         _macroBodyForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
         floatType _sign = _config[ "coupling_initialization" ][ "macro_body_force_sign" ].as< floatType >( );
         for( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
@@ -2016,6 +2035,7 @@ namespace inputFileProcessor{
 
         }
 
+        _macroSurfaceForces.clear( );
         _macroSurfaceForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
         floatType _sign = _config[ "coupling_initialization" ][ "macro_surface_force_sign" ].as< floatType >( );
         for( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
@@ -2077,6 +2097,7 @@ namespace inputFileProcessor{
 
             if( _macroSurfaceForceFlag && _macroBodyForceFlag ){
 
+                _macroExternalForces.clear( );
                 _macroExternalForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
                 for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -2105,6 +2126,7 @@ namespace inputFileProcessor{
         }
         else{
 
+            _macroExternalForces.clear( );
             _macroExternalForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
             floatType _sign = _config[ "coupling_initialization" ][ "macro_external_force_sign" ].as< floatType >( );
 
@@ -2175,6 +2197,7 @@ namespace inputFileProcessor{
         }
 
         floatType _sign = _config[ "coupling_initialization" ][ "macro_inertial_force_sign" ].as< floatType >( );
+        _macroInertialForces.clear( );
         _macroInertialForces.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -2386,6 +2409,7 @@ namespace inputFileProcessor{
 
         }
 
+        _microStresses.clear( );
         _microStresses.reserve( _microGlobalNodeIDOutputIndex.size( ) );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -2446,6 +2470,7 @@ namespace inputFileProcessor{
         }
 
 
+        _microInternalForces.clear( );
         _microInternalForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
         floatType _sign = _config[ "coupling_initialization" ][ "micro_internal_force_sign" ].as< floatType >( );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
@@ -2507,6 +2532,7 @@ namespace inputFileProcessor{
         }
 
 
+        _microInertialForces.clear( );
         _microInertialForces.reserve( _microGlobalNodeIDOutputIndex.size( ) );
         floatType _sign = _config[ "coupling_initialization" ][ "micro_inertial_force_sign" ].as< floatType >( );
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
@@ -2545,6 +2571,7 @@ namespace inputFileProcessor{
         }
 
         //Initialize the size of the micro volumes map
+        _microVolumes.clear( );
         _microVolumes.reserve( _microGlobalNodeIDOutputIndex.size( ) );
 
         //Get the values of the micro volumes from the output file
@@ -2641,6 +2668,7 @@ namespace inputFileProcessor{
 
         }
 
+        microDisplacements.clear( );
         microDisplacements.reserve( _microGlobalNodeIDOutputIndex.size( ) );
 
         for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
@@ -2698,7 +2726,8 @@ namespace inputFileProcessor{
 
         }
 
-        _microDisplacements.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+        _macroDisplacements.clear( );
+        _macroDisplacements.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
 
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
@@ -2780,6 +2809,7 @@ namespace inputFileProcessor{
 
         }
 
+        macroDispDOFVector.clear( );
         macroDispDOFVector.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
 
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
@@ -2808,6 +2838,7 @@ namespace inputFileProcessor{
          */
 
         //Initialize the size of the micro reference positions map
+        _microNodeReferencePositions.clear( );
         _microNodeReferencePositions.reserve( _microGlobalNodeIDOutputIndex.size( ) );
         floatVector referencePositions;
         uIntVector referenceConnectivity;
@@ -2852,6 +2883,7 @@ namespace inputFileProcessor{
          */
 
         //Initialize the size of the micro reference positions map
+        _macroNodeReferencePositions.clear( );
         _macroNodeReferencePositions.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
         floatVector referencePositions;
         uIntVector referenceConnectivity;
@@ -2895,6 +2927,7 @@ namespace inputFileProcessor{
 
         }
 
+        _macroNodeReferenceConnectivity.clear( );
         _macroNodeReferenceConnectivity.reserve( _free_macro_cell_ids.size( ) + _ghost_macro_cell_ids.size( ) );
 
         uIntType startIndex, stopIndex;
