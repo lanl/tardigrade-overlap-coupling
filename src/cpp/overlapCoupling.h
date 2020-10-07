@@ -102,6 +102,9 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, std::unordered_map< std::string, std::unordered_map< uIntType, floatVector > > > _test_domainXi;
             std::unordered_map< uIntType, std::unordered_map< std::string, std::unordered_map< uIntType, floatVector > > > _test_domainMUP;
 
+            floatVector _test_initial_projected_ghost_micro_displacement;
+            floatVector _test_initial_projected_ghost_macro_displacement;
+
             const std::unordered_map< uIntType, floatType >* getMacroNodeProjectedMass( );
             const std::unordered_map< uIntType, floatVector >* getMacroNodeProjectedMassMomentOfInertia( );
             const std::unordered_map< uIntType, floatVector >* getMacroNodeMassRelativePositionConstant( );

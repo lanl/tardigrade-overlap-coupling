@@ -147,7 +147,6 @@ namespace overlapCoupling{
         }
 
         //Project the degrees of freedom
-        std::cout << "projecting the degrees of freedom\n";
         error = projectDegreesOfFreedom( );
 
         if ( error ){
@@ -158,7 +157,12 @@ namespace overlapCoupling{
 
         }
 
-        return NULL; //REMOVE THIS
+#ifdef TESTACCESS
+
+        _test_initial_projected_ghost_micro_displacement = _projected_ghost_micro_displacement;
+        _test_initial_projected_ghost_macro_displacement = _projected_ghost_macro_displacement;
+
+#endif
 
         //Homogenize the material properties at the micro-scale to the macro-scale
         std::cout << "homogenizing material properties\n";
@@ -171,6 +175,8 @@ namespace overlapCoupling{
             return result;
 
         }
+
+        return NULL; //REMOVE THIS
 
         YAML::Node couplingConfiguration = _inputProcessor.getCouplingInitialization( );
 
@@ -2093,12 +2099,10 @@ namespace overlapCoupling{
          */
 
         //Get the displacement vectors
-        std::cout << "get displacement vectors\n";
         const std::unordered_map< uIntType, floatVector > *macroDispDOFVector = _inputProcessor.getMacroDispDOFVector( );
         const std::unordered_map< uIntType, floatVector > *microDisplacements = _inputProcessor.getMicroDisplacements( );
 
         //Get the free and ghost node ids
-        std::cout << "get the node ids\n";
         const uIntVector *freeMacroNodeIds = _inputProcessor.getFreeMacroNodeIds( );
         const uIntVector *ghostMacroNodeIds = _inputProcessor.getGhostMacroNodeIds( );
 
@@ -2129,11 +2133,9 @@ namespace overlapCoupling{
             freeMacroDisplacements = &store1;
             freeMicroDisplacements = &store2;
 
-            std::cout << "getting the global to local maps\n";
             const DOFMap *macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
             const DOFMap *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
    
-            std::cout << "looping over the free macro node ids\n"; 
             for ( auto it = freeMacroNodeIds->begin( ); it != freeMacroNodeIds->end( ); it++ ){
 
                 auto macroDispDOF = macroDispDOFVector->find( *it );
@@ -2173,7 +2175,6 @@ namespace overlapCoupling{
     
             }
     
-            std::cout << "looping over the free micro node ids\n";
             for ( auto it = freeMicroNodeIds->begin( ); it != freeMicroNodeIds->end( ); it++ ){
    
                 auto microDispDOF = microDisplacements->find( *it );
@@ -2216,12 +2217,10 @@ namespace overlapCoupling{
         }
 
         //Map the macro and micro free displacements to Eigen matrices
-        std::cout << "setting up the DOF maps\n";
         Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > Q( freeMicroDisplacements->data(), freeMicroDisplacements->size( ), 1 );
         Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > D( freeMacroDisplacements->data(), freeMacroDisplacements->size( ), 1 );
 
         //Map the output vectors to Eigen matrices
-        std::cout << "mapping the output vectors to eigen matrices\n";
         _projected_ghost_macro_displacement.clear( );
         _projected_ghost_macro_displacement.resize( nMacroDispDOF * ghostMacroNodeIds->size( ) );
 
@@ -2236,7 +2235,6 @@ namespace overlapCoupling{
 
         YAML::Node config = _inputProcessor.getCouplingInitialization( );
 
-        std::cout << "performing the projection\n";
         if ( ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ) ||
              ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 ) ){
 
@@ -2256,7 +2254,6 @@ namespace overlapCoupling{
                                   "'projection_type' '" + config[ "projection_type" ].as< std::string >( ) + "' is not recognized" );
 
         }
-        std::cout << "exiting projection\n";
 
         return NULL;
 
