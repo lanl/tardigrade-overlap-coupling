@@ -2621,6 +2621,7 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, stringVector > *macroCellToMicroDomainMap = _inputProcessor.getMacroCellToDomainMap( );
         const std::unordered_map< std::string, uIntType > *microDomainSurfaceSplitCount = _inputProcessor.getMicroDomainSurfaceApproximateSplitCount( );
 
+        std::cout << "  looping through the free macro cells\n";
         for ( auto macroCell  = _inputProcessor.getFreeMacroCellIds( )->begin( );
                    macroCell != _inputProcessor.getFreeMacroCellIds( )->end( );
                    macroCell++ ){
@@ -2637,8 +2638,10 @@ namespace overlapCoupling{
 
             }
 
+            std::cout << "    looping over the micro domains\n";
             for ( auto microDomain  = microDomains->second.begin( ); microDomain != microDomains->second.end( ); microDomain++ ){
 
+                std::cout << "      " + *microDomain << "\n";
                 microNodePositions.clear( );
                 reconstructedVolume.reset( );
 
@@ -2665,6 +2668,7 @@ namespace overlapCoupling{
 
                 }
 
+                std::cout << "        computing volume averages\n";
                 error = computeDomainVolumeAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                      reconstructedVolume, &domainCenterOfMass->second );
 
@@ -2686,6 +2690,7 @@ namespace overlapCoupling{
                 }
                 
                 //Compute the surface averages
+                std::cout << "        computing surface averages\n";
                 error = computeDomainSurfaceAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                       domainSurfaceCount->second,
                                                       reconstructedVolume );
@@ -2702,6 +2707,8 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
+            std::cout << "    computing the homogenized stresses\n";
+            return NULL; //Remove this!
             error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
@@ -2716,6 +2723,7 @@ namespace overlapCoupling{
         }
 
         //Loop through the ghost macro-scale cells
+        std::cout << "  looping through the ghost macro cells\n";
         microDomainStartIndex = 0;
         for ( auto macroCell  = _inputProcessor.getGhostMacroCellIds( )->begin( );
                    macroCell != _inputProcessor.getGhostMacroCellIds( )->end( );
@@ -2734,12 +2742,15 @@ namespace overlapCoupling{
 
             unsigned int microIndex = microDomainStartIndex;
 
+            std::cout << "    looping over the micro domains\n";
             for ( auto microDomain = microDomains->second.begin( ); microDomain != microDomains->second.end( ); microDomain++ ){
 
+                std::cout << "      " + *microDomain << "\n";
                 microNodePositions.clear( );
                 reconstructedVolume.reset( );
 
                 //Reconstruct the micro-domain's volume
+                std::cout << "        reconstructing the domain\n";
                 error = reconstructDomain( microIncrement, *microDomain, microDomainNodeIds, microNodePositions, reconstructedVolume );
 
                 if ( error ){
@@ -2762,6 +2773,7 @@ namespace overlapCoupling{
 
                 }
 
+                std::cout << "        computing volume averages\n";
                 error = computeDomainVolumeAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                      reconstructedVolume, &domainCenterOfMass->second );
 
@@ -2783,6 +2795,7 @@ namespace overlapCoupling{
                 }
 
                 //Compute the surface averages
+                std::cout << "        computing surface averages\n";
                 error = computeDomainSurfaceAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                       domainSurfaceCount->second,
                                                       reconstructedVolume );
@@ -2799,6 +2812,7 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
+            std::cout << "    computing homogenized stresses\n";
             error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
@@ -2887,8 +2901,7 @@ namespace overlapCoupling{
 
             for ( unsigned int i = 0; i < _dim; i++ ){
 
-                microNodePositions[ _dim * index + i ] = microReferencePosition->second[ _dim * ( *it ) + i ]
-                                                       + microDisplacement->second[ _dim * ( *it ) + i ];
+                microNodePositions[ _dim * index + i ] = microReferencePosition->second[ i ] + microDisplacement->second[ i ];
 
             }
  
@@ -2994,13 +3007,6 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, floatVector > *microDisplacements = _inputProcessor.getMicroDisplacements( );
 
         const std::unordered_map< uIntType, floatVector > *microStresses = _inputProcessor.getMicroStresses( );
-
-        if ( microStresses->size( ) != _dim * _dim * microDensities->size( ) ){
-
-            return new errorNode( "computeDomainVolumeAverages",
-                                  "The micro stress vector size is not consistent wtih the number of points and the dimension" );
-
-        }
 
         unsigned int index = 0;
         unsigned int localIndex = 0;
@@ -3356,14 +3362,6 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, floatVector > *microDisplacements = _inputProcessor.getMicroDisplacements( );
         const std::unordered_map< uIntType, floatVector > *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
         const std::unordered_map< uIntType, floatVector > *microStresses = _inputProcessor.getMicroStresses( );
-
-        //Check the micro-stress size
-        if ( microStresses->size( ) != _dim * _dim * microDensities->size( ) ){
-
-            return new errorNode( "computeDomainSurfaceAverages",
-                                  "The micro-stress vector is not consistent with the dimension and number of points" );
-
-        }
 
         /*=====================================================================
         |           Compute the reconstructed domain's surface area           |
@@ -8351,7 +8349,79 @@ namespace overlapCoupling{
         return &_homogenizationMatrix;
 
     }
-#endif
 
+    const cellDomainFloatMap* overlapCoupling::getHomogenizedVolumes( ){
+        /*!
+         * Get the homogenized volumes at the micro domains
+         */
+
+        return &homogenizedVolumes;
+    }
+
+    const cellDomainFloatMap* overlapCoupling::getHomogenizedDensities( ){
+        /*!
+         * Get the homogenized densities at the micro domains
+         */
+
+        return &homogenizedDensities;  
+    }
+
+    const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedSymmetricMicroStresses( ){
+        /*!
+         * Get the homogenized symmetric micro stresses
+         */
+
+        return &homogenizedSymmetricMicroStresses;
+    }
+
+    const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedCentersOfMass( ){
+        /*!
+         * Get the homogenized centers of mass
+         */
+
+        return &homogenizedCentersOfMass;
+    }
+
+    const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedBodyForces( ){
+        /*!
+         * Get the homogenized body forces
+         */
+
+        return &homogenizedBodyForces;
+    }
+
+    const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedAccelerations( ){
+        /*!
+         * Get the homogenized accelerations
+         */
+
+        return &homogenizedAccelerations;
+    }
+
+    const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedMicroInertias( ){
+        /*!
+         * Get the homogenized micro inertias
+         */
+
+        return &homogenizedMicroInertias;
+    }
+    
+    const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedBodyForceCouples( ){
+        /*!
+         * Get the homogenized body force couples
+         */
+
+        return &homogenizedBodyForceCouples;
+    }
+
+    const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedMicroSpinInertias( ){
+        /*!
+         * Get the homogenized micro spin inertias
+         */
+
+        return &homogenizedMicroSpinInertias;
+    }
+
+#endif
 
 }

@@ -115,6 +115,16 @@ namespace overlapCoupling{
             const SparseMatrix *getCenterOfMassNMatrix( );
             const Eigen::MatrixXd *getCenterOfMassProjector( );
             const SparseMatrix *getHomogenizationMatrix( );
+
+            const cellDomainFloatMap* getHomogenizedVolumes( );
+            const cellDomainFloatMap* getHomogenizedDensities( );
+            const cellDomainFloatVectorMap* getHomogenizedSymmetricMicroStresses( );
+            const cellDomainFloatVectorMap* getHomogenizedCentersOfMass( );
+            const cellDomainFloatVectorMap* getHomogenizedBodyForces( );
+            const cellDomainFloatVectorMap* getHomogenizedAccelerations( );
+            const cellDomainFloatVectorMap* getHomogenizedMicroInertias( );
+            const cellDomainFloatVectorMap* getHomogenizedBodyForceCouples( );
+            const cellDomainFloatVectorMap* getHomogenizedMicroSpinInertias( );
 #endif
 
         private:
