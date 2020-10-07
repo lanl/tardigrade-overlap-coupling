@@ -785,7 +785,7 @@ namespace overlapCoupling{
 
         //Extract the part of the shapefunction matrix that interpolates between ghost micromorphic DOF and free classical DOF
         Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
-        std::cout << "Performing QR decomposition of NQDhat\n";
+        std::cout << "PERFORMING SVD DECOMPOSITION OF NQDhat\n";
         SparseMatrix NQDhat = _N.block( 0, nFreeMacroDOF, nFreeMicroDOF, nGhostMacroDOF );
         NQDhat.makeCompressed( );
         errorOut error = DOFProjection::formMoorePenrosePseudoInverse( NQDhat.toDense( ), _L2_BDhatQ );
@@ -816,7 +816,8 @@ namespace overlapCoupling{
 
         //Form the micro to macro projection matrix
         //Note: This is the FULL matrix not just the part we need for the overlap coupling.
-        //      We will select sub-blocks of it to use in the actual projectors
+        //      We will select sub-blocks of it to use in the actual projectors. This may or
+        //      may not be correct.
 
         Eigen::MatrixXd microMacroProjector;
         SparseMatrix S, T;
