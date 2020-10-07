@@ -134,6 +134,7 @@ namespace overlapCoupling{
         }
 
         //Compute the centers of mass of the free and ghost domains
+        std::cout << "computing the increment centers of mass\n";
         error = computeIncrementCentersOfMass( microIncrement, macroIncrement,
                                                _freeMicroDomainMasses, _ghostMicroDomainMasses,
                                                _freeMicroDomainCentersOfMass, _ghostMicroDomainCentersOfMass );
@@ -146,7 +147,10 @@ namespace overlapCoupling{
 
         }
 
+        return NULL; //REMOVE THIS
+
         //Project the degrees of freedom
+        std::cout << "projecting the degrees of freedom\n";
         error = projectDegreesOfFreedom( );
 
         if ( error ){
@@ -158,6 +162,7 @@ namespace overlapCoupling{
         }
 
         //Homogenize the material properties at the micro-scale to the macro-scale
+        std::cout << "homogenizing material properties\n";
         error = homogenizeMicroScale( microIncrement );
 
         if ( error ){
@@ -173,6 +178,7 @@ namespace overlapCoupling{
         if ( !couplingConfiguration[ "update_displacement" ].IsScalar( ) ){
 
             //Assemble the mass matrix for the free micromorphic domians
+            std::cout << "assembling the free micromorphic mass matrix\n";
             error = assembleFreeMicromorphicMassMatrix( );
     
             if ( error ){
@@ -184,6 +190,7 @@ namespace overlapCoupling{
             }
 
             //Assemble the coupling mass and damping matrices
+            std::cout << "assembling the coupling mass and damping matrices\n";
             error = assembleCouplingMassAndDampingMatrices( );
     
             if ( error ){
@@ -195,6 +202,7 @@ namespace overlapCoupling{
             }
     
             //Assemble the coupling force vector
+            std::cout << "assembling the coupling force vector\n";
             error = assembleCouplingForceVector( );
     
             if ( error ){
@@ -206,6 +214,7 @@ namespace overlapCoupling{
             }
     
             //Solve for the free displacements
+            std::cout << "solving for the free displacements\n";
             error = solveFreeDisplacement( true );
     
             if ( error ){
@@ -221,6 +230,7 @@ namespace overlapCoupling{
         if ( !couplingConfiguration [ "output_homogenized_response" ].IsScalar( ) ){
 
             //Output the homogenized material response to a data file
+            std::cout << "outputting the homogenized response\n";
             error = outputHomogenizedResponse( );
             if ( error ){
 
@@ -235,6 +245,7 @@ namespace overlapCoupling{
         if ( !couplingConfiguration[ "output_updated_dof" ].IsScalar( ) ){
 
             //Output the updated dof values to a data file
+            std::cout << "writing the updated DOF to file\n";
             error = overlapCoupling::writeUpdatedDOFToFile( );
 
             if ( error ){
@@ -2219,7 +2230,8 @@ namespace overlapCoupling{
 
         YAML::Node config = _inputProcessor.getCouplingInitialization( );
 
-        if ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ){
+        if ( ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ) ||
+             ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 ) ){
 
             Dhat = _L2_BDhatQ * Q + _L2_BDhatD * D;
             Qhat = _L2_BQhatQ * Q + _L2_BQhatD * D;

@@ -2584,6 +2584,9 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     remove( "microscale_dof.xdmf" );
     remove( "microscale_dof.h5" );
 
+    std::string testName = "overlapCoupling_processIncrement";
+    uIntType testNum;
+
     std::string filename = "testConfig_averaged_l2_projection.yaml";
     overlapCoupling::overlapCoupling oc( filename );
 
@@ -2609,17 +2612,89 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
         return 1;
     }
 
-    const floatVector *projectedGhostMacroDisplacement = oc.getProjectedGhostMacroDisplacement( );
-    const floatVector *projectedGhostMicroDisplacement = oc.getProjectedGhostMicroDisplacement( );
+    //Check the mass properties
+    std::unordered_map< std::string, floatType > freeDomainMassAnswer
+        =
+        {
+            { "free_nodeset_volume_1", 0.250000 },
+            { "free_nodeset_volume_2", 0.250000 },
+            { "free_nodeset_volume_3", 0.250000 },
+            { "free_nodeset_volume_4", 0.250000 },
+            { "free_nodeset_volume_5", 0.375000 },
+            { "free_nodeset_volume_6", 0.375000 },
+            { "free_nodeset_volume_7", 0.375000 },
+            { "free_nodeset_volume_8", 0.375000 },
+        };
 
-    if ( projectedGhostMacroDisplacement->size( ) == 0 ){
-        results << "test_overlapCoupling_processIncrement (test 1) & False\n";
+    std::unordered_map< std::string, floatType > ghostDomainMassAnswer
+        =
+        {
+            { "ghost_nodeset_volume_1", 0.250000 },
+            { "ghost_nodeset_volume_2", 0.250000 },
+            { "ghost_nodeset_volume_3", 0.250000 },
+            { "ghost_nodeset_volume_4", 0.250000 },
+            { "ghost_nodeset_volume_5", 0.250000 },
+            { "ghost_nodeset_volume_6", 0.250000 },
+            { "ghost_nodeset_volume_7", 0.250000 },
+            { "ghost_nodeset_volume_8", 0.250000 },
+        };
+
+    const std::unordered_map< std::string, floatType > *freeDomainMassResult = oc.getFreeMicroDomainMasses( );
+
+    if( _compare_domainMaps( results, freeDomainMassAnswer, *freeDomainMassResult, testName, testNum ) ){
+
         return 1;
+
     }
 
-    if ( projectedGhostMicroDisplacement->size( ) == 0 ){
-        results << "test_overlapCoupling_processIncrement (test 2) & False\n";
+    const std::unordered_map< std::string, floatType > *ghostDomainMassResult = oc.getGhostMicroDomainMasses( );
+
+    if( _compare_domainMaps( results, ghostDomainMassAnswer, *ghostDomainMassResult, testName, testNum ) ){
+
         return 1;
+
+    }
+
+    std::unordered_map< std::string, floatVector > freeDomainCenterOfMassAnswer
+        =
+        {
+            { "free_nodeset_volume_1", { 0.250000, 0.250000, 1.251000 } },
+            { "free_nodeset_volume_2", { 0.750000, 0.250000, 1.251000 } },
+            { "free_nodeset_volume_3", { 0.750000, 0.750000, 1.251000 } },
+            { "free_nodeset_volume_4", { 0.250000, 0.750000, 1.251000 } },
+            { "free_nodeset_volume_5", { 0.250000, 0.250000, 1.834333 } },
+            { "free_nodeset_volume_6", { 0.750000, 0.250000, 1.834333 } },
+            { "free_nodeset_volume_7", { 0.750000, 0.750000, 1.834333 } },
+            { "free_nodeset_volume_8", { 0.250000, 0.750000, 1.834333 } },
+        };
+        
+    std::unordered_map< std::string, floatVector > ghostDomainCenterOfMassAnswer
+        =
+        {
+            { "ghost_nodeset_volume_1", { 0.250000, 0.250000, 0.251000 } },
+            { "ghost_nodeset_volume_2", { 0.750000, 0.250000, 0.251000 } },
+            { "ghost_nodeset_volume_3", { 0.750000, 0.750000, 0.251000 } },
+            { "ghost_nodeset_volume_4", { 0.250000, 0.750000, 0.251000 } },
+            { "ghost_nodeset_volume_5", { 0.250000, 0.250000, 0.751000 } },
+            { "ghost_nodeset_volume_6", { 0.750000, 0.250000, 0.751000 } },
+            { "ghost_nodeset_volume_7", { 0.750000, 0.750000, 0.751000 } },
+            { "ghost_nodeset_volume_8", { 0.250000, 0.750000, 0.751000 } },
+        };
+        
+    const std::unordered_map< std::string, floatVector > *freeDomainCenterOfMassResult = oc.getFreeMicroDomainCentersOfMass( );
+
+    if( _compare_domainMaps( results, freeDomainCenterOfMassAnswer, *freeDomainCenterOfMassResult, testName, testNum ) ){
+
+        return 1;
+
+    }
+
+    const std::unordered_map< std::string, floatVector > *ghostDomainCenterOfMassResult = oc.getGhostMicroDomainCentersOfMass( );
+
+    if( _compare_domainMaps( results, ghostDomainCenterOfMassAnswer, *ghostDomainCenterOfMassResult, testName, testNum ) ){
+
+        return 1;
+
     }
 
     remove( "reference_information.xdmf" );
@@ -3569,7 +3644,7 @@ int main(){
     test_overlapCoupling_constructor( results );
     test_overlapCoupling_initializeCoupling_l2_projection( results );
     test_overlapCoupling_initializeCoupling_averaged_l2_projection( results );
-//    test_overlapCoupling_processIncrement( results );
+    test_overlapCoupling_processIncrement( results );
 //    test_overlapCoupling_processLastIncrements( results );
 //    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
 //    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
