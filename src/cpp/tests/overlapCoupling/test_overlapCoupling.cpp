@@ -2822,6 +2822,31 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     }
 
+    const cellDomainFloatVectorMap homogenizedSymmetricMicroStressesAnswer
+        =
+        {
+            { 1,
+                {
+                    { "ghost_nodeset_volume_1", { 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 7.000000, 8.000000, 9.000000 } },
+                    { "ghost_nodeset_volume_2", { 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 7.000000, 8.000000, 9.000000 } },
+                    { "ghost_nodeset_volume_3", { 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 7.000000, 8.000000, 9.000000 } },
+                    { "ghost_nodeset_volume_4", { 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 7.000000, 8.000000, 9.000000 } },
+                    { "ghost_nodeset_volume_5", { 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 7.000000, 8.000000, 9.000000 } },
+                    { "ghost_nodeset_volume_6", { 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 7.000000, 8.000000, 9.000000 } },
+                    { "ghost_nodeset_volume_7", { 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 7.000000, 8.000000, 9.000000 } },
+                    { "ghost_nodeset_volume_8", { 1.000000, 2.000000, 3.000000, 4.000000, 5.000000, 6.000000, 7.000000, 8.000000, 9.000000 } },
+                }
+            }
+        };
+
+    if( _compare_cellDomainMaps( results, homogenizedSymmetricMicroStressesAnswer,
+                                 *oc.getHomogenizedSymmetricMicroStresses( ), testName, testNum ) ){
+
+        return 1;
+
+    }
+
+
     remove( "reference_information.xdmf" );
     remove( "reference_information.h5" );
 
