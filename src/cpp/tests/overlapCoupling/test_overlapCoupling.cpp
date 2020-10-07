@@ -2792,18 +2792,6 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
             }
         };
 
-    for ( auto c = oc.getHomogenizedVolumes( )->begin( ); c != oc.getHomogenizedVolumes( )->end( ); c++ ){
-
-        std::cout << c->first << "\n";
-
-        for ( auto d = c->second.begin( ); d != c->second.end( ); d++ ){
-
-            std::cout << " " << d->first << ": " << d->second << "\n";
-
-        }
-
-    }
-
     //Note higher tolerance because it's an approximate volume reconstruction value
     if( _compare_cellDomainMaps( results, homogenizedVolumesAnswer, *oc.getHomogenizedVolumes( ), testName, testNum, 1e-6, 1e-3 ) ){
 
@@ -2877,6 +2865,54 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     if( _compare_cellDomainMaps( results, homogenizedSymmetricMicroStressesAnswer,
                                  *oc.getHomogenizedSymmetricMicroStresses( ), testName, testNum ) ){
+
+        return 1;
+
+    }
+
+    const cellDomainFloatVectorMap homogenizedCentersOfMassAnswer
+        =
+        {
+            { 1,
+                {
+                    { "ghost_nodeset_volume_1", { 0.250000, 0.250000, 0.251000 } },
+                    { "ghost_nodeset_volume_2", { 0.750000, 0.250000, 0.251000 } },
+                    { "ghost_nodeset_volume_3", { 0.750000, 0.750000, 0.251000 } },
+                    { "ghost_nodeset_volume_4", { 0.250000, 0.750000, 0.251000 } },
+                    { "ghost_nodeset_volume_5", { 0.250000, 0.250000, 0.751000 } },
+                    { "ghost_nodeset_volume_6", { 0.750000, 0.250000, 0.751000 } },
+                    { "ghost_nodeset_volume_7", { 0.750000, 0.750000, 0.751000 } },
+                    { "ghost_nodeset_volume_8", { 0.250000, 0.750000, 0.751000 } },
+                }
+            },
+            { 2,
+                {
+                    { "free_nodeset_volume_1", { 0.250000, 0.250000, 1.251000 } },
+                    { "free_nodeset_volume_2", { 0.750000, 0.250000, 1.251000 } },
+                    { "free_nodeset_volume_3", { 0.750000, 0.750000, 1.251000 } },
+                    { "free_nodeset_volume_4", { 0.250000, 0.750000, 1.251000 } },
+                    { "free_nodeset_volume_5", { 0.250000, 0.250000, 1.834333 } },
+                    { "free_nodeset_volume_6", { 0.750000, 0.250000, 1.834333 } },
+                    { "free_nodeset_volume_7", { 0.750000, 0.750000, 1.834333 } },
+                    { "free_nodeset_volume_8", { 0.250000, 0.750000, 1.834333 } },
+                }
+            }
+        };
+
+    for ( auto c = oc.getHomogenizedCentersOfMass( )->begin( ); c != oc.getHomogenizedCentersOfMass( )->end( ); c++ ){
+
+        std::cout << c->first << "\n";
+
+        for ( auto d = c->second.begin( ); d != c->second.end( ); d++ ){
+
+            std::cout << d->first << ": "; vectorTools::print( d->second );
+
+        }
+
+    }
+
+    if( _compare_cellDomainMaps( results, homogenizedCentersOfMassAnswer,
+                                 *oc.getHomogenizedCentersOfMass( ), testName, testNum ) ){
 
         return 1;
 
