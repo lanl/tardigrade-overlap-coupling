@@ -1055,6 +1055,22 @@ namespace volumeReconstruction{
         return;
     }
 
+    const uIntVector *volumeReconstructionBase::getBoundaryIDs( ){
+        /*!
+         * Get a constant reference to the collection of boundary point ids
+         */
+
+        return NULL;
+    }
+
+    const floatVector *volumeReconstructionBase::getBoundaryPoints( ){
+        /*!
+         * Get a constant reference to the collection of boundary points
+         */
+
+        return NULL;
+    }
+
     /*=========================================================================
     |                             dualContouring                              |
     =========================================================================*/
@@ -3390,20 +3406,22 @@ namespace volumeReconstruction{
 
     }
 
-    const uIntVector *dualContouring::getBoundaryCells( ){
+    const uIntVector *dualContouring::getBoundaryIDs( ){
         /*!
-         * Get constant references to the boundary cells
+         * Get a constant reference to the boundary cells
          */
 
         return &_boundaryCells;
+
     }
 
     const floatVector *dualContouring::getBoundaryPoints( ){
         /*!
-         * Get constant references to the boundary points
+         * Get a constant reference to the boundary points
          */
 
         return &_boundaryPoints;
+
     }
 
 }

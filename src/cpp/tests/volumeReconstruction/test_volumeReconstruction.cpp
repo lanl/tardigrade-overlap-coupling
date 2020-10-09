@@ -1898,9 +1898,11 @@ int test_dualContouring_getSurfaceSubdomains( std::ofstream &results ){
     
 }
 
-int test_dualContouring_getBoundaryPoints( std::ofstream &results ){
+int test_dualContouring_getBoundaryInformation( std::ofstream &results ){
     /*!
      * Check that the boundary points and cells can be extracted
+     *
+     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -1974,7 +1976,7 @@ int test_dualContouring_getBoundaryPoints( std::ofstream &results ){
 
         dc.getError( )->print( );
 
-        results << "test_dualContouring_getBoundaryPoints & False\n";
+        results << "test_dualContouring_getBoundaryInformation & False\n";
         return 1;
 
     }
@@ -1983,7 +1985,7 @@ int test_dualContouring_getBoundaryPoints( std::ofstream &results ){
 
     if ( error ){
         error->print( );
-        results << "test_dualContouring_getBoundaryPoints & False\n";
+        results << "test_dualContouring_getBoundaryInformation & False\n";
         return 1;
     }
 
@@ -1991,7 +1993,7 @@ int test_dualContouring_getBoundaryPoints( std::ofstream &results ){
 
     if ( error ){
         error->print( );
-        results << "test_dualContouring_getBoundaryPoints & False\n";
+        results << "test_dualContouring_getBoundaryInformation & False\n";
         return 1;
     }
 
@@ -2038,24 +2040,34 @@ int test_dualContouring_getBoundaryPoints( std::ofstream &results ){
              0.982144,  0.996482,  0.495371,  0.982106,  0.996444,  0.992852
         };
 
-    const uIntVector  *boundaryCellsResult = dc.getBoundaryCells( );
+    const uIntVector *boundaryCellsResult = dc.getBoundaryIDs( );
     const floatVector *boundaryPointsResult = dc.getBoundaryPoints( );
+
+    if ( !boundaryCellsResult ){
+        results << "test_dualContouring_getBoundaryInformation (test 1) & False\n";
+        return 1;
+    }
+
+    if ( !boundaryPointsResult ){
+        results << "test_dualContouring_getBoundaryInformation (test 2) & False\n";
+        return 1;
+    }
 
     if ( !vectorTools::fuzzyEquals( *boundaryCellsResult, boundaryCellsAnswer ) ){
 
-        results << "test_dualContouring_getBoundaryPoints (test 1) & False\n";
+        results << "test_dualContouring_getBoundaryInformation (test 3) & False\n";
         return 1;
 
     }
     
     if ( !vectorTools::fuzzyEquals( *boundaryPointsResult, boundaryPointsAnswer ) ){
 
-        results << "test_dualContouring_getBoundaryPoints (test 2) & False\n";
+        results << "test_dualContouring_getBoundaryInformation (test 4) & False\n";
         return 1;
 
     }
 
-    results << "test_dualContouring_getBoundaryPoints & True\n";
+    results << "test_dualContouring_getBoundaryInformation & True\n";
     return 0;
 }
 
@@ -2084,7 +2096,7 @@ int main(){
     test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
     test_dualContouring_getSurfaceSubdomains( results );
     test_dualContouring_exportConfiguration( results );
-    test_dualContouring_getBoundaryPoints( results );
+    test_dualContouring_getBoundaryInformation( results );
 
     test_KDNode_constructor( results );
     test_KDNode_getIndex( results );

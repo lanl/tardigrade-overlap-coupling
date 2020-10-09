@@ -136,6 +136,10 @@ namespace volumeReconstruction{
             virtual errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
                                                    uIntVector &subdomainIDs );
 
+            virtual const uIntVector *getBoundaryIDs( );
+
+            virtual const floatVector *getBoundaryPoints( );
+
             const YAML::Node exportConfiguration( );
 
             virtual errorOut writeToXDMF( );
@@ -213,9 +217,9 @@ namespace volumeReconstruction{
             errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
                                            uIntVector &subdomainIDs );
 
-            virtual const uIntVector *getBoundaryCells( );
+            const uIntVector *getBoundaryIDs( );
 
-            virtual const floatVector *getBoundaryPoints( );
+            const floatVector *getBoundaryPoints( );
 
         protected:
 
@@ -229,6 +233,7 @@ namespace volumeReconstruction{
             errorOut performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                     const floatVector &origin, floatVector &integratedValue,
                                                     bool computeFlux, bool dyadWithOrigin, const uIntVector *subdomainIDs = NULL );
+
 
         private:
 
