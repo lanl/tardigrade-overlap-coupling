@@ -3390,4 +3390,20 @@ namespace volumeReconstruction{
 
     }
 
+    const uIntVector *dualContouring::getBoundaryCells( ){
+        /*!
+         * Get constant references to the boundary cells
+         */
+
+        return &_boundaryCells;
+    }
+
+    const floatVector *dualContouring::getBoundaryPoints( ){
+        /*!
+         * Get constant references to the boundary points
+         */
+
+        return &_boundaryPoints;
+    }
+
 }

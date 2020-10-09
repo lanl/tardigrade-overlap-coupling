@@ -213,6 +213,10 @@ namespace volumeReconstruction{
             errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
                                            uIntVector &subdomainIDs );
 
+            virtual const uIntVector *getBoundaryCells( );
+
+            virtual const floatVector *getBoundaryPoints( );
+
         protected:
 
             errorOut initialize( );
