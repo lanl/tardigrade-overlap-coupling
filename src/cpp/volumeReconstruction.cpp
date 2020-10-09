@@ -803,7 +803,8 @@ namespace volumeReconstruction{
     }
 
     errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                                  floatVector &integratedValue, const uIntVector *subdomainIDs ){
+                                                                  floatVector &integratedValue, const uIntVector *subdomainIDs,
+                                                                  const floatVector *subdomainWeights ){
         /*!
          * Integrate a quantity known at the point over the surface and return the value for the domain.
          *
@@ -815,18 +816,22 @@ namespace volumeReconstruction{
          * :param floatVector &integratedValue: The final value of the integral
          * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
          *     defaults to NULL and so the full domain is integrated over
+         * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
+         *     in multiple subdomains and they aren't small w.r.t. the domain size
          */
 
         ( void ) valuesAtPoints;
         ( void ) valueSize;
         ( void ) integratedValue;
         ( void ) subdomainIDs;
+        ( void ) subdomainWeights;
 
         return new errorNode( "performSurfaceIntegration", "Surface integration not implemented" );
     }
 
     errorOut volumeReconstructionBase::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                                      floatVector &integratedValue, const uIntVector *subdomainIDs ){
+                                                                      floatVector &integratedValue, const uIntVector *subdomainIDs,
+                                                                      const floatVector *subdomainWeights ){
         /*!
          * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
          *
@@ -841,12 +846,15 @@ namespace volumeReconstruction{
          * :param floatVector &integratedValue: The final value of the integral
          * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
          *     defaults to NULL and so the full domain is integrated over
+         * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
+         *     in multiple subdomains and they aren't small w.r.t. the domain size
          */
 
         ( void ) valuesAtPoints;
         ( void ) valueSize;
         ( void ) integratedValue;
         ( void ) subdomainIDs;
+        ( void ) subdomainWeights;
 
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
@@ -855,7 +863,8 @@ namespace volumeReconstruction{
                                                                                       const uIntType valueSize,
                                                                                       const floatVector &origin,
                                                                                       floatVector &integratedValue,
-                                                                                      const uIntVector *subdomainIDs ){
+                                                                                      const uIntVector *subdomainIDs,
+                                                                                      const floatVector *subdomainWeights ){
         /*!
          * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
          *
@@ -870,6 +879,8 @@ namespace volumeReconstruction{
          * :param const floatVector &origin: The origin to compute the surface integral relative to 
          * :param floatVector &integratedValue: The final value of the integral
          * :param uIntVector *subdomainIDs: The IDs of points in the subdomain of the surface to integrate over
+         * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
+         *     in multiple subdomains and they aren't small w.r.t. the domain size
          */
 
         ( void ) valuesAtPoints;
@@ -877,6 +888,7 @@ namespace volumeReconstruction{
         ( void ) origin;
         ( void ) integratedValue;
         ( void ) subdomainIDs;
+        ( void ) subdomainWeights;
 
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
@@ -2856,7 +2868,8 @@ namespace volumeReconstruction{
     }
 
     errorOut dualContouring::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                        floatVector &integratedValue, const uIntVector *subdomainIDs ){
+                                                        floatVector &integratedValue, const uIntVector *subdomainIDs,
+                                                        const floatVector *subdomainWeights ){
         /*!
          * Integrate a quantity known at the point over the surface return the value for the domain.
          *
@@ -2867,10 +2880,13 @@ namespace volumeReconstruction{
          * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
          * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
+         * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
+         *     in multiple subdomains and they aren't small w.r.t. the domain size
          */
 
         floatVector origin;
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, false, subdomainIDs );
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, false,
+                                                        subdomainIDs, subdomainWeights );
 
         if ( error ){
 
@@ -2885,7 +2901,8 @@ namespace volumeReconstruction{
     }
 
     errorOut dualContouring::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                            floatVector &integratedValue, const uIntVector *subdomainIDs ){
+                                                            floatVector &integratedValue, const uIntVector *subdomainIDs,
+                                                            const floatVector *subdomainWeights ){
         /*!
          * Integrate the flux of a quantity known at the point over the surface return the value for the domain.
          *
@@ -2896,10 +2913,13 @@ namespace volumeReconstruction{
          * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
          * :param floatVector &integratedValue: The final value of the integral
          * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
+         * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
+         *     in multiple subdomains and they aren't small w.r.t. the domain size
          */
 
         floatVector origin;
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false, subdomainIDs );
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false, subdomainIDs,
+                                                        subdomainWeights );
 
         if ( error ){
 
@@ -2917,7 +2937,8 @@ namespace volumeReconstruction{
                                                                             const uIntType valueSize,
                                                                             const floatVector &origin,
                                                                             floatVector &integratedValue,
-                                                                            const uIntVector *subdomainIDs ){
+                                                                            const uIntVector *subdomainIDs,
+                                                                            const floatVector *subdomainWeights ){
         /*!
          * $\int_{\partial\mathcal{B}} n_i v_ij ( x_k' - o_k ) da \approx \sum_{p = 1}^N n_i^p v_ij^p ( x_k' - o_k ) da^p$
          *
@@ -2932,9 +2953,12 @@ namespace volumeReconstruction{
          * :param const floatVector &origin: The origin that the relative position vector is computed in relation to.
          * :param floatVector &integratedValue: The final value of the integral
          * :param const uIntVector *subdomainIDs: The IDs of points in the subdomain to integrate over
+         * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
+         *     in multiple subdomains and they aren't small w.r.t. the domain size
          */
 
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, true, subdomainIDs );
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, true, subdomainIDs,
+                                                        subdomainWeights );
 
         if ( error ){
 
@@ -2952,7 +2976,8 @@ namespace volumeReconstruction{
     errorOut dualContouring::performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             const floatVector &origin, floatVector &integratedValue,
                                                             bool computeFlux, bool dyadWithOrigin,
-                                                            const uIntVector *subdomainIDs ){
+                                                            const uIntVector *subdomainIDs,
+                                                            const floatVector *subdomainWeights ){
         /*!
          * Integrate a quantity known at the points over the surface return the value for the domain.
          *
@@ -2967,9 +2992,29 @@ namespace volumeReconstruction{
          * :param bool dyadWithOrigin: The flag indicating if the dyadic product between the values on the surface
          *     ( post flux calculation ) needs to be computed.
          * :param uIntVector *subdomainIDs: The IDs of points in the subdomain to integrate over
+         * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
+         *     in multiple subdomains and they aren't small w.r.t. the domain size
          */
 
         errorOut error;
+
+        if ( ( subdomainIDs ) && ( subdomainWeights ) ){
+
+            if ( subdomainIDs->size( ) != subdomainWeights->size( ) ){
+
+                return new errorNode( "performSurfaceIntegration",
+                                      "The size of the subdomain ids and subdomain weights are not consistent" );
+
+            }
+
+        }
+
+        if ( ( !subdomainIDs ) && ( subdomainWeights ) ){
+
+            return new errorNode( "performSurfaceIntegration",
+                                  "The subdomain weights are defined but not the subdomain" );
+
+        }
 
         //Check if the domain has been constructed yet
         if ( !getEvaluated( ) ){
@@ -3002,6 +3047,7 @@ namespace volumeReconstruction{
         floatVector boundaryPoint;
         floatVector localBoundaryPoint;
         floatVector valueAtBoundaryPoint;
+        floatType weight;
 
         uIntType ngy = _gridLocations[ 1 ].size( );
         uIntType ngz = _gridLocations[ 2 ].size( );
@@ -3226,7 +3272,19 @@ namespace volumeReconstruction{
 
             }
 
-            integratedValue += valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
+            weight = 1.;
+            if ( subdomainWeights ){
+
+                weight = ( *subdomainWeights )[ cell - surfaceCells->begin( ) ];
+
+            }
+
+            integratedValue += weight * valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
+            std::cout << "cell " << *cell << " values:\n";
+            std::cout << "area: " << _boundaryPointAreas[ *cell ] << "\n";
+            std::cout << "normal: "; vectorTools::print( _boundaryPointNormals[ *cell ] );
+            std::cout << "valueAtBoundaryPoint: "; vectorTools::print( valueAtBoundaryPoint );
+            
 
         }
 

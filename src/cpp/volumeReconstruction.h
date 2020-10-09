@@ -122,16 +122,19 @@ namespace volumeReconstruction{
                                                                        const floatVector &origin, floatVector &integratedValue );
 
             virtual errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                        floatVector &integratedValue, const uIntVector *subdomainIDs = NULL );
+                                                        floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
+                                                        const floatVector *subdomainWeights = NULL );
 
             virtual errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                            floatVector &integratedValue, const uIntVector *subdomainIDs = NULL );
+                                                            floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
+                                                            const floatVector *subdomainWeights = NULL );
 
             virtual errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
                                                                             const uIntType valueSize,
                                                                             const floatVector &origin,
                                                                             floatVector &integratedValue,
-                                                                            const uIntVector *subdomainIDs = NULL );
+                                                                            const uIntVector *subdomainIDs = NULL,
+                                                                            const floatVector *subdomainWeights = NULL );
 
             virtual errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
                                                    uIntVector &subdomainIDs );
@@ -205,14 +208,17 @@ namespace volumeReconstruction{
                                                floatVector &integratedValue );
 
             errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                floatVector &integratedValue, const uIntVector *subdomainIDs = NULL );
+                                                floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
+                                                const floatVector *subdomainWeights = NULL );
 
             errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
-                                                    floatVector &integratedValue, const uIntVector *subdomainIDs = NULL );
+                                                    floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
+                                                    const floatVector *subdomainWeights = NULL );
 
             errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                     const floatVector &origin, floatVector &integratedValue,
-                                                                    const uIntVector *subdomainIDs = NULL );
+                                                                    const uIntVector *subdomainIDs = NULL,
+                                                                    const floatVector *subdomainWeights = NULL );
 
             errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
                                            uIntVector &subdomainIDs );
@@ -232,7 +238,8 @@ namespace volumeReconstruction{
 
             errorOut performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                     const floatVector &origin, floatVector &integratedValue,
-                                                    bool computeFlux, bool dyadWithOrigin, const uIntVector *subdomainIDs = NULL );
+                                                    bool computeFlux, bool dyadWithOrigin, const uIntVector *subdomainIDs = NULL,
+                                                    const floatVector *subdomainWeights = NULL );
 
 
         private:
