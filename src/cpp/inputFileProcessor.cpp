@@ -4110,6 +4110,12 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config[ "volume_reconstruction" ][ "element_contain_tolerence" ] ){
+
+            _config[ "volume_reconstruction" ][ "element_contain_tolerence" ] = 1e-2;
+
+        }
+
         _volumeReconstructionConfig = _config[ "volume_reconstruction" ];
 
         return NULL;
