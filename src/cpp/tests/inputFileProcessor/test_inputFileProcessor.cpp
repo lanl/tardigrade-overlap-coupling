@@ -3318,7 +3318,7 @@ int test_getVolumeReconstructionConfig( std::ofstream &results ){
     }
 
     floatType toleranceAnswer = 1e-2;
-    if ( !vectorTools::fuzzyEquals( vRInitialization[ "element_contain_tolerence" ].as< floatType >( ), toleranceAnswer ) ){
+    if ( !vectorTools::fuzzyEquals( vRInitialization[ "element_contain_tolerance" ].as< floatType >( ), toleranceAnswer ) ){
         results << "test_getVolumeReconstructionConfig (test 3) & False\n";
         return 1;
     }
