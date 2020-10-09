@@ -614,7 +614,7 @@ namespace elib{
         return true;
     }
 
-    bool Element::contains_point(const vec &x){
+    bool Element::contains_point( const vec &x, const double tol ){
         /*!
          * Determines if a point is contained within the element.
          * 
@@ -623,16 +623,17 @@ namespace elib{
          *       available in bounding_box_contains_point.
          *
          * :param const vec &x: The point in global coordinates.
+         * :param const double &tol: The tolerence in local coordinates
          */
 
         vec xi;
-        errorOut error = compute_local_coordinates(x, xi);
+        errorOut error = compute_local_coordinates( x, xi );
 
         //We assume that if the local coordinates cannot be computed the point must be outside of the element
         if ( error ){
             return false;
         }
-        return local_point_inside(xi);
+        return local_point_inside( xi, tol );
     }
 
     int Element::update_node_position(const uitype n, const vec &displacement, const bool bounding_box_update){
@@ -1061,6 +1062,61 @@ namespace elib{
 
         return NULL;
 
+    }
+
+    bool Element::point_on_surface( const vec &x_in, std::vector< uitype > &surf, const double tol ){
+        /*!
+         * Check if a point is on an surfaces of the element or not
+         *
+         * :param const vec &x_in: The point to evaluate in global coordinates
+         * :param std::vector< uiType > &surf: The id of the surface that the point is on if the function returns true
+         * :param const double tolr: The relative tolerance
+         * :param const double tola: The absolute tolerance
+         */
+
+        vec x;
+        std::unique_ptr< errorNode > error;
+        error.reset( compute_local_coordinates( x_in, x ) );
+
+        if ( error ){
+
+            return false;
+
+        }
+
+        surf.clear( );
+        for ( uitype i = 0; i < local_surface_points.size( ); i++ ){
+
+            vec surface_point = local_surface_points[ i ];
+            vec surface_normal = local_surface_normals[ i ];
+
+            double distance = vectorTools::dot( surface_normal, x - surface_point );
+
+            if ( ( distance > 0 ) && ( distance > tol ) ){
+
+                surf.clear( );
+                return false;
+
+            }
+
+            distance = std::fabs( distance );
+
+            if ( distance <= tol ){
+
+                surf.push_back( i );
+
+            }
+
+        }
+
+        if ( surf.size( ) > 0 ){
+
+            return true;  
+
+        }
+
+        return false;
+         
     }
 
 }

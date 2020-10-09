@@ -960,6 +960,83 @@ int test_Hex8_functionality(std::ofstream &results){
     return 0;
 }
 
+int test_Hex8_point_on_surface( std::ofstream &results ){
+    /*!
+     * Test if a point is on the surface of the Hex8 element
+     */
+    // Define the element's nodes
+    elib::vecOfvec nodes = {{0, 0, 0},
+                            {1, 0, 0},
+                            {1, 1, 0},
+                            {0, 1, 0},
+                            {0, 0, 1},
+                            {1, 0, 1},
+                            {1, 1, 1},
+                            {0, 1, 1}};
+
+    // Define the element's node ids
+    std::vector< uitype > node_ids = {1, 2, 3, 4, 5, 6, 7, 8};
+
+    // Define the element's quadrature rule
+    elib::quadrature_rule qrule;
+    define_hex8_fully_integrated_quadrature(qrule);
+
+    // Construct the element
+    elib::Hex8 element(node_ids, nodes, qrule);
+
+    //Define the point
+    elib::vec point = { 0, 0, 0 };
+
+    std::vector< elib::uitype > answer1 = { 0, 2, 4 };
+
+    std::vector< elib::uitype > result;
+
+    if ( !element.point_on_surface( point, result, 1e-9 ) ){
+        results << "test_Hex8_point_on_surface (test 1) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( result, answer1 ) ){
+        results << "test_Hex8_point_on_surface (test 2) & False\n";
+        return 1;
+    }
+
+    point = { -0.1, 0, 0 };
+
+    if ( element.point_on_surface( point, result, 1e-9 ) ){
+        vectorTools::print( result );
+        results << "test_Hex8_point_on_surface (test 3) & False\n";
+        return 1;
+    }
+
+    if ( !element.point_on_surface( point, result, 3e-1 ) ){
+        results << "test_Hex8_point_on_surface (test 4) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( result, answer1 ) ){
+        results << "test_Hex8_point_on_surface (test 5) & False\n";
+        return 1;
+    }
+
+    point = { -0.1, 0.5, 0.5 };
+
+    if ( !element.point_on_surface( point, result, 3e-1 ) ){
+        results << "test_Hex8_point_on_surface (test 4) & False\n";
+        return 1;
+    }
+
+    std::vector< elib::uitype > answer2 = { 0 };
+
+    if ( !vectorTools::fuzzyEquals( result, answer2 ) ){
+        results << "test_Hex8_point_on_surface (test 5) & False\n";
+        return 1;
+    }
+
+    results << "test_Hex8_point_on_surface & True\n";
+    return 0;
+}
+
 int test_invert(std::ofstream &results){
     /*!
     Test the computation of the matrix inverse
@@ -1045,6 +1122,7 @@ int main(){
     test_Hex8_get_local_grad_shape_functions(results);
     test_Hex8_local_point_inside(results);
     test_Hex8_functionality(results);
+    test_Hex8_point_on_surface( results );
 
     //Eigen tool tests
     test_invert(results);

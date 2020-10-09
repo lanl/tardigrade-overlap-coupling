@@ -74,6 +74,8 @@ namespace elib{
             quadrature_rule qrule; //!The quadrature rule of the element
             vecOfvec local_node_coordinates; //!The local coordinates of the nodes
             vecOfvec bounding_box; //!The bounding box of the element
+            vecOfvec local_surface_points; //!The local coordinates of points on the element surface
+            vecOfvec local_surface_normals; //!The normal vectors of points on the element surface
 
             Element(){}
             Element(const std::vector< uitype > &global_node_ids, const vecOfvec &nodes, const quadrature_rule &qrule);
@@ -132,7 +134,7 @@ namespace elib{
 
             bool bounding_box_contains_point(const vec &x);
 
-            bool contains_point(const vec &x);
+            bool contains_point( const vec &x, const double tol = 1e-8 );
 
             int update_node_position(const uitype n, const vec &displacement, const bool bounding_box_update=true);
 
@@ -141,6 +143,8 @@ namespace elib{
             int update_bounding_box();
 
             const std::vector< uitype > *get_global_node_ids();
+
+            virtual bool point_on_surface( const vec &x, std::vector< uitype > &surf, const double tol );
     };
 
     const double sqrt3 = std::sqrt( 3. );
@@ -172,6 +176,18 @@ namespace elib{
                                           { 1, -1,  1},
                                           { 1,  1,  1},
                                           {-1,  1,  1}};
+                local_surface_points = { { -1,  0,  0 },
+                                         {  1,  0,  0 },
+                                         {  0, -1,  0 },
+                                         {  0,  1,  0 },
+                                         {  0,  0, -1 },
+                                         {  0,  0,  1 } };
+                local_surface_normals = { { -1,  0,  0 },
+                                          {  1,  0,  0 },
+                                          {  0, -1,  0 },
+                                          {  0,  1,  0 },
+                                          {  0,  0, -1 },
+                                          {  0,  0,  1 } };
             }
 
             errorOut get_shape_functions(const vec &local_coordinates, vec &result);
