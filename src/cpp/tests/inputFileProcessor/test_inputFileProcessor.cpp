@@ -3304,16 +3304,22 @@ int test_getVolumeReconstructionConfig( std::ofstream &results ){
         return 1;
     }
 
-    const YAML::Node couplingInitialization = reader.getVolumeReconstructionConfig( );
+    const YAML::Node vRInitialization = reader.getVolumeReconstructionConfig( );
 
-    if ( !couplingInitialization ){
+    if ( !vRInitialization ){
         results << "test_getVolumeReconstructionConfig (test 1) & False\n";
         return 1;
     }
 
     std::string typeAnswer = "dual_contouring";
-    if ( couplingInitialization[ "type" ].as<std::string>( ).compare( typeAnswer ) ){
+    if ( vRInitialization[ "type" ].as<std::string>( ).compare( typeAnswer ) ){
         results << "test_getVolumeReconstructionConfig (test 2) & False\n";
+        return 1;
+    }
+
+    floatType toleranceAnswer = 1e-2;
+    if ( !vectorTools::fuzzyEquals( vRInitialization[ "element_contain_tolerence" ].as< floatType >( ), toleranceAnswer ) ){
+        results << "test_getVolumeReconstructionConfig (test 3) & False\n";
         return 1;
     }
 

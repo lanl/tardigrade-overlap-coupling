@@ -1175,6 +1175,9 @@ namespace overlapCoupling{
 
         }
 
+        //TODO: Add ability to use the reconstructed mass centers for this to enable consistency with the 
+        //      homogenization.
+
         //Compute the center of mass of the domain
         floatType   mass;
         floatVector centerOfMass;
@@ -2621,6 +2624,15 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, stringVector > *macroCellToMicroDomainMap = _inputProcessor.getMacroCellToDomainMap( );
         const std::unordered_map< std::string, uIntType > *microDomainSurfaceSplitCount = _inputProcessor.getMicroDomainSurfaceApproximateSplitCount( );
 
+        const std::unordered_map< uIntType, floatVector > *macroNodeReferenceLocations
+            = _inputProcessor.getMacroNodeReferencePositions( );
+        const std::unordered_map< uIntType, floatVector > *macroDisplacements
+            = _inputProcessor.getMacroDisplacements( );
+        const std::unordered_map< uIntType, uIntVector > *macroConnectivity
+            = _inputProcessor.getMacroNodeReferenceConnectivity( );
+
+        std::unique_ptr< elib::Element > element;
+
         std::cout << "  looping through the free macro cells\n";
         for ( auto macroCell  = _inputProcessor.getFreeMacroCellIds( )->begin( );
                    macroCell != _inputProcessor.getFreeMacroCellIds( )->end( );
@@ -2629,11 +2641,25 @@ namespace overlapCoupling{
             //Set the macro index
             unsigned int macroIndex = macroCell - _inputProcessor.getFreeMacroCellIds( )->begin( );
 
+            //Build the macro element
+            error = overlapCoupling::buildMacroDomainElement( *macroCell, *macroNodeReferenceLocations,
+                                                              *macroDisplacements, *macroConnectivity,
+                                                              element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "homogenizeMicroScale",
+                                                 "Error constructing the macro element" );
+                result->addNext( error );
+                return result;
+
+            }
+
             //Get the micro domain names within this cell
             auto microDomains = macroCellToMicroDomainMap->find( *macroCell );
             if ( microDomains == macroCellToMicroDomainMap->end( ) ){
 
-                return new errorNode( "homogenizedMicroScale",
+                return new errorNode( "homogenizeMicroScale",
                                       "Macro cell " + std::to_string( *macroCell ) + " not found in the macro cell to micro domain map" ) ;
 
             }
@@ -2646,7 +2672,8 @@ namespace overlapCoupling{
                 reconstructedVolume.reset( );
 
                 //Reconstruct the micro-domain's volume
-                error = reconstructDomain( microIncrement, *microDomain, microDomainNodeIds, microNodePositions, reconstructedVolume );
+                error = reconstructDomain( microIncrement, *microDomain, microDomainNodeIds, microNodePositions,
+                                           element, reconstructedVolume );
 
                 if ( error ){
 
@@ -2668,7 +2695,6 @@ namespace overlapCoupling{
 
                 }
 
-                std::cout << "        computing volume averages\n";
                 error = computeDomainVolumeAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                      reconstructedVolume, &domainCenterOfMass->second );
 
@@ -2731,6 +2757,11 @@ namespace overlapCoupling{
             //Set the macro index
             unsigned int macroIndex = macroCell - _inputProcessor.getGhostMacroCellIds( )->begin( );
 
+            //Build the macro element
+            error = overlapCoupling::buildMacroDomainElement( *macroCell, *macroNodeReferenceLocations,
+                                                              *macroDisplacements, *macroConnectivity,
+                                                              element );
+
             //Get the micro domain names within this cell
             auto microDomains = macroCellToMicroDomainMap->find( *macroCell );
             if ( microDomains == macroCellToMicroDomainMap->end( ) ){
@@ -2750,7 +2781,8 @@ namespace overlapCoupling{
 
                 //Reconstruct the micro-domain's volume
                 std::cout << "        reconstructing the domain\n";
-                error = reconstructDomain( microIncrement, *microDomain, microDomainNodeIds, microNodePositions, reconstructedVolume );
+                error = reconstructDomain( microIncrement, *microDomain, microDomainNodeIds, microNodePositions,
+                                           element, reconstructedVolume );
 
                 if ( error ){
 
@@ -2772,7 +2804,6 @@ namespace overlapCoupling{
 
                 }
 
-                std::cout << "        computing volume averages\n";
                 error = computeDomainVolumeAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                      reconstructedVolume, &domainCenterOfMass->second );
 
@@ -2843,6 +2874,7 @@ namespace overlapCoupling{
 
     errorOut overlapCoupling::reconstructDomain( const unsigned int &microIncrement, const std::string &microDomainName,
                                                  uIntVector &microDomainNodes, floatVector &microNodePositions,
+                                                 const std::unique_ptr< elib::Element > &element,
                                                  std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume ){
         /*!
          * Reconstruct the micro-domain's volume to perform volume and surface integrals over that
@@ -2852,9 +2884,13 @@ namespace overlapCoupling{
          * :param const std::string &microDomainName: The name of the micro-domain to be re-constructed.
          * :param uIntVector &microDomainNodes: The nodes associated with the micro domain
          * :param floatVector &microNodePositions: The positions of the micro nodes for the current domain
+         * :param const std::unique_ptr< elib::element > &element: The macro-scale element that contains the domain.
          * :param std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume: The reconstructed
          *     volume ready for additional processing.
          */
+
+        //Get the volume reconstruction configuration
+        YAML::Node volumeReconstructionConfig = _inputProcessor.getVolumeReconstructionConfig( );
 
         //Get the domain node ids
         errorOut error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, microDomainName, microDomainNodes );
@@ -2870,15 +2906,14 @@ namespace overlapCoupling{
 
         //Get the micro-node positions
         microNodePositions.clear( );
-        microNodePositions.resize( _dim * microDomainNodes.size( ) );
+        microNodePositions.reserve( _dim * microDomainNodes.size( ) );
  
-        unsigned int index;
+        unsigned int index = 0;
         const std::unordered_map< uIntType, floatVector > *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
         const std::unordered_map< uIntType, floatVector > *microDisplacements      = _inputProcessor.getMicroDisplacements( );
+        uIntVector interiorNodes;
  
-        for ( auto it = microDomainNodes.begin( ); it != microDomainNodes.end( ); it++ ){
- 
-            index = it - microDomainNodes.begin( );
+        for ( auto it = microDomainNodes.begin( ); it != microDomainNodes.end( ); it++, index++ ){
 
             auto microReferencePosition = microReferencePositions->find( *it );
 
@@ -2898,17 +2933,27 @@ namespace overlapCoupling{
 
             }
 
+            //Check that the given micro-node is located inside of the macro-scale element.
+            //If not, we will ignore the micro node
+            floatVector cp = microDisplacement->second + microReferencePosition->second;
+            if ( element->contains_point( cp, volumeReconstructionConfig[ "element_contain_tolerence" ].as< floatType >( ) ) ){
+            
+                interiorNodes.push_back( *it );
 
-            for ( unsigned int i = 0; i < _dim; i++ ){
-
-                microNodePositions[ _dim * index + i ] = microReferencePosition->second[ i ] + microDisplacement->second[ i ];
+                for ( unsigned int i = 0; i < _dim; i++ ){
+    
+                    microNodePositions.push_back( microReferencePosition->second[ i ] + microDisplacement->second[ i ] );
+    
+                }
 
             }
  
         }
 
+        //Reset micro domain nodes
+        microDomainNodes = interiorNodes;
+
         //Pass the base name of the output file to the volume reconstruction configuration to be used if output has been requested
-        YAML::Node volumeReconstructionConfig = _inputProcessor.getVolumeReconstructionConfig( );
         volumeReconstructionConfig[ "baseOutputFilename" ] = microDomainName + "_" + std::to_string( microIncrement );
 
         //Get the volume reconstruction object

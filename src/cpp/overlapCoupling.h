@@ -281,6 +281,7 @@ namespace overlapCoupling{
 
             errorOut reconstructDomain( const unsigned int &microIncrement, const std::string &microDomainName,
                                         uIntVector &microDomainNodeIds, floatVector &microNodePositions,
+                                        const std::unique_ptr< elib::Element > &element,
                                         std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
 
             errorOut computeDomainVolumeAverages( const uIntType &macroCellID, const std::string &microDomainName,
