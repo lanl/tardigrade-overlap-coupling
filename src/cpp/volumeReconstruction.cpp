@@ -3360,8 +3360,6 @@ namespace volumeReconstruction{
                                                                             valueAtBoundaryPoint, 1, _dim, _dim, valueSize / _dim );
 
                     }
-                    valueAtBoundaryPoint = vectorTools::matrixMultiply( _boundaryPointNormals[ *cell ], valueAtBoundaryPoint,
-                                                                        1, _dim, _dim, valueSize / _dim );
 
                 }
                 else{
