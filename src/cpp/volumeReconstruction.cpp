@@ -2977,7 +2977,8 @@ namespace volumeReconstruction{
                                                             const floatVector &origin, floatVector &integratedValue,
                                                             bool computeFlux, bool dyadWithOrigin,
                                                             const uIntVector *subdomainIDs,
-                                                            const floatVector *subdomainWeights ){
+                                                            const floatVector *subdomainWeights,
+                                                            const floatVector *macroNormal ){
         /*!
          * Integrate a quantity known at the points over the surface return the value for the domain.
          *
@@ -2994,6 +2995,10 @@ namespace volumeReconstruction{
          * :param uIntVector *subdomainIDs: The IDs of points in the subdomain to integrate over
          * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
          *     in multiple subdomains and they aren't small w.r.t. the domain size
+         * :param const floatVector *macroNormal: A macro-scale normal vector to use to generate the micro
+         *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
+         *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
+         *     at each boundary point.
          */
 
         errorOut error;
@@ -3013,6 +3018,32 @@ namespace volumeReconstruction{
 
             return new errorNode( "performSurfaceIntegration",
                                   "The subdomain weights are defined but not the subdomain" );
+
+        }
+
+        if ( ( macroNormal ) && ( subdomainWeights ) ){
+            return new errorNode( "performSurfaceIntegration",
+                                  "Both the macro normal and subdomain weights can't be provided." );
+        }
+
+        if ( ( macroNormal ) && ( subdomainIDs ) ){
+
+            if ( ( ( macroNormal->size( ) ) != ( subdomainIDs->size( ) * _dim ) ) ||
+                 ( macroNormal->size( ) != _dim ) ){
+    
+                return new errorNode( "performSurfaceIntegration",
+                                      "The macro normal and subdomainIDs vector are not of consistent sizes. It must\n either be of length" +
+                                      std::to_string( _dim ) + " or " + std::to_string( _dim ) +
+                                      " times the number of subdomain IDs" );
+    
+            }
+
+        }
+
+        if ( ( macroNormal ) && ( !subdomainIDs ) ){
+            
+            return new errorNode( "performSurfaceIntegration",
+                                  "The macro normal and subdomainIDs vector must both be defined together" );
 
         }
 
@@ -3278,13 +3309,25 @@ namespace volumeReconstruction{
                 weight = ( *subdomainWeights )[ cell - surfaceCells->begin( ) ];
 
             }
+            else if ( macroNormal ){
+
+                uIntType tmpIndex = cell - surfaceCells->begin( );
+                if ( macroNormal->size( ) == _dim ){
+
+                    weight = std::fabs( vectorTools::dot( *macroNormal, _boundaryPointNormals[ *cell ] ) );
+
+                }
+                else{
+
+                    weight = std::fabs( vectorTools::dot( floatVector( macroNormal->begin( ) + _dim * tmpIndex,
+                                                                       macroNormal->begin( ) + _dim * ( tmpIndex + 1 ) ),
+                                                          _boundaryPointNormals[ *cell ] ) );
+
+                }
+
+            }
 
             integratedValue += weight * valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
-            std::cout << "cell " << *cell << " values:\n";
-            std::cout << "area: " << _boundaryPointAreas[ *cell ] << "\n";
-            std::cout << "normal: "; vectorTools::print( _boundaryPointNormals[ *cell ] );
-            std::cout << "valueAtBoundaryPoint: "; vectorTools::print( valueAtBoundaryPoint );
-            
 
         }
 

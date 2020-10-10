@@ -239,7 +239,7 @@ namespace volumeReconstruction{
             errorOut performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                     const floatVector &origin, floatVector &integratedValue,
                                                     bool computeFlux, bool dyadWithOrigin, const uIntVector *subdomainIDs = NULL,
-                                                    const floatVector *subdomainWeights = NULL );
+                                                    const floatVector *subdomainWeights = NULL, const floatVector *macroNormal = NULL );
 
 
         private:
