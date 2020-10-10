@@ -2735,16 +2735,16 @@ namespace overlapCoupling{
 
             //Compute the approximate stresses
             std::cout << "    computing homogenized stresses\n";
-//            error = computeHomogenizedStresses( *macroCell );
-//
-//            if ( error ){
-//
-//                errorOut result = new errorNode( "homogenizeMicroScale",
-//                                                 "Error in the computation of the homogenized stresses" );
-//                result->addNext( error );
-//                return result;
-//
-//            }
+            error = computeHomogenizedStresses( *macroCell );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "homogenizeMicroScale",
+                                                 "Error in the computation of the homogenized stresses" );
+                result->addNext( error );
+                return result;
+
+            }
 
         }
 
@@ -2841,16 +2841,16 @@ namespace overlapCoupling{
 
             //Compute the approximate stresses
             std::cout << "    computing homogenized stresses\n";
-//            error = computeHomogenizedStresses( *macroCell );
-//
-//            if ( error ){
-//
-//                errorOut result = new errorNode( "homogenizeMicroScale",
-//                                                 "Error in the computation of the homogenized stresses" );
-//                result->addNext( error );
-//                return result;
-//
-//            }
+            error = computeHomogenizedStresses( *macroCell );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "homogenizeMicroScale",
+                                                 "Error in the computation of the homogenized stresses" );
+                result->addNext( error );
+                return result;
+
+            }
 
         }
 
@@ -3948,6 +3948,21 @@ namespace overlapCoupling{
             symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
 
         }
+
+#ifdef TESTACCESS
+
+        _test_volumeAtNodes.emplace( macroCellID, volumeAtNodes );
+        _test_densityAtNodes.emplace( macroCellID, densityAtNodes );
+        _test_bodyForceAtNodes.emplace( macroCellID, bodyForceAtNodes );
+        _test_accelerationAtNodes.emplace( macroCellID, accelerationAtNodes );
+        _test_microInertiaAtNodes.emplace( macroCellID, microInertiaAtNodes );
+        _test_bodyCoupleAtNodes.emplace( macroCellID, bodyCoupleAtNodes );
+        _test_microSpinInertiaAtNodes.emplace( macroCellID, microSpinInertiaAtNodes );
+        _test_symmetricMicroStressAtNodes.emplace( macroCellID, symmetricMicroStressAtNodes );
+
+#endif
+
+        return NULL;
 
         return new errorNode( "derp", "derp" );
 

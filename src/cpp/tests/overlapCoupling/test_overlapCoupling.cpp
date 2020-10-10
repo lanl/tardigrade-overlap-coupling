@@ -3700,6 +3700,126 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     }
 
+    floatVector volumeAtNodesAnswer( 8, .125 );
+
+    for ( auto c = oc._test_volumeAtNodes.begin( ); c != oc._test_volumeAtNodes.end( ); c++ ){
+
+        if ( !vectorTools::fuzzyEquals( volumeAtNodesAnswer, c->second, 1e-6, 1e-3 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+    floatVector densityAtNodesAnswer( 8, 2 );
+
+    for ( auto c = oc._test_densityAtNodes.begin( ); c != oc._test_densityAtNodes.end( ); c++ ){
+
+        if ( !vectorTools::fuzzyEquals( densityAtNodesAnswer, c->second, 1e-6, 1e-6 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+    floatVector tmp = { -1, -2, -3 };
+    floatMatrix bodyForceAtNodesAnswer( 8, tmp );
+
+    for ( auto c = oc._test_bodyForceAtNodes.begin( ); c != oc._test_bodyForceAtNodes.end( ); c++ ){
+
+        if ( !vectorTools::fuzzyEquals( bodyForceAtNodesAnswer, c->second, 1e-6, 1e-6 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+    tmp = { 0., 0., 3e-3 };
+    floatMatrix accelerationAtNodesAnswer( 8, tmp );
+
+    for ( auto c = oc._test_accelerationAtNodes.begin( ); c != oc._test_accelerationAtNodes.end( ); c++ ){
+
+        if ( !vectorTools::fuzzyEquals( accelerationAtNodesAnswer, c->second, 1e-6, 1e-6 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+    tmp = { 0.0625, 0, 0, 0, 0.0625, 0, 0, 0, 0.0625 };
+
+    floatMatrix microInertiaAtNodesAnswer( 8, tmp );
+
+    for ( auto c = oc._test_microInertiaAtNodes.begin( ); c != oc._test_microInertiaAtNodes.end( ); c++ ){
+
+        if ( !vectorTools::fuzzyEquals( microInertiaAtNodesAnswer, c->second, 1e-6, 1e-6 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+    tmp = floatVector( 9, 0 );
+    floatMatrix bodyCoupleAtNodesAnswer( 8, tmp );
+
+    for ( auto c = oc._test_bodyCoupleAtNodes.begin( ); c != oc._test_bodyCoupleAtNodes.end( ); c++ ){
+
+        if ( !vectorTools::fuzzyEquals( bodyCoupleAtNodesAnswer, c->second, 1e-6, 1e-6 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+    tmp = floatVector( 9, 0 );
+    floatMatrix microSpinInertiaAtNodesAnswer( 8, tmp );
+
+    for ( auto c = oc._test_microSpinInertiaAtNodes.begin( ); c != oc._test_microSpinInertiaAtNodes.end( ); c++ ){
+
+        if ( !vectorTools::fuzzyEquals( microSpinInertiaAtNodesAnswer, c->second, 1e-6, 1e-6 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+    tmp = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    floatMatrix symmetricMicroStressAtNodesAnswer( 8, tmp );
+
+    for ( auto c = oc._test_symmetricMicroStressAtNodes.begin( ); c != oc._test_symmetricMicroStressAtNodes.end( ); c++ ){
+
+        if ( !vectorTools::fuzzyEquals( symmetricMicroStressAtNodesAnswer, c->second, 1e-6, 1e-6 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+
     remove( "reference_information.xdmf" );
     remove( "reference_information.h5" );
 

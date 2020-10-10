@@ -136,6 +136,16 @@ namespace overlapCoupling{
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionProjectedCentersOfMass( );
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionTractions( );
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionCouples( );
+
+            std::unordered_map< uIntType, floatVector > _test_volumeAtNodes;
+            std::unordered_map< uIntType, floatVector > _test_densityAtNodes;
+            std::unordered_map< uIntType, floatMatrix > _test_bodyForceAtNodes;
+            std::unordered_map< uIntType, floatMatrix > _test_accelerationAtNodes;
+            std::unordered_map< uIntType, floatMatrix > _test_microInertiaAtNodes;
+            std::unordered_map< uIntType, floatMatrix > _test_bodyCoupleAtNodes;
+            std::unordered_map< uIntType, floatMatrix > _test_microSpinInertiaAtNodes;
+            std::unordered_map< uIntType, floatMatrix > _test_symmetricMicroStressAtNodes;
+
 #endif
 
         private:
