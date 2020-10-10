@@ -125,6 +125,12 @@ namespace overlapCoupling{
             const cellDomainFloatVectorMap* getHomogenizedMicroInertias( );
             const cellDomainFloatVectorMap* getHomogenizedBodyForceCouples( );
             const cellDomainFloatVectorMap* getHomogenizedMicroSpinInertias( );
+
+            const cellDomainFloatMap* getHomogenizedSurfaceAreas( );
+            const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionAreas( );
+            const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionCentersOfMass( );
+            const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionTractions( );
+            const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionCouples( );
 #endif
 
         private:
@@ -292,7 +298,8 @@ namespace overlapCoupling{
             errorOut computeDomainSurfaceAverages( const uIntType &macroCellID, const std::string &microDomainName,
                                                    const uIntVector &microDomainNodeIDs,
                                                    const uIntType &microDomainSurfaceDecompositionCount,
-                                                   std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume );
+                                                   std::shared_ptr< volumeReconstruction::volumeReconstructionBase > &reconstructedVolume,
+                                                   std::unique_ptr< elib::Element > &element );
 
             errorOut computeHomogenizedStresses( const uIntType &macroCellName );
 
