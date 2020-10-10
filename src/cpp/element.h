@@ -146,6 +146,8 @@ namespace elib{
 
             virtual bool point_on_surface( const vec &x, std::vector< uitype > &surf, const double tol );
 
+            virtual bool local_point_on_surface( const vec &ix, std::vector< uitype > &surf, const double tol );
+
             virtual errorOut transform_local_vector( const vec &xi, const vec &local_vector, vec &global_vector,
                                                      const bool &useCurrent = true );
     };

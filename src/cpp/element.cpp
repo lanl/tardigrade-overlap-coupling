@@ -1074,9 +1074,9 @@ namespace elib{
          * :param const double tola: The absolute tolerance
          */
 
-        vec x;
+        vec xi;
         std::unique_ptr< errorNode > error;
-        error.reset( compute_local_coordinates( x_in, x ) );
+        error.reset( compute_local_coordinates( x_in, xi ) );
 
         if ( error ){
 
@@ -1084,13 +1084,25 @@ namespace elib{
 
         }
 
+        return local_point_on_surface( xi, surf, tol );
+    }
+
+    bool Element::local_point_on_surface( const vec &xi, std::vector< uitype > &surf, const double tol ){
+        /*!
+         * Determine if a local point is on a surface of the element
+         *
+         * :param const vec &xi: The local coordinates of the point
+         * :param std::vector< uitype > &surf: The surfaces that the point is on
+         * :param const double tol: The tolerance
+         */
+
         surf.clear( );
         for ( uitype i = 0; i < local_surface_points.size( ); i++ ){
 
             vec surface_point = local_surface_points[ i ];
             vec surface_normal = local_surface_normals[ i ];
 
-            double distance = vectorTools::dot( surface_normal, x - surface_point );
+            double distance = vectorTools::dot( surface_normal, xi - surface_point );
 
             if ( ( distance > 0 ) && ( distance > tol ) ){
 
@@ -1116,7 +1128,8 @@ namespace elib{
         }
 
         return false;
-         
+
+
     }
 
     errorOut Element::transform_local_vector( const vec &xi, const vec &local_vector, vec &global_vector,
