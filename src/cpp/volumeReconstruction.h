@@ -123,18 +123,21 @@ namespace volumeReconstruction{
 
             virtual errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                         floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
-                                                        const floatVector *subdomainWeights = NULL );
+                                                        const floatVector *subdomainWeights = NULL,
+                                                        const floatVector *macroNormal = NULL );
 
             virtual errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
-                                                            const floatVector *subdomainWeights = NULL );
+                                                            const floatVector *subdomainWeights = NULL,
+                                                            const floatVector *macroNormal = NULL );
 
             virtual errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
                                                                             const uIntType valueSize,
                                                                             const floatVector &origin,
                                                                             floatVector &integratedValue,
                                                                             const uIntVector *subdomainIDs = NULL,
-                                                                            const floatVector *subdomainWeights = NULL );
+                                                                            const floatVector *subdomainWeights = NULL,
+                                                                            const floatVector *macroNormal = NULL );
 
             virtual errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
                                                    uIntVector &subdomainIDs );
@@ -209,16 +212,19 @@ namespace volumeReconstruction{
 
             errorOut performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                 floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
-                                                const floatVector *subdomainWeights = NULL );
+                                                const floatVector *subdomainWeights = NULL,
+                                                const floatVector *macroNormal = NULL );
 
             errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                     floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
-                                                    const floatVector *subdomainWeights = NULL );
+                                                    const floatVector *subdomainWeights = NULL,
+                                                    const floatVector *macroNormal = NULL );
 
             errorOut performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                     const floatVector &origin, floatVector &integratedValue,
                                                                     const uIntVector *subdomainIDs = NULL,
-                                                                    const floatVector *subdomainWeights = NULL );
+                                                                    const floatVector *subdomainWeights = NULL,
+                                                                    const floatVector *macroNormal = NULL );
 
             errorOut getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
                                            uIntVector &subdomainIDs );

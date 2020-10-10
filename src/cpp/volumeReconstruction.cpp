@@ -804,7 +804,8 @@ namespace volumeReconstruction{
 
     errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                   floatVector &integratedValue, const uIntVector *subdomainIDs,
-                                                                  const floatVector *subdomainWeights ){
+                                                                  const floatVector *subdomainWeights,
+                                                                  const floatVector *macroNormal ){
         /*!
          * Integrate a quantity known at the point over the surface and return the value for the domain.
          *
@@ -818,6 +819,10 @@ namespace volumeReconstruction{
          *     defaults to NULL and so the full domain is integrated over
          * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
          *     in multiple subdomains and they aren't small w.r.t. the domain size
+         * :param const floatVector *macroNormal: A macro-scale normal vector to use to generate the micro
+         *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
+         *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
+         *     at each boundary point.
          */
 
         ( void ) valuesAtPoints;
@@ -825,13 +830,15 @@ namespace volumeReconstruction{
         ( void ) integratedValue;
         ( void ) subdomainIDs;
         ( void ) subdomainWeights;
+        ( void ) macroNormal;
 
         return new errorNode( "performSurfaceIntegration", "Surface integration not implemented" );
     }
 
     errorOut volumeReconstructionBase::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                       floatVector &integratedValue, const uIntVector *subdomainIDs,
-                                                                      const floatVector *subdomainWeights ){
+                                                                      const floatVector *subdomainWeights,
+                                                                      const floatVector *macroNormal ){
         /*!
          * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
          *
@@ -848,6 +855,10 @@ namespace volumeReconstruction{
          *     defaults to NULL and so the full domain is integrated over
          * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
          *     in multiple subdomains and they aren't small w.r.t. the domain size
+         * :param const floatVector *macroNormal: A macro-scale normal vector to use to generate the micro
+         *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
+         *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
+         *     at each boundary point.
          */
 
         ( void ) valuesAtPoints;
@@ -855,6 +866,7 @@ namespace volumeReconstruction{
         ( void ) integratedValue;
         ( void ) subdomainIDs;
         ( void ) subdomainWeights;
+        ( void ) macroNormal;
 
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
@@ -864,7 +876,8 @@ namespace volumeReconstruction{
                                                                                       const floatVector &origin,
                                                                                       floatVector &integratedValue,
                                                                                       const uIntVector *subdomainIDs,
-                                                                                      const floatVector *subdomainWeights ){
+                                                                                      const floatVector *subdomainWeights,
+                                                                                      const floatVector *macroNormal ){
         /*!
          * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
          *
@@ -881,6 +894,10 @@ namespace volumeReconstruction{
          * :param uIntVector *subdomainIDs: The IDs of points in the subdomain of the surface to integrate over
          * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
          *     in multiple subdomains and they aren't small w.r.t. the domain size
+         * :param const floatVector *macroNormal: A macro-scale normal vector to use to generate the micro
+         *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
+         *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
+         *     at each boundary point.
          */
 
         ( void ) valuesAtPoints;
@@ -889,6 +906,7 @@ namespace volumeReconstruction{
         ( void ) integratedValue;
         ( void ) subdomainIDs;
         ( void ) subdomainWeights;
+        ( void ) macroNormal;
 
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
@@ -2869,7 +2887,8 @@ namespace volumeReconstruction{
 
     errorOut dualContouring::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                         floatVector &integratedValue, const uIntVector *subdomainIDs,
-                                                        const floatVector *subdomainWeights ){
+                                                        const floatVector *subdomainWeights,
+                                                        const floatVector *macroNormal ){
         /*!
          * Integrate a quantity known at the point over the surface return the value for the domain.
          *
@@ -2882,11 +2901,15 @@ namespace volumeReconstruction{
          * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
          * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
          *     in multiple subdomains and they aren't small w.r.t. the domain size
+         * :param const floatVector *macroNormal: A macro-scale normal vector to use to generate the micro
+         *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
+         *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
+         *     at each boundary point.
          */
 
         floatVector origin;
         errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, false,
-                                                        subdomainIDs, subdomainWeights );
+                                                        subdomainIDs, subdomainWeights, macroNormal );
 
         if ( error ){
 
@@ -2902,7 +2925,8 @@ namespace volumeReconstruction{
 
     errorOut dualContouring::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             floatVector &integratedValue, const uIntVector *subdomainIDs,
-                                                            const floatVector *subdomainWeights ){
+                                                            const floatVector *subdomainWeights,
+                                                            const floatVector *macroNormal ){
         /*!
          * Integrate the flux of a quantity known at the point over the surface return the value for the domain.
          *
@@ -2915,11 +2939,15 @@ namespace volumeReconstruction{
          * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
          * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
          *     in multiple subdomains and they aren't small w.r.t. the domain size
+         * :param const floatVector *macroNormal: A macro-scale normal vector to use to generate the micro
+         *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
+         *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
+         *     at each boundary point.
          */
 
         floatVector origin;
         errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false, subdomainIDs,
-                                                        subdomainWeights );
+                                                        subdomainWeights, macroNormal );
 
         if ( error ){
 
@@ -2938,7 +2966,8 @@ namespace volumeReconstruction{
                                                                             const floatVector &origin,
                                                                             floatVector &integratedValue,
                                                                             const uIntVector *subdomainIDs,
-                                                                            const floatVector *subdomainWeights ){
+                                                                            const floatVector *subdomainWeights,
+                                                                            const floatVector *macroNormal ){
         /*!
          * $\int_{\partial\mathcal{B}} n_i v_ij ( x_k' - o_k ) da \approx \sum_{p = 1}^N n_i^p v_ij^p ( x_k' - o_k ) da^p$
          *
@@ -2955,10 +2984,14 @@ namespace volumeReconstruction{
          * :param const uIntVector *subdomainIDs: The IDs of points in the subdomain to integrate over
          * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
          *     in multiple subdomains and they aren't small w.r.t. the domain size
+         * :param const floatVector *macroNormal: A macro-scale normal vector to use to generate the micro
+         *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
+         *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
+         *     at each boundary point.
          */
 
         errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, true, subdomainIDs,
-                                                        subdomainWeights );
+                                                        subdomainWeights, macroNormal );
 
         if ( error ){
 
@@ -3032,7 +3065,7 @@ namespace volumeReconstruction{
                  ( macroNormal->size( ) != _dim ) ){
     
                 return new errorNode( "performSurfaceIntegration",
-                                      "The macro normal and subdomainIDs vector are not of consistent sizes. It must\n either be of length" +
+                                      "The macro normal and subdomainIDs vector are not of consistent sizes. It must\n either be of length " +
                                       std::to_string( _dim ) + " or " + std::to_string( _dim ) +
                                       " times the number of subdomain IDs" );
     
@@ -3328,6 +3361,11 @@ namespace volumeReconstruction{
             }
 
             integratedValue += weight * valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
+            std::cout << "cellID: " << *cell << "\n";
+            std::cout << "weight: " << weight << "\n";
+            std::cout << "valueAtBoundaryPoint: "; vectorTools::print( valueAtBoundaryPoint );
+            std::cout << "area: " << _boundaryPointAreas[ *cell ];
+            std::cout << "\n";
 
         }
 
