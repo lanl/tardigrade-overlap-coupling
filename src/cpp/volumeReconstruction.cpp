@@ -805,7 +805,7 @@ namespace volumeReconstruction{
     errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                   floatVector &integratedValue, const uIntVector *subdomainIDs,
                                                                   const floatVector *subdomainWeights,
-                                                                  const floatVector *macroNormal ){
+                                                                  const floatVector *macroNormal, const bool useMacroNormal ){
         /*!
          * Integrate a quantity known at the point over the surface and return the value for the domain.
          *
@@ -823,6 +823,8 @@ namespace volumeReconstruction{
          *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
          *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
          *     at each boundary point.
+         * :param const bool useMacroNormal: Use the macro-scale normal instead of the micro normals. Can help
+         *     drive the integral to be more what is expected in some cases.
          */
 
         ( void ) valuesAtPoints;
@@ -831,6 +833,7 @@ namespace volumeReconstruction{
         ( void ) subdomainIDs;
         ( void ) subdomainWeights;
         ( void ) macroNormal;
+        ( void ) useMacroNormal;
 
         return new errorNode( "performSurfaceIntegration", "Surface integration not implemented" );
     }
@@ -838,7 +841,7 @@ namespace volumeReconstruction{
     errorOut volumeReconstructionBase::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                       floatVector &integratedValue, const uIntVector *subdomainIDs,
                                                                       const floatVector *subdomainWeights,
-                                                                      const floatVector *macroNormal ){
+                                                                      const floatVector *macroNormal, const bool useMacroNormal ){
         /*!
          * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
          *
@@ -859,6 +862,8 @@ namespace volumeReconstruction{
          *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
          *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
          *     at each boundary point.
+         * :param const bool useMacroNormal: Use the macro-scale normal instead of the micro normals. Can help
+         *     drive the integral to be more what is expected in some cases.
          */
 
         ( void ) valuesAtPoints;
@@ -867,6 +872,7 @@ namespace volumeReconstruction{
         ( void ) subdomainIDs;
         ( void ) subdomainWeights;
         ( void ) macroNormal;
+        ( void ) useMacroNormal;
 
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
@@ -877,7 +883,8 @@ namespace volumeReconstruction{
                                                                                       floatVector &integratedValue,
                                                                                       const uIntVector *subdomainIDs,
                                                                                       const floatVector *subdomainWeights,
-                                                                                      const floatVector *macroNormal ){
+                                                                                      const floatVector *macroNormal,
+                                                                                      const bool useMacroNormal ){
         /*!
          * Integrate the flux of a quantity known at the data points over the surface and return the value for the domain.
          *
@@ -898,6 +905,8 @@ namespace volumeReconstruction{
          *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
          *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
          *     at each boundary point.
+         * :param const bool useMacroNormal: Use the macro-scale normal instead of the micro normals. Can help
+         *     drive the integral to be more what is expected in some cases.
          */
 
         ( void ) valuesAtPoints;
@@ -907,6 +916,7 @@ namespace volumeReconstruction{
         ( void ) subdomainIDs;
         ( void ) subdomainWeights;
         ( void ) macroNormal;
+        ( void ) useMacroNormal;
 
         return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
     }
@@ -2888,7 +2898,7 @@ namespace volumeReconstruction{
     errorOut dualContouring::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                         floatVector &integratedValue, const uIntVector *subdomainIDs,
                                                         const floatVector *subdomainWeights,
-                                                        const floatVector *macroNormal ){
+                                                        const floatVector *macroNormal, const bool useMacroNormal ){
         /*!
          * Integrate a quantity known at the point over the surface return the value for the domain.
          *
@@ -2905,11 +2915,13 @@ namespace volumeReconstruction{
          *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
          *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
          *     at each boundary point.
+         * :param const bool useMacroNormal: Use the macro-scale normal instead of the micro normals. Can help
+         *     drive the integral to be more what is expected in some cases.
          */
 
         floatVector origin;
         errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, false,
-                                                        subdomainIDs, subdomainWeights, macroNormal );
+                                                        subdomainIDs, subdomainWeights, macroNormal, useMacroNormal );
 
         if ( error ){
 
@@ -2926,7 +2938,7 @@ namespace volumeReconstruction{
     errorOut dualContouring::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             floatVector &integratedValue, const uIntVector *subdomainIDs,
                                                             const floatVector *subdomainWeights,
-                                                            const floatVector *macroNormal ){
+                                                            const floatVector *macroNormal, const bool useMacroNormal ){
         /*!
          * Integrate the flux of a quantity known at the point over the surface return the value for the domain.
          *
@@ -2943,11 +2955,13 @@ namespace volumeReconstruction{
          *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
          *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
          *     at each boundary point.
+         * :param const bool useMacroNormal: Use the macro-scale normal instead of the micro normals. Can help
+         *     drive the integral to be more what is expected in some cases.
          */
 
         floatVector origin;
         errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false, subdomainIDs,
-                                                        subdomainWeights, macroNormal );
+                                                        subdomainWeights, macroNormal, useMacroNormal );
 
         if ( error ){
 
@@ -2967,7 +2981,8 @@ namespace volumeReconstruction{
                                                                             floatVector &integratedValue,
                                                                             const uIntVector *subdomainIDs,
                                                                             const floatVector *subdomainWeights,
-                                                                            const floatVector *macroNormal ){
+                                                                            const floatVector *macroNormal,
+                                                                            const bool useMacroNormal ){
         /*!
          * $\int_{\partial\mathcal{B}} n_i v_ij ( x_k' - o_k ) da \approx \sum_{p = 1}^N n_i^p v_ij^p ( x_k' - o_k ) da^p$
          *
@@ -2988,10 +3003,12 @@ namespace volumeReconstruction{
          *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
          *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
          *     at each boundary point.
+         * :param const bool useMacroNormal: Use the macro-scale normal instead of the micro normals. Can help
+         *     drive the integral to be more what is expected in some cases.
          */
 
         errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, true, subdomainIDs,
-                                                        subdomainWeights, macroNormal );
+                                                        subdomainWeights, macroNormal, useMacroNormal );
 
         if ( error ){
 
@@ -3011,7 +3028,7 @@ namespace volumeReconstruction{
                                                             bool computeFlux, bool dyadWithOrigin,
                                                             const uIntVector *subdomainIDs,
                                                             const floatVector *subdomainWeights,
-                                                            const floatVector *macroNormal ){
+                                                            const floatVector *macroNormal, const bool useMacroNormal ){
         /*!
          * Integrate a quantity known at the points over the surface return the value for the domain.
          *
@@ -3032,6 +3049,8 @@ namespace volumeReconstruction{
          *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
          *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
          *     at each boundary point.
+         * :param const bool useMacroNormal: Use the macro-scale normal instead of the micro normals. Can help
+         *     drive the integral to be more what is expected in some cases.
          */
 
         errorOut error;
@@ -3061,7 +3080,7 @@ namespace volumeReconstruction{
 
         if ( ( macroNormal ) && ( subdomainIDs ) ){
 
-            if ( ( ( macroNormal->size( ) ) != ( subdomainIDs->size( ) * _dim ) ) ||
+            if ( ( macroNormal->size( ) != ( subdomainIDs->size( ) * _dim ) ) &&
                  ( macroNormal->size( ) != _dim ) ){
     
                 return new errorNode( "performSurfaceIntegration",
@@ -3077,6 +3096,13 @@ namespace volumeReconstruction{
             
             return new errorNode( "performSurfaceIntegration",
                                   "The macro normal and subdomainIDs vector must both be defined together" );
+
+        }
+
+        if ( ( !macroNormal ) && ( useMacroNormal ) ){
+
+            return new errorNode( "performSurfaceIntegration",
+                                  "The macro normal is requested to be used for flux calculations but it is not defined" );
 
         }
 
@@ -3318,8 +3344,32 @@ namespace volumeReconstruction{
             //Compute the flux of the value if required
             if ( computeFlux ){
 
-                valueAtBoundaryPoint = vectorTools::matrixMultiply( _boundaryPointNormals[ *cell ], valueAtBoundaryPoint,
-                                                                    1, _dim, _dim, valueSize / _dim );
+                if ( useMacroNormal ){
+
+                    uIntType tmpIndex = cell - surfaceCells->begin( );
+                    if ( macroNormal->size( ) == _dim ){
+
+                        valueAtBoundaryPoint = vectorTools::matrixMultiply( *macroNormal, valueAtBoundaryPoint,
+                                                                            1, _dim, _dim, valueSize / _dim );
+
+                    }
+                    else{
+
+                        valueAtBoundaryPoint = vectorTools::matrixMultiply( floatVector( macroNormal->begin( ) + _dim * tmpIndex,
+                                                                                         macroNormal->begin( ) + _dim * ( tmpIndex + 1 ) ),
+                                                                            valueAtBoundaryPoint, 1, _dim, _dim, valueSize / _dim );
+
+                    }
+                    valueAtBoundaryPoint = vectorTools::matrixMultiply( _boundaryPointNormals[ *cell ], valueAtBoundaryPoint,
+                                                                        1, _dim, _dim, valueSize / _dim );
+
+                }
+                else{
+
+                    valueAtBoundaryPoint = vectorTools::matrixMultiply( _boundaryPointNormals[ *cell ], valueAtBoundaryPoint,
+                                                                        1, _dim, _dim, valueSize / _dim );
+
+                }
 
             }
 
@@ -3361,11 +3411,6 @@ namespace volumeReconstruction{
             }
 
             integratedValue += weight * valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
-            std::cout << "cellID: " << *cell << "\n";
-            std::cout << "weight: " << weight << "\n";
-            std::cout << "valueAtBoundaryPoint: "; vectorTools::print( valueAtBoundaryPoint );
-            std::cout << "area: " << _boundaryPointAreas[ *cell ];
-            std::cout << "\n";
 
         }
 
