@@ -4,3 +4,5 @@ test_overlapCoupling
 *.as_evaluated
 reference_information*
 homogenized_response*
+*.xdmf
+*.h5
