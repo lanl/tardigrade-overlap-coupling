@@ -3700,6 +3700,20 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     }
 
+    floatVector elementNodalVolumesAnswer( 8, .125 );
+
+    for ( auto c = oc._test_elementNodalVolumes.begin( ); c != oc._test_elementNodalVolumes.end( ); c++ ){
+
+        if ( !vectorTools::fuzzyEquals( elementNodalVolumesAnswer, c->second, 1e-6, 1e-3 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
     floatVector volumeAtNodesAnswer( 8, .125 );
 
     for ( auto c = oc._test_volumeAtNodes.begin( ); c != oc._test_volumeAtNodes.end( ); c++ ){
@@ -3718,7 +3732,7 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     for ( auto c = oc._test_densityAtNodes.begin( ); c != oc._test_densityAtNodes.end( ); c++ ){
 
-        if ( !vectorTools::fuzzyEquals( densityAtNodesAnswer, c->second, 1e-6, 1e-6 ) ){
+        if ( !vectorTools::fuzzyEquals( densityAtNodesAnswer, c->second, 1e-6, 1e-2 ) ){
 
             results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
             return 1;

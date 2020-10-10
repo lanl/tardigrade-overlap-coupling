@@ -3841,6 +3841,52 @@ namespace overlapCoupling{
 
         }
 
+        //Compute element nodal volumes
+        floatVector elementNodalVolumes( element->nodes.size( ), 0 );
+        for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+            //Get the values of the shape function and the gradients
+            floatVector shapeFunctions;
+            error = element->get_shape_functions( qpt->first, shapeFunctions );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeHomogenizedStresses",
+                                                 "Error in the computation of the shape functions\n" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Get the Jacobian of transformation
+            elib::vecOfvec jacobian;
+            error = element->get_local_gradient( element->nodes, qpt->first, jacobian );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeHomogenizedStresses",
+                                                 "Error in the computation of the local gradient\n" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            floatType Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
+
+            for ( uIntType n = 0; n < shapeFunctions.size( ); n++ ){
+
+                elementNodalVolumes[ n ] += shapeFunctions[ n ] * Jxw;
+
+            }
+
+        }
+
+#ifdef TESTACCESS
+
+        _test_elementNodalVolumes.emplace( macroCellID, elementNodalVolumes );
+
+#endif
+
         uIntType nMacroCellNodes = element->nodes.size( );
 
         floatVector linearMomentumRHS( _dim * nMacroCellNodes, 0 );
@@ -3939,12 +3985,14 @@ namespace overlapCoupling{
         //De-weight the projected values at the nodes
         for ( unsigned int n = 0; n < nMacroCellNodes; n++ ){
 
-            densityAtNodes[ n ]              /= volumeAtNodes[ n ];
-            bodyForceAtNodes[ n ]            /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
-            accelerationAtNodes[ n ]         /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
-            microInertiaAtNodes[ n ]         /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
-            bodyCoupleAtNodes[ n ]           /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
-            microSpinInertiaAtNodes[ n ]     /= ( densityAtNodes[ n ] * volumeAtNodes[ n ] );
+            floatType volume = std::fmax( elementNodalVolumes[ n ], volumeAtNodes[ n ] );
+
+            densityAtNodes[ n ]              /= volume;
+            bodyForceAtNodes[ n ]            /= ( densityAtNodes[ n ] * volume );
+            accelerationAtNodes[ n ]         /= ( densityAtNodes[ n ] * volume );
+            microInertiaAtNodes[ n ]         /= ( densityAtNodes[ n ] * volume );
+            bodyCoupleAtNodes[ n ]           /= ( densityAtNodes[ n ] * volume );
+            microSpinInertiaAtNodes[ n ]     /= ( densityAtNodes[ n ] * volume );
             symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
 
         }

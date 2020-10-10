@@ -137,6 +137,7 @@ namespace overlapCoupling{
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionTractions( );
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionCouples( );
 
+            std::unordered_map< uIntType, floatVector > _test_elementNodalVolumes;
             std::unordered_map< uIntType, floatVector > _test_volumeAtNodes;
             std::unordered_map< uIntType, floatVector > _test_densityAtNodes;
             std::unordered_map< uIntType, floatMatrix > _test_bodyForceAtNodes;
