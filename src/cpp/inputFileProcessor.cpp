@@ -4116,6 +4116,12 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config[ "volume_reconstruction" ][ "use_macro_normals" ] ){
+
+            _config[ "volume_reconstruction" ][ "use_macro_normals" ] = true;
+
+        }
+
         _volumeReconstructionConfig = _config[ "volume_reconstruction" ];
 
         return NULL;

@@ -3323,6 +3323,12 @@ int test_getVolumeReconstructionConfig( std::ofstream &results ){
         return 1;
     }
 
+    floatType useMacroNormalsAnswer = true;
+    if ( !( vRInitialization[ "use_macro_normals" ].as< bool >( ) == useMacroNormalsAnswer ) ){
+        results << "test_getVolumeReconstruction (test 4) & False\n";
+        return 1;
+    }
+
     results << "test_getVolumeReconstructionConfig & True\n";
     return 0;
 
