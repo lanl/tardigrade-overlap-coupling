@@ -1119,5 +1119,55 @@ namespace elib{
          
     }
 
+    errorOut Element::transform_local_vector( const vec &xi, const vec &local_vector, vec &global_vector,
+                                              const bool &useCurrent ){
+        /*!
+         * Transform the local vector to the current configuration
+         *
+         * :param const vec &xi: The local point where the transformation should be defined
+         * :param const vec &local_vector: The local values of the vector
+         * :param const vec &global_vector: The global coordinates of the vector
+         * :param const bool &useCurrent: Whether to use the current or reference
+         *     coordinates. Defaults to current.
+         */
+
+        vecOfvec transformation;
+        errorOut error;
+
+        if ( useCurrent ){
+
+            error = get_local_gradient( nodes, xi, transformation );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "transform_local_vector",
+                                                 "Error when computing the local gradient of the current coordinates" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+        else{
+
+            error = get_local_gradient( reference_nodes, xi, transformation );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "transform_local_vector",
+                                                 "Error when computing the local gradient of the current coordinates" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+
+        global_vector = vectorTools::dot( transformation, local_vector );
+
+        return NULL;
+
+    }
+
 }
 

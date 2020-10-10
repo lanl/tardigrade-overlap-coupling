@@ -145,6 +145,9 @@ namespace elib{
             const std::vector< uitype > *get_global_node_ids();
 
             virtual bool point_on_surface( const vec &x, std::vector< uitype > &surf, const double tol );
+
+            virtual errorOut transform_local_vector( const vec &xi, const vec &local_vector, vec &global_vector,
+                                                     const bool &useCurrent = true );
     };
 
     const double sqrt3 = std::sqrt( 3. );

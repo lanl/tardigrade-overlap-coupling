@@ -1105,6 +1105,99 @@ int test_solve(std::ofstream &results){
     return 0;
 }
 
+int test_Hex8_transform_local_vector( std::ofstream &results ){
+    /*!
+     * Test the transformation of a local vector to the global reference frame
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    elib::vecOfvec referenceNodes = { { 0, 0, 0 },
+                                      { 1, 0, 0 },
+                                      { 1, 1, 0 },
+                                      { 0, 1, 0 },
+                                      { 0, 0, 1 },
+                                      { 1, 0, 1 },
+                                      { 1, 1, 1 },
+                                      { 0, 1, 1 } };
+
+    elib::vecOfvec displacements = { { 0.        ,  0.        ,  0.        },
+                                     {-0.81824397,  0.33884637, -1.0510223 },
+                                     {-0.71099902,  0.2144174 , -0.81869947},
+                                     { 0.10724495, -0.12442897,  0.23232284},
+                                     { 0.9034876 ,  0.03718896, -0.43120554},
+                                     { 0.08524363,  0.37603533, -1.48222784},
+                                     { 0.19248858,  0.25160636, -1.24990501},
+                                     { 1.01073255, -0.08724002, -0.1988827 } };
+
+    // Define the element's node ids
+    std::vector< uitype > node_ids = {1, 2, 3, 4, 5, 6, 7, 8};
+
+    // Define the element's quadrature rule
+    elib::quadrature_rule qrule;
+    define_hex8_fully_integrated_quadrature(qrule);
+
+    // Construct the element
+    elib::Hex8 element(node_ids, referenceNodes, qrule);
+
+    element.update_node_positions( displacements );
+
+    // local vector 1
+    elib::vec local_vector_1 = { 2, 0, 0 };
+
+    elib::vec answer1 = { 1, 0, 0 };
+
+    elib::vec result1;
+    element.transform_local_vector( element.local_node_coordinates[ 0 ], local_vector_1, result1, false );
+
+    if ( !vectorTools::fuzzyEquals( answer1, result1 ) ){
+
+        results << "test_Hex8_transform_local_vector (test 1) & False\n";
+        return 1;
+
+    }
+
+    elib::vec local_vector_2 = { 2, 2, 2 };
+    elib::vec answer2 = { 1, 1, 1 };
+    elib::vec result2;
+
+    element.transform_local_vector( element.local_node_coordinates[ 1 ], local_vector_2, result2, false );
+
+    if ( !vectorTools::fuzzyEquals( answer2, result2 ) ){
+
+        results << "test_Hex8_transform_local_vector (test 2) & False\n";
+        return 1;
+
+    }
+
+    elib::vec answer3 = referenceNodes[ 1 ] + displacements[ 1 ];
+    elib::vec result3;
+    element.transform_local_vector( element.local_node_coordinates[ 0 ], local_vector_1, result3, true );
+
+    if ( !vectorTools::fuzzyEquals( answer1, result1 ) ){
+
+        results << "test_Hex8_transform_local_vector (test 3) & False\n";
+        return 1;
+
+    }
+
+    elib::vec answer4 = referenceNodes[ 6 ] + displacements[ 6 ];
+    elib::vec result4;
+
+    element.transform_local_vector( element.local_node_coordinates[ 0 ], local_vector_2, result4, true );
+
+    if ( !vectorTools::fuzzyEquals( answer4, result4 ) ){
+
+        results << "test_Hex8_transform_local_vector (test 4) & False\n";
+        return 1;
+
+    }
+
+
+    results << "test_Hex8_transform_local_vector & True\n";
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -1123,6 +1216,7 @@ int main(){
     test_Hex8_local_point_inside(results);
     test_Hex8_functionality(results);
     test_Hex8_point_on_surface( results );
+    test_Hex8_transform_local_vector( results );
 
     //Eigen tool tests
     test_invert(results);
