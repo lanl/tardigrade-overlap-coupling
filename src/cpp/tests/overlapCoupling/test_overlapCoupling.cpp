@@ -24,6 +24,7 @@ typedef DOFProjection::T T; //!Define the triplet
 
 typedef overlapCoupling::domainFloatMap domainFloatMap; //!Define a map from a micro domain to a float property
 typedef overlapCoupling::domainFloatVectorMap domainFloatVectorMap; //!Define a map from a micro domain to a float vector property
+typedef overlapCoupling::cellDomainUIntVectorMap cellDomainUIntVectorMap; //!Define a map from a macro cell to a micro domain intvector property
 typedef overlapCoupling::cellDomainFloatMap cellDomainFloatMap; //!Define a map from a macro cell to a micro domain float property
 typedef overlapCoupling::cellDomainFloatVectorMap cellDomainFloatVectorMap; //!Define a map from a macro cell to a micro domain float vector property
 
@@ -3126,6 +3127,43 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     }
 
+    const cellDomainUIntVectorMap cellDomainMacroSurfacesAnswer
+        =
+        {
+            { 1,
+                {
+                    { "ghost_nodeset_volume_1", { 0, 2, 4 } },
+                    { "ghost_nodeset_volume_2", { 1, 2, 4 } },
+                    { "ghost_nodeset_volume_3", { 1, 3, 4 } },
+                    { "ghost_nodeset_volume_4", { 0, 3, 4 } },
+                    { "ghost_nodeset_volume_5", { 0, 2, 5 } },
+                    { "ghost_nodeset_volume_6", { 1, 2, 5 } },
+                    { "ghost_nodeset_volume_7", { 1, 3, 5 } },
+                    { "ghost_nodeset_volume_8", { 0, 3, 5 } },
+                }
+            },
+            { 2,
+                {
+                    { "free_nodeset_volume_1", { 0, 2, 4 } },
+                    { "free_nodeset_volume_2", { 1, 2, 4 } },
+                    { "free_nodeset_volume_3", { 1, 3, 4 } },
+                    { "free_nodeset_volume_4", { 0, 3, 4 } },
+                    { "free_nodeset_volume_5", { 0, 2, 5 } },
+                    { "free_nodeset_volume_6", { 1, 2, 5 } },
+                    { "free_nodeset_volume_7", { 1, 3, 5 } },
+                    { "free_nodeset_volume_8", { 0, 3, 5 } },
+                }
+            }
+        };
+
+    if( _compare_cellDomainMaps( results, cellDomainMacroSurfacesAnswer,
+                                 *oc.getCellDomainMacroSurfaces( ), testName, testNum ) ){
+
+        return 1;
+
+    }
+
+
     const cellDomainFloatVectorMap homogenizedSurfaceRegionAreasAnswer
         =
         {
@@ -3273,6 +3311,238 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     if( _compare_cellDomainMaps( results, homogenizedSurfaceRegionCentersOfMassAnswer,
                                  *oc.getHomogenizedSurfaceRegionCentersOfMass( ), testName, testNum, 1e-6, 1e-6 ) ){
+
+        return 1;
+
+    }
+
+    const cellDomainFloatVectorMap homogenizedSurfaceRegionProjectedLocalCentersOfMassAnswer
+        =
+        {
+            { 1,
+                {
+                    { "ghost_nodeset_volume_1", { -1.00, -0.50, -0.496,
+                                                   0.00,  0.00,  0.000,
+                                                  -0.50, -1.00, -0.496,
+                                                   0.00,  0.00,  0.000,
+                                                  -0.50, -0.50, -1.000,
+                                                   0.00,  0.00,  0.000 } },
+                    { "ghost_nodeset_volume_2", {  0.00,  0.00,  0.000,
+                                                   1.00, -0.50, -0.496,
+                                                   0.50, -1.00, -0.496,
+                                                   0.00,  0.00,  0.000,
+                                                   0.50, -0.50, -1.000,
+                                                   0.00,  0.00,  0.000 } },
+                    { "ghost_nodeset_volume_3", {  0.00,  0.00,  0.000,
+                                                   1.00,  0.50, -0.496,
+                                                   0.00,  0.00,  0.000,
+                                                   0.50,  1.00, -0.496,
+                                                   0.50,  0.50, -1.000,
+                                                   0.00,  0.00,  0.000 } },
+                    { "ghost_nodeset_volume_4", { -1.00,  0.50, -0.496,
+                                                   0.00,  0.00,  0.000,
+                                                   0.00,  0.00,  0.000,
+                                                  -0.50,  1.00, -0.496,
+                                                  -0.50,  0.50, -1.000,
+                                                   0.00,  0.00,  0.000 } },
+                    { "ghost_nodeset_volume_5", { -1.00, -0.50,  0.504,
+                                                   0.00,  0.00,  0.000,
+                                                  -0.50, -1.00,  0.504,
+                                                   0.00,  0.00,  0.000,
+                                                   0.00,  0.00,  0.000,
+                                                  -0.50, -0.50,  1.000 } },
+                    { "ghost_nodeset_volume_6", {  0.00,  0.00,  0.000,
+                                                   1.00, -0.50,  0.504,
+                                                   0.50, -1.00,  0.504,
+                                                   0.00,  0.00,  0.000,
+                                                   0.00,  0.00,  0.000,
+                                                   0.50, -0.50,  1.000 } },
+                    { "ghost_nodeset_volume_7", {  0.00,  0.00,  0.000,
+                                                   1.00,  0.50,  0.504,
+                                                   0.00,  0.00,  0.000,
+                                                   0.50,  1.00,  0.504,
+                                                   0.00,  0.00,  0.000,
+                                                   0.50,  0.50,  1.000 } },
+                    { "ghost_nodeset_volume_8", { -1.00,  0.50,  0.504,
+                                                   0.00,  0.00,  0.000,
+                                                   0.00,  0.00,  0.000,
+                                                  -0.50,  1.00,  0.504,
+                                                   0.00,  0.00,  0.000,
+                                                  -0.50,  0.50,  1.000 } },
+                }
+            },
+            { 2,
+                {
+                    { "free_nodeset_volume_1", { -1.00, -0.50, -0.496,
+                                                  0.00,  0.00,  0.000,
+                                                 -0.50, -1.00, -0.496,
+                                                  0.00,  0.00,  0.000,
+                                                 -0.50, -0.50, -1.000,
+                                                  0.00,  0.00,  0.000 } },
+                    { "free_nodeset_volume_2", {  0.00,  0.00,  0.000,
+                                                  1.00, -0.50, -0.496,
+                                                  0.50, -1.00, -0.496,
+                                                  0.00,  0.00,  0.000,
+                                                  0.50, -0.50, -1.000,
+                                                  0.00,  0.00,  0.000 } },
+                    { "free_nodeset_volume_3", {  0.00,  0.00,  0.000,
+                                                  1.00,  0.50, -0.496,
+                                                  0.00,  0.00,  0.000,
+                                                  0.50,  1.00, -0.496,
+                                                  0.50,  0.50, -1.000,
+                                                  0.00,  0.00,  0.000 } },
+                    { "free_nodeset_volume_4", { -1.00,  0.50, -0.496,
+                                                  0.00,  0.00,  0.000,
+                                                  0.00,  0.00,  0.000,
+                                                 -0.50,  1.00, -0.496,
+                                                 -0.50,  0.50, -1.000,
+                                                  0.00,  0.00,  0.000 } },
+                    { "free_nodeset_volume_5", { -1.00, -0.50,  0.504,
+                                                  0.00,  0.00,  0.000,
+                                                 -0.50, -1.00,  0.504,
+                                                  0.00,  0.00,  0.000,
+                                                  0.00,  0.00,  0.000,
+                                                 -0.50, -0.50,  1.000 } },
+                    { "free_nodeset_volume_6", {  0.00,  0.00,  0.000,
+                                                  1.00, -0.50,  0.504,
+                                                  0.50, -1.00,  0.504,
+                                                  0.00,  0.00,  0.000,
+                                                  0.00,  0.00,  0.000,
+                                                  0.50, -0.50,  1.000 } },
+                    { "free_nodeset_volume_7", {  0.00,  0.00,  0.000,
+                                                  1.00,  0.50,  0.504,
+                                                  0.00,  0.00,  0.000,
+                                                  0.50,  1.00,  0.504,
+                                                  0.00,  0.00,  0.000,
+                                                  0.50,  0.50,  1.000 } },
+                    { "free_nodeset_volume_8", { -1.00,  0.50,  0.504,
+                                                  0.00,  0.00,  0.000,
+                                                  0.00,  0.00,  0.000,
+                                                 -0.50,  1.00,  0.504,
+                                                  0.00,  0.00,  0.000,
+                                                 -0.50,  0.50,  1.000 } },
+                }
+            }
+        };
+
+    if( _compare_cellDomainMaps( results, homogenizedSurfaceRegionProjectedLocalCentersOfMassAnswer,
+                                 *oc.getHomogenizedSurfaceRegionProjectedLocalCentersOfMass( ), testName, testNum, 1e-6, 1e-3 ) ){
+
+        return 1;
+
+    }
+
+    const cellDomainFloatVectorMap homogenizedSurfaceRegionProjectedCentersOfMassAnswer
+        =
+        {
+            { 1,
+                {
+                    { "ghost_nodeset_volume_1", { 0.00, 0.25, 0.251,
+                                                  0.00, 0.00, 0.000,
+                                                  0.25, 0.00, 0.251,
+                                                  0.00, 0.00, 0.000,
+                                                  0.25, 0.25,-0.001,
+                                                  0.00, 0.00, 0.000 } },
+                    { "ghost_nodeset_volume_2", { 0.00, 0.00, 0.000,
+                                                  1.00, 0.25, 0.251,
+                                                  0.75, 0.00, 0.251,
+                                                  0.00, 0.00, 0.000,
+                                                  0.75, 0.25,-0.001,
+                                                  0.00, 0.00, 0.000 } },
+                    { "ghost_nodeset_volume_3", { 0.00, 0.00, 0.000,
+                                                  1.00, 0.75, 0.251,
+                                                  0.00, 0.00, 0.000,
+                                                  0.75, 1.00, 0.251,
+                                                  0.75, 0.75,-0.001,
+                                                  0.00, 0.00, 0.000 } },
+                    { "ghost_nodeset_volume_4", { 0.00, 0.75, 0.251,
+                                                  0.00, 0.00, 0.000,
+                                                  0.00, 0.00, 0.000,
+                                                  0.25, 1.00, 0.251,
+                                                  0.25, 0.75,-0.001,
+                                                  0.00, 0.00, 0.000 } },
+                    { "ghost_nodeset_volume_5", { 0.00, 0.25, 0.751,
+                                                  0.00, 0.00, 0.000,
+                                                  0.25, 0.00, 0.751,
+                                                  0.00, 0.00, 0.000,
+                                                  0.00, 0.00, 0.000,
+                                                  0.25, 0.25, 0.999 } },
+                    { "ghost_nodeset_volume_6", { 0.00, 0.00, 0.000,
+                                                  1.00, 0.25, 0.751,
+                                                  0.75, 0.00, 0.751,
+                                                  0.00, 0.00, 0.000,
+                                                  0.00, 0.00, 0.000,
+                                                  0.75, 0.25, 0.999 } },
+                    { "ghost_nodeset_volume_7", { 0.00, 0.00, 0.000,
+                                                  1.00, 0.75, 0.751,
+                                                  0.00, 0.00, 0.000,
+                                                  0.75, 1.00, 0.751,
+                                                  0.00, 0.00, 0.000,
+                                                  0.75, 0.75, 0.999 } },
+                    { "ghost_nodeset_volume_8", { 0.00, 0.75, 0.751,
+                                                  0.00, 0.00, 0.000,
+                                                  0.00, 0.00, 0.000,
+                                                  0.25, 1.00, 0.751,
+                                                  0.00, 0.00, 0.000,
+                                                  0.25, 0.75, 0.999 } },
+                }
+            },
+            { 2,
+                {
+                    { "free_nodeset_volume_1", { 0.00, 0.25, 1.251,
+                                                 0.00, 0.00, 0.000,
+                                                 0.25, 0.00, 1.251,
+                                                 0.00, 0.00, 0.000,
+                                                 0.25, 0.25, 0.999,
+                                                 0.00, 0.00, 0.000 } },
+                    { "free_nodeset_volume_2", { 0.00, 0.00, 0.000,
+                                                 1.00, 0.25, 1.251,
+                                                 0.75, 0.00, 1.251,
+                                                 0.00, 0.00, 0.000,
+                                                 0.75, 0.25, 0.999,
+                                                 0.00, 0.00, 0.000 } },
+                    { "free_nodeset_volume_3", { 0.00, 0.00, 0.000,
+                                                 1.00, 0.75, 1.251,
+                                                 0.00, 0.00, 0.000,
+                                                 0.75, 1.00, 1.251,
+                                                 0.75, 0.75, 0.999,
+                                                 0.00, 0.00, 0.000 } },
+                    { "free_nodeset_volume_4", { 0.00, 0.75, 1.251,
+                                                 0.00, 0.00, 0.000,
+                                                 0.00, 0.00, 0.000,
+                                                 0.25, 1.00, 1.251,
+                                                 0.25, 0.75, 0.999,
+                                                 0.00, 0.00, 0.000 } },
+                    { "free_nodeset_volume_5", { 0.00, 0.25, 1.751,
+                                                 0.00, 0.00, 0.000,
+                                                 0.25, 0.00, 1.751,
+                                                 0.00, 0.00, 0.000,
+                                                 0.00, 0.00, 0.000,
+                                                 0.25, 0.25, 1.999 } },
+                    { "free_nodeset_volume_6", { 0.00, 0.00, 0.000,
+                                                 1.00, 0.25, 1.751,
+                                                 0.75, 0.00, 1.751,
+                                                 0.00, 0.00, 0.000,
+                                                 0.00, 0.00, 0.000,
+                                                 0.75, 0.25, 1.999 } },
+                    { "free_nodeset_volume_7", { 0.00, 0.00, 0.000,
+                                                 1.00, 0.75, 1.751,
+                                                 0.00, 0.00, 0.000,
+                                                 0.75, 1.00, 1.751,
+                                                 0.00, 0.00, 0.000,
+                                                 0.75, 0.75, 1.999 } },
+                    { "free_nodeset_volume_8", { 0.00, 0.75, 1.751,
+                                                 0.00, 0.00, 0.000,
+                                                 0.00, 0.00, 0.000,
+                                                 0.25, 1.00, 1.751,
+                                                 0.00, 0.00, 0.000,
+                                                 0.25, 0.75, 1.999 } },
+                }
+            }
+        };
+
+    if( _compare_cellDomainMaps( results, homogenizedSurfaceRegionProjectedCentersOfMassAnswer,
+                                 *oc.getHomogenizedSurfaceRegionProjectedCentersOfMass( ), testName, testNum, 1e-6, 1e-6 ) ){
 
         return 1;
 

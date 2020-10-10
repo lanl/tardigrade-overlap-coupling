@@ -2592,9 +2592,12 @@ namespace overlapCoupling{
         homogenizedAccelerations.clear( );
         homogenizedMicroSpinInertias.clear( );
         homogenizedSymmetricMicroStresses.clear( );
+        cellDomainMacroSurfaces.clear( );
         homogenizedSurfaceRegionAreas.clear( );
 //        homogenizedSurfaceRegionDensities.clear( );
         homogenizedSurfaceRegionCentersOfMass.clear( );
+        homogenizedSurfaceRegionProjectedLocalCentersOfMass.clear( );
+        homogenizedSurfaceRegionProjectedCentersOfMass.clear( );
         homogenizedSurfaceRegionTractions.clear( );
         homogenizedSurfaceRegionCouples.clear( );
 
@@ -2731,7 +2734,7 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
-            std::cout << "    computing the homogenized stresses\n";
+            std::cout << "    computing homogenized stresses\n";
 //            error = computeHomogenizedStresses( *macroCell );
 //
 //            if ( error ){
@@ -2838,19 +2841,20 @@ namespace overlapCoupling{
 
             //Compute the approximate stresses
             std::cout << "    computing homogenized stresses\n";
-            return NULL; //REMOVE THIS
-            error = computeHomogenizedStresses( *macroCell );
-
-            if ( error ){
-
-                errorOut result = new errorNode( "homogenizeMicroScale",
-                                                 "Error in the computation of the homogenized stresses" );
-                result->addNext( error );
-                return result;
-
-            }
+//            error = computeHomogenizedStresses( *macroCell );
+//
+//            if ( error ){
+//
+//                errorOut result = new errorNode( "homogenizeMicroScale",
+//                                                 "Error in the computation of the homogenized stresses" );
+//                result->addNext( error );
+//                return result;
+//
+//            }
 
         }
+
+        return NULL; //REMOVE THIS
 
         //Compute the homogenized force vectors and mass matrices
         error = assembleHomogenizedMatricesAndVectors( );
@@ -3436,6 +3440,8 @@ namespace overlapCoupling{
             homogenizedSurfaceAreas.emplace( macroCellID, tmpFloatMap );
             homogenizedSurfaceRegionAreas.emplace( macroCellID, tmpFloatVectorMap );
             homogenizedSurfaceRegionCentersOfMass.emplace( macroCellID, tmpFloatVectorMap );
+            homogenizedSurfaceRegionProjectedLocalCentersOfMass.emplace( macroCellID, tmpFloatVectorMap );
+            homogenizedSurfaceRegionProjectedCentersOfMass.emplace( macroCellID, tmpFloatVectorMap );
             homogenizedSurfaceRegionTractions.emplace( macroCellID, tmpFloatVectorMap );
             homogenizedSurfaceRegionCouples.emplace( macroCellID, tmpFloatVectorMap );
 
@@ -3511,6 +3517,19 @@ namespace overlapCoupling{
 
         }
 
+        uIntVector macroSurfaces;
+        for ( uIntType i = 0; i < subdomainNodeIDs.size( ); i++ ){
+
+            if ( subdomainNodeIDs[ i ].size( ) > 0 ){
+
+                macroSurfaces.push_back( i );
+
+            }
+
+        }
+
+        cellDomainMacroSurfaces[ macroCellID ].emplace( microDomainName, macroSurfaces );
+
         //Get the centers of mass of the surface regions
 
         dataCountAtPoint = 1     //Surface area of region
@@ -3559,6 +3578,8 @@ namespace overlapCoupling{
         homogenizedSurfaceRegionAreas[ macroCellID ].emplace( microDomainName, floatVector( subdomainNodeIDs.size( ), 0 ) );
         floatVector regionDensities( subdomainNodeIDs.size( ) );
         homogenizedSurfaceRegionCentersOfMass[ macroCellID ].emplace( microDomainName, floatVector( _dim * subdomainNodeIDs.size( ), 0 ) );
+        homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ].emplace( microDomainName, floatVector( _dim * subdomainNodeIDs.size( ), 0 ) );
+        homogenizedSurfaceRegionProjectedCentersOfMass[ macroCellID ].emplace( microDomainName, floatVector( _dim * subdomainNodeIDs.size( ), 0 ) );
 
         //Initialize the homogenized values
         homogenizedSurfaceRegionTractions[ macroCellID ].emplace( microDomainName, floatVector( _dim * subdomainNodeIDs.size( ), 0 ) );
@@ -3589,10 +3610,57 @@ namespace overlapCoupling{
                 //Extract the region surface areas and the region surface densities
                 homogenizedSurfaceRegionAreas[  macroCellID ][ microDomainName ][ index ] = integratedValue[ 0 ];
                 regionDensities[ index ] = integratedValue[ 1 ] / integratedValue[ 0 ];
-    
+
+                floatVector centerOfMass( integratedValue.begin( ) + 2,
+                                          integratedValue.begin( ) + 2 + _dim );
+                centerOfMass /= integratedValue[ 1 ];
+   
+                for ( uIntType i = 0; i < _dim; i++ ){
+
+                    homogenizedSurfaceRegionCentersOfMass[ macroCellID ][ microDomainName ][ index * _dim + i ] = centerOfMass[ i ];
+
+                }
+
+                //Compute the local coordinates of the center of mass
+                floatVector localCenterOfMass; 
+                error = element->compute_local_coordinates( centerOfMass, localCenterOfMass );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                                                     "Error in the computation of the local surface center of mass" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                //Find the closest point on the surface of the element in local coordinates
+                floatType distance = vectorTools::dot( element->local_surface_normals[ index ],
+                                                       localCenterOfMass - element->local_surface_points[ index ] );
+
+                floatVector projectedLocalCenterOfMass = localCenterOfMass - distance * element->local_surface_normals[ index ];
+
                 for ( unsigned int i = 0; i < _dim; i++ ){
-                    homogenizedSurfaceRegionCentersOfMass[ macroCellID ][ microDomainName ][ _dim * index + i ]
-                        = integratedValue[ 2 + i ] / integratedValue[ 1 ];
+                    homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ][ microDomainName ][ index * _dim + i ]
+                        = projectedLocalCenterOfMass[ i ];
+                }
+
+                //Interpolate this point back to global coordinates
+                floatVector projectedCenterOfMass;
+                error = element->interpolate( element->nodes, projectedLocalCenterOfMass, projectedCenterOfMass );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                                                     "Error in the interpolation of the local projected surface center of mass to global coordinates" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                for ( unsigned int i = 0; i < _dim; i++ ){
+                    homogenizedSurfaceRegionProjectedCentersOfMass[ macroCellID ][ microDomainName ][ index * _dim + i ]
+                        = projectedCenterOfMass[ i ];
                 }
 
             }
@@ -3788,6 +3856,8 @@ namespace overlapCoupling{
         floatMatrix microSpinInertiaAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
         floatMatrix symmetricMicroStressAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
 
+        //TODO: Consider doing a least-squares projection rather than a nodal averaging
+
         //Add the volume integral components of the right hand side vectors
         //Also project the integral components to the nodes
         for ( auto microDomainName = domainNames.begin( ); microDomainName != domainNames.end( ); microDomainName++ ){
@@ -3808,17 +3878,18 @@ namespace overlapCoupling{
 
             floatVector symmetricMicroStress = homogenizedSymmetricMicroStresses[ macroCellID ][ *microDomainName ];
 
-            floatVector symmetricMicroStress_T( _dim * _dim );
-
-            for ( unsigned int _i = 0; _i < _dim; _i++ ){
-
-                for ( unsigned int _j = 0; _j < _dim; _j++ ){
-
-                    symmetricMicroStress_T[ _dim * _j + _i ] = symmetricMicroStress[ _dim * _i + _j ];
-
-                }
-
-            }
+            //Don't need to do this because it is symmetric
+//            floatVector symmetricMicroStress_T( _dim * _dim );
+//
+//            for ( unsigned int _i = 0; _i < _dim; _i++ ){
+//
+//                for ( unsigned int _j = 0; _j < _dim; _j++ ){
+//
+//                    symmetricMicroStress_T[ _dim * _j + _i ] = symmetricMicroStress[ _dim * _i + _j ];
+//
+//                }
+//
+//            }
 
             for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
 
@@ -3828,7 +3899,7 @@ namespace overlapCoupling{
                 //Compute the contribution to the node
                 floatVector nLinearMomentumRHS = N * density * ( bodyForce - acceleration ) * volume;
 
-                floatVector nFirstMomentRHS = N * ( density * ( bodyCouple - microSpinInertia ) - symmetricMicroStress_T ) * volume;
+                floatVector nFirstMomentRHS = N * ( density * ( bodyCouple - microSpinInertia ) - symmetricMicroStress ) * volume;
 
                 //Add the contribution to the overall RHS vectors
                 for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
@@ -3877,6 +3948,8 @@ namespace overlapCoupling{
             symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
 
         }
+
+        return new errorNode( "derp", "derp" );
 
         //Add the surface integral components of the right hand side vectors
         for ( auto domain = domainNames.begin( ); domain != domainNames.end( ); domain++ ){
@@ -8537,6 +8610,22 @@ namespace overlapCoupling{
         return &homogenizedSurfaceRegionCentersOfMass;
     }
 
+    const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedSurfaceRegionProjectedLocalCentersOfMass( ){
+        /*!
+         * Get the homogenized projected local centers of mass
+         */
+
+        return &homogenizedSurfaceRegionProjectedLocalCentersOfMass;
+    }
+
+    const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedSurfaceRegionProjectedCentersOfMass( ){
+        /*!
+         * Get the homogenized projected centers of mass
+         */
+
+        return &homogenizedSurfaceRegionProjectedCentersOfMass;
+    }
+
     const cellDomainFloatVectorMap* overlapCoupling::getHomogenizedSurfaceRegionTractions( ){
         /*!
          * Get the homogenized surface region tractions
@@ -8551,6 +8640,14 @@ namespace overlapCoupling{
          */
 
         return &homogenizedSurfaceRegionCouples;
+    }
+
+    const cellDomainUIntVectorMap* overlapCoupling::getCellDomainMacroSurfaces( ){
+        /*!
+         * Get the cell domain macro surfaces
+         */
+
+        return &cellDomainMacroSurfaces;
     }
 
 #endif

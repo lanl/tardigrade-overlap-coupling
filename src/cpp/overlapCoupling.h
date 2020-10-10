@@ -31,8 +31,10 @@ namespace overlapCoupling{
     typedef DOFProjection::SparseMatrix SparseMatrix;
     typedef std::vector< DOFProjection::T > tripletVector;
 
+    typedef std::unordered_map< std::string, uIntVector > domainUIntVectorMap;
     typedef std::unordered_map< std::string, floatType > domainFloatMap;
     typedef std::unordered_map< std::string, floatVector > domainFloatVectorMap;
+    typedef std::unordered_map< uIntType, domainUIntVectorMap > cellDomainUIntVectorMap;
     typedef std::unordered_map< uIntType, domainFloatMap > cellDomainFloatMap;
     typedef std::unordered_map< uIntType, domainFloatVectorMap > cellDomainFloatVectorMap;
 
@@ -127,8 +129,11 @@ namespace overlapCoupling{
             const cellDomainFloatVectorMap* getHomogenizedMicroSpinInertias( );
 
             const cellDomainFloatMap* getHomogenizedSurfaceAreas( );
+            const cellDomainUIntVectorMap* getCellDomainMacroSurfaces( );
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionAreas( );
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionCentersOfMass( );
+            const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionProjectedLocalCentersOfMass( );
+            const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionProjectedCentersOfMass( );
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionTractions( );
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionCouples( );
 #endif
@@ -364,6 +369,8 @@ namespace overlapCoupling{
             cellDomainFloatVectorMap homogenizedSurfaceRegionAreas;
 //            std::unordered_map< uIntType, floatVector > homogenizedSurfaceRegionDensities;
             cellDomainFloatVectorMap homogenizedSurfaceRegionCentersOfMass;
+            cellDomainFloatVectorMap homogenizedSurfaceRegionProjectedLocalCentersOfMass;
+            cellDomainFloatVectorMap homogenizedSurfaceRegionProjectedCentersOfMass;
             cellDomainFloatVectorMap homogenizedSurfaceRegionTractions;
             cellDomainFloatVectorMap homogenizedSurfaceRegionCouples;
 
@@ -409,6 +416,8 @@ namespace overlapCoupling{
             SparseMatrix _homogenizationMatrix;
 
             bool _homogenizationMatrix_initialized = false;
+
+            cellDomainUIntVectorMap cellDomainMacroSurfaces;
 
     };
 
