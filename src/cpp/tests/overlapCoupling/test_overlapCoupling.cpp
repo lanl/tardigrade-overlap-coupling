@@ -3857,7 +3857,6 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
             -0.875, -0.25 , -0.625, -1.   , -0.375, -0.75 , -1.125, -0.125,
             -0.5  , -0.875, -0.25 , -0.625, -1.   , -0.375, -0.75 , -1.125 };
 
-    std::cout << "nodal external forces\n";
     for ( auto c = oc.getExternalForcesAtNodes( )->begin( ); c != oc.getExternalForcesAtNodes( )->end( ); c++ ){
 
         if ( !vectorTools::fuzzyEquals( extForceVectorsAnswer, c->second, 1e-6, 1e-1 ) ){
@@ -3870,7 +3869,6 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     }
     testNum++;
 
-    std::cout << "nodal external couples\n";
     for ( auto c = oc.getExternalCouplesAtNodes( )->begin( ); c != oc.getExternalCouplesAtNodes( )->end( ); c++ ){
 
         if ( !vectorTools::fuzzyEquals( floatVector( coupleVectorsAnswer.size( ), 0 ), c->second, 1e-6, 1e-3 ) ){
@@ -3883,7 +3881,6 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     }
     testNum++;
 
-    std::cout << "linear momentum RHS\n";
     for ( auto c = oc._test_cellLinearMomentumRHS.begin( ); c != oc._test_cellLinearMomentumRHS.end( ); c++ ){
 
         if ( !vectorTools::fuzzyEquals( forceVectorsAnswer, c->second, 1e-6, 1e-1 ) ){
@@ -3896,7 +3893,6 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     }
     testNum++;
 
-    std::cout << "first moment RHS\n";
     for ( auto c = oc._test_cellFirstMomentRHS.begin( ); c != oc._test_cellFirstMomentRHS.end( ); c++ ){
 
         if ( !vectorTools::fuzzyEquals( coupleVectorsAnswer, c->second, 1e-6, 1e-1 ) ){
@@ -4126,6 +4122,31 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     }
 
+    Eigen::MatrixXd homogenizedFEXTAnswer( 144, 1 );
+    homogenizedFEXTAnswer << -3.25, -4.25, -5.25,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,
+                              0.  ,  0.  ,  0.  , -2.75, -3.25, -3.75,  0.  ,  0.  ,  0.  ,
+                              0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  , -0.75, -0.75, -0.75,
+                              0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,
+                             -1.25, -1.75, -2.25,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,
+                              0.  ,  0.  ,  0.  , -3.  , -4.5 , -6.  ,  0.  ,  0.  ,  0.  ,
+                              0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  , -2.  , -2.5 , -3.  ,
+                              0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,
+                              2.  ,  2.5 ,  3.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,
+                              0.  ,  0.  ,  0.  ,  1.  ,  0.5 ,  0.  ,  0.  ,  0.  ,  0.  ,
+                              0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.25, -0.25, -0.75,
+                              0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,
+                              0.75,  0.75,  0.75,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,
+                              0.  ,  0.  ,  0.  ,  2.75,  3.25,  3.75,  0.  ,  0.  ,  0.  ,
+                              0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  2.25,  2.25,  2.25,
+                              0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ,  0.  ;
+
+    if ( ( homogenizedFEXTAnswer - *oc.getHomogenizedFEXT( ) ).norm( ) > 1e-2 * ( homogenizedFEXTAnswer.norm( ) + 1 ) ){
+
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+
+    }
+    testNum++;
 
 
     remove( "reference_information.xdmf" );

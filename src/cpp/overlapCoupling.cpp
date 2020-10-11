@@ -4992,6 +4992,8 @@ namespace overlapCoupling{
 
         for ( auto macroCellID = macroCellIDVector.begin( ); macroCellID != macroCellIDVector.end( ); macroCellID++ ){
 
+            std::cout << "macroCellID: " << *macroCellID << "\n";
+
             //Make sure that the macroCellID is stored in the external force vector
             if ( externalForcesAtNodes.find( *macroCellID ) == externalForcesAtNodes.end( ) ){
 
@@ -5063,6 +5065,8 @@ namespace overlapCoupling{
             }
 
         }
+
+        std::cout << "homogenizedFEXT:\n" << homogenizedFEXT << "\n";
 
         return NULL;
 
@@ -5406,6 +5410,7 @@ namespace overlapCoupling{
          * Assemble the homogenized mass matrices and force vectors
          */
 
+        std::cout << "        assembling the homogenized external force vector\n";
         errorOut error = assembleHomogenizedExternalForceVector( );
 
         if ( error ){
@@ -5417,6 +5422,7 @@ namespace overlapCoupling{
 
         }
 
+        std::cout << "        assembling the homogenized internal force vector\n";
         error = assembleHomogenizedInternalForceVector( );
 
         if ( error ){
@@ -5428,6 +5434,7 @@ namespace overlapCoupling{
 
         }
 
+        std::cout << "        assembling the homogenized stress matrix\n";
         error = assembleHomogenizedMassMatrix( );
 
         if ( error ){
@@ -8789,6 +8796,14 @@ namespace overlapCoupling{
          */
 
         return &quadraturePointSymmetricMicroStress;
+    }
+
+    const Eigen::MatrixXd *overlapCoupling::getHomogenizedFEXT( ){
+        /*!
+         * Get a constant reference to the homogenized external force vector
+         */
+
+        return &homogenizedFEXT; 
     }
 
 #endif
