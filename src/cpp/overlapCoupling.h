@@ -38,6 +38,10 @@ namespace overlapCoupling{
     typedef std::unordered_map< uIntType, domainFloatMap > cellDomainFloatMap;
     typedef std::unordered_map< uIntType, domainFloatVectorMap > cellDomainFloatVectorMap;
 
+#ifdef TESTACCESS
+    typedef std::unordered_map< uIntType, floatVector > cellFloatVectorMap;
+#endif
+
     //!The different strategies for the partitioning coefficient
     enum partitioningCoefficient { VOLUME_FRACTION };
     const std::map< std::string, partitioningCoefficient > partitioningCoefficientStrategies =
@@ -137,6 +141,9 @@ namespace overlapCoupling{
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionTractions( );
             const cellDomainFloatVectorMap* getHomogenizedSurfaceRegionCouples( );
 
+            const cellFloatVectorMap* getExternalForcesAtNodes( );
+            const cellFloatVectorMap* getExternalCouplesAtNodes( );
+
             std::unordered_map< uIntType, floatVector > _test_elementNodalVolumes;
             std::unordered_map< uIntType, floatVector > _test_volumeAtNodes;
             std::unordered_map< uIntType, floatVector > _test_densityAtNodes;
@@ -146,6 +153,11 @@ namespace overlapCoupling{
             std::unordered_map< uIntType, floatMatrix > _test_bodyCoupleAtNodes;
             std::unordered_map< uIntType, floatMatrix > _test_microSpinInertiaAtNodes;
             std::unordered_map< uIntType, floatMatrix > _test_symmetricMicroStressAtNodes;
+
+            std::unordered_map< uIntType, floatVector > _test_cellLinearMomentumRHS;
+            std::unordered_map< uIntType, floatVector > _test_cellFirstMomentRHS;
+
+            std::unordered_map< uIntType, Eigen::MatrixXd > _test_stressProjectionLHS;
 
 #endif
 

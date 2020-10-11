@@ -4010,69 +4010,50 @@ namespace overlapCoupling{
 
 #endif
 
-        return NULL;
-
-        return new errorNode( "derp", "derp" );
-
         //Add the surface integral components of the right hand side vectors
+        
         for ( auto domain = domainNames.begin( ); domain != domainNames.end( ); domain++ ){
 
-            //Get the number of micro surface regions in the domain
-            uIntType nMicroSurfaceRegions = homogenizedSurfaceRegionAreas[ macroCellID ][ *domain ].size( );
+            uIntVector domainMacroSurfaces = cellDomainMacroSurfaces[ macroCellID ][ *domain ];
 
             //Compute the shape functions at the micro surface region area centers of mass
-            std::unordered_map< uIntType, floatVector > domainCentersOfMass;
-            for ( unsigned int i = 0; i < nMicroSurfaceRegions; i++ ){
-
-                domainCentersOfMass.emplace( i, floatVector( homogenizedSurfaceRegionCentersOfMass[ macroCellID ][ *domain ].begin( ) + _dim * i,
-                                                             homogenizedSurfaceRegionCentersOfMass[ macroCellID ][ *domain ].begin( ) + _dim * ( i + 1 ) ) );
-
-            }
 
             std::unordered_map< uIntType, floatVector > shapefunctionsAtSurfaceRegionCentersOfMass;
+            for ( auto face = domainMacroSurfaces.begin( ); face != domainMacroSurfaces.end( ); face++ ){
 
-            //TODO: The following computation of the shape-function values may cause issues if the re-constructed surface is
-            //      found to be outside of the macro Cell's domain. This will likely need to be addressed
-            error = overlapCoupling::computeShapeFunctionsAtPoints( macroCellID, *macroNodeReferenceLocations, *macroDisplacements,
-                                                                *macroConnectivity, domainCentersOfMass,
-                                                                shapefunctionsAtSurfaceRegionCentersOfMass );
-            
-            if ( error ){
-    
-                errorOut result = new errorNode( "computeHomogenizedStresses",
-                                                 "Error in the computation of the shapefunctions at the micro domain surface region centers of mass for macro cell " + std::to_string( macroCellID ) );
-                result->addNext( error );
-                return result;
-    
-            }
-    
-            for ( unsigned int i = 0; i < nMicroSurfaceRegions; i++ ){
-    
-                if ( shapefunctionsAtSurfaceRegionCentersOfMass[ index ].size( ) != element->nodes.size( ) ){
-    
-                    std::string output;
-                    output += "The number of shape-function defined is not consistent with the number of micro domains\n";
-                    output += "and the number of nodes in the macro element for macro-cell " + std::to_string( macroCellID ) + ".\n";
-                    output += "This is likely because one of the surface region's center of mass is located outside of the macro cell";
-        
-                    return new errorNode( "computeHomogenizedStresses", output );
-    
+                floatVector lcom( homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ][ *domain ].begin( ) +
+                                                                                                                _dim * ( *face ),
+                                  homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ][ *domain ].begin( ) +
+                                                                                                                _dim * ( ( *face ) + 1 ) );
+                floatVector sfs;
+
+                error = element->get_shape_functions( lcom, sfs );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "computeHomogenizedStresses",
+                                                     "Error in the computation of the shapefunctions at the micro-domain surface center of mass for macro cell " + std::to_string( macroCellID ) + " on face " + std::to_string( *face ) );
+                    result->addNext( error );
+                    return result;
+
                 }
-    
+
+                shapefunctionsAtSurfaceRegionCentersOfMass.emplace( *face, sfs );
+
             }
 
-            //Add the surface integral components to the reight hand side vectors
-            for ( unsigned int i = 0; i < nMicroSurfaceRegions; i++ ){
+            //Add the surface integral components to the right hand side vectors
+            for ( auto face = domainMacroSurfaces.begin( ); face != domainMacroSurfaces.end( ); face++ ){
 
-                floatType area = homogenizedSurfaceRegionAreas[ macroCellID ][ *domain ][ i ];
+                floatType area = homogenizedSurfaceRegionAreas[ macroCellID ][ *domain ][ ( *face ) ];
 
-                floatVector traction( homogenizedSurfaceRegionTractions[ macroCellID ][ *domain ].begin( ) + _dim * i,
-                                      homogenizedSurfaceRegionTractions[ macroCellID ][ *domain ].begin( ) + _dim * ( i + 1 ) );
+                floatVector traction( homogenizedSurfaceRegionTractions[ macroCellID ][ *domain ].begin( ) + _dim * ( *face ),
+                                      homogenizedSurfaceRegionTractions[ macroCellID ][ *domain ].begin( ) + _dim * ( ( *face ) + 1 ) );
 
-                floatVector couple( homogenizedSurfaceRegionTractions[ macroCellID ][ *domain ].begin( ) + _dim * _dim * i,
-                                    homogenizedSurfaceRegionTractions[ macroCellID ][ *domain ].begin( ) + _dim * _dim * ( i + 1 ) );
+                floatVector couple( homogenizedSurfaceRegionCouples[ macroCellID ][ *domain ].begin( ) + _dim * _dim * ( *face ),
+                                    homogenizedSurfaceRegionCouples[ macroCellID ][ *domain ].begin( ) + _dim * _dim * ( ( *face ) + 1 ) );
 
-                floatVector shapefunctions = shapefunctionsAtSurfaceRegionCentersOfMass[ i ];
+                floatVector shapefunctions = shapefunctionsAtSurfaceRegionCentersOfMass[ *face ];
 
                 for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
 
@@ -4109,6 +4090,13 @@ namespace overlapCoupling{
 
         }
 
+#ifdef TESTACCESS
+
+        _test_cellLinearMomentumRHS.emplace( macroCellID, linearMomentumRHS );
+        _test_cellFirstMomentRHS.emplace( macroCellID, firstMomentRHS );
+
+#endif
+
         //Assemble the LHS matrix
 
         //Loop over the quadrature points adding the contribution of each to the LHS matrix
@@ -4139,7 +4127,8 @@ namespace overlapCoupling{
             uIntType qptIndex = qpt - element->qrule.begin( );
 
             //Set the column
-            uIntType col0 = ( _dim * _dim + _dim * _dim * _dim ) * qptIndex;
+            uIntType col0lm = _dim * _dim * qptIndex;
+            uIntType col0fm = _dim * _dim * element->nodes.size( ) + _dim * _dim * _dim * qptIndex;
 
             //Get the values of the shape function and the gradients
             error = element->get_shape_functions( qpt->first, shapeFunctions );
@@ -4182,28 +4171,28 @@ namespace overlapCoupling{
             for ( unsigned int n = 0; n < element->nodes.size( ); n++ ){
 
                 //Set the row
-                uIntType row0 = n * ( _dim + _dim * _dim );
+                uIntType row0 = _dim * n;
 
                 //Add the balance of linear momentum contributions
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
                     for ( unsigned int j = 0; j < _dim; j++ ){
 
-                        coefficients.push_back( DOFProjection::T( row0 + i, col0 + i + _dim * j, dNdx[ n ][ j ] * Jxw ) );
+                        coefficients.push_back( DOFProjection::T( row0 + i, col0lm + i + _dim * j, dNdx[ n ][ j ] * Jxw ) );
 
                     }
 
                 }
 
                 //Add the balance of the first moment of momentum contributions
-                row0 += _dim;
+                row0 = _dim * element->nodes.size( ) + _dim * _dim * n;
 
                 //Cauchy stress contribution
                 for ( unsigned int i = 0; i < _dim; i++ ){
 
                     for ( unsigned int j = 0; j < _dim; j++ ){
 
-                        coefficients.push_back( DOFProjection::T( row0 + _dim * j + i, col0 + _dim * i + j, -shapeFunctions[ n ] * Jxw ) );
+                        coefficients.push_back( DOFProjection::T( row0 + _dim * i + j, col0lm + _dim * j + i, -shapeFunctions[ n ] * Jxw ) );
 
                     }
 
@@ -4214,7 +4203,7 @@ namespace overlapCoupling{
 
                     for ( unsigned int j = 0; j < _dim; j++ ){
 
-                        coefficients.push_back( DOFProjection::T( row0 + i, col0 + _dim * _dim + _dim * _dim * j + i, dNdx[ n ][ j ] * Jxw ) );
+                        coefficients.push_back( DOFProjection::T( row0 + i, col0fm + _dim * _dim * j + i, dNdx[ n ][ j ] * Jxw ) );
 
                     }
 
@@ -4237,6 +4226,13 @@ namespace overlapCoupling{
         SparseMatrix LHS( ( _dim + _dim * _dim ) * element->nodes.size( ), _dim * _dim * ( 1 + _dim ) * element->qrule.size( ) );
         LHS.setFromTriplets( coefficients.begin( ), coefficients.end( ) );
 
+#ifdef TESTACCESS
+
+        _test_stressProjectionLHS.emplace( macroCellID, LHS.toDense( ) );
+
+#endif
+
+        return NULL; //REMOVE THIS
         //Perform the SVD decomposition
         Eigen::JacobiSVD< Eigen::MatrixXd > svd( LHS.toDense( ), Eigen::ComputeThinU | Eigen::ComputeThinV );
        
@@ -4290,13 +4286,13 @@ namespace overlapCoupling{
 
             for ( unsigned int i = 0; i < nCauchy; i++ ){
 
-                cauchyStresses[ nCauchy * n + i ] = x( ( nCauchy + nHigherOrder ) * n + i );
+                cauchyStresses[ nCauchy * n + i ] = x( nCauchy * n + i );
 
             }
 
             for ( unsigned int i = 0; i < nHigherOrder; i++ ){
 
-                higherOrderStresses[ nHigherOrder * n + i ] = x( ( nCauchy + nHigherOrder ) * n + nCauchy + i );
+                higherOrderStresses[ nHigherOrder * n + i ] = x( nEvaluationPoints * nCauchy + nHigherOrder * n + i );
 
             }
 
@@ -8711,6 +8707,22 @@ namespace overlapCoupling{
          */
 
         return &cellDomainMacroSurfaces;
+    }
+
+    const cellFloatVectorMap* overlapCoupling::getExternalForcesAtNodes( ){
+        /*!
+         * Get the external forces acting on the nodes
+         */
+
+        return &externalForcesAtNodes;
+    }
+
+    const cellFloatVectorMap* overlapCoupling::getExternalCouplesAtNodes( ){
+        /*!
+         * Get the external couples acting on the cells' nodes
+         */
+
+        return &externalCouplesAtNodes;
     }
 
 #endif
