@@ -4005,57 +4005,124 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     }
     testNum++;
 
+    floatVector cauchyQptAnswer = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    floatVector cauchyAnswer = vectorTools::appendVectors( floatMatrix( 8, cauchyQptAnswer ) );
     for ( auto c = oc.getQuadraturePointCauchyStress( )->begin( ); c != oc.getQuadraturePointCauchyStress( )->end( ); c++ ){
 
-        std::cout << c->first << ": "; vectorTools::print( c->second );
+        if ( !vectorTools::fuzzyEquals( c->second, cauchyAnswer, 1e-6, 1e-1 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
 
     }
+    testNum++;
 
+    floatVector higherOrderAnswer( 27 * 8, 0 );
     for ( auto c = oc.getQuadraturePointHigherOrderStress( )->begin( ); c != oc.getQuadraturePointHigherOrderStress( )->end( ); c++ ){
 
-        std::cout << c->first << ": "; vectorTools::print( c->second );
+        if ( !vectorTools::fuzzyEquals( c->second, higherOrderAnswer, 1e-6, 1e-1 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
 
     }
+    testNum++;
 
+    floatVector densityAnswer( 8, 2 );
     for ( auto c = oc.getQuadraturePointDensities( )->begin( ); c != oc.getQuadraturePointDensities( )->end( ); c++ ){
 
-        std::cout << c->first << ": "; vectorTools::print( c->second );
+        if ( !vectorTools::fuzzyEquals( c->second, densityAnswer, 1e-6, 1e-2 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
 
     }
+    testNum++;
 
+    floatVector bodyForceQptAnswer = { -1, -2, -3 };
+    floatVector bodyForceAnswer = vectorTools::appendVectors( floatMatrix( 8, bodyForceQptAnswer ) );
     for ( auto c = oc.getQuadraturePointBodyForce( )->begin( ); c != oc.getQuadraturePointBodyForce( )->end( ); c++ ){
 
-        std::cout << c->first << ": "; vectorTools::print( c->second );
+        if ( !vectorTools::fuzzyEquals( c->second, bodyForceAnswer, 1e-6, 1e-2 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
 
     }
+    testNum++;
 
+    floatVector accelerationQptAnswer = { 0., 0., 3e-3 };
+    floatVector accelerationAnswer = vectorTools::appendVectors( floatMatrix( 8, accelerationQptAnswer ) );
     for ( auto c = oc.getQuadraturePointAccelerations( )->begin( ); c != oc.getQuadraturePointAccelerations( )->end( ); c++ ){
 
-        std::cout << c->first << ": "; vectorTools::print( c->second );
+        if ( !vectorTools::fuzzyEquals( c->second, accelerationAnswer, 1e-6, 1e-3 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
 
     }
+    testNum++;
 
+    floatVector microInertiaQptAnswer = { 0.0625, 0., 0., 0., 0.0625, 0., 0., 0., 0.0625 };
+    floatVector microInertiasAnswer = vectorTools::appendVectors( floatMatrix( 8, microInertiaQptAnswer ) );
     for ( auto c = oc.getQuadraturePointMicroInertias( )->begin( ); c != oc.getQuadraturePointMicroInertias( )->end( ); c++ ){
 
-        std::cout << c->first << ": "; vectorTools::print( c->second );
+        if ( !vectorTools::fuzzyEquals( c->second, microInertiasAnswer, 1e-6, 1e-3 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
 
     }
+    testNum++;
 
+    floatVector bodyCouplesAnswer( 9 * 8, 0 );
     for ( auto c = oc.getQuadraturePointBodyCouples( )->begin( ); c != oc.getQuadraturePointBodyCouples( )->end( ); c++ ){
 
-        std::cout << c->first << ": "; vectorTools::print( c->second );
+        if ( !vectorTools::fuzzyEquals( c->second, bodyCouplesAnswer, 1e-6, 1e-3 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
 
     }
+    testNum++;
 
+    floatVector microSpinInertiasAnswer( 9 * 8, 0 );
     for ( auto c = oc.getQuadraturePointMicroSpinInertias( )->begin( ); c != oc.getQuadraturePointMicroSpinInertias( )->end( ); c++ ){
 
-        std::cout << c->first << ": "; vectorTools::print( c->second );
+        if ( !vectorTools::fuzzyEquals( c->second, microSpinInertiasAnswer, 1e-6, 1e-3 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
 
     }
+    testNum++;
 
+    floatVector symmetricMicroStressQptAnswer = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    floatVector symmetricMicroStressAnswer = vectorTools::appendVectors( floatMatrix( 8, symmetricMicroStressQptAnswer ) );
     for ( auto c = oc.getQuadraturePointSymmetricMicroStress( )->begin( ); c != oc.getQuadraturePointSymmetricMicroStress( )->end( ); c++ ){
 
-        std::cout << c->first << ": "; vectorTools::print( c->second );
+        if ( !vectorTools::fuzzyEquals( c->second, symmetricMicroStressAnswer, 1e-6, 1e-3 ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
 
     }
 
