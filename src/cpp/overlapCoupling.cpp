@@ -3924,18 +3924,20 @@ namespace overlapCoupling{
 
             floatVector symmetricMicroStress = homogenizedSymmetricMicroStresses[ macroCellID ][ *microDomainName ];
 
-            //Don't need to do this because it is symmetric
-//            floatVector symmetricMicroStress_T( _dim * _dim );
-//
-//            for ( unsigned int _i = 0; _i < _dim; _i++ ){
-//
-//                for ( unsigned int _j = 0; _j < _dim; _j++ ){
-//
-//                    symmetricMicroStress_T[ _dim * _j + _i ] = symmetricMicroStress[ _dim * _i + _j ];
-//
-//                }
-//
-//            }
+            //Don't need to do this because it is symmetric. We do it for testing purposes
+            //since to ring out the code we sometimes pass in non-symmetric tensors for the
+            //micro-stresses just to check.
+            floatVector symmetricMicroStress_T( _dim * _dim );
+
+            for ( unsigned int _i = 0; _i < _dim; _i++ ){
+
+                for ( unsigned int _j = 0; _j < _dim; _j++ ){
+
+                    symmetricMicroStress_T[ _dim * _j + _i ] = symmetricMicroStress[ _dim * _i + _j ];
+
+                }
+
+            }
 
             for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
 
@@ -3945,7 +3947,7 @@ namespace overlapCoupling{
                 //Compute the contribution to the node
                 floatVector nLinearMomentumRHS = N * density * ( bodyForce - acceleration ) * volume;
 
-                floatVector nFirstMomentRHS = N * ( density * ( bodyCouple - microSpinInertia ) - symmetricMicroStress ) * volume;
+                floatVector nFirstMomentRHS = N * ( density * ( bodyCouple - microSpinInertia ) - symmetricMicroStress_T ) * volume;
 
                 //Add the contribution to the overall RHS vectors
                 for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
@@ -4232,7 +4234,6 @@ namespace overlapCoupling{
 
 #endif
 
-        return NULL; //REMOVE THIS
         //Perform the SVD decomposition
         Eigen::JacobiSVD< Eigen::MatrixXd > svd( LHS.toDense( ), Eigen::ComputeThinU | Eigen::ComputeThinV );
        
@@ -8723,6 +8724,78 @@ namespace overlapCoupling{
          */
 
         return &externalCouplesAtNodes;
+    }
+
+    const std::unordered_map< uIntType, floatVector > *overlapCoupling::getQuadraturePointCauchyStress( ){
+        /*!
+         * Get a constant reference to the cauchy stress at the quadrature points
+         */
+
+        return &quadraturePointCauchyStress;
+    }
+
+    const std::unordered_map< uIntType, floatVector > *overlapCoupling::getQuadraturePointHigherOrderStress( ){
+        /*!
+         * Get a constant reference to the higher order stress at the quadrature points
+         */
+
+        return &quadraturePointHigherOrderStress;
+    }
+
+    const std::unordered_map< uIntType, floatVector > *overlapCoupling::getQuadraturePointDensities( ){
+        /*!
+         * Get a constant reference to the densities at the quadrature points
+         */
+
+        return &quadraturePointDensities;
+    }
+
+    const std::unordered_map< uIntType, floatVector > *overlapCoupling::getQuadraturePointBodyForce( ){
+        /*!
+         * Get a constant reference to the body force at the quadrature points
+         */
+
+        return &quadraturePointBodyForce;
+    }
+
+    const std::unordered_map< uIntType, floatVector > *overlapCoupling::getQuadraturePointAccelerations( ){
+        /*!
+         * Get a constant reference to the accelerations at the quadrature points
+         */
+
+        return &quadraturePointAccelerations;
+    }
+
+    const std::unordered_map< uIntType, floatVector > *overlapCoupling::getQuadraturePointMicroInertias( ){
+        /*!
+         * Get a constant reference to the micro inertias at the quadrature points
+         */
+
+        return &quadraturePointMicroInertias;
+    }
+
+    const std::unordered_map< uIntType, floatVector > *overlapCoupling::getQuadraturePointBodyCouples( ){
+        /*!
+         * Get a constant reference to the body couples at the quadrature points
+         */
+
+        return &quadraturePointBodyCouples;
+    }
+
+    const std::unordered_map< uIntType, floatVector > *overlapCoupling::getQuadraturePointMicroSpinInertias( ){
+        /*!
+         * Get a constant reference to the micro spin inertias at the quadrature points
+         */
+
+        return &quadraturePointMicroSpinInertias;
+    }
+
+    const std::unordered_map< uIntType, floatVector > *overlapCoupling::getQuadraturePointSymmetricMicroStress( ){
+        /*!
+         * Get a constant reference to the symmetric micro stress at the quadrature points
+         */
+
+        return &quadraturePointSymmetricMicroStress;
     }
 
 #endif
