@@ -2636,7 +2636,6 @@ namespace overlapCoupling{
 
         std::unique_ptr< elib::Element > element;
 
-        std::cout << "  looping through the free macro cells\n";
         for ( auto macroCell  = _inputProcessor.getFreeMacroCellIds( )->begin( );
                    macroCell != _inputProcessor.getFreeMacroCellIds( )->end( );
                    macroCell++ ){
@@ -2667,7 +2666,6 @@ namespace overlapCoupling{
 
             }
 
-            std::cout << "    looping over the micro domains\n";
             for ( auto microDomain  = microDomains->second.begin( ); microDomain != microDomains->second.end( ); microDomain++ ){
 
                 microNodePositions.clear( );
@@ -2734,7 +2732,6 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
-            std::cout << "    computing homogenized stresses\n";
             error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
@@ -2749,7 +2746,6 @@ namespace overlapCoupling{
         }
 
         //Loop through the ghost macro-scale cells
-        std::cout << "  looping through the ghost macro cells\n";
         microDomainStartIndex = 0;
         for ( auto macroCell  = _inputProcessor.getGhostMacroCellIds( )->begin( );
                    macroCell != _inputProcessor.getGhostMacroCellIds( )->end( );
@@ -2773,7 +2769,6 @@ namespace overlapCoupling{
 
             unsigned int microIndex = microDomainStartIndex;
 
-            std::cout << "    looping over the micro domains\n";
             for ( auto microDomain = microDomains->second.begin( ); microDomain != microDomains->second.end( ); microDomain++ ){
 
                 microNodePositions.clear( );
@@ -2840,7 +2835,6 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
-            std::cout << "    computing homogenized stresses\n";
             error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
@@ -2853,8 +2847,6 @@ namespace overlapCoupling{
             }
 
         }
-
-        return NULL; //REMOVE THIS
 
         //Compute the homogenized force vectors and mass matrices
         std::cout << "    assembling homogenized matrices and vectors\n";
