@@ -4542,7 +4542,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
                                                  "Error in the computation of the required values for the element" );
                 result->addNext( error );
                 return result;
@@ -4638,6 +4638,10 @@ namespace overlapCoupling{
         /*!
          * Add the contribution of the micromorphic element to the internal force vector
          *
+         * TODO: This function is considerably more complicated than it needs to be so that it
+         *       uses the functions in the micromorphic balance equations library. We don't have to
+         *       do this and it would make the function shorter and probably faster.
+         *
          * :param const std::unique_ptr< elib::Element > &element: The FEA representation of the micromorphic element
          * :param const floatVector &degreeOfFreedomValues: The values of the degrees of freedom at the nodes of the element
          * :param const floatVector &cauchyStress: The cauchy stress at the quadrature points of the element
@@ -4659,7 +4663,7 @@ namespace overlapCoupling{
         if ( dim != 3 ){
 
             std::string output  = "The dimension of the problem is required to be 3. This only matters ( it is believed )\n";
-            output             += "because of dNdX, fint, and cint which are currently consistend with a 3D problem as required\n";
+            output             += "because of dNdX, fint, and cint which are currently consistent with a 3D problem as required\n";
             output             += "by balance_equations.h";
             return new errorNode( "formMicromorphicElementInternalForceVector", output );
 
@@ -4992,8 +4996,6 @@ namespace overlapCoupling{
 
         for ( auto macroCellID = macroCellIDVector.begin( ); macroCellID != macroCellIDVector.end( ); macroCellID++ ){
 
-            std::cout << "macroCellID: " << *macroCellID << "\n";
-
             //Make sure that the macroCellID is stored in the external force vector
             if ( externalForcesAtNodes.find( *macroCellID ) == externalForcesAtNodes.end( ) ){
 
@@ -5065,8 +5067,6 @@ namespace overlapCoupling{
             }
 
         }
-
-        std::cout << "homogenizedFEXT:\n" << homogenizedFEXT << "\n";
 
         return NULL;
 
@@ -5410,7 +5410,6 @@ namespace overlapCoupling{
          * Assemble the homogenized mass matrices and force vectors
          */
 
-        std::cout << "        assembling the homogenized external force vector\n";
         errorOut error = assembleHomogenizedExternalForceVector( );
 
         if ( error ){
@@ -5422,7 +5421,6 @@ namespace overlapCoupling{
 
         }
 
-        std::cout << "        assembling the homogenized internal force vector\n";
         error = assembleHomogenizedInternalForceVector( );
 
         if ( error ){
@@ -5434,7 +5432,7 @@ namespace overlapCoupling{
 
         }
 
-        std::cout << "        assembling the homogenized stress matrix\n";
+        std::cout << "        assembling the homogenized mass matrix\n";
         error = assembleHomogenizedMassMatrix( );
 
         if ( error ){
@@ -8805,6 +8803,15 @@ namespace overlapCoupling{
 
         return &homogenizedFEXT; 
     }
+
+    const Eigen::MatrixXd *overlapCoupling::getHomogenizedFINT( ){
+        /*!
+         * Get a constant reference to the homogenized external force vector
+         */
+
+        return &homogenizedFINT; 
+    }
+
 
 #endif
 

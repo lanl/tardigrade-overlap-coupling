@@ -170,6 +170,7 @@ namespace overlapCoupling{
             const std::unordered_map< uIntType, floatVector > *getQuadraturePointSymmetricMicroStress( );
 
             const Eigen::MatrixXd *getHomogenizedFEXT( );
+            const Eigen::MatrixXd *getHomogenizedFINT( );
 
 #endif
 
