@@ -2857,6 +2857,7 @@ namespace overlapCoupling{
         return NULL; //REMOVE THIS
 
         //Compute the homogenized force vectors and mass matrices
+        std::cout << "    assembling homogenized matrices and vectors\n";
         error = assembleHomogenizedMatricesAndVectors( );
 
         if ( error ){

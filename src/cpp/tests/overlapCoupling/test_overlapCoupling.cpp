@@ -3847,16 +3847,17 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
              2.75   ,  3.25   ,  3.74,  2.25   ,  2.25   ,  2.25 };
 
     floatVector coupleVectorsAnswer
-        = { -0.125, -0.25 , -0.375, -0.5  , -0.625, -0.75 , -0.875, -1.   ,
-            -1.125, -0.125, -0.25 , -0.375, -0.5  , -0.625, -0.75 , -0.875,
-            -1.   , -1.125, -0.125, -0.25 , -0.375, -0.5  , -0.625, -0.75 ,
-            -0.875, -1.   , -1.125, -0.125, -0.25 , -0.375, -0.5  , -0.625,
-            -0.75 , -0.875, -1.   , -1.125, -0.125, -0.25 , -0.375, -0.5  ,
-            -0.625, -0.75 , -0.875, -1.   , -1.125, -0.125, -0.25 , -0.375,
-            -0.5  , -0.625, -0.75 , -0.875, -1.   , -1.125, -0.125, -0.25 ,
-            -0.375, -0.5  , -0.625, -0.75 , -0.875, -1.   , -1.125, -0.125,
-            -0.25 , -0.375, -0.5  , -0.625, -0.75 , -0.875, -1.   , -1.125 };
+        = { -0.125, -0.5  , -0.875, -0.25 , -0.625, -1.   , -0.375, -0.75 ,
+            -1.125, -0.125, -0.5  , -0.875, -0.25 , -0.625, -1.   , -0.375,
+            -0.75 , -1.125, -0.125, -0.5  , -0.875, -0.25 , -0.625, -1.   ,
+            -0.375, -0.75 , -1.125, -0.125, -0.5  , -0.875, -0.25 , -0.625,
+            -1.   , -0.375, -0.75 , -1.125, -0.125, -0.5  , -0.875, -0.25 ,
+            -0.625, -1.   , -0.375, -0.75 , -1.125, -0.125, -0.5  , -0.875,
+            -0.25 , -0.625, -1.   , -0.375, -0.75 , -1.125, -0.125, -0.5  ,
+            -0.875, -0.25 , -0.625, -1.   , -0.375, -0.75 , -1.125, -0.125,
+            -0.5  , -0.875, -0.25 , -0.625, -1.   , -0.375, -0.75 , -1.125 };
 
+    std::cout << "nodal external forces\n";
     for ( auto c = oc.getExternalForcesAtNodes( )->begin( ); c != oc.getExternalForcesAtNodes( )->end( ); c++ ){
 
         if ( !vectorTools::fuzzyEquals( extForceVectorsAnswer, c->second, 1e-6, 1e-1 ) ){
@@ -3869,6 +3870,7 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     }
     testNum++;
 
+    std::cout << "nodal external couples\n";
     for ( auto c = oc.getExternalCouplesAtNodes( )->begin( ); c != oc.getExternalCouplesAtNodes( )->end( ); c++ ){
 
         if ( !vectorTools::fuzzyEquals( floatVector( coupleVectorsAnswer.size( ), 0 ), c->second, 1e-6, 1e-3 ) ){
@@ -3881,6 +3883,7 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     }
     testNum++;
 
+    std::cout << "linear momentum RHS\n";
     for ( auto c = oc._test_cellLinearMomentumRHS.begin( ); c != oc._test_cellLinearMomentumRHS.end( ); c++ ){
 
         if ( !vectorTools::fuzzyEquals( forceVectorsAnswer, c->second, 1e-6, 1e-1 ) ){
@@ -3893,6 +3896,7 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     }
     testNum++;
 
+    std::cout << "first moment RHS\n";
     for ( auto c = oc._test_cellFirstMomentRHS.begin( ); c != oc._test_cellFirstMomentRHS.end( ); c++ ){
 
         if ( !vectorTools::fuzzyEquals( coupleVectorsAnswer, c->second, 1e-6, 1e-1 ) ){
@@ -3987,7 +3991,6 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
              0.07755545,  0.20602909,  0.10546668,  0.22379181,  0.17361177,
             -0.19989885;
 
-    std::cout << "testing LHS matrix\n";
     for ( auto LHS = oc._test_stressProjectionLHS.begin( ); LHS != oc._test_stressProjectionLHS.end( ); LHS++ ){
 
         if ( ( LHS->second * LHSX - LHSA ).norm( ) > 1e-6 * ( LHSA.norm( ) + 1 ) ){
@@ -4001,6 +4004,62 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
 
     }
     testNum++;
+
+    for ( auto c = oc.getQuadraturePointCauchyStress( )->begin( ); c != oc.getQuadraturePointCauchyStress( )->end( ); c++ ){
+
+        std::cout << c->first << ": "; vectorTools::print( c->second );
+
+    }
+
+    for ( auto c = oc.getQuadraturePointHigherOrderStress( )->begin( ); c != oc.getQuadraturePointHigherOrderStress( )->end( ); c++ ){
+
+        std::cout << c->first << ": "; vectorTools::print( c->second );
+
+    }
+
+    for ( auto c = oc.getQuadraturePointDensities( )->begin( ); c != oc.getQuadraturePointDensities( )->end( ); c++ ){
+
+        std::cout << c->first << ": "; vectorTools::print( c->second );
+
+    }
+
+    for ( auto c = oc.getQuadraturePointBodyForce( )->begin( ); c != oc.getQuadraturePointBodyForce( )->end( ); c++ ){
+
+        std::cout << c->first << ": "; vectorTools::print( c->second );
+
+    }
+
+    for ( auto c = oc.getQuadraturePointAccelerations( )->begin( ); c != oc.getQuadraturePointAccelerations( )->end( ); c++ ){
+
+        std::cout << c->first << ": "; vectorTools::print( c->second );
+
+    }
+
+    for ( auto c = oc.getQuadraturePointMicroInertias( )->begin( ); c != oc.getQuadraturePointMicroInertias( )->end( ); c++ ){
+
+        std::cout << c->first << ": "; vectorTools::print( c->second );
+
+    }
+
+    for ( auto c = oc.getQuadraturePointBodyCouples( )->begin( ); c != oc.getQuadraturePointBodyCouples( )->end( ); c++ ){
+
+        std::cout << c->first << ": "; vectorTools::print( c->second );
+
+    }
+
+    for ( auto c = oc.getQuadraturePointMicroSpinInertias( )->begin( ); c != oc.getQuadraturePointMicroSpinInertias( )->end( ); c++ ){
+
+        std::cout << c->first << ": "; vectorTools::print( c->second );
+
+    }
+
+    for ( auto c = oc.getQuadraturePointSymmetricMicroStress( )->begin( ); c != oc.getQuadraturePointSymmetricMicroStress( )->end( ); c++ ){
+
+        std::cout << c->first << ": "; vectorTools::print( c->second );
+
+    }
+
+
 
     remove( "reference_information.xdmf" );
     remove( "reference_information.h5" );
