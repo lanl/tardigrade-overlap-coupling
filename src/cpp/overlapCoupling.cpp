@@ -165,7 +165,6 @@ namespace overlapCoupling{
 #endif
 
         //Homogenize the material properties at the micro-scale to the macro-scale
-        std::cout << "homogenizing material properties\n";
         error = homogenizeMicroScale( microIncrement );
 
         if ( error ){
@@ -175,8 +174,6 @@ namespace overlapCoupling{
             return result;
 
         }
-
-        return NULL; //REMOVE THIS
 
         YAML::Node couplingConfiguration = _inputProcessor.getCouplingInitialization( );
 
@@ -193,6 +190,8 @@ namespace overlapCoupling{
                 return result;
     
             }
+
+            return NULL; //REMOVE THIS
 
             //Assemble the coupling mass and damping matrices
             std::cout << "assembling the coupling mass and damping matrices\n";
@@ -2849,7 +2848,6 @@ namespace overlapCoupling{
         }
 
         //Compute the homogenized force vectors and mass matrices
-        std::cout << "    assembling homogenized matrices and vectors\n";
         error = assembleHomogenizedMatricesAndVectors( );
 
         if ( error ){
@@ -5432,7 +5430,6 @@ namespace overlapCoupling{
 
         }
 
-        std::cout << "        assembling the homogenized mass matrix\n";
         error = assembleHomogenizedMassMatrix( );
 
         if ( error ){
