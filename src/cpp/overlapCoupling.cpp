@@ -8812,6 +8812,13 @@ namespace overlapCoupling{
         return &homogenizedFINT; 
     }
 
+    const SparseMatrix *overlapCoupling::getHomogenizedMassMatrix( ){
+        /*!
+         * Get a constant reference to the homogenized mass matrix
+         */
+
+        return &homogenizedMassMatrix;
+    }
 
 #endif
 
