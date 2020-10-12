@@ -172,6 +172,7 @@ namespace overlapCoupling{
             const Eigen::MatrixXd *getHomogenizedFEXT( );
             const Eigen::MatrixXd *getHomogenizedFINT( );
             const SparseMatrix *getHomogenizedMassMatrix( );
+            const SparseMatrix *getFreeMicromorphicMassMatrix( );
 
 #endif
 

@@ -4271,6 +4271,19 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
         return 1;
 
     }
+    testNum++;
+
+    MA = Eigen::MatrixXd::Zero( 144, 1 );
+
+    MASS = oc.getFreeMicromorphicMassMatrix( );
+
+    if ( ( ( *MASS ) * MX - MA ).norm( ) > 1e-3 * ( MA.norm( ) + 1 ) ){
+
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+
+    }
+    testNum++;
 
     remove( "reference_information.xdmf" );
     remove( "reference_information.h5" );

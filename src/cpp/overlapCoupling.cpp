@@ -180,7 +180,6 @@ namespace overlapCoupling{
         if ( !couplingConfiguration[ "update_displacement" ].IsScalar( ) ){
 
             //Assemble the mass matrix for the free micromorphic domians
-            std::cout << "assembling the free micromorphic mass matrix\n";
             error = assembleFreeMicromorphicMassMatrix( );
     
             if ( error ){
@@ -190,8 +189,6 @@ namespace overlapCoupling{
                 return result;
     
             }
-
-            return NULL; //REMOVE THIS
 
             //Assemble the coupling mass and damping matrices
             std::cout << "assembling the coupling mass and damping matrices\n";
@@ -204,6 +201,8 @@ namespace overlapCoupling{
                 return result;
     
             }
+
+            return NULL; //REMOVE THIS
     
             //Assemble the coupling force vector
             std::cout << "assembling the coupling force vector\n";
@@ -5601,7 +5600,6 @@ namespace overlapCoupling{
 
             }
 
-
             floatVector densities( element->qrule.size( ), macroDensities->second[ 0 ] );
 
             floatVector momentsOfInertia
@@ -8815,6 +8813,14 @@ namespace overlapCoupling{
          */
 
         return &homogenizedMassMatrix;
+    }
+
+    const SparseMatrix *overlapCoupling::getFreeMicromorphicMassMatrix( ){
+        /*!
+         * Get a constant reference to the free micromorphic mass matrix
+         */
+
+        return &freeMicromorphicMassMatrix;
     }
 
 #endif

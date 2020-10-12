@@ -195,10 +195,10 @@ free_macroscale_domains:
                     number_of_surface_microdomains: 6
           reference_density: #The density in the reference configuration
                   type: constant #Only constant is currently recognized
-                  value: 2. #The density value in the reference configuration.
+                  value: 3. #The density value in the reference configuration.
           reference_moment_of_inertia: #The moment of inertia in the reference configuration
                   type: constant #Only constant is currently recognized
-                  value: [ 1e-5, 2e-5, 3e-5, 4e-5, 5e-5, 6e-5 ] #The components of the moment of inertia. Note only six components are stored because it is symmetric
+                  value: [ 1e-2, 2e-2, 3e-2, 4e-2, 5e-2, 6e-2 ] #The components of the moment of inertia. Note only six components are stored because it is symmetric
 
 ghost_macroscale_domains:
         -
