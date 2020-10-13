@@ -4548,8 +4548,29 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
         results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
         return 1;
     }
-
     testNum++;
+
+    Eigen::MatrixXd QD( blockQ.size( ) + blockD.size( ), 1 );
+    QD << blockQ, blockD;
+
+    Eigen::MatrixXd L2MASSA( blockQ.size( ) + blockD.size( ), 1 );
+    L2MASSA << MQQA + MQDA, MDQA + MDDA;
+
+    Eigen::MatrixXd L2DAMPINGA( blockQ.size( ) + blockD.size( ), 1 );
+    L2DAMPINGA << CQQA + CQDA, CDQA + CDDA;
+
+    if ( ( ( *oc.getL2Mass( ) ) * QD - L2MASSA ).norm( )  > 2e-4 * ( L2MASSA.norm( ) + 1 ) ){
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+    }
+    testNum++;
+
+    if ( ( ( *oc.getL2Damping( ) ) * QD - L2DAMPINGA ).norm( )  > 1e-4 * ( L2DAMPINGA.norm( ) + 1 ) ){
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+    }
+    testNum++;
+
     remove( "reference_information.xdmf" );
     remove( "reference_information.h5" );
 
