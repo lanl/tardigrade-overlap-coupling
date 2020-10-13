@@ -174,6 +174,25 @@ namespace overlapCoupling{
             const SparseMatrix *getHomogenizedMassMatrix( );
             const SparseMatrix *getFreeMicromorphicMassMatrix( );
 
+            floatVector _test_freeMicroMasses;
+            floatVector _test_ghostMicroMasses;
+
+            SparseMatrix _test_MQ;
+            SparseMatrix _test_MQhat;
+
+            Eigen::MatrixXd _test_L2_MQQ;
+            Eigen::MatrixXd _test_L2_MQD;
+            Eigen::MatrixXd _test_L2_MDQ;
+            Eigen::MatrixXd _test_L2_MDD;
+
+            Eigen::MatrixXd _test_L2_CQQ;
+            Eigen::MatrixXd _test_L2_CQD;
+            Eigen::MatrixXd _test_L2_CDQ;
+            Eigen::MatrixXd _test_L2_CDD;
+
+            const Eigen::MatrixXd *getL2Mass( );
+            const Eigen::MatrixXd *getL2Damping( );
+
 #endif
 
         private:

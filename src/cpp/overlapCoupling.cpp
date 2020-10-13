@@ -5685,7 +5685,7 @@ namespace overlapCoupling{
 
         //Get the micro densities and volumes
         const std::unordered_map< uIntType, floatType > *microVolumes   = _inputProcessor.getMicroVolumes( );
-        const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroVolumes( );
+        const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroDensities( );
 
         //Get the global to local micro node mapping
         const DOFMap *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
@@ -5707,7 +5707,7 @@ namespace overlapCoupling{
                 
         //Get the micro mass vectors
         floatVector ghostMicroMasses( ghostMicroNodeIDs->size( ), 0 );
-        floatVector freeMicroMasses( ghostMicroNodeIDs->size( ), 0 );
+        floatVector freeMicroMasses( freeMicroNodeIDs->size( ), 0 );
 
         //Assemble the free micro mass vector
         for ( auto microID = freeMicroNodeIDs->begin( ); microID != freeMicroNodeIDs->end( ); microID++ ){
@@ -5739,10 +5739,16 @@ namespace overlapCoupling{
 
             }
 
-
             freeMicroMasses[ localMicroNodeIDMap->second ] = microVolume->second * microDensity->second;
 
         }
+
+#ifdef TESTACCESS
+
+        _test_freeMicroMasses = freeMicroMasses;
+
+#endif
+
         //Assemble the ghost micro mass vector
         for ( auto microID = ghostMicroNodeIDs->begin( ); microID != ghostMicroNodeIDs->end( ); microID++ ){
 
@@ -5776,6 +5782,12 @@ namespace overlapCoupling{
             ghostMicroMasses[ localMicroNodeIDMap->second - nFreeMicroNodes ] = microVolume->second * microDensity->second;
 
         }
+
+#ifdef TESTACCESS
+
+        _test_ghostMicroMasses = ghostMicroMasses;
+
+#endif
 
         //Assemble the mass sub-matrices
         tripletVector c1;
@@ -5820,12 +5832,20 @@ namespace overlapCoupling{
         SparseMatrix MDhat = MTildeDBreve.block( nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes,
                                                  nMacroDispDOF * nGhostMacroNodes, nMacroDispDOF * nGhostMacroNodes );
 
+#ifdef TESTACCESS
+       
+        _test_MQ = MQ;
+        _test_MQhat = MQhat;
+
+#endif
+        return NULL; //REMOVE THIS
         //Due to the restrictions in listed in the comment at the beginning of the function, MBar from Regueiro 2012
         //is an empty matrix as we only handle the coupling domain here.
        
     
         //Assemble Mass matrices for the micro projection equation
 
+        std::cout << "  entering into the matrix construction\n";
         if ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ){
 
             //TODO: Improve efficiency
@@ -5836,7 +5856,7 @@ namespace overlapCoupling{
     
             //Assemble Mass matrices for the macro projection equation
             
-            auto MDQ = _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatQ + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatQ; //TODO: Verify error in Regueiro 2012 for first term second projection matrix
+            auto MDQ = _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatQ + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatQ;
 
             auto MDD = MD + _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatD + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatD;
     
@@ -5863,6 +5883,20 @@ namespace overlapCoupling{
             _L2_DAMPING.bottomLeftCorner(  CDQ.rows( ), CDQ.cols( ) ) = CDQ;
             _L2_DAMPING.bottomRightCorner( CDD.rows( ), CDD.cols( ) ) = CDD;
 
+#ifdef TESTACCESS
+
+            _test_L2_MQQ = MQQ;
+            _test_L2_MQD = MQD;
+            _test_L2_MDQ = MDQ;
+            _test_L2_MDD = MDD;
+
+            _test_L2_CQQ = CQQ;
+            _test_L2_CQD = CQD;
+            _test_L2_CDQ = CDQ;
+            _test_L2_CDD = CDD;
+
+#endif
+
         }
         else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
 
@@ -5877,7 +5911,7 @@ namespace overlapCoupling{
             //Assemble Mass matrices for the macro projection equation
             
             SparseMatrix MDQ = _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatQ;
-            MDQ += _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatQ; //TODO: Verify error in Reguiero 2012 for first term second projection matrix
+            MDQ += _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatQ;
 
             SparseMatrix MDD = MD;
             MDD += _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD;
@@ -8821,6 +8855,23 @@ namespace overlapCoupling{
          */
 
         return &freeMicromorphicMassMatrix;
+    }
+
+    const Eigen::MatrixXd *overlapCoupling::getL2Mass( ){
+        /*!
+         * Get a constant reference to the l2 mass matrix
+         */
+
+        return &_L2_MASS;
+    }
+
+    const Eigen::MatrixXd *overlapCoupling::getL2Damping( ){
+        /*!
+         * Get a constant reference to the l2 damping matrix
+         */
+
+        return &_L2_DAMPING;
+
     }
 
 #endif
