@@ -205,6 +205,8 @@ namespace overlapCoupling{
             Eigen::MatrixXd _test_FintDhat;
             Eigen::MatrixXd _test_FextDhat;
 
+            const Eigen::MatrixXd *getFORCE( );
+
 #endif
 
         private:

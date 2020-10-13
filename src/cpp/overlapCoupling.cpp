@@ -202,7 +202,6 @@ namespace overlapCoupling{
             }
 
             //Assemble the coupling force vector
-            std::cout << "assembling the coupling force vector\n";
             error = assembleCouplingForceVector( );
     
             if ( error ){
@@ -212,7 +211,6 @@ namespace overlapCoupling{
                 return result;
     
             }
-            return NULL; //REMOVE THIS
     
             //Solve for the free displacements
             std::cout << "solving for the free displacements\n";
@@ -227,6 +225,8 @@ namespace overlapCoupling{
             }
 
         }
+
+        return NULL; //REMOVE THIS
 
         if ( !couplingConfiguration [ "output_homogenized_response" ].IsScalar( ) ){
 
@@ -6418,9 +6418,9 @@ namespace overlapCoupling{
         _test_FextDhat = _FextDhat;
 
 #endif
-        return NULL; //REMOVE THIS 
 
-        if ( projection_type.compare( "l2_projection" ) == 0 ){
+        if ( ( projection_type.compare( "l2_projection" ) == 0 ) ||
+             ( projection_type.compare( "averaged_l2_projection" ) == 0 ) ){
 
             //Assemble the micro force vector
             _FQ  = _FextQ;
@@ -6525,7 +6525,7 @@ namespace overlapCoupling{
 //            }
 //        }
 
-        std::cout << "FQ:\n";
+//        std::cout << "FQ:\n";
 //        for ( unsigned int i = 0; i < _FQ.size( ); i++ ){
 //            std::cout << _FQ( i, 0 ) << " ";
 //            if ( ( ( i + 1 ) % 12 ) == 0 ){
@@ -8885,6 +8885,14 @@ namespace overlapCoupling{
 
         return &_L2_DAMPING;
 
+    }
+
+    const Eigen::MatrixXd *overlapCoupling::getFORCE( ){
+        /*!
+         * Get a constant reference to the total force vector
+         */
+
+        return &_FORCE;
     }
 
 #endif
