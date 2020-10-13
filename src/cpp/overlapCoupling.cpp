@@ -5838,7 +5838,6 @@ namespace overlapCoupling{
         _test_MQhat = MQhat;
 
 #endif
-        return NULL; //REMOVE THIS
         //Due to the restrictions in listed in the comment at the beginning of the function, MBar from Regueiro 2012
         //is an empty matrix as we only handle the coupling domain here.
        
@@ -5846,7 +5845,9 @@ namespace overlapCoupling{
         //Assemble Mass matrices for the micro projection equation
 
         std::cout << "  entering into the matrix construction\n";
-        if ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ){
+        if ( ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ) ||
+             ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 )
+           ){
 
             //TODO: Improve efficiency
 
