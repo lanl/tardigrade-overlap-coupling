@@ -11,6 +11,8 @@ coupling_initialization:
         kinetic_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( rtilde in Regueiro 2012 )
                 type: volume_fraction #The type of partitioning. Currently only "volume_fraction" is available
         extract_previous_dof_values: true #Flag indicating if the previously converged accelerations and velocities should be extracted or if the current increment's should be used. If true, previous_macro_increment and previous_micro_increment must be defined with the increment to be used indicated
+        micro_proportionality_coefficient: 1e-1
+        macro_proportionality_coefficient: 2e-1
         previous_micro_increment: 0
         previous_macro_increment: 0
         update_displacement:

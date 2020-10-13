@@ -193,6 +193,18 @@ namespace overlapCoupling{
             const Eigen::MatrixXd *getL2Mass( );
             const Eigen::MatrixXd *getL2Damping( );
 
+            Eigen::MatrixXd _test_FintQ;
+            Eigen::MatrixXd _test_FextQ;
+
+            Eigen::MatrixXd _test_FintD;
+            Eigen::MatrixXd _test_FextD;
+
+            Eigen::MatrixXd _test_FintQhat;
+            Eigen::MatrixXd _test_FextQhat;
+
+            Eigen::MatrixXd _test_FintDhat;
+            Eigen::MatrixXd _test_FextDhat;
+
 #endif
 
         private:

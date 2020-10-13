@@ -191,7 +191,6 @@ namespace overlapCoupling{
             }
 
             //Assemble the coupling mass and damping matrices
-            std::cout << "assembling the coupling mass and damping matrices\n";
             error = assembleCouplingMassAndDampingMatrices( );
     
             if ( error ){
@@ -202,8 +201,6 @@ namespace overlapCoupling{
     
             }
 
-            return NULL; //REMOVE THIS
-    
             //Assemble the coupling force vector
             std::cout << "assembling the coupling force vector\n";
             error = assembleCouplingForceVector( );
@@ -215,6 +212,7 @@ namespace overlapCoupling{
                 return result;
     
             }
+            return NULL; //REMOVE THIS
     
             //Solve for the free displacements
             std::cout << "solving for the free displacements\n";
@@ -5844,7 +5842,6 @@ namespace overlapCoupling{
     
         //Assemble Mass matrices for the micro projection equation
 
-        std::cout << "  entering into the matrix construction\n";
         if ( ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ) ||
              ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 )
            ){
@@ -6406,7 +6403,22 @@ namespace overlapCoupling{
         //Initialize the force vectors
         Eigen::MatrixXd _FQ, _FD;
 
-        
+#ifdef TESTACCESS
+
+        _test_FintQ = _FintQ;
+        _test_FextQ = _FextQ;
+
+        _test_FintD = _FintD;
+        _test_FextD = _FextD;
+
+        _test_FintQhat = _FintQhat;
+        _test_FextQhat = _FextQhat;
+
+        _test_FintDhat = _FintDhat;
+        _test_FextDhat = _FextDhat;
+
+#endif
+        return NULL; //REMOVE THIS 
 
         if ( projection_type.compare( "l2_projection" ) == 0 ){
 
