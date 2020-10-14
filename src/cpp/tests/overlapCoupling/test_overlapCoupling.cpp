@@ -2587,11 +2587,11 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
 
-    remove( "macroscale_dof.xdmf" );
-    remove( "macroscale_dof.h5" );
+    remove( "macroscale_out.xdmf" );
+    remove( "macroscale_out.h5" );
 
-    remove( "microscale_dof.xdmf" );
-    remove( "microscale_dof.h5" );
+    remove( "microscale_out.xdmf" );
+    remove( "microscale_out.h5" );
 
     std::string testName = "overlapCoupling_processIncrement";
     uIntType testNum = 0;
@@ -5000,16 +5000,12 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     const floatVector *projectedGhostMicroDisplacementResult = oc.getProjectedGhostMicroDisplacement( );
     const floatVector *projectedGhostMacroDisplacementResult = oc.getProjectedGhostMacroDisplacement( );
 
-    std::cout << "Qhat:\n";
-    vectorTools::print( *projectedGhostMicroDisplacementResult );
     if ( !vectorTools::fuzzyEquals( *projectedGhostMicroDisplacementResult, projectedGhostMicroDisplacementAnswer, 1e-6, 1e-2 ) ){
         results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
         return 1;
     }
     testNum++;
 
-    std::cout << "Dhat:\n";
-    vectorTools::print( *projectedGhostMacroDisplacementResult - projectedGhostMacroDisplacementAnswer );
     if ( !vectorTools::fuzzyEquals( *projectedGhostMacroDisplacementResult, projectedGhostMacroDisplacementAnswer, 1e-6, 1e-1 ) ){
         results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
         return 1;
@@ -5022,11 +5018,11 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
 
-    remove( "macroscale_dof.xdmf" );
-    remove( "macroscale_dof.h5" );
+    remove( "macroscale_out.xdmf" );
+    remove( "macroscale_out.h5" );
 
-    remove( "microscale_dof.xdmf" );
-    remove( "microscale_dof.h5" );
+    remove( "microscale_out.xdmf" );
+    remove( "microscale_out.h5" );
 
     results << "test_overlapCoupling_processIncrement & True\n";
     return 0;

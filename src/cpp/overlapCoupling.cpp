@@ -213,7 +213,6 @@ namespace overlapCoupling{
             }
     
             //Solve for the free displacements
-            std::cout << "solving for the free displacements\n";
             error = solveFreeDisplacement( true );
     
             if ( error ){
@@ -225,8 +224,6 @@ namespace overlapCoupling{
             }
 
         }
-
-        return NULL; //REMOVE THIS
 
         if ( !couplingConfiguration [ "output_homogenized_response" ].IsScalar( ) ){
 
