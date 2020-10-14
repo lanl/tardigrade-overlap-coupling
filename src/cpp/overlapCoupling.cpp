@@ -6890,7 +6890,7 @@ namespace overlapCoupling{
 
                 if ( _inputProcessor.macroAccelerationDefined( ) ){
 
-                    DotDotDOF_t[ nMicroDispDOF * indexMap->second + i + microOffset ] = previousMacroAccel->second[ i ];
+                    DotDotDOF_t[ nMacroDispDOF * indexMap->second + i + microOffset ] = previousMacroAccel->second[ i ];
 
                 }
 
@@ -7012,24 +7012,6 @@ namespace overlapCoupling{
         _test_DotDotDOF_tp1 = _DotDotDOF_tp1;
 
 #endif
-
-        std::cout << "_DOF:\n";
-        std::cout << "microscale\n";
-        for ( unsigned int i = 0; i < microOffset; i++ ){
-            std::cout << _DOF( i, 0 ) << " ";
-            if ( ( ( i + 1 ) % 12 ) == 0 ){
-                std::cout << "\n";
-            }
-        }
-        std::cout << "\nmacroscale\n";
-        for ( unsigned int i = microOffset; i < _DOF.size( ); i++ ){
-            std::cout << _DOF( i, 0 ) << " ";
-            if ( ( ( i - microOffset + 1 ) % 12 ) == 0 ){
-                std::cout << "\n";
-            }
-        }
-
-        return NULL; //REMOVE THIS
 
         //Store the free degrees of freedom
         _updatedFreeMicroDispDOFValues = floatVector( FreeDOF.begin( ), FreeDOF.begin( ) + microOffset );
