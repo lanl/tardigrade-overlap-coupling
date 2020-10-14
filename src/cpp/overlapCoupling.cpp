@@ -403,10 +403,6 @@ namespace overlapCoupling{
         const stringVector *freeMacroDomainNames = _inputProcessor.getFreeMacroDomainNames( );
         const stringVector *ghostMacroDomainNames = _inputProcessor.getGhostMacroDomainNames( );
 
-        //Get the micro cell names
-        const stringVector *freeMicroDomainNames = _inputProcessor.getFreeMicroDomainNames( );
-        const stringVector *ghostMicroDomainNames = _inputProcessor.getGhostMicroDomainNames( );
-
         //Get the domains encompassed by the macro cells
         const std::unordered_map< uIntType, stringVector > *macroCellToMicroDomainMap = _inputProcessor.getMacroCellToDomainMap( );
 
@@ -437,7 +433,6 @@ namespace overlapCoupling{
 
         //Loop over the free macro-scale cells
         unsigned int cellIndex;
-        unsigned int nMicroDomains;
 
         uIntVector macroNodes;
 
@@ -909,10 +904,8 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, stringVector > *macroCellToMicroDomainMap = _inputProcessor.getMacroCellToDomainMap( );
 
         const stringVector *ghostMacroDomainNames = _inputProcessor.getGhostMacroDomainNames( );
-        const stringVector *freeMicroDomainNames = _inputProcessor.getFreeMicroDomainNames( );
 
         unsigned int cellIndex;
-        unsigned int nMicroDomains;
 
         errorOut error = NULL;
 
@@ -1910,7 +1903,6 @@ namespace overlapCoupling{
         errorOut error = NULL;
 
         const uIntVector *freeMacroCellIds = _inputProcessor.getFreeMacroCellIds( );
-        const std::unordered_map< uIntType, stringVector > *macroCellToMicroDomainMap = _inputProcessor.getMacroCellToDomainMap( );
 
         _referenceGhostMicroDomainCenterOfMassShapeFunctions.clear( );
 
@@ -2274,7 +2266,7 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, floatType > *microWeights   = _inputProcessor.getMicroWeights( );
 
         //Additional values
-        unsigned int m, n, p;
+        unsigned int n;
 
         floatType microMass, weight, sf;
         floatVector Xi;
@@ -2283,9 +2275,6 @@ namespace overlapCoupling{
         for ( auto microNode  = domainNodes.begin( );
                    microNode != domainNodes.end( );
                    microNode++ ){
-
-            //Set the index
-            m = microNode - domainNodes.begin( );
 
             auto microDensity = microDensities->find( *microNode );
 
@@ -2357,11 +2346,6 @@ namespace overlapCoupling{
                                           "Macro node '" + std::to_string( *macroNode ) + "' not found in global to local macro node map" );
 
                 }
-                else{
-
-                    p = indx->second;
-
-                }
 
                 //Get the shape function
                 sf = shapefunctions->second[ n ];
@@ -2423,7 +2407,6 @@ namespace overlapCoupling{
         //Get the micro-node positions and relative position vectors
         std::unordered_map< uIntType, floatVector > microNodePositions;
  
-        unsigned int index;
         const std::unordered_map< uIntType, floatVector > *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
         const std::unordered_map< uIntType, floatVector > *microDisplacements      = _inputProcessor.getMicroDisplacements( );
         std::unordered_map< uIntType, floatVector > domainReferenceXiVectors;
@@ -2609,7 +2592,6 @@ namespace overlapCoupling{
         externalCouplesAtNodes.clear( );
 
         //Loop through the free macro-scale cells
-        unsigned int microDomainStartIndex = 0;
         errorOut error = NULL;
 
         uIntVector microDomainNodeIds;
@@ -2631,9 +2613,6 @@ namespace overlapCoupling{
         for ( auto macroCell  = _inputProcessor.getFreeMacroCellIds( )->begin( );
                    macroCell != _inputProcessor.getFreeMacroCellIds( )->end( );
                    macroCell++ ){
-
-            //Set the macro index
-            unsigned int macroIndex = macroCell - _inputProcessor.getFreeMacroCellIds( )->begin( );
 
             //Build the macro element
             error = overlapCoupling::buildMacroDomainElement( *macroCell, *macroNodeReferenceLocations,
@@ -2738,13 +2717,9 @@ namespace overlapCoupling{
         }
 
         //Loop through the ghost macro-scale cells
-        microDomainStartIndex = 0;
         for ( auto macroCell  = _inputProcessor.getGhostMacroCellIds( )->begin( );
                    macroCell != _inputProcessor.getGhostMacroCellIds( )->end( );
                    macroCell++ ){
-
-            //Set the macro index
-            unsigned int macroIndex = macroCell - _inputProcessor.getGhostMacroCellIds( )->begin( );
 
             //Build the macro element
             error = overlapCoupling::buildMacroDomainElement( *macroCell, *macroNodeReferenceLocations,
@@ -2758,8 +2733,6 @@ namespace overlapCoupling{
                 return new errorNode( "homogenizedMicroScale",
                                       "Macro cell " + std::to_string( *macroCell ) + " not found in the macro cell to micro domain map" ) ;
             }
-
-            unsigned int microIndex = microDomainStartIndex;
 
             for ( auto microDomain = microDomains->second.begin( ); microDomain != microDomains->second.end( ); microDomain++ ){
 
@@ -3556,8 +3529,6 @@ namespace overlapCoupling{
 
         }
 
-        unsigned int startPoint = 0;
-
         //Initialize storage values for homogenization
         homogenizedSurfaceRegionAreas[ macroCellID ].emplace( microDomainName, floatVector( subdomainNodeIDs.size( ), 0 ) );
         floatVector regionDensities( subdomainNodeIDs.size( ) );
@@ -3675,8 +3646,6 @@ namespace overlapCoupling{
             }
 
         }
-
-        startPoint = 0;
 
         index = 0;
         for ( auto sN = subdomainNodeIDs.begin( ); sN != subdomainNodeIDs.end( ); sN++, index++ ){
