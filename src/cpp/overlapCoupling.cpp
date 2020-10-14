@@ -243,7 +243,6 @@ namespace overlapCoupling{
         if ( !couplingConfiguration[ "output_updated_dof" ].IsScalar( ) ){
 
             //Output the updated dof values to a data file
-            std::cout << "writing the updated DOF to file\n";
             error = overlapCoupling::writeUpdatedDOFToFile( );
 
             if ( error ){

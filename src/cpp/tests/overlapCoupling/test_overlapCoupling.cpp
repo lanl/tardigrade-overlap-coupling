@@ -5012,17 +5012,122 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     }
     testNum++;
 
+    //check the outputted DOF
+    shared_ptr< XdmfReader > reader = XdmfReader::New( );
+    shared_ptr< XdmfDomain > _readDomain = shared_dynamic_cast< XdmfDomain >( reader->read( "macroscale_dof.xdmf" ) );
+    shared_ptr< XdmfUnstructuredGrid > _readGrid = _readDomain->getGridCollection( 0 )->getUnstructuredGrid( 0 );
+    shared_ptr< XdmfAttribute > nodeIDs = _readGrid->getAttribute( "node_ids" );
+    shared_ptr< XdmfAttribute > updatedDOF = _readGrid->getAttribute( "updated_DOF" );
+
+    nodeIDs->read( );
+    updatedDOF->read( );
+
+    uIntVector macroNodeIdsAnswer
+       = { 5,  9,  8, 11,  3,  1,  6, 15, 12,  2, 13, 14 };
+
+    if ( nodeIDs->getSize( ) != macroNodeIdsAnswer.size( ) ){
+
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+
+    }
+
+    for ( uIntType i = 0; i < macroNodeIdsAnswer.size( ); i++ ){
+
+        if ( !vectorTools::fuzzyEquals( macroNodeIdsAnswer[ i ], nodeIDs->getValue< uIntType >( i ) ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+    if ( updatedDOF->getSize( ) != oc.getUpdatedMacroDisplacementDOF( ).size( ) ){
+
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+
+    }
+    testNum++;
+
+    for ( uIntType i = 0; i < oc.getUpdatedMacroDisplacementDOF( ).size( ); i++ ){
+
+        if ( !vectorTools::fuzzyEquals( oc.getUpdatedMacroDisplacementDOF( )[ i ], updatedDOF->getValue< floatType >( i ) ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+    
+    reader = XdmfReader::New( );
+    _readDomain = shared_dynamic_cast< XdmfDomain >( reader->read( "microscale_dof.xdmf" ) );
+    _readGrid = _readDomain->getGridCollection( 0 )->getUnstructuredGrid( 0 );
+    nodeIDs = _readGrid->getAttribute( "node_ids" );
+    updatedDOF = _readGrid->getAttribute( "updated_DOF" );
+
+    nodeIDs->read( );
+    updatedDOF->read( );
+
+    uIntVector microNodeIdsAnswer
+       = { 15, 31, 13, 26, 53, 21, 37, 48,  5, 10,  3,  4, 32, 33, 34, 28, 25,
+           50, 43, 27,  1,  7, 30, 16, 22,  2, 46, 24, 39, 40, 57, 44, 58, 29,
+           59, 11,  0, 20, 60, 47, 49, 17, 38, 14, 55 };
+
+    if ( nodeIDs->getSize( ) != microNodeIdsAnswer.size( ) ){
+
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+
+    }
+
+    for ( uIntType i = 0; i < microNodeIdsAnswer.size( ); i++ ){
+
+        if ( !vectorTools::fuzzyEquals( microNodeIdsAnswer[ i ], nodeIDs->getValue< uIntType >( i ) ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+
+    if ( updatedDOF->getSize( ) != oc.getUpdatedMicroDisplacementDOF( ).size( ) ){
+
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+
+    }
+    testNum++;
+
+    for ( uIntType i = 0; i < oc.getUpdatedMicroDisplacementDOF( ).size( ); i++ ){
+
+        if ( !vectorTools::fuzzyEquals( oc.getUpdatedMicroDisplacementDOF( )[ i ], updatedDOF->getValue< floatType >( i ) ) ){
+
+            results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+            return 1;
+
+        }
+
+    }
+    testNum++;
+    
     remove( "reference_information.xdmf" );
     remove( "reference_information.h5" );
 
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
 
-    remove( "macroscale_out.xdmf" );
-    remove( "macroscale_out.h5" );
+    remove( "macroscale_dof.xdmf" );
+    remove( "macroscale_dof.h5" );
 
-    remove( "microscale_out.xdmf" );
-    remove( "microscale_out.h5" );
+    remove( "microscale_dof.xdmf" );
+    remove( "microscale_dof.h5" );
 
     results << "test_overlapCoupling_processIncrement & True\n";
     return 0;
@@ -5960,19 +6065,19 @@ int main(){
     test_overlapCoupling_initializeCoupling_l2_projection( results );
     test_overlapCoupling_initializeCoupling_averaged_l2_projection( results );
     test_overlapCoupling_processIncrement( results );
-    test_overlapCoupling_processLastIncrements( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
-    test_MADOutlierDetection( results );
-    test_formMicromorphicElementMassMatrix( results );
-    test_computeMicromorphicElementRequiredValues( results );
-    test_computeMicromorphicElementInternalForceVector( results );
-    test_readWriteSparseMatrixToXDMF( results );
-    test_readWriteDenseMatrixToXDMF( results );
+//    test_overlapCoupling_processLastIncrements( results );
+////    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+////    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+////    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+////    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+//////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+//////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+//    test_MADOutlierDetection( results );
+//    test_formMicromorphicElementMassMatrix( results );
+//    test_computeMicromorphicElementRequiredValues( results );
+//    test_computeMicromorphicElementInternalForceVector( results );
+//    test_readWriteSparseMatrixToXDMF( results );
+//    test_readWriteDenseMatrixToXDMF( results );
 
     //Close the results file
     results.close();
