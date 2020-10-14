@@ -6904,11 +6904,20 @@ namespace overlapCoupling{
         Eigen::Map< const Eigen::Matrix< floatType, -1,  1 > > _DotDotDOF_t( DotDotDOF_t.data(), DotDotDOF_t.size( ), 1 );
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _DotDotDOF_tp1( DotDotDOF_tp1.data(), DotDotDOF_tp1.size( ), 1 );
 
+#ifdef TESTACCESS
+
+        _test_DOF_t = _DOF;
+        _test_DotDOF_t = _DotDOF;
+        _test_DotDotDOF_t = _DotDotDOF_t;
+
+#endif
+
         //Instantiate the QR solver
         std::cout << "Performing QR decomposition of the Free DOF LHS matrix\n";
 
         Eigen::MatrixXd RHS;
-        if ( projection_type.compare( "l2_projection" ) == 0 ){
+        if ( ( projection_type.compare( "l2_projection" ) == 0 ) ||
+             ( projection_type.compare( "averaged_l2_projection" ) == 0 ) ){
 
             Eigen::MatrixXd LHS;
             LHS = _L2_MASS;
@@ -6997,6 +7006,13 @@ namespace overlapCoupling{
         //Update the free degrees of freedom
         _DOF += ( *dt ) * _DotDOF + 0.5 * ( ( *dt ) * ( *dt ) ) * ( ( 1 - 2 * beta ) * _DotDotDOF_t + 2 * beta * _DotDotDOF_tp1 );
 
+#ifdef TESTACCESS
+
+        _test_DOF_tp1 = _DOF;
+        _test_DotDotDOF_tp1 = _DotDotDOF_tp1;
+
+#endif
+
         std::cout << "_DOF:\n";
         std::cout << "microscale\n";
         for ( unsigned int i = 0; i < microOffset; i++ ){
@@ -7005,15 +7021,15 @@ namespace overlapCoupling{
                 std::cout << "\n";
             }
         }
-        std::cout << "macroscale\n";
+        std::cout << "\nmacroscale\n";
         for ( unsigned int i = microOffset; i < _DOF.size( ); i++ ){
             std::cout << _DOF( i, 0 ) << " ";
-            if ( ( ( i + 1 ) % 12 ) == 0 ){
+            if ( ( ( i - microOffset + 1 ) % 12 ) == 0 ){
                 std::cout << "\n";
             }
         }
 
-        return new errorNode( "solveFreeDisplacement", "derp4" );
+        return NULL; //REMOVE THIS
 
         //Store the free degrees of freedom
         _updatedFreeMicroDispDOFValues = floatVector( FreeDOF.begin( ), FreeDOF.begin( ) + microOffset );

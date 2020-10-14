@@ -207,6 +207,13 @@ namespace overlapCoupling{
 
             const Eigen::MatrixXd *getFORCE( );
 
+            Eigen::MatrixXd _test_DOF_t;
+            Eigen::MatrixXd _test_DotDOF_t;
+            Eigen::MatrixXd _test_DotDotDOF_t;
+
+            Eigen::MatrixXd _test_DOF_tp1;
+            Eigen::MatrixXd _test_DotDotDOF_tp1;
+
 #endif
 
         private:

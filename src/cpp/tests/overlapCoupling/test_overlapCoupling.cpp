@@ -4789,6 +4789,33 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
         return 1;
     }
 
+    Eigen::MatrixXd DOFTA( 129, 1 );
+    DOFTA = Eigen::MatrixXd::Zero( 129, 1 );
+
+    Eigen::MatrixXd DotDOFTA( 129, 1 );
+    DotDOFTA = Eigen::MatrixXd::Zero( 129, 1 );
+
+    Eigen::MatrixXd DotDotDOFTA( 129, 1 );
+    DotDotDOFTA = Eigen::MatrixXd::Zero( 129, 1 );
+
+    if ( !DOFTA.isApprox( oc._test_DOF_t ) ){
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+    }
+    testNum++;
+
+    if ( !DotDOFTA.isApprox( oc._test_DotDOF_t ) ){
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+    }
+    testNum++;
+
+    if ( !DotDotDOFTA.isApprox( oc._test_DotDotDOF_t ) ){
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+    }
+    testNum++;
+
     remove( "reference_information.xdmf" );
     remove( "reference_information.h5" );
 
