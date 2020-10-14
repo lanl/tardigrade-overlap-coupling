@@ -2020,8 +2020,8 @@ int test_overlapCoupling_initializeCoupling_averaged_l2_projection( std::ofstrea
 //    }
 
     //Check the projection matrices
-    Eigen::MatrixXd BDhatQ;
-    overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "BDhatQ", BDhatQ );
+    SparseMatrix BDhatQ;
+    overlapCoupling::readSparseMatrixFromXDMF( _readGrid, "BDhatQ", BDhatQ );
 
     Eigen::MatrixXd Q( 81, 1 );
     Q << 1.6082461 ,  0.23123014,  0.62393882,  1.32988565, -1.20046325,
@@ -2090,8 +2090,8 @@ int test_overlapCoupling_initializeCoupling_averaged_l2_projection( std::ofstrea
     }
     testNum += 1;
 
-    Eigen::MatrixXd BDhatD;
-    overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "BDhatD", BDhatD );
+    SparseMatrix BDhatD;
+    overlapCoupling::readSparseMatrixFromXDMF( _readGrid, "BDhatD", BDhatD );
 
     Eigen::MatrixXd DhatAnswer2( 96, 1 );
     DhatAnswer2 <<  0.01117404, -0.06213769, -0.00323124,  0.14326677, -0.11300732,
@@ -2125,8 +2125,8 @@ int test_overlapCoupling_initializeCoupling_averaged_l2_projection( std::ofstrea
     }
     testNum += 1;
 
-    Eigen::MatrixXd BQhatQ;
-    overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "BQhatQ", BQhatQ );
+    SparseMatrix BQhatQ;
+    overlapCoupling::readSparseMatrixFromXDMF( _readGrid, "BQhatQ", BQhatQ );
 
     Eigen::MatrixXd QhatAnswer1( 54, 1 );
     QhatAnswer1 <<  0.10712051, -0.0912848 ,  0.11184787,  0.38804931, -0.22690467,
@@ -2151,8 +2151,8 @@ int test_overlapCoupling_initializeCoupling_averaged_l2_projection( std::ofstrea
     }
     testNum += 1;
 
-    Eigen::MatrixXd BQhatD;
-    overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "BQhatD", BQhatD );
+    SparseMatrix BQhatD;
+    overlapCoupling::readSparseMatrixFromXDMF( _readGrid, "BQhatD", BQhatD );
 
     Eigen::MatrixXd QhatAnswer2( 54, 1 );
     QhatAnswer2 <<  -0.38024752,  0.46469597, -0.37771336, -0.11826487,  0.33930194,

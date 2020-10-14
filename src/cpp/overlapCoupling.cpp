@@ -890,19 +890,20 @@ namespace overlapCoupling{
         //Compute the projectors
         std::cerr << "ASSEMBLING THE PROJECTORS\n";
         std::cerr << "  BDhatQ\n";
-        _dense_BDhatQ = microMacroProjector.bottomLeftCorner( nGhostMacroDOF, nFreeMicroDOF );
+
+        floatType sparseFactor = 1e-4 * 0.5 * ( std::fabs( microMacroProjector.maxCoeff( ) ) + std::fabs( microMacroProjector.minCoeff( ) ) ); //TODO: Make the 1e-4 settable by the user
+
+        _sparse_BDhatQ = microMacroProjector.bottomLeftCorner( nGhostMacroDOF, nFreeMicroDOF ).sparseView( 1, sparseFactor );
 
         std::cerr << "  BDhatD\n";
-        _dense_BDhatD = -_dense_BDhatQ;
-        _dense_BDhatD *= _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
+        _sparse_BDhatD = -_sparse_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
 
         std::cerr << "  BQhatQ\n";
-        _dense_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF );
-        _dense_BQhatQ *= _dense_BDhatQ;
+        _sparse_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _sparse_BDhatQ;
 
         std::cerr << "  BQhatD\n";
-        _dense_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF );
-        _dense_BQhatD.noalias( ) += _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _dense_BDhatD;
+        _sparse_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF );
+        _sparse_BQhatD += _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _sparse_BDhatD;
 
         std::cerr << "PROJECTORS ASSEMBLED\n";
         return NULL;
@@ -2242,14 +2243,14 @@ namespace overlapCoupling{
 
         YAML::Node config = _inputProcessor.getCouplingInitialization( );
 
-        if ( ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ) ||
-             ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 ) ){
+        if ( ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ) ){
 
             Dhat = _dense_BDhatQ * Q + _dense_BDhatD * D;
             Qhat = _dense_BQhatQ * Q + _dense_BQhatD * D;
 
         }
-        else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+        else if ( ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ) ||
+                  ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 ) ){
 
             Dhat = _sparse_BDhatQ * Q + _sparse_BDhatD * D;
             Qhat = _sparse_BQhatQ * Q + _sparse_BQhatD * D;
@@ -5847,9 +5848,7 @@ namespace overlapCoupling{
     
         //Assemble Mass matrices for the micro projection equation
 
-        if ( ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ) ||
-             ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 )
-           ){
+        if ( ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ) ){
 
             //Determine the coefficients where we cut off the projectors TODO: Expose factor to user
             floatType BQhatQ_coeff = 1e-4 * ( std::fabs( _dense_BQhatQ.minCoeff( ) ) + std::fabs( _dense_BQhatQ.maxCoeff( ) ) );
@@ -5986,7 +5985,9 @@ namespace overlapCoupling{
             }
 
         }
-        else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+        else if ( ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ) ||
+                  ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 )
+                ){
 
             std::cout << "ASSEMBLING MASS BLOCK MATRICES\n";
             SparseMatrix MQQ  =  MQ;
@@ -6511,9 +6512,7 @@ namespace overlapCoupling{
 
 #endif
 
-        if ( ( projection_type.compare( "l2_projection" ) == 0 ) ||
-             ( projection_type.compare( "averaged_l2_projection" ) == 0 ) ){
-
+        if ( ( projection_type.compare( "l2_projection" ) == 0 ) ){
             //Assemble the micro force vector
             _FQ  = _FextQ;
             _FQ += _dense_BQhatQ.transpose( ) * _FextQhat;
@@ -6529,7 +6528,8 @@ namespace overlapCoupling{
             _FD -= _dense_BDhatD.transpose( ) * _FintDhat;
 
         }
-        else if ( projection_type.compare( "direct_projection" ) == 0 ){
+        else if ( ( projection_type.compare( "direct_projection" ) == 0 ) ||
+                  ( projection_type.compare( "averaged_l2_projection" ) == 0 ) ){
 
             //Assemble the micro force vector
             _FQ  = _FextQ;
@@ -7008,8 +7008,7 @@ namespace overlapCoupling{
         std::cout << "Performing QR decomposition of the Free DOF LHS matrix\n";
 
         Eigen::MatrixXd RHS;
-        if ( ( projection_type.compare( "l2_projection" ) == 0 ) ||
-             ( projection_type.compare( "averaged_l2_projection" ) == 0 ) ){
+        if ( ( projection_type.compare( "l2_projection" ) == 0 ) ){
 
             SparseMatrix LHS( _sparse_MASS.rows( ), _sparse_MASS.cols( ) );
             LHS = _sparse_MASS;
@@ -7023,7 +7022,8 @@ namespace overlapCoupling{
             solver.compute( LHS );
             _DotDotDOF_tp1 = solver.solve( RHS );
         }
-        else if ( projection_type.compare( "direct_projection" ) == 0 ){
+        else if ( ( projection_type.compare( "direct_projection" ) == 0 ) ||
+                  ( projection_type.compare( "averaged_l2_projection" ) == 0 ) ){
 
             SparseMatrix LHS( _sparse_MASS.rows( ), _sparse_MASS.cols( ) );
             LHS = _sparse_MASS;
@@ -7209,7 +7209,7 @@ namespace overlapCoupling{
         }
 
         std::string projectionType = couplingInitialization[ "projection_type" ].as< std::string >( );
-        if ( ( projectionType.compare( "l2_projection" ) == 0 ) || ( projectionType.compare( "averaged_l2_projection" ) == 0 ) ){
+        if ( ( projectionType.compare( "l2_projection" ) == 0 ) ){
 
             //Initialize the projection matrix attributes
             shared_ptr< XdmfAttribute > BQhatQ = XdmfAttribute::New( );
@@ -7270,7 +7270,7 @@ namespace overlapCoupling{
             }
 
         }
-        else if ( projectionType.compare( "direct_projection" ) == 0 ){
+        else if ( ( projectionType.compare( "direct_projection" ) == 0 ) || ( projectionType.compare( "averaged_l2_projection" ) == 0 ) ){
 
             //Write the matrix type to the output file
             shared_ptr< XdmfInformation > projectionType = XdmfInformation::New( "EIGEN_MATRIX_TYPE", "SPARSE" );
@@ -7636,7 +7636,7 @@ namespace overlapCoupling{
 
         }
 
-        if ( ( projectionType.compare( "l2_projection" ) ) || ( projectionType.compare( "averaged_l2_projection" ) ) ){
+        if ( ( projectionType.compare( "l2_projection" ) ) ) {
 
             error = readDenseMatrixFromXDMF( _readGrid, "BQhatQ", _dense_BQhatQ );
 
@@ -7683,7 +7683,7 @@ namespace overlapCoupling{
             }
 
         }
-        else if ( projectionType.compare( "direct_projection" ) ){
+        else if ( ( projectionType.compare( "direct_projection" ) ) || ( projectionType.compare( "averaged_l2_projection" ) ) ){
 
             error = readSparseMatrixFromXDMF( _readGrid, "BQhatQ", _sparse_BQhatQ );
 
