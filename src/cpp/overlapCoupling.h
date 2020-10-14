@@ -174,24 +174,24 @@ namespace overlapCoupling{
             const SparseMatrix *getHomogenizedMassMatrix( );
             const SparseMatrix *getFreeMicromorphicMassMatrix( );
 
+            const SparseMatrix *getMass( );
+            const SparseMatrix *getDamping( );
+
             floatVector _test_freeMicroMasses;
             floatVector _test_ghostMicroMasses;
 
             SparseMatrix _test_MQ;
             SparseMatrix _test_MQhat;
 
-            Eigen::MatrixXd _test_L2_MQQ;
-            Eigen::MatrixXd _test_L2_MQD;
-            Eigen::MatrixXd _test_L2_MDQ;
-            Eigen::MatrixXd _test_L2_MDD;
+            Eigen::MatrixXd _test_dense_MQQ;
+            Eigen::MatrixXd _test_dense_MQD;
+            Eigen::MatrixXd _test_dense_MDQ;
+            Eigen::MatrixXd _test_dense_MDD;
 
-            Eigen::MatrixXd _test_L2_CQQ;
-            Eigen::MatrixXd _test_L2_CQD;
-            Eigen::MatrixXd _test_L2_CDQ;
-            Eigen::MatrixXd _test_L2_CDD;
-
-            const Eigen::MatrixXd *getL2Mass( );
-            const Eigen::MatrixXd *getL2Damping( );
+            Eigen::MatrixXd _test_dense_CQQ;
+            Eigen::MatrixXd _test_dense_CQD;
+            Eigen::MatrixXd _test_dense_CDQ;
+            Eigen::MatrixXd _test_dense_CDD;
 
             Eigen::MatrixXd _test_FintQ;
             Eigen::MatrixXd _test_FextQ;
@@ -422,16 +422,16 @@ namespace overlapCoupling{
             SparseMatrix _N;
 
             //Construct the projection matrices for the L2 projection
-            Eigen::MatrixXd _L2_BQhatQ;
-            Eigen::MatrixXd _L2_BQhatD;
-            Eigen::MatrixXd _L2_BDhatQ;
-            Eigen::MatrixXd _L2_BDhatD;
+            Eigen::MatrixXd _dense_BQhatQ;
+            Eigen::MatrixXd _dense_BQhatD;
+            Eigen::MatrixXd _dense_BDhatQ;
+            Eigen::MatrixXd _dense_BDhatD;
 
             //Construct the projection matrices for the direct projection
-            SparseMatrix _DP_BQhatQ;
-            SparseMatrix _DP_BQhatD;
-            SparseMatrix _DP_BDhatQ;
-            SparseMatrix _DP_BDhatD;
+            SparseMatrix _sparse_BQhatQ;
+            SparseMatrix _sparse_BQhatD;
+            SparseMatrix _sparse_BDhatQ;
+            SparseMatrix _sparse_BDhatD;
 
             //The homogenized values
             cellDomainFloatMap homogenizedVolumes;
@@ -475,11 +475,8 @@ namespace overlapCoupling{
             SparseMatrix freeMicromorphicMassMatrix;
             std::unordered_map< uIntType, floatType > macroKineticPartitioningCoefficient;
 
-            Eigen::MatrixXd _L2_MASS;
-            Eigen::MatrixXd _L2_DAMPING;
-
-            SparseMatrix _DP_MASS;
-            SparseMatrix _DP_DAMPING;
+            SparseMatrix _sparse_MASS;
+            SparseMatrix _sparse_DAMPING;
 
             Eigen::MatrixXd _FORCE;
 

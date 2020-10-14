@@ -123,6 +123,7 @@ namespace overlapCoupling{
          */
 
         //Initialize the input processor
+        std::cerr << "INITIALIZE INCREMENT\n";
         errorOut error = _inputProcessor.initializeIncrement( microIncrement, macroIncrement );
 
         if ( error ){
@@ -134,6 +135,7 @@ namespace overlapCoupling{
         }
 
         //Compute the centers of mass of the free and ghost domains
+        std::cerr << "COMPUTE CENTERS OF MASS\n";
         error = computeIncrementCentersOfMass( microIncrement, macroIncrement,
                                                _freeMicroDomainMasses, _ghostMicroDomainMasses,
                                                _freeMicroDomainCentersOfMass, _ghostMicroDomainCentersOfMass );
@@ -147,6 +149,7 @@ namespace overlapCoupling{
         }
 
         //Project the degrees of freedom
+        std::cerr << "PROJECT THE DEGREES OF FREEDOM\n";
         error = projectDegreesOfFreedom( );
 
         if ( error ){
@@ -165,6 +168,7 @@ namespace overlapCoupling{
 #endif
 
         //Homogenize the material properties at the micro-scale to the macro-scale
+        std::cerr << "HOMOGENIZE THE MICROSCALE\n";
         error = homogenizeMicroScale( microIncrement );
 
         if ( error ){
@@ -180,6 +184,7 @@ namespace overlapCoupling{
         if ( !couplingConfiguration[ "update_displacement" ].IsScalar( ) ){
 
             //Assemble the mass matrix for the free micromorphic domians
+            std::cerr << "ASSEMBLING THE FREE MICROMORPHIC MASS MATRIX\n";
             error = assembleFreeMicromorphicMassMatrix( );
     
             if ( error ){
@@ -191,6 +196,7 @@ namespace overlapCoupling{
             }
 
             //Assemble the coupling mass and damping matrices
+            std::cerr << "ASSEMBLING THE COUPLING MASS AND DAMPING MATRICES\n";
             error = assembleCouplingMassAndDampingMatrices( );
     
             if ( error ){
@@ -202,6 +208,7 @@ namespace overlapCoupling{
             }
 
             //Assemble the coupling force vector
+            std::cerr << "ASSEMBLING THE COUPLING FORCE VECTOR\n";
             error = assembleCouplingForceVector( );
     
             if ( error ){
@@ -213,6 +220,7 @@ namespace overlapCoupling{
             }
     
             //Solve for the free displacements
+            std::cout << "SOLVE FOR THE FREE DISPLACEMENT\n";
             error = solveFreeDisplacement( true );
     
             if ( error ){
@@ -363,6 +371,7 @@ namespace overlapCoupling{
         //Save the reference state if required
         if ( _inputProcessor.outputReferenceInformation( ) ){
 
+            std::cerr << "OUTPUTTING REFERENCE INFORMATION\n";
             error = outputReferenceInformation( );
 
             if ( error ){
@@ -374,6 +383,8 @@ namespace overlapCoupling{
             }
 
         }
+
+        std::cerr << "COUPLING INITIALIZATION COMPLETE\n";
 
         return NULL;
     }
@@ -791,21 +802,21 @@ namespace overlapCoupling{
         std::cout << "PERFORMING SVD DECOMPOSITION OF NQDhat\n";
         SparseMatrix NQDhat = _N.block( 0, nFreeMacroDOF, nFreeMicroDOF, nGhostMacroDOF );
         NQDhat.makeCompressed( );
-        errorOut error = DOFProjection::formMoorePenrosePseudoInverse( NQDhat.toDense( ), _L2_BDhatQ );
+        errorOut error = DOFProjection::formMoorePenrosePseudoInverse( NQDhat.toDense( ), _dense_BDhatQ );
 
         if ( error ){
 
-            errorOut result = new errorNode( "formL2Projectors", "Error in solving for _L2_BDhatQ" );
+            errorOut result = new errorNode( "formL2Projectors", "Error in solving for _dense_BDhatQ" );
             result->addNext( error );
             return result;
 
         }
 
-        _L2_BDhatD = -_L2_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
+        _dense_BDhatD = -_dense_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
 
-        _L2_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatQ;
-        _L2_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF )
-                   + _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
+        _dense_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _dense_BDhatQ;
+        _dense_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF )
+                   + _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _dense_BDhatD;
 
         return NULL;
     }
@@ -877,14 +888,23 @@ namespace overlapCoupling{
         uIntType nGhostMicroDOF = nMicroDOF * _inputProcessor.getGhostMicroNodeIds( )->size( );
 
         //Compute the projectors
-        _L2_BDhatQ = microMacroProjector.bottomLeftCorner( nGhostMacroDOF, nFreeMicroDOF );
+        std::cerr << "ASSEMBLING THE PROJECTORS\n";
+        std::cerr << "  BDhatQ\n";
+        _dense_BDhatQ = microMacroProjector.bottomLeftCorner( nGhostMacroDOF, nFreeMicroDOF );
 
-        _L2_BDhatD = -_L2_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
+        std::cerr << "  BDhatD\n";
+        _dense_BDhatD = -_dense_BDhatQ;
+        _dense_BDhatD *= _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
 
-        _L2_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatQ;
-        _L2_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF )
-                   + _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _L2_BDhatD;
+        std::cerr << "  BQhatQ\n";
+        _dense_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF );
+        _dense_BQhatQ *= _dense_BDhatQ;
 
+        std::cerr << "  BQhatD\n";
+        _dense_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF );
+        _dense_BQhatD.noalias( ) += _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _dense_BDhatD;
+
+        std::cerr << "PROJECTORS ASSEMBLED\n";
         return NULL;
     }
 
@@ -975,12 +995,12 @@ namespace overlapCoupling{
 
         //Assemble the remaining projectors
 
-        _DP_BDhatD = -_DP_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
+        _sparse_BDhatD = -_sparse_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
 
-        _DP_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _DP_BDhatQ;
+        _sparse_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _sparse_BDhatQ;
 
-        _DP_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF )
-                   + _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _DP_BDhatD;
+        _sparse_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF )
+                   + _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _sparse_BDhatD;
 
         return NULL;
     }
@@ -2225,14 +2245,14 @@ namespace overlapCoupling{
         if ( ( config[ "projection_type" ].as< std::string >( ).compare( "l2_projection" ) == 0 ) ||
              ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 ) ){
 
-            Dhat = _L2_BDhatQ * Q + _L2_BDhatD * D;
-            Qhat = _L2_BQhatQ * Q + _L2_BQhatD * D;
+            Dhat = _dense_BDhatQ * Q + _dense_BDhatD * D;
+            Qhat = _dense_BQhatQ * Q + _dense_BQhatD * D;
 
         }
         else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
 
-            Dhat = _DP_BDhatQ * Q + _DP_BDhatD * D;
-            Qhat = _DP_BQhatQ * Q + _DP_BQhatD * D;
+            Dhat = _sparse_BDhatQ * Q + _sparse_BDhatD * D;
+            Qhat = _sparse_BQhatQ * Q + _sparse_BQhatD * D;
 
         }
         else{
@@ -2534,14 +2554,14 @@ namespace overlapCoupling{
             return result;
         }
 
-        if ( _DP_BQhatQ.nonZeros( ) == 0 ){
+        if ( _sparse_BQhatQ.nonZeros( ) == 0 ){
 
-            _DP_BDhatQ = domainProjector;
+            _sparse_BDhatQ = domainProjector;
 
         }
         else{
 
-            _DP_BDhatQ += domainProjector;
+            _sparse_BDhatQ += domainProjector;
 
         }
 
@@ -2610,6 +2630,7 @@ namespace overlapCoupling{
 
         std::unique_ptr< elib::Element > element;
 
+        std::cerr << "HOMOGENIZING THE FREE MACRO CELLS\n";
         for ( auto macroCell  = _inputProcessor.getFreeMacroCellIds( )->begin( );
                    macroCell != _inputProcessor.getFreeMacroCellIds( )->end( );
                    macroCell++ ){
@@ -2643,6 +2664,7 @@ namespace overlapCoupling{
                 reconstructedVolume.reset( );
 
                 //Reconstruct the micro-domain's volume
+                std::cerr << "  RECONSTRUCTING THE DOMAIN\n";
                 error = reconstructDomain( microIncrement, *microDomain, microDomainNodeIds, microNodePositions,
                                            element, reconstructedVolume );
 
@@ -2666,6 +2688,7 @@ namespace overlapCoupling{
 
                 }
 
+                std::cerr << "  COMPUTING THE VOLUME AVERAGES\n";
                 error = computeDomainVolumeAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                      reconstructedVolume, &domainCenterOfMass->second );
 
@@ -2687,6 +2710,7 @@ namespace overlapCoupling{
                 }
                 
                 //Compute the surface averages
+                std::cerr << "  COMPUTING THE SURFACE AVERAGES\n";
                 error = computeDomainSurfaceAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                       domainSurfaceCount->second,
                                                       reconstructedVolume, element );
@@ -2717,6 +2741,7 @@ namespace overlapCoupling{
         }
 
         //Loop through the ghost macro-scale cells
+        std::cerr << "HOMOGENIZING THE GHOST MACRO CELLS\n";
         for ( auto macroCell  = _inputProcessor.getGhostMacroCellIds( )->begin( );
                    macroCell != _inputProcessor.getGhostMacroCellIds( )->end( );
                    macroCell++ ){
@@ -2740,6 +2765,7 @@ namespace overlapCoupling{
                 reconstructedVolume.reset( );
 
                 //Reconstruct the micro-domain's volume
+                std::cerr << "  RECONSTRUCTING THE DOMAIN\n";
                 error = reconstructDomain( microIncrement, *microDomain, microDomainNodeIds, microNodePositions,
                                            element, reconstructedVolume );
 
@@ -2763,6 +2789,7 @@ namespace overlapCoupling{
 
                 }
 
+                std::cerr << "  COMPUTING THE VOLUME AVERAGES\n";
                 error = computeDomainVolumeAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                      reconstructedVolume, &domainCenterOfMass->second );
 
@@ -2784,6 +2811,7 @@ namespace overlapCoupling{
                 }
 
                 //Compute the surface averages
+                std::cerr << "  COMPUTING THE SURFACE AVERAGES\n";
                 error = computeDomainSurfaceAverages( *macroCell, *microDomain, microDomainNodeIds,
                                                       domainSurfaceCount->second,
                                                       reconstructedVolume, element );
@@ -2814,6 +2842,7 @@ namespace overlapCoupling{
         }
 
         //Compute the homogenized force vectors and mass matrices
+        std::cerr << "ASSEMBLE HOMOGENIZED MATRICES AND VECTORS\n";
         error = assembleHomogenizedMatricesAndVectors( );
 
         if ( error ){
@@ -2824,6 +2853,8 @@ namespace overlapCoupling{
             return result;
 
         }
+
+        std::cerr << "MICROSCALE HOMOGENIZATION COMPLETED\n";
 
         return NULL;
     }
@@ -5753,11 +5784,13 @@ namespace overlapCoupling{
 #endif
 
         //Assemble the mass sub-matrices
-        tripletVector c1;
-        tripletVector c2;
-
-        c1.reserve( _dim * ghostMicroMasses.size( ) ); 
-        c2.reserve( _dim * freeMicroMasses.size( ) ); 
+        Eigen::VectorXd mq( 3 * freeMicroMasses.size( ) );
+        Eigen::VectorXd mqhat( 3 * ghostMicroMasses.size( ) );
+//        tripletVector c1;
+//        tripletVector c2;
+//
+//        c1.reserve( _dim * ghostMicroMasses.size( ) ); 
+//        c2.reserve( _dim * freeMicroMasses.size( ) ); 
 
         uIntType mIndex = 0;
 
@@ -5765,7 +5798,8 @@ namespace overlapCoupling{
 
             for ( unsigned int i = 0; i < _dim; i++ ){
 
-                c1.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
+//                c1.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
+                mqhat( _dim * mIndex + i ) = ( 1 - rhat ) * ( *m );
 
             }
 
@@ -5777,28 +5811,34 @@ namespace overlapCoupling{
 
             for ( unsigned int i = 0; i < _dim; i++ ){
 
-                c2.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
+//                c2.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
+                mq( _dim * mIndex + i ) = ( 1 - rhat ) * ( *m );
 
             }
 
         }
 
-        SparseMatrix MQ( _dim * freeMicroMasses.size( ), _dim * freeMicroMasses.size( ) );
-        MQ.setFromTriplets( c2.begin( ), c2.end( ) );
-
-        SparseMatrix MQhat( _dim * ghostMicroMasses.size( ), _dim * ghostMicroMasses.size( ) );
-        MQhat.setFromTriplets( c1.begin( ), c1.end( ) );
+//        SparseMatrix MQ( _dim * freeMicroMasses.size( ), _dim * freeMicroMasses.size( ) );
+//        MQ.setFromTriplets( c2.begin( ), c2.end( ) );
+//
+//        SparseMatrix MQhat( _dim * ghostMicroMasses.size( ), _dim * ghostMicroMasses.size( ) );
+//        MQhat.setFromTriplets( c1.begin( ), c1.end( ) );
         SparseMatrix MTildeDBreve = rhat * homogenizedMassMatrix + freeMicromorphicMassMatrix;
         //Note: kinetic partitioning coefficient applied when the matrix was formed
     
+        SparseMatrix MQ( _dim * freeMicroMasses.size( ), _dim * freeMicroMasses.size( ) );
+        MQ = mq.asDiagonal( );
+    
+        SparseMatrix MQhat( _dim * ghostMicroMasses.size( ), _dim * ghostMicroMasses.size( ) );
+        MQhat = mqhat.asDiagonal( );
         SparseMatrix MD    = MTildeDBreve.block( 0, 0, nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes );
         SparseMatrix MDhat = MTildeDBreve.block( nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes,
                                                  nMacroDispDOF * nGhostMacroNodes, nMacroDispDOF * nGhostMacroNodes );
 
 #ifdef TESTACCESS
        
-        _test_MQ = MQ;
-        _test_MQhat = MQhat;
+        _test_MQ = mq.asDiagonal( );//MQ;
+        _test_MQhat = mqhat.asDiagonal( );//MQhat;
 
 #endif
         //Due to the restrictions in listed in the comment at the beginning of the function, MBar from Regueiro 2012
@@ -5811,130 +5851,215 @@ namespace overlapCoupling{
              ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 )
            ){
 
+            //Determine the coefficients where we cut off the projectors TODO: Expose factor to user
+            floatType BQhatQ_coeff = 1e-4 * ( std::fabs( _dense_BQhatQ.minCoeff( ) ) + std::fabs( _dense_BQhatQ.maxCoeff( ) ) );
+            floatType BQhatD_coeff = 1e-4 * ( std::fabs( _dense_BQhatD.minCoeff( ) ) + std::fabs( _dense_BQhatD.maxCoeff( ) ) );
+            floatType BDhatQ_coeff = 1e-4 * ( std::fabs( _dense_BDhatQ.minCoeff( ) ) + std::fabs( _dense_BDhatQ.maxCoeff( ) ) );
+            floatType BDhatD_coeff = 1e-4 * ( std::fabs( _dense_BDhatD.minCoeff( ) ) + std::fabs( _dense_BDhatD.maxCoeff( ) ) );
+
+            SparseMatrix _sparse_BQhatQ = _dense_BQhatQ.sparseView( 1, BQhatQ_coeff );
+            SparseMatrix _sparse_BQhatD = _dense_BQhatD.sparseView( 1, BQhatD_coeff );
+            SparseMatrix _sparse_BDhatQ = _dense_BDhatQ.sparseView( 1, BDhatQ_coeff );
+            SparseMatrix _sparse_BDhatD = _dense_BDhatD.sparseView( 1, BDhatD_coeff );
+
             //TODO: Improve efficiency
 
-            auto MQQ  = MQ + _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatQ + _L2_BDhatQ.transpose( ) * MDhat * _L2_BDhatQ;
+            std::cerr << "  ASSEMBLING MQQ\n";
+            SparseMatrix MQQ( mq.size( ), mq.size( ) );
 
-            auto MQD = _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatD + _L2_BDhatQ.transpose( ) * MDhat * _L2_BDhatD;
+            std::cout << "coeffs:\n" << BQhatQ_coeff << " " << BQhatD_coeff << " " << BDhatQ_coeff << " " << BDhatD_coeff << "\n";
+
+            std::cout << "Zero ratios\n";
+            std::cerr << ( ( floatType )_sparse_BQhatQ.nonZeros( ) ) / ( ( floatType )_sparse_BQhatQ.size( ) ) << "\n";
+            std::cerr << ( ( floatType )_sparse_BQhatD.nonZeros( ) ) / ( ( floatType )_sparse_BQhatD.size( ) ) << "\n";
+            std::cerr << ( ( floatType )_sparse_BDhatQ.nonZeros( ) ) / ( ( floatType )_sparse_BDhatQ.size( ) ) << "\n";
+            std::cerr << ( ( floatType )_sparse_BDhatD.nonZeros( ) ) / ( ( floatType )_sparse_BDhatD.size( ) ) << "\n";
+
+            MQQ = MQ;
+            std::cerr << "mul1\n";
+            MQQ += _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatQ;
+            std::cerr << "mul2\n";
+            MQQ += _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatQ;
+
+            std::cerr << "  ASSEMBLING MQD\n";
+            SparseMatrix MQD = _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatD;
+            MQD += _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatD;
     
             //Assemble Mass matrices for the macro projection equation
             
-            auto MDQ = _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatQ + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatQ;
+            std::cerr << "  ASSEMBLING MDQ\n";
+            SparseMatrix MDQ = _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatQ;//MQhat * _dense_BQhatQ;
+            MDQ += _sparse_BDhatD.transpose( ) * MDhat * _sparse_BDhatQ;
 
-            auto MDD = MD + _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatD + _L2_BDhatD.transpose( ) * MDhat * _L2_BDhatD;
+            std::cerr << "  ASSEMBLING MDD\n";
+            SparseMatrix MDD = MD;
+            MDD += _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatD;//MQhat * _dense_BQhatD;
+            MDD += _sparse_BDhatD.transpose( ) * MDhat * _sparse_BDhatD;
     
             //Assemble the damping matrices for the micro projection equation
-            auto CQQ = aQ * MQ + aQ * _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatQ + aD * _L2_BDhatQ.transpose( ) * MDhat * _L2_BDhatQ;
+            std::cerr << "  ASSEMBLING CQQ\n";
+            SparseMatrix CQQ = aQ * MQ;
+            CQQ += aQ * _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatQ;//MQhat * _dense_BQhatQ;
+            CQQ += aD * _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatQ;
 
-            auto CQD = aQ * _L2_BQhatQ.transpose( ) * MQhat * _L2_BQhatD;
+            std::cerr << "  ASSEMBLING CQD\n";
+            SparseMatrix CQD = aQ * _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatD;//MQhat * _dense_BQhatD;
     
             //Assemble the damping matrices for the macro projection equation
-            auto CDQ = aQ * _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatQ;
-            auto CDD = aD * MD + aQ * _L2_BQhatD.transpose( ) * MQhat * _L2_BQhatD;
+            std::cerr << "  ASSEMBLING CDQ\n";
+            SparseMatrix CDQ = aQ * _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatQ;//MQhat * _dense_BQhatQ;
 
-            //Assemble the full mass matrix
-            _L2_MASS = Eigen::MatrixXd( MQQ.rows( ) + MDQ.rows( ), MQQ.cols( ) + MQD.cols( ) );
-            _L2_MASS.topLeftCorner(     MQQ.rows( ), MQQ.cols( ) ) = MQQ;
-            _L2_MASS.topRightCorner(    MQD.rows( ), MQD.cols( ) ) = MQD;
-            _L2_MASS.bottomLeftCorner(  MDQ.rows( ), MDQ.cols( ) ) = MDQ;
-            _L2_MASS.bottomRightCorner( MDD.rows( ), MDD.cols( ) ) = MDD;
+            std::cerr << "  ASSEMBLING CDD\n";
+            SparseMatrix CDD = aD * MD;
+            CDD += aQ * _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatD;//MQhat * _dense_BQhatD;
 
-            //Assemble the full damping matrix
-            _L2_DAMPING = Eigen::MatrixXd( CQQ.rows( ) + CDQ.rows( ), CQQ.cols( ) + CQD.cols( ) );
-            _L2_DAMPING.topLeftCorner(     CQQ.rows( ), CQQ.cols( ) ) = CQQ;
-            _L2_DAMPING.topRightCorner(    CQD.rows( ), CQD.cols( ) ) = CQD;
-            _L2_DAMPING.bottomLeftCorner(  CDQ.rows( ), CDQ.cols( ) ) = CDQ;
-            _L2_DAMPING.bottomRightCorner( CDD.rows( ), CDD.cols( ) ) = CDD;
+//            //Assemble the full mass matrix
+//            std::cerr << "  ASSEMBLING THE FULL MASS MATRIX\n";
+//            _dense_MASS = Eigen::MatrixXd( MQQ.rows( ) + MDQ.rows( ), MQQ.cols( ) + MQD.cols( ) );
+//            _dense_MASS.topLeftCorner(     MQQ.rows( ), MQQ.cols( ) ) = MQQ;
+//            _dense_MASS.topRightCorner(    MQD.rows( ), MQD.cols( ) ) = MQD;
+//            _dense_MASS.bottomLeftCorner(  MDQ.rows( ), MDQ.cols( ) ) = MDQ;
+//            _dense_MASS.bottomRightCorner( MDD.rows( ), MDD.cols( ) ) = MDD;
+//
+//            //Assemble the full damping matrix
+//            std::cerr << "  ASSEMBLING THE FULL DAMPING MATRIX\n";
+//            _dense_DAMPING = Eigen::MatrixXd( CQQ.rows( ) + CDQ.rows( ), CQQ.cols( ) + CQD.cols( ) );
+//            _dense_DAMPING.topLeftCorner(     CQQ.rows( ), CQQ.cols( ) ) = CQQ;
+//            _dense_DAMPING.topRightCorner(    CQD.rows( ), CQD.cols( ) ) = CQD;
+//            _dense_DAMPING.bottomLeftCorner(  CDQ.rows( ), CDQ.cols( ) ) = CDQ;
+//            _dense_DAMPING.bottomRightCorner( CDD.rows( ), CDD.cols( ) ) = CDD;
 
 #ifdef TESTACCESS
 
-            _test_L2_MQQ = MQQ;
-            _test_L2_MQD = MQD;
-            _test_L2_MDQ = MDQ;
-            _test_L2_MDD = MDD;
+            _test_dense_MQQ = MQQ;
+            _test_dense_MQD = MQD;
+            _test_dense_MDQ = MDQ;
+            _test_dense_MDD = MDD;
 
-            _test_L2_CQQ = CQQ;
-            _test_L2_CQD = CQD;
-            _test_L2_CDQ = CDQ;
-            _test_L2_CDD = CDD;
+            _test_dense_CQQ = CQQ;
+            _test_dense_CQD = CQD;
+            _test_dense_CDQ = CDQ;
+            _test_dense_CDD = CDD;
 
 #endif
-
-        }
-        else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
-
-            std::cout << "ASSEMBLING MASS BLOCK MATRICES\n";
-            SparseMatrix MQQ  =  MQ;
-            MQQ += _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ;
-            MQQ += _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
-
-            SparseMatrix MQD = _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD;
-            MQD += _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatD;
-    
-            //Assemble Mass matrices for the macro projection equation
-            
-            SparseMatrix MDQ = _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatQ;
-            MDQ += _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatQ;
-
-            SparseMatrix MDD = MD;
-            MDD += _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD;
-            MDD += _DP_BDhatD.transpose( ) * MDhat * _DP_BDhatD;
-
-            std::cout << "ASSEMBLING DAMPING BLOCK MATRICES\n";
-    
-            //Assemble the damping matrices for the micro projection equation
-            SparseMatrix CQQ = aQ * MQ;
-            CQQ += aQ * _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatQ;
-            CQQ += aD * _DP_BDhatQ.transpose( ) * MDhat * _DP_BDhatQ;
-
-            SparseMatrix CQD = aQ * _DP_BQhatQ.transpose( ) * MQhat * _DP_BQhatD;
-    
-            //Assemble the damping matrices for the macro projection equation
-            SparseMatrix CDQ = aQ * _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatQ;
-            SparseMatrix CDD = aD * MD;
-            CDD += aQ * _DP_BQhatD.transpose( ) * MQhat * _DP_BQhatD;
-
-            //Assemble the full mass and damping matrices
-            std::cout << "ASSEMBLING FULL MASS AND DAMPING MATRICES\n";
-            _DP_MASS    = SparseMatrix( MQQ.rows( ) + MDQ.rows( ), MQQ.cols( ) + MQD.cols( ) );
-            _DP_DAMPING = SparseMatrix( CQQ.rows( ) + CDQ.rows( ), CQQ.cols( ) + CQD.cols( ) );
-
             //The sparse matrices are in column major format so we loop over the columns to assemble the matrix
-            _DP_MASS.reserve( MQQ.nonZeros( ) + MQD.nonZeros( ) + MDQ.nonZeros( ) + MDD.nonZeros( ) );
-            _DP_DAMPING.reserve( CQQ.nonZeros( ) + CQD.nonZeros( ) + CDQ.nonZeros( ) + CDD.nonZeros( ) );
+            std::cerr << "  ASSEMBLING FULL MASS AND DAMPING MATRICES\n";
+            _sparse_MASS    = SparseMatrix( MQQ.rows( ) + MDQ.rows( ), MQQ.cols( ) + MQD.cols( ) );
+            _sparse_DAMPING = SparseMatrix( CQQ.rows( ) + CDQ.rows( ), CQQ.cols( ) + CQD.cols( ) );
+
+            _sparse_MASS.reserve( MQQ.nonZeros( ) + MQD.nonZeros( ) + MDQ.nonZeros( ) + MDD.nonZeros( ) );
+            _sparse_DAMPING.reserve( CQQ.nonZeros( ) + CQD.nonZeros( ) + CDQ.nonZeros( ) + CDD.nonZeros( ) );
             for ( uIntType c = 0; c < MQQ.cols( ); ++c ){
 
                 //Add terms to the mass matrix
-                _DP_MASS.startVec( c );
+                _sparse_MASS.startVec( c );
                 for ( SparseMatrix::InnerIterator itMQQ( MQQ, c ); itMQQ; ++itMQQ )
-                    _DP_MASS.insertBack( itMQQ.row( ), c ) = itMQQ.value( );
+                    _sparse_MASS.insertBack( itMQQ.row( ), c ) = itMQQ.value( );
                 for ( SparseMatrix::InnerIterator itMDQ( MDQ, c ); itMDQ; ++itMDQ )
-                    _DP_MASS.insertBack( itMDQ.row( ) + MQQ.rows( ), c ) = itMDQ.value( );
+                    _sparse_MASS.insertBack( itMDQ.row( ) + MQQ.rows( ), c ) = itMDQ.value( );
 
                 //Add terms to the damping matrix
-                _DP_DAMPING.startVec( c );
+                _sparse_DAMPING.startVec( c );
                 for ( SparseMatrix::InnerIterator itCQQ( CQQ, c ); itCQQ; ++itCQQ )
-                    _DP_DAMPING.insertBack( itCQQ.row( ), c ) = itCQQ.value( );
+                    _sparse_DAMPING.insertBack( itCQQ.row( ), c ) = itCQQ.value( );
                 for ( SparseMatrix::InnerIterator itCDQ( CDQ, c ); itCDQ; ++itCDQ )
-                    _DP_DAMPING.insertBack( itCDQ.row( ) + CQQ.rows( ), c ) = itCDQ.value( );
+                    _sparse_DAMPING.insertBack( itCDQ.row( ) + CQQ.rows( ), c ) = itCDQ.value( );
 
             }
 
             for ( uIntType c = 0; c < MDD.cols( ); ++c ){
 
                 //Add terms to the mass matrix
-                _DP_MASS.startVec( c + MQQ.cols( ) );
+                _sparse_MASS.startVec( c + MQQ.cols( ) );
                 for ( SparseMatrix::InnerIterator itMQD( MQD, c ); itMQD; ++itMQD )
-                    _DP_MASS.insertBack( itMQD.row( ), c + MQQ.cols( ) ) = itMQD.value( );
+                    _sparse_MASS.insertBack( itMQD.row( ), c + MQQ.cols( ) ) = itMQD.value( );
                 for ( SparseMatrix::InnerIterator itMDD( MDD, c ); itMDD; ++itMDD )
-                    _DP_MASS.insertBack( itMDD.row( ) + MQD.rows( ), c + MDQ.cols( ) ) = itMDD.value( );
+                    _sparse_MASS.insertBack( itMDD.row( ) + MQD.rows( ), c + MDQ.cols( ) ) = itMDD.value( );
 
                 //Add terms to the damping matrix
-                _DP_DAMPING.startVec( c + CQQ.cols( ) );
+                _sparse_DAMPING.startVec( c + CQQ.cols( ) );
                 for ( SparseMatrix::InnerIterator itCQD( CQD, c ); itCQD; ++itCQD )
-                    _DP_DAMPING.insertBack( itCQD.row( ), c + CQQ.cols( ) ) = itCQD.value( );
+                    _sparse_DAMPING.insertBack( itCQD.row( ), c + CQQ.cols( ) ) = itCQD.value( );
                 for ( SparseMatrix::InnerIterator itCDD( CDD, c ); itCDD; ++itCDD )
-                    _DP_DAMPING.insertBack( itCDD.row( ) + CQD.rows( ), c + CDQ.cols( ) ) = itCDD.value( );
+                    _sparse_DAMPING.insertBack( itCDD.row( ) + CQD.rows( ), c + CDQ.cols( ) ) = itCDD.value( );
+
+            }
+
+        }
+        else if ( config[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
+
+            std::cout << "ASSEMBLING MASS BLOCK MATRICES\n";
+            SparseMatrix MQQ  =  MQ;
+            MQQ += _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatQ;
+            MQQ += _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatQ;
+
+            SparseMatrix MQD = _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatD;
+            MQD += _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatD;
+    
+            //Assemble Mass matrices for the macro projection equation
+            
+            SparseMatrix MDQ = _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatQ;
+            MDQ += _sparse_BDhatD.transpose( ) * MDhat * _sparse_BDhatQ;
+
+            SparseMatrix MDD = MD;
+            MDD += _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatD;
+            MDD += _sparse_BDhatD.transpose( ) * MDhat * _sparse_BDhatD;
+
+            std::cout << "ASSEMBLING DAMPING BLOCK MATRICES\n";
+    
+            //Assemble the damping matrices for the micro projection equation
+            SparseMatrix CQQ = aQ * MQ;
+            CQQ += aQ * _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatQ;
+            CQQ += aD * _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatQ;
+
+            SparseMatrix CQD = aQ * _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatD;
+    
+            //Assemble the damping matrices for the macro projection equation
+            SparseMatrix CDQ = aQ * _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatQ;
+            SparseMatrix CDD = aD * MD;
+            CDD += aQ * _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatD;
+
+            //Assemble the full mass and damping matrices
+            std::cout << "ASSEMBLING FULL MASS AND DAMPING MATRICES\n";
+            _sparse_MASS    = SparseMatrix( MQQ.rows( ) + MDQ.rows( ), MQQ.cols( ) + MQD.cols( ) );
+            _sparse_DAMPING = SparseMatrix( CQQ.rows( ) + CDQ.rows( ), CQQ.cols( ) + CQD.cols( ) );
+
+            //The sparse matrices are in column major format so we loop over the columns to assemble the matrix
+            _sparse_MASS.reserve( MQQ.nonZeros( ) + MQD.nonZeros( ) + MDQ.nonZeros( ) + MDD.nonZeros( ) );
+            _sparse_DAMPING.reserve( CQQ.nonZeros( ) + CQD.nonZeros( ) + CDQ.nonZeros( ) + CDD.nonZeros( ) );
+            for ( uIntType c = 0; c < MQQ.cols( ); ++c ){
+
+                //Add terms to the mass matrix
+                _sparse_MASS.startVec( c );
+                for ( SparseMatrix::InnerIterator itMQQ( MQQ, c ); itMQQ; ++itMQQ )
+                    _sparse_MASS.insertBack( itMQQ.row( ), c ) = itMQQ.value( );
+                for ( SparseMatrix::InnerIterator itMDQ( MDQ, c ); itMDQ; ++itMDQ )
+                    _sparse_MASS.insertBack( itMDQ.row( ) + MQQ.rows( ), c ) = itMDQ.value( );
+
+                //Add terms to the damping matrix
+                _sparse_DAMPING.startVec( c );
+                for ( SparseMatrix::InnerIterator itCQQ( CQQ, c ); itCQQ; ++itCQQ )
+                    _sparse_DAMPING.insertBack( itCQQ.row( ), c ) = itCQQ.value( );
+                for ( SparseMatrix::InnerIterator itCDQ( CDQ, c ); itCDQ; ++itCDQ )
+                    _sparse_DAMPING.insertBack( itCDQ.row( ) + CQQ.rows( ), c ) = itCDQ.value( );
+
+            }
+
+            for ( uIntType c = 0; c < MDD.cols( ); ++c ){
+
+                //Add terms to the mass matrix
+                _sparse_MASS.startVec( c + MQQ.cols( ) );
+                for ( SparseMatrix::InnerIterator itMQD( MQD, c ); itMQD; ++itMQD )
+                    _sparse_MASS.insertBack( itMQD.row( ), c + MQQ.cols( ) ) = itMQD.value( );
+                for ( SparseMatrix::InnerIterator itMDD( MDD, c ); itMDD; ++itMDD )
+                    _sparse_MASS.insertBack( itMDD.row( ) + MQD.rows( ), c + MDQ.cols( ) ) = itMDD.value( );
+
+                //Add terms to the damping matrix
+                _sparse_DAMPING.startVec( c + CQQ.cols( ) );
+                for ( SparseMatrix::InnerIterator itCQD( CQD, c ); itCQD; ++itCQD )
+                    _sparse_DAMPING.insertBack( itCQD.row( ), c + CQQ.cols( ) ) = itCQD.value( );
+                for ( SparseMatrix::InnerIterator itCDD( CDD, c ); itCDD; ++itCDD )
+                    _sparse_DAMPING.insertBack( itCDD.row( ) + CQD.rows( ), c + CDQ.cols( ) ) = itCDD.value( );
 
             }
 
@@ -5946,6 +6071,8 @@ namespace overlapCoupling{
                                   " is not recognized" );
 
         }
+
+        std::cerr << "MASS AND DAMPING MATRICES ASSEMBLED\n";
 
         return NULL;
 
@@ -6389,34 +6516,34 @@ namespace overlapCoupling{
 
             //Assemble the micro force vector
             _FQ  = _FextQ;
-            _FQ += _L2_BQhatQ.transpose( ) * _FextQhat;
+            _FQ += _dense_BQhatQ.transpose( ) * _FextQhat;
             _FQ -= _FintQ;
-            _FQ -= _L2_BQhatQ.transpose( ) * _FintQhat;
-            _FQ -= _L2_BDhatQ.transpose( ) * _FintDhat;
+            _FQ -= _dense_BQhatQ.transpose( ) * _FintQhat;
+            _FQ -= _dense_BDhatQ.transpose( ) * _FintDhat;
     
             //Assemble the macro force vector
             _FD  = _FextD;
-            _FD += _L2_BDhatD.transpose( ) * _FextDhat;
+            _FD += _dense_BDhatD.transpose( ) * _FextDhat;
             _FD -= _FintD;
-            _FD -= _L2_BQhatD.transpose( ) * _FintQhat;
-            _FD -= _L2_BDhatD.transpose( ) * _FintDhat;
+            _FD -= _dense_BQhatD.transpose( ) * _FintQhat;
+            _FD -= _dense_BDhatD.transpose( ) * _FintDhat;
 
         }
         else if ( projection_type.compare( "direct_projection" ) == 0 ){
 
             //Assemble the micro force vector
             _FQ  = _FextQ;
-            _FQ += _DP_BQhatQ.transpose( ) * _FextQhat;
+            _FQ += _sparse_BQhatQ.transpose( ) * _FextQhat;
             _FQ -= _FintQ;
-            _FQ -= _DP_BQhatQ.transpose( ) * _FintQhat;
-            _FQ -= _DP_BDhatQ.transpose( ) * _FintDhat;
+            _FQ -= _sparse_BQhatQ.transpose( ) * _FintQhat;
+            _FQ -= _sparse_BDhatQ.transpose( ) * _FintDhat;
     
             //Assemble the macro force vector
             _FD  = _FextD;
-            _FD += _DP_BDhatD.transpose( ) * _FextDhat;
+            _FD += _sparse_BDhatD.transpose( ) * _FextDhat;
             _FD -= _FintD;
-            _FD -= _DP_BQhatD.transpose( ) * _FintQhat;
-            _FD -= _DP_BDhatD.transpose( ) * _FintDhat;
+            _FD -= _sparse_BQhatD.transpose( ) * _FintQhat;
+            _FD -= _sparse_BDhatD.transpose( ) * _FintDhat;
 
         }
         else{
@@ -6884,24 +7011,27 @@ namespace overlapCoupling{
         if ( ( projection_type.compare( "l2_projection" ) == 0 ) ||
              ( projection_type.compare( "averaged_l2_projection" ) == 0 ) ){
 
-            Eigen::MatrixXd LHS;
-            LHS = _L2_MASS;
-            LHS += gamma * ( *dt ) * _L2_DAMPING;
+            SparseMatrix LHS( _sparse_MASS.rows( ), _sparse_MASS.cols( ) );
+            LHS = _sparse_MASS;
+            LHS += gamma * ( *dt ) * _sparse_DAMPING;
 
             RHS = _FORCE;
-            RHS -= _L2_DAMPING * ( _DotDOF + ( 1 - gamma ) * ( *dt ) * _DotDotDOF_t );
+            RHS -= _sparse_DAMPING * ( _DotDOF + ( 1 - gamma ) * ( *dt ) * _DotDotDOF_t );
 
-            _DotDotDOF_tp1 = LHS.colPivHouseholderQr( ).solve( RHS );
+//            _DotDotDOF_tp1 = LHS.colPivHouseholderQr( ).solve( RHS );
+            Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
+            solver.compute( LHS );
+            _DotDotDOF_tp1 = solver.solve( RHS );
         }
         else if ( projection_type.compare( "direct_projection" ) == 0 ){
 
-            SparseMatrix LHS( _DP_MASS.rows( ), _DP_MASS.cols( ) );
-            LHS = _DP_MASS;
-            LHS += gamma * ( *dt ) * _DP_DAMPING;
+            SparseMatrix LHS( _sparse_MASS.rows( ), _sparse_MASS.cols( ) );
+            LHS = _sparse_MASS;
+            LHS += gamma * ( *dt ) * _sparse_DAMPING;
             LHS.makeCompressed( );
 
             RHS = _FORCE;
-            RHS -= _DP_DAMPING * ( _DotDOF + ( 1 - gamma ) * ( *dt ) * _DotDotDOF_t );
+            RHS -= _sparse_DAMPING * ( _DotDOF + ( 1 - gamma ) * ( *dt ) * _DotDotDOF_t );
 
             Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
             solver.compute( LHS );
@@ -7092,7 +7222,7 @@ namespace overlapCoupling{
             grid->insert( projectionType );
 
             //Write BQhatQ
-            error = writeDenseMatrixToXDMF( _L2_BQhatQ, "BQhatQ", reference_filename, domain, grid );
+            error = writeDenseMatrixToXDMF( _dense_BQhatQ, "BQhatQ", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -7104,7 +7234,7 @@ namespace overlapCoupling{
             }
 
             //Write BQhatD
-            error = writeDenseMatrixToXDMF( _L2_BQhatD, "BQhatD", reference_filename, domain, grid );
+            error = writeDenseMatrixToXDMF( _dense_BQhatD, "BQhatD", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -7116,7 +7246,7 @@ namespace overlapCoupling{
             }
 
             //Write BDhatQ
-            error = writeDenseMatrixToXDMF( _L2_BDhatQ, "BDhatQ", reference_filename, domain, grid );
+            error = writeDenseMatrixToXDMF( _dense_BDhatQ, "BDhatQ", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -7128,7 +7258,7 @@ namespace overlapCoupling{
             }
 
             //Write BDhatD
-            error = writeDenseMatrixToXDMF( _L2_BDhatD, "BDhatD", reference_filename, domain, grid );
+            error = writeDenseMatrixToXDMF( _dense_BDhatD, "BDhatD", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -7147,7 +7277,7 @@ namespace overlapCoupling{
             domain->insert( projectionType );
 
             //Write BQhatQ
-            error = writeSparseMatrixToXDMF( _DP_BQhatQ, "BQhatQ", reference_filename, domain, grid );
+            error = writeSparseMatrixToXDMF( _sparse_BQhatQ, "BQhatQ", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -7159,7 +7289,7 @@ namespace overlapCoupling{
             }
 
             //Write BQhatD
-            error = writeSparseMatrixToXDMF( _DP_BQhatD, "BQhatD", reference_filename, domain, grid );
+            error = writeSparseMatrixToXDMF( _sparse_BQhatD, "BQhatD", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -7171,7 +7301,7 @@ namespace overlapCoupling{
             }
 
             //Write BDhatQ
-            error = writeSparseMatrixToXDMF( _DP_BDhatQ, "BDhatQ", reference_filename, domain, grid );
+            error = writeSparseMatrixToXDMF( _sparse_BDhatQ, "BDhatQ", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -7183,7 +7313,7 @@ namespace overlapCoupling{
             }
 
             //Write BDhatD
-            error = writeSparseMatrixToXDMF( _DP_BDhatD, "BDhatD", reference_filename, domain, grid );
+            error = writeSparseMatrixToXDMF( _sparse_BDhatD, "BDhatD", reference_filename, domain, grid );
 
             if ( error ){
 
@@ -7508,7 +7638,7 @@ namespace overlapCoupling{
 
         if ( ( projectionType.compare( "l2_projection" ) ) || ( projectionType.compare( "averaged_l2_projection" ) ) ){
 
-            error = readDenseMatrixFromXDMF( _readGrid, "BQhatQ", _L2_BQhatQ );
+            error = readDenseMatrixFromXDMF( _readGrid, "BQhatQ", _dense_BQhatQ );
 
             if ( error ){
 
@@ -7519,7 +7649,7 @@ namespace overlapCoupling{
 
             }
 
-            error = readDenseMatrixFromXDMF( _readGrid, "BQhatD", _L2_BQhatD );
+            error = readDenseMatrixFromXDMF( _readGrid, "BQhatD", _dense_BQhatD );
 
             if ( error ){
 
@@ -7530,7 +7660,7 @@ namespace overlapCoupling{
 
             }
 
-            error = readDenseMatrixFromXDMF( _readGrid, "BDhatQ", _L2_BDhatQ );
+            error = readDenseMatrixFromXDMF( _readGrid, "BDhatQ", _dense_BDhatQ );
 
             if ( error ){
 
@@ -7541,7 +7671,7 @@ namespace overlapCoupling{
 
             }
 
-            error = readDenseMatrixFromXDMF( _readGrid, "BDhatD", _L2_BDhatD );
+            error = readDenseMatrixFromXDMF( _readGrid, "BDhatD", _dense_BDhatD );
 
             if ( error ){
 
@@ -7555,7 +7685,7 @@ namespace overlapCoupling{
         }
         else if ( projectionType.compare( "direct_projection" ) ){
 
-            error = readSparseMatrixFromXDMF( _readGrid, "BQhatQ", _DP_BQhatQ );
+            error = readSparseMatrixFromXDMF( _readGrid, "BQhatQ", _sparse_BQhatQ );
 
             if ( error ){
 
@@ -7566,7 +7696,7 @@ namespace overlapCoupling{
 
             }
 
-            error = readSparseMatrixFromXDMF( _readGrid, "BQhatD", _DP_BQhatD );
+            error = readSparseMatrixFromXDMF( _readGrid, "BQhatD", _sparse_BQhatD );
 
             if ( error ){
 
@@ -7577,7 +7707,7 @@ namespace overlapCoupling{
 
             }
 
-            error = readSparseMatrixFromXDMF( _readGrid, "BDhatQ", _DP_BDhatQ );
+            error = readSparseMatrixFromXDMF( _readGrid, "BDhatQ", _sparse_BDhatQ );
 
             if ( error ){
 
@@ -7588,7 +7718,7 @@ namespace overlapCoupling{
 
             }
 
-            error = readSparseMatrixFromXDMF( _readGrid, "BDhatD", _DP_BDhatD );
+            error = readSparseMatrixFromXDMF( _readGrid, "BDhatD", _sparse_BDhatD );
 
             if ( error ){
 
@@ -8464,8 +8594,9 @@ namespace overlapCoupling{
         }
 
         //Initialize the overlap coupling object
+        std::cerr << "INITIALIZE COUPLING\n";
         errorOut error = oc.initializeCoupling( );
-    
+
         if ( error ){
     
             errorOut result
@@ -8478,6 +8609,7 @@ namespace overlapCoupling{
         }
 
         //Process the final increments of both the macro and micro-scales
+        std::cerr << "PROCESS LAST INCREMENTS\n";
         error = oc.processLastIncrements( );
     
         if ( error ){
@@ -8492,6 +8624,7 @@ namespace overlapCoupling{
         }
 
         //Return the updated DOF values
+        std::cerr << "RETURN DOF VALUES\n";
         microGlobalLocalNodeMap = oc.getMicroGlobalLocalNodeMap( );
         updatedMicroDisplacementDOF = oc.getUpdatedMicroDisplacementDOF( );
 
@@ -8833,21 +8966,20 @@ namespace overlapCoupling{
         return &freeMicromorphicMassMatrix;
     }
 
-    const Eigen::MatrixXd *overlapCoupling::getL2Mass( ){
+    const SparseMatrix *overlapCoupling::getMass( ){
         /*!
-         * Get a constant reference to the l2 mass matrix
+         * Get the coupled mass matrix
          */
 
-        return &_L2_MASS;
+        return &_sparse_MASS;
     }
 
-    const Eigen::MatrixXd *overlapCoupling::getL2Damping( ){
+    const SparseMatrix *overlapCoupling::getDamping( ){
         /*!
-         * Get a constant reference to the l2 damping matrix
+         * Get the coupled damping matrix
          */
 
-        return &_L2_DAMPING;
-
+        return &_sparse_DAMPING;
     }
 
     const Eigen::MatrixXd *overlapCoupling::getFORCE( ){
