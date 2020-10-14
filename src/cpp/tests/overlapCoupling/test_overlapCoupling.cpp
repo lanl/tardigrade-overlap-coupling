@@ -4948,6 +4948,74 @@ int test_overlapCoupling_processIncrement( std::ofstream &results ){
     }
     testNum++;
 
+    //Check the projected values of the ghost displacement
+    const floatVector projectedGhostMicroDisplacementAnswer
+        =
+        {
+              0.57409872,  -5.99059648,  -5.16487288,   0.67580229,
+             -5.99320405,  -1.79300314,  -1.44547133,  -1.95639062,
+             -4.44631554,  -1.21323214,  -2.51187232,  -1.22145146,
+              1.2378831 ,  -5.55784005,  -3.03467742,   1.11118926,
+             -4.62340866,  -0.19554806,  -0.31464079,  -1.64478451,
+             -2.6333718 ,  -0.37313869,  -1.24955668,  -0.05957304,
+             -5.48313625,  -0.97685356,  -6.75852263,  -4.89647693,
+             -3.34426222,  -3.14832106,  -3.37070592,  -1.79922411,
+             -4.31787507,  -2.89837418,  -2.94074004,  -1.28963773,
+             -0.17848315,  -5.19257368,  -2.78177396,  -0.25607076,
+             -4.92226921,  -0.18598817,  -3.74635013,  -5.28059651,
+             -4.30853555,  -3.21445839,  -6.54075802,  -1.08172494,
+              2.40039622, -10.18487233,  -2.39586573,   2.41471218,
+             -9.12012943,   0.47609048
+        };
+
+    const floatVector projectedGhostMacroDisplacementAnswer
+        =
+        {
+              2.03991416,  -4.44139433,   0.65063145,  -0.25566626,
+             -5.15643919,   2.345488  ,  13.00243902,  12.88600197,
+             -5.54187157,   4.03360134,   0.69049268,   2.98534445,
+             -3.37023733,  -4.6460331 ,  -1.19770455, -10.56463672,
+              9.14816409,  -3.45182511, -13.41171656,   9.75022929,
+             -5.21748719,  -7.73027334,   1.91047105,   0.59754516,
+             -1.72825907,  -7.49368327,   0.238362  ,  -0.70707224,
+             -5.86420758,  -2.52872347, -15.22437972, -15.44552964,
+             -9.26663334,   4.36752067,   0.96166206,   1.19374423,
+              3.67073789,  -7.30268861,   2.04677339, -10.09092168,
+              8.41808665,   3.27015416,  14.84239041, -18.60859054,
+             -9.58911703,  -7.98434343,   2.1017912 ,   3.58635051,
+              1.67330269,  -9.41617329,   2.73781623,  -2.11523401,
+             -8.30742041,  -1.52278702,  22.97603963,  23.15610625,
+             -7.63282171,  -5.36148545,  -9.21353538,   0.52935468,
+             -4.00189592,  -8.49770197,   1.22715036,  -9.23516322,
+              8.6092407 ,  -0.6200974 , -21.13909699,  18.65505205,
+             -6.15000311,   2.34015371,  -7.51825517,   2.32144923,
+             -1.7859679 , -11.08466576,   3.71156221,   1.96299978,
+             -4.17738467,   1.3768405 , -24.03039625, -23.82897963,
+             -3.34513811,  16.3265205 ,  12.48707889,   5.48973865,
+              3.89153568, -12.0003216 ,   5.2302379 , -13.31800695,
+             12.74388638,   0.48353066,  25.86170794, -28.32440287,
+             -4.8164715 , -19.36387188,  14.19837873,   3.73194476
+        };
+    
+    const floatVector *projectedGhostMicroDisplacementResult = oc.getProjectedGhostMicroDisplacement( );
+    const floatVector *projectedGhostMacroDisplacementResult = oc.getProjectedGhostMacroDisplacement( );
+
+    std::cout << "Qhat:\n";
+    vectorTools::print( *projectedGhostMicroDisplacementResult );
+    if ( !vectorTools::fuzzyEquals( *projectedGhostMicroDisplacementResult, projectedGhostMicroDisplacementAnswer, 1e-6, 1e-2 ) ){
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+    }
+    testNum++;
+
+    std::cout << "Dhat:\n";
+    vectorTools::print( *projectedGhostMacroDisplacementResult - projectedGhostMacroDisplacementAnswer );
+    if ( !vectorTools::fuzzyEquals( *projectedGhostMacroDisplacementResult, projectedGhostMacroDisplacementAnswer, 1e-6, 1e-1 ) ){
+        results << "test_overlapCoupling_processIncrement (test " + std::to_string( testNum ) + ") & False\n";
+        return 1;
+    }
+    testNum++;
+
     remove( "reference_information.xdmf" );
     remove( "reference_information.h5" );
 
