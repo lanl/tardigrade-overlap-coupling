@@ -3283,6 +3283,13 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
+    if ( !couplingInitialization[ "solve_coupling_odes_at_microdomains" ].as< bool >( ) ){
+
+        results << "test_getCouplingInitialization (test 53) & False\n";
+        return 1;
+
+    }
+
     results << "test_getCouplingInitialization & True\n";
     return 0;
 

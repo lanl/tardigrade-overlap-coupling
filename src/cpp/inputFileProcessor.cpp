@@ -3603,6 +3603,26 @@ namespace inputFileProcessor{
 
         }
 
+        if ( !_config[ "coupling_initialization" ][ "solve_coupling_odes_at_microdomains" ] ){
+
+            _config[ "coupling_initialization" ][ "solve_coupling_odes_at_microdomains" ] = false; //TODO: investigate this
+
+        }
+        else{
+
+            try{
+                _config[ "coupling_initialization" ][ "solve_coupling_odes_at_microdomains" ].as< bool >( );
+            }
+            catch( ... ){
+                return new errorNode( "checkCouplingInitialization", "'solve_coupling_odes_at_micronodes' must be a boolean" ); 
+            }
+
+            if ( _config[ "coupling_initialization" ][ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) != 0 ){
+                return new errorNode( "checkCouplingInitialization", "'solve_coupling_odes_at_micronodes' can only be used with 'averaged_l2_projection'" );
+            }
+
+        }
+
         return NULL;
 
     }
