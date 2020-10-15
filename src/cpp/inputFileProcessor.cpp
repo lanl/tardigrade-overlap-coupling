@@ -3622,6 +3622,7 @@ namespace inputFileProcessor{
             }
 
         }
+        _couplingODESolutionLocationFlag = _config[ "coupling_initialization" ][ "solve_coupling_odes_at_microdomains" ].as< bool >( );
 
         return NULL;
 
@@ -4807,6 +4808,14 @@ namespace inputFileProcessor{
          */
 
         return &_microDomainIDMap;
+    }
+
+    bool inputFileProcessor::solveCouplingODEsAtMicroDomains( ){
+        /*!
+         * Return whether the coupling ODEs should be solved at the micro domains or not
+         */
+
+        return _couplingODESolutionLocationFlag;
     }
 
 }

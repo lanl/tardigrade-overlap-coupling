@@ -180,6 +180,7 @@ namespace inputFileProcessor{
             bool outputReferenceInformation( );
             bool outputHomogenizedInformation( );
             bool outputUpdatedDOF( );
+            bool solveCouplingODEsAtMicroDomains( );
 
             const DOFMap *getMacroNodeIDOutputIndex( );
             const DOFMap *getMicroNodeIDOutputIndex( );
@@ -353,6 +354,7 @@ namespace inputFileProcessor{
             bool _macroBodyForceFlag     = false;
             bool _macroExternalForceFlag = false;
             bool _macroInertialForceFlag = false;
+            bool _couplingODESolutionLocationFlag = false;
 
 //            stringVector _non_overlapped_micro_surface_sets;
 //            stringVector _free_micro_surface_sets;

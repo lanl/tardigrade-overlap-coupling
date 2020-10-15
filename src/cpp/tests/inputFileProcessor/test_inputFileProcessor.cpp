@@ -3290,6 +3290,13 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
+    if ( !reader.solveCouplingODEsAtMicroDomains( ) ){
+
+        results << "test_getCouplingInitialization (test 54) & False\n";
+        return 1;
+
+    }
+
     results << "test_getCouplingInitialization & True\n";
     return 0;
 
