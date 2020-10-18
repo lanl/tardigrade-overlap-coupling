@@ -417,6 +417,8 @@ namespace overlapCoupling{
             errorOut writeReferenceMeshDataToFile( const uIntType collectionNumber = 0 );
 
             errorOut writeUpdatedDOFToFile( const uIntType collectionNumber = 0 );
+
+            errorOut computeDomainMicroNodeArlequinWeights( const uIntType &macroCellID, const uIntType &domainNodes );
                                                                    
             //The interpolation matrix
             SparseMatrix _N;
