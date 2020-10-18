@@ -2896,7 +2896,7 @@ namespace inputFileProcessor{
                                                    connectivityCellIndices, cellCounts );
 
         if ( error ){
-            errorOut result = new errorNode( "extractMacroMeshData", "Error in the extraction of the macro-mesh information" );
+            errorOut result = new errorNode( "extractReferenceMacroMeshData", "Error in the extraction of the macro-mesh information" );
             result->addNext( error );
             return result;
         }
@@ -3266,6 +3266,19 @@ namespace inputFileProcessor{
             std::cerr << "WARNING: direct_projection can give unexpected results.\n";
             std::cerr << "         It is suggested that either l2_projection or\n"; 
             std::cerr << "         averaged_l2_projection ( recommended ) are used\n";
+            std::cerr << "         for small problems and arlequin is used for large\n";
+            std::cerr << "         problems.\n";
+
+        }
+
+        if ( _config[ "coupling_initialization" ][ "projection_type" ].as< std::string >( ).compare( "arlequin" )  == 0 ){
+
+            if ( !_config[ "coupling_initialization" ][ "weighting_variable_name" ] ){
+
+                return new errorNode( "checkCouplingInitialization",
+                                      "For 'arlequin' projection the weighting variable name must be defined at each of the macro nodes" );
+
+            }
 
         }
 
