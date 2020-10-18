@@ -355,6 +355,7 @@ namespace inputFileProcessor{
             bool _macroExternalForceFlag = false;
             bool _macroInertialForceFlag = false;
             bool _couplingODESolutionLocationFlag = false;
+            bool _useArlequinMethod = false;
 
 //            stringVector _non_overlapped_micro_surface_sets;
 //            stringVector _free_micro_surface_sets;

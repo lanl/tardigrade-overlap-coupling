@@ -3271,6 +3271,7 @@ namespace inputFileProcessor{
 
         }
 
+        _useArlequinMethod = false;
         if ( _config[ "coupling_initialization" ][ "projection_type" ].as< std::string >( ).compare( "arlequin" )  == 0 ){
 
             if ( !_config[ "coupling_initialization" ][ "weighting_variable_name" ] ){
@@ -3279,6 +3280,8 @@ namespace inputFileProcessor{
                                       "For 'arlequin' projection the weighting variable name must be defined at each of the macro nodes" );
 
             }
+
+            _useArlequinMethod = true;
 
         }
 
