@@ -769,6 +769,11 @@ namespace overlapCoupling{
             }
 
         }
+        else if ( config[ "projection_type" ].as< std::string >( ).compare( "arlequin" ) == 0 ){
+
+            return NULL;
+
+        }
         else{
 
             return new errorNode( "formTheProjectors",
@@ -7327,6 +7332,11 @@ namespace overlapCoupling{
                 return result;
     
             }
+
+        }
+        else if ( projectionType.compare( "arlequin" ) == 0 ){
+
+            return NULL;
 
         }
         else{
