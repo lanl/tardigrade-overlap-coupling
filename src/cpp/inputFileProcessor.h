@@ -276,6 +276,7 @@ namespace inputFileProcessor{
             errorOut extractMacroExternalForces( const unsigned int &increment );
             errorOut extractMacroInertialForces( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
+            errorOut extractMacroArlequinWeights( const unsigned int &increment );
 
             errorOut getUniqueNodesInDomains( const unsigned int &increment,
                                               const std::shared_ptr< dataFileInterface::dataFileBase > &dataFile,

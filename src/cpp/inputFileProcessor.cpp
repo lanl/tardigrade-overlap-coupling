@@ -668,6 +668,20 @@ namespace inputFileProcessor{
             return result;
         }
 
+        if ( _useArlequinMethod ){
+
+            error = extractMacroArlequinWeights( macroIncrement );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the Arlequin macro node weights\n" );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+
         //Set the current increment
         _current_macroIncrement = macroIncrement;
         _current_microIncrement = microIncrement;
