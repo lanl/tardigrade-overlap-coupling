@@ -2618,6 +2618,55 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMacroArlequinWeights( const unsigned int &increment ){
+        /*!
+         * Extract the macro Arlequin weights for the macro nodes at the indicated increment
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        //Check if the volume name has been defined
+        if ( !_config[ "coupling_initialization" ][ "arlequin_weighting_variable_name" ] ){
+        
+            return new errorNode( "extractMacroArlequinWeights", "The Arlequin weight variable name is not defined" );
+
+        }
+
+        //Initialize the size of the macro Arlequin weights map
+        _macroArlequinWeights.clear( );
+        _macroArlequinWeights.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+
+        //Get the values of the micro volumes from the output file
+        floatVector values;
+        errorOut error = _macroscale->getSolutionData( increment,
+                                                       _config[ "coupling_initialization" ][ "arlequin_weighting_variable_name" ].as< std::string >( ),
+                                                       "Node", values );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroArlequinWeights", "Error in extraction of the macro Arlequin nodal weights" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMacroArlequinWeights", "The Arlequin weights vector is too short for the required index" );
+
+            }
+
+            _macroArlequinWeights.emplace( n->first, values[ n->second ] );
+
+        }
+
+        return NULL;
+
+    }
+
+
     errorOut inputFileProcessor::extractMicroDisplacements( const unsigned int &increment ){
         /*!
          * Extract the node micro-displacements at the indicated increment
@@ -3288,7 +3337,7 @@ namespace inputFileProcessor{
         _useArlequinMethod = false;
         if ( _config[ "coupling_initialization" ][ "projection_type" ].as< std::string >( ).compare( "arlequin" )  == 0 ){
 
-            if ( !_config[ "coupling_initialization" ][ "weighting_variable_name" ] ){
+            if ( !_config[ "coupling_initialization" ][ "arlequin_weighting_variable_name" ] ){
 
                 return new errorNode( "checkCouplingInitialization",
                                       "For 'arlequin' projection the weighting variable name must be defined at each of the macro nodes" );
@@ -4315,6 +4364,8 @@ namespace inputFileProcessor{
     }
 
 
+
+
     YAML::Node inputFileProcessor::getVolumeReconstructionConfig( ){
         /*!
          * Return the volume reconstruction configuration
@@ -4852,6 +4903,22 @@ namespace inputFileProcessor{
          */
 
         return _couplingODESolutionLocationFlag;
+    }
+
+    bool inputFileProcessor::useArlequinCoupling( ){
+        /*!
+         * Return whether Arlequin coupling should be used
+         */
+
+        return _useArlequinMethod;
+    }
+
+    const std::unordered_map< uIntType, floatType >* inputFileProcessor::getMacroArlequinWeights( ){
+        /*!
+         * Get the macro Arlequin weights at the micro nodes
+         */
+
+        return &_macroArlequinWeights;
     }
 
 }

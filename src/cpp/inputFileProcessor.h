@@ -102,6 +102,7 @@ namespace inputFileProcessor{
             const std::unordered_map< uIntType, floatVector >* getMacroSurfaceForces( );
             const std::unordered_map< uIntType, floatVector >* getMacroExternalForces( );
             const std::unordered_map< uIntType, floatVector >* getMacroInertialForces( );
+            const std::unordered_map< uIntType, floatType >* getMacroArlequinWeights( );
 
             const floatType* getDt( );
             const floatType* getNewmarkGamma( );
@@ -181,6 +182,7 @@ namespace inputFileProcessor{
             bool outputHomogenizedInformation( );
             bool outputUpdatedDOF( );
             bool solveCouplingODEsAtMicroDomains( );
+            bool useArlequinCoupling( );
 
             const DOFMap *getMacroNodeIDOutputIndex( );
             const DOFMap *getMicroNodeIDOutputIndex( );
@@ -346,6 +348,7 @@ namespace inputFileProcessor{
             std::unordered_map< uIntType, floatVector > _macroInertialForces;
             std::unordered_map< uIntType, floatVector > _macroNodeReferencePositions;
             std::unordered_map< uIntType, uIntVector > _macroNodeReferenceConnectivity;
+            std::unordered_map< uIntType, floatType > _macroArlequinWeights;
 //            uIntVector  _macroNodeReferenceConnectivityCellIndices;
 //            unsigned int _macroCellCounts;
             bool _macroVelocityFlag = false;
