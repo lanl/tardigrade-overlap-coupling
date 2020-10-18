@@ -877,9 +877,6 @@ namespace overlapCoupling{
 
         }
 
-        //Add the homogenization matrix
-        microMacroProjector *= _homogenizationMatrix;
-
         //Set the DOF type sizes
         uIntType nFreeMacroDOF  = nMacroDOF * _inputProcessor.getFreeMacroNodeIds( )->size( );        
         uIntType nGhostMacroDOF = nMacroDOF * _inputProcessor.getGhostMacroNodeIds( )->size( );
@@ -887,19 +884,23 @@ namespace overlapCoupling{
         uIntType nFreeMicroDOF  = nMicroDOF * _inputProcessor.getFreeMicroNodeIds( )->size( );
         uIntType nGhostMicroDOF = nMicroDOF * _inputProcessor.getGhostMicroNodeIds( )->size( );
 
-        //Compute the projectors
         std::cerr << "ASSEMBLING THE PROJECTORS\n";
+        floatType sparseFactor
+        = 1e-4 * 0.5 * ( std::fabs( microMacroProjector.maxCoeff( ) ) + std::fabs( microMacroProjector.minCoeff( ) ) ); //TODO: Make the 1e-4 settable by the user
+    
+        //Add the homogenization matrix
+        microMacroProjector *= _homogenizationMatrix;
+
+        //Compute the projectors
         std::cerr << "  BDhatQ\n";
-
-        floatType sparseFactor = 1e-4 * 0.5 * ( std::fabs( microMacroProjector.maxCoeff( ) ) + std::fabs( microMacroProjector.minCoeff( ) ) ); //TODO: Make the 1e-4 settable by the user
-
+    
         _sparse_BDhatQ = microMacroProjector.bottomLeftCorner( nGhostMacroDOF, nFreeMicroDOF ).sparseView( 1, sparseFactor );
-
-        std::cerr << "  BDhatD\n";
-        _sparse_BDhatD = -_sparse_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
-
+    
         std::cerr << "  BQhatQ\n";
         _sparse_BQhatQ = _N.bottomRightCorner( nGhostMicroDOF, nGhostMacroDOF ) * _sparse_BDhatQ;
+    
+        std::cerr << "  BDhatD\n";
+        _sparse_BDhatD = -_sparse_BDhatQ * _N.topLeftCorner( nFreeMicroDOF, nFreeMacroDOF );
 
         std::cerr << "  BQhatD\n";
         _sparse_BQhatD = _N.bottomLeftCorner( nGhostMicroDOF, nFreeMacroDOF );
@@ -5787,11 +5788,11 @@ namespace overlapCoupling{
         //Assemble the mass sub-matrices
         Eigen::VectorXd mq( 3 * freeMicroMasses.size( ) );
         Eigen::VectorXd mqhat( 3 * ghostMicroMasses.size( ) );
-//        tripletVector c1;
-//        tripletVector c2;
-//
-//        c1.reserve( _dim * ghostMicroMasses.size( ) ); 
-//        c2.reserve( _dim * freeMicroMasses.size( ) ); 
+        tripletVector c1;
+        tripletVector c2;
+
+        c1.reserve( _dim * ghostMicroMasses.size( ) ); 
+        c2.reserve( _dim * freeMicroMasses.size( ) ); 
 
         uIntType mIndex = 0;
 
@@ -5799,8 +5800,8 @@ namespace overlapCoupling{
 
             for ( unsigned int i = 0; i < _dim; i++ ){
 
-//                c1.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
-                mqhat( _dim * mIndex + i ) = ( 1 - rhat ) * ( *m );
+                c1.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
+//                mqhat( _dim * mIndex + i ) = ( 1 - rhat ) * ( *m );
 
             }
 
@@ -5812,26 +5813,21 @@ namespace overlapCoupling{
 
             for ( unsigned int i = 0; i < _dim; i++ ){
 
-//                c2.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
-                mq( _dim * mIndex + i ) = ( 1 - rhat ) * ( *m );
+                c2.push_back( DOFProjection::T( _dim * mIndex + i, _dim * mIndex + i, ( 1 - rhat ) * ( *m ) ) );
+//                mq( _dim * mIndex + i ) = ( 1 - rhat ) * ( *m );
 
             }
 
         }
 
-//        SparseMatrix MQ( _dim * freeMicroMasses.size( ), _dim * freeMicroMasses.size( ) );
-//        MQ.setFromTriplets( c2.begin( ), c2.end( ) );
-//
-//        SparseMatrix MQhat( _dim * ghostMicroMasses.size( ), _dim * ghostMicroMasses.size( ) );
-//        MQhat.setFromTriplets( c1.begin( ), c1.end( ) );
+        SparseMatrix MQ( _dim * freeMicroMasses.size( ), _dim * freeMicroMasses.size( ) );
+        MQ.setFromTriplets( c2.begin( ), c2.end( ) );
+
+        SparseMatrix MQhat( _dim * ghostMicroMasses.size( ), _dim * ghostMicroMasses.size( ) );
+        MQhat.setFromTriplets( c1.begin( ), c1.end( ) );
         SparseMatrix MTildeDBreve = rhat * homogenizedMassMatrix + freeMicromorphicMassMatrix;
         //Note: kinetic partitioning coefficient applied when the matrix was formed
     
-        SparseMatrix MQ( _dim * freeMicroMasses.size( ), _dim * freeMicroMasses.size( ) );
-        MQ = mq.asDiagonal( );
-    
-        SparseMatrix MQhat( _dim * ghostMicroMasses.size( ), _dim * ghostMicroMasses.size( ) );
-        MQhat = mqhat.asDiagonal( );
         SparseMatrix MD    = MTildeDBreve.block( 0, 0, nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes );
         SparseMatrix MDhat = MTildeDBreve.block( nMacroDispDOF * nFreeMacroNodes, nMacroDispDOF * nFreeMacroNodes,
                                                  nMacroDispDOF * nGhostMacroNodes, nMacroDispDOF * nGhostMacroNodes );
@@ -5989,19 +5985,23 @@ namespace overlapCoupling{
                   ( config[ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) == 0 )
                 ){
 
-            std::cout << "ASSEMBLING MASS BLOCK MATRICES\n";
+            std::cerr << "ASSEMBLING MASS BLOCK MATRICES\n";
             SparseMatrix MQQ  =  MQ;
+            std::cerr << "  MQQ\n";
             MQQ += _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatQ;
             MQQ += _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatQ;
 
+            std::cerr << "  MQD\n";
             SparseMatrix MQD = _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatD;
             MQD += _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatD;
     
             //Assemble Mass matrices for the macro projection equation
             
+            std::cerr << "  MDQ\n";
             SparseMatrix MDQ = _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatQ;
             MDQ += _sparse_BDhatD.transpose( ) * MDhat * _sparse_BDhatQ;
 
+            std::cerr << "  MDD\n";
             SparseMatrix MDD = MD;
             MDD += _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatD;
             MDD += _sparse_BDhatD.transpose( ) * MDhat * _sparse_BDhatD;
@@ -6009,14 +6009,18 @@ namespace overlapCoupling{
             std::cout << "ASSEMBLING DAMPING BLOCK MATRICES\n";
     
             //Assemble the damping matrices for the micro projection equation
+            std::cerr << "  CQQ\n";
             SparseMatrix CQQ = aQ * MQ;
             CQQ += aQ * _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatQ;
             CQQ += aD * _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatQ;
 
+            std::cerr << "  CQD\n";
             SparseMatrix CQD = aQ * _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatD;
     
             //Assemble the damping matrices for the macro projection equation
+            std::cerr << "  CDQ\n";
             SparseMatrix CDQ = aQ * _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatQ;
+            std::cerr << "  CDD\n";
             SparseMatrix CDD = aD * MD;
             CDD += aQ * _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatD;
 
@@ -7276,18 +7280,6 @@ namespace overlapCoupling{
             shared_ptr< XdmfInformation > projectionType = XdmfInformation::New( "EIGEN_MATRIX_TYPE", "SPARSE" );
             domain->insert( projectionType );
 
-            //Write BQhatQ
-            error = writeSparseMatrixToXDMF( _sparse_BQhatQ, "BQhatQ", reference_filename, domain, grid );
-
-            if ( error ){
-
-                errorOut result = new errorNode( "outputReferenceInformation",
-                                                 "Error when writing out BQhatQ" );
-                result->addNext( error );
-                return result;
-
-            }
-
             //Write BQhatD
             error = writeSparseMatrixToXDMF( _sparse_BQhatD, "BQhatD", reference_filename, domain, grid );
 
@@ -7300,28 +7292,40 @@ namespace overlapCoupling{
 
             }
 
-            //Write BDhatQ
-            error = writeSparseMatrixToXDMF( _sparse_BDhatQ, "BDhatQ", reference_filename, domain, grid );
+            //Write BDhatD
+            error = writeSparseMatrixToXDMF( _sparse_BDhatD, "BDhatD", reference_filename, domain, grid );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "outputReferenceInformation",
+                                                 "Error when writing out BDhatD" );
+                result->addNext( error );
+                return result;
+    
+            }
+
+            //Write BQhatQ
+            error = writeSparseMatrixToXDMF( _sparse_BQhatQ, "BQhatQ", reference_filename, domain, grid );
 
             if ( error ){
 
                 errorOut result = new errorNode( "outputReferenceInformation",
-                                                 "Error when writing out BDhatQ" );
+                                                 "Error when writing out BQhatQ" );
                 result->addNext( error );
                 return result;
 
             }
 
-            //Write BDhatD
-            error = writeSparseMatrixToXDMF( _sparse_BDhatD, "BDhatD", reference_filename, domain, grid );
-
+            //Write BDhatQ
+            error = writeSparseMatrixToXDMF( _sparse_BDhatQ, "BDhatQ", reference_filename, domain, grid );
+    
             if ( error ){
-
+    
                 errorOut result = new errorNode( "outputReferenceInformation",
-                                                 "Error when writing out BDhatD" );
+                                                 "Error when writing out BDhatQ" );
                 result->addNext( error );
                 return result;
-
+    
             }
 
         }

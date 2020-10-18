@@ -390,7 +390,7 @@ int test_overlapCoupling_initializeCoupling_l2_projection( std::ofstream &result
 
     }
 
-    std::string testName = "overlapCoupling_initializeCoupling";
+    std::string testName = "overlapCoupling_initializeCoupling_l2_projection";
     uIntType testNum = 4;
 
     cellDomainFloatMap domainMassAnswer
@@ -1169,7 +1169,7 @@ int test_overlapCoupling_initializeCoupling_averaged_l2_projection( std::ofstrea
 
     }
 
-    std::string testName = "overlapCoupling_initializeCoupling";
+    std::string testName = "overlapCoupling_initializeCoupling_averaged_l2_projection";
     uIntType testNum = 4;
 
     cellDomainFloatMap domainMassAnswer

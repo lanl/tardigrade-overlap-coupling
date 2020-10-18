@@ -3283,14 +3283,14 @@ int test_getCouplingInitialization( std::ofstream &results ){
 
     }
 
-    if ( !couplingInitialization[ "solve_coupling_odes_at_microdomains" ].as< bool >( ) ){
+    if ( couplingInitialization[ "solve_coupling_odes_at_microdomains" ].as< bool >( ) ){
 
         results << "test_getCouplingInitialization (test 53) & False\n";
         return 1;
 
     }
 
-    if ( !reader.solveCouplingODEsAtMicroDomains( ) ){
+    if ( reader.solveCouplingODEsAtMicroDomains( ) ){
 
         results << "test_getCouplingInitialization (test 54) & False\n";
         return 1;
