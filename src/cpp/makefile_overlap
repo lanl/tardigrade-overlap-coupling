@@ -9,7 +9,7 @@
 
 include ../../config.mk
 
-LOCAL_CFLAGS=-I. -fpic -Wall
+LOCAL_CFLAGS=-I. -fpic -Wall -DEIGEN_NO_DEBUG
 
 OBJECT=overlapCoupling.o
 SOURCE=overlapCoupling.cpp

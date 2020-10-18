@@ -2634,7 +2634,7 @@ namespace inputFileProcessor{
 
         //Initialize the size of the macro Arlequin weights map
         _macroArlequinWeights.clear( );
-        _macroArlequinWeights.reserve( _microGlobalNodeIDOutputIndex.size( ) );
+        _macroArlequinWeights.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
 
         //Get the values of the micro volumes from the output file
         floatVector values;
@@ -2650,7 +2650,7 @@ namespace inputFileProcessor{
 
         }
 
-        for ( auto n = _microGlobalNodeIDOutputIndex.begin( ); n != _microGlobalNodeIDOutputIndex.end( ); n++ ){
+        for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
             if ( n->second >= values.size( ) ){
 
@@ -3340,7 +3340,7 @@ namespace inputFileProcessor{
             if ( !_config[ "coupling_initialization" ][ "arlequin_weighting_variable_name" ] ){
 
                 return new errorNode( "checkCouplingInitialization",
-                                      "For 'arlequin' projection the weighting variable name must be defined at each of the macro nodes" );
+                                      "For 'arlequin' projection the weighting variable name at the macro nodes must be defined in 'arlequin_weighting_variable_name' in 'coupling_initialization'" );
 
             }
 
@@ -3702,8 +3702,13 @@ namespace inputFileProcessor{
 
             }
 
-            if ( _config[ "coupling_initialization" ][ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) != 0 ){
-                return new errorNode( "checkCouplingInitialization", "'solve_coupling_odes_at_micronodes' can only be used with 'averaged_l2_projection'" );
+
+            if ( _config[ "coupling_initialization" ][ "solve_coupling_odes_at_microdomains" ].as< bool >( ) ){
+
+                if ( _config[ "coupling_initialization" ][ "projection_type" ].as< std::string >( ).compare( "averaged_l2_projection" ) != 0 ){
+                    return new errorNode( "checkCouplingInitialization", "'solve_coupling_odes_at_micronodes' can only be used with 'averaged_l2_projection'" );
+                }
+
             }
 
         }
