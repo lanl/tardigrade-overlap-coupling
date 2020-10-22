@@ -365,7 +365,7 @@ namespace overlapCoupling{
                            
                         if ( arlequinMicroWeightingFactors.find( *it ) == arlequinMicroWeightingFactors.end( ) ){
                          
-                            arlequinMicroWeightingFactors.emplace( *it, 1 ); //The micro-node is free
+                            arlequinMicroWeightingFactors.emplace( *it, 0 ); //The micro-node is free
 
                         }
 
@@ -378,7 +378,7 @@ namespace overlapCoupling{
 
                         if ( arlequinMicroWeightingFactors.find( *it ) == arlequinMicroWeightingFactors.end( ) ){
 
-                            arlequinMicroWeightingFactors.emplace( *it, 1 ); //The micro-node is free
+                            arlequinMicroWeightingFactors.emplace( *it, 0 ); //The micro-node is free
 
                         }
 
