@@ -365,7 +365,7 @@ namespace overlapCoupling{
                            
                         if ( arlequinMicroWeightingFactors.find( *it ) == arlequinMicroWeightingFactors.end( ) ){
                          
-                            arlequinMicroWeightingFactors.emplace( *it, 0 ); //The micro-node is free
+                            arlequinMicroWeightingFactors.emplace( *it, 0.001 ); //The micro-node is free
 
                         }
 
@@ -378,7 +378,7 @@ namespace overlapCoupling{
 
                         if ( arlequinMicroWeightingFactors.find( *it ) == arlequinMicroWeightingFactors.end( ) ){
 
-                            arlequinMicroWeightingFactors.emplace( *it, 0 ); //The micro-node is free
+                            arlequinMicroWeightingFactors.emplace( *it, 0.001 ); //The micro-node is free
 
                         }
 
@@ -389,6 +389,8 @@ namespace overlapCoupling{
                     //The point is contained in the element. We need to interpolate the weighting factors
                     floatType value;
                     element->interpolate( elementNodalWeights, localCoordinates, value );
+                    value = std::fmax( value, 0.001 );
+                    value = std::fmin( value, 0.999 );
                     arlequinMicroWeightingFactors.emplace( *it, value );
  
                 }
