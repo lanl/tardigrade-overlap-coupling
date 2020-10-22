@@ -4691,7 +4691,8 @@ namespace overlapCoupling{
                                                 const floatVector &momentOfInertia,
                                                 const floatVector &density,
                                                 const DOFMap *nodeIDToIndex,
-                                                tripletVector &coefficients ){
+                                                tripletVector &coefficients,
+                                                const floatVector *arlequinNodalWeights ){
         /*!
          * Form the micromorphic mass matrix for an element
          *
@@ -4705,6 +4706,8 @@ namespace overlapCoupling{
          *     at the quadrature points
          * :param const DOFMap &nodeIDToIndex: A map from the node id's to the DOF index
          * :param tripletVector &coefficients: The coefficients of the mass matrix
+         * :param const floatVector *arlequinNodalWeights: The weights of the nodes for the Arlequin method.
+         *     Defaults to NULL.
          */
 
         //Get the dimension of the element
@@ -4792,6 +4795,13 @@ namespace overlapCoupling{
             //Evaluate the integrand term
             inertiaTerm = density[ qptIndex ] * J * referenceMomentOfInertia * Jxw;
 
+            floatType arlequinWeight = 1;
+            if ( arlequinNodalWeights ){
+
+                element->interpolate( *arlequinNodalWeights, qpt->first, arlequinWeight );
+
+            }
+
             //Add the contrubutions to the mass matrix
             for ( uIntType o = 0; o < shapeFunctions.size( ); o++ ){
 
@@ -4831,7 +4841,7 @@ namespace overlapCoupling{
 
                             coefficients.push_back( DOFProjection::T( row0 + j,
                                                                       col0 + k,
-                                                                      eye[ dim * j + k ] * density[ qptIndex ] * J * sFo * sFp * Jxw ) );
+                                                                      arlequinWeight * eye[ dim * j + k ] * density[ qptIndex ] * J * sFo * sFp * Jxw ) );
     
                             for ( unsigned int K = 0; K < dim; K++ ){
     
@@ -4839,7 +4849,7 @@ namespace overlapCoupling{
     
                                     coefficients.push_back( DOFProjection::T( row0 + dim + dim * j + K,
                                                                               col0 + dim + dim * k + L,
-                                                                              eye[ dim * j + k ] * sFo * sFp * inertiaTerm[ dim * K + L ] ) );
+                                                                              arlequinWeight * eye[ dim * j + k ] * sFo * sFp * inertiaTerm[ dim * K + L ] ) );
 
                                 }
     
