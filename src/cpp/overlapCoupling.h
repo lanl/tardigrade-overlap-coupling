@@ -177,6 +177,8 @@ namespace overlapCoupling{
             const SparseMatrix *getMass( );
             const SparseMatrix *getDamping( );
 
+            const std::unordered_map< uIntType, floatType > *getArlequinMicroWeightingFactors( );
+
             floatVector _test_freeMicroMasses;
             floatVector _test_ghostMicroMasses;
 
@@ -418,9 +420,11 @@ namespace overlapCoupling{
 
             errorOut writeUpdatedDOFToFile( const uIntType collectionNumber = 0 );
 
-            errorOut computeDomainMicroNodeArlequinWeights( const uIntType &macroCellID, const uIntType &domainNodes );
-
             errorOut applyKZProjection( const uIntType &macroIncrement, const uIntType &microIncrement );
+
+            errorOut applyArlequinProjection( const uIntType &macroIncrement, const uIntType &microIncrement );
+
+            errorOut computeArlequinMicroWeightingFactors( const uIntType &microIncrement );
 
             //The interpolation matrix
             SparseMatrix _N;
@@ -497,6 +501,8 @@ namespace overlapCoupling{
             bool _homogenizationMatrix_initialized = false;
 
             cellDomainUIntVectorMap cellDomainMacroSurfaces;
+
+            std::unordered_map< uIntType, floatType > arlequinMicroWeightingFactors;
 
     };
 

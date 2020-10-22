@@ -167,7 +167,15 @@ namespace overlapCoupling{
         }
         else{
 
-            return new errorNode( "processIncrement", "Not implemented" );
+            error = applyArlequinProjection( macroIncrement, microIncrement );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "processIncrement", "Error in applying the Arlequin projection" );
+                result->addNext( error );
+                return result;
+
+            }
 
         }
 
@@ -203,6 +211,194 @@ namespace overlapCoupling{
         }
 
         return NULL;
+    }
+
+    errorOut overlapCoupling::applyArlequinProjection( const uIntType &macroIncrement, const uIntType &microIncrement ){
+        /*!
+         * Apply the projection of Arlequin
+         * to the current increment
+         *
+         * :param const uIntType &macroIncrement: The increment number for the macro-scale
+         * :param const uIntType &microIncrement: The increment number for the micro-scale
+         */
+
+        //Compute the weighting factors for the micro nodes
+        errorOut error = computeArlequinMicroWeightingFactors( microIncrement );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "applyArlequinProjection", "Error in computing the micro weighting factors" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut overlapCoupling::computeArlequinMicroWeightingFactors( const uIntType &microIncrement){
+        /*!
+         * Compute the weighting factor at each of the micro nodes
+         *
+         * Note that we will be using the basic structure from the Klein-Zimmerman formulation
+         * ( i.e. ghost and free nodes ) but Arlequin doesn't make this distinction.
+         *
+         * :param const uIntType microIncrement: The current micro increment
+         */
+
+        //Get the macro cell ids
+        const uIntVector *freeMacroCellIds = _inputProcessor.getFreeMacroCellIds( );
+        const uIntVector *ghostMacroCellIds = _inputProcessor.getGhostMacroCellIds( );
+
+        const uIntVector macroCellIds = vectorTools::appendVectors( { *freeMacroCellIds, *ghostMacroCellIds } );
+
+        const std::unordered_map< uIntType, floatType > *macroArlequinWeights = _inputProcessor.getMacroArlequinWeights( );
+
+        const std::unordered_map< uIntType, uIntType > *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
+
+        YAML::Node volumeReconstructionConfig = _inputProcessor.getVolumeReconstructionConfig( );
+
+        errorOut error;
+
+        arlequinMicroWeightingFactors.clear( );
+        arlequinMicroWeightingFactors.reserve( microGlobalToLocalDOFMap->size( ) );
+
+        //Loop over the macro cells
+        for ( auto cellID = macroCellIds.begin( ); cellID != macroCellIds.end( ); cellID++ ){
+
+            //Construct the element
+            std::unique_ptr< elib::Element > element;
+            error = buildMacroDomainElement( *cellID, *_inputProcessor.getMacroNodeReferencePositions( ),
+                                             *_inputProcessor.getMacroDisplacements( ),
+                                             *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                             element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "computeArlequinMicroWeightingFactors",
+                                                 "Error in building the macro-scale element" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            //Get the micro weights for the cell
+            floatVector elementNodalWeights( element->global_node_ids.size( ) );
+
+            for ( auto node = element->global_node_ids.begin( ); node != element->global_node_ids.end( ); node++ ){
+
+                auto weight = macroArlequinWeights->find( *node );
+
+                if ( weight == macroArlequinWeights->end( ) ){
+
+                    return new errorNode( "computeArlequinMicroWeightingFactors",
+                                          "Macro node " + std::to_string( *node ) +
+                                          " was not found in the macro node to weighting factor map" );
+
+                }
+
+                elementNodalWeights[ node - element->global_node_ids.begin( ) ] = weight->second;
+
+            }
+
+            //Get the micro domains in the macro-cell
+            auto domains = _inputProcessor.getMacroCellToDomainMap( )->find( *cellID );
+            if ( domains == _inputProcessor.getMacroCellToDomainMap( )->end( ) ){
+
+                return new errorNode( "computeArlequinMicroWeightingFactors",
+                                      "The macro cell " + std::to_string( *cellID ) +
+                                      " was not found in the cell ID to micro-domain map" );
+
+            }
+
+            //Loop over the domains contained in the macro-cell
+            for ( auto domain = domains->second.begin( ); domain != domains->second.end( ); domain++ ){
+
+                //Get the domain node ids
+                uIntVector microDomainNodes;
+                errorOut error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, *domain, microDomainNodes );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( "computeArlequinMicroWeightingFactors",
+                                                     "Error in getting the node ids for the domain ( " + *domain + " )" );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                unsigned int index = 0;
+                const std::unordered_map< uIntType, floatVector > *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
+                const std::unordered_map< uIntType, floatVector > *microDisplacements      = _inputProcessor.getMicroDisplacements( );
+                uIntVector interiorNodes;
+
+                for ( auto it = microDomainNodes.begin( ); it != microDomainNodes.end( ); it++, index++ ){
+
+                    auto microReferencePosition = microReferencePositions->find( *it );
+
+                    if ( microReferencePosition == microReferencePositions->end( ) ){
+
+                        return new errorNode( "reconstructDomain", "Micro node " + std::to_string( *it ) +
+                                              " was not found in the micro reference position map" );
+
+                    }
+
+                    auto microDisplacement = microDisplacements->find( *it );
+
+                    if ( microDisplacement == microDisplacements->end( ) ){
+
+                        return new errorNode( "computeArlequinMicroWeightingFactors", "Micro node " + std::to_string( *it ) +
+                                              " was not found in the micro displacement map" );
+
+                    }
+
+                    //compute the position
+                    floatVector globalCoordinates = microDisplacement->second + microReferencePosition->second;
+
+                    //Get the local coordinates of the micro-node
+                    floatVector localCoordinates;
+                    std::unique_ptr< errorNode > tmp;
+                    tmp.reset( element->compute_local_coordinates( globalCoordinates, localCoordinates ) );
+
+                    if ( error ){
+                           
+                        if ( arlequinMicroWeightingFactors.find( *it ) == arlequinMicroWeightingFactors.end( ) ){
+                         
+                            arlequinMicroWeightingFactors.emplace( *it, 1 ); //The micro-node is free
+
+                        }
+
+                        continue;
+
+                    }
+
+                    //See if the micro point is inside of the element
+                    if ( !element->local_point_inside( localCoordinates, volumeReconstructionConfig[ "element_contain_tolerance" ].as< floatType >( ) ) ){
+
+                        if ( arlequinMicroWeightingFactors.find( *it ) == arlequinMicroWeightingFactors.end( ) ){
+
+                            arlequinMicroWeightingFactors.emplace( *it, 1 ); //The micro-node is free
+
+                        }
+
+                        continue;
+
+                    }
+
+                    //The point is contained in the element. We need to interpolate the weighting factors
+                    floatType value;
+                    element->interpolate( elementNodalWeights, localCoordinates, value );
+                    arlequinMicroWeightingFactors.emplace( *it, value );
+ 
+                }
+
+            }
+
+        }
+
+        return NULL;
+
     }
 
     errorOut overlapCoupling::applyKZProjection( const uIntType &macroIncrement, const uIntType &microIncrement ){
@@ -5827,8 +6023,8 @@ namespace overlapCoupling{
 #endif
 
         //Assemble the mass sub-matrices
-        Eigen::VectorXd mq( 3 * freeMicroMasses.size( ) );
-        Eigen::VectorXd mqhat( 3 * ghostMicroMasses.size( ) );
+//        Eigen::VectorXd mq( 3 * freeMicroMasses.size( ) );
+//        Eigen::VectorXd mqhat( 3 * ghostMicroMasses.size( ) );
         tripletVector c1;
         tripletVector c2;
 
@@ -5875,8 +6071,8 @@ namespace overlapCoupling{
 
 #ifdef TESTACCESS
        
-        _test_MQ = mq.asDiagonal( );//MQ;
-        _test_MQhat = mqhat.asDiagonal( );//MQhat;
+        _test_MQ = MQ;
+        _test_MQhat = MQhat;
 
 #endif
         //Due to the restrictions in listed in the comment at the beginning of the function, MBar from Regueiro 2012
@@ -5901,20 +6097,18 @@ namespace overlapCoupling{
             //TODO: Improve efficiency
 
             std::cerr << "  ASSEMBLING MQQ\n";
-            SparseMatrix MQQ( mq.size( ), mq.size( ) );
+//            std::cout << "coeffs:\n" << BQhatQ_coeff << " " << BQhatD_coeff << " " << BDhatQ_coeff << " " << BDhatD_coeff << "\n";
+//
+//            std::cout << "Zero ratios\n";
+//            std::cerr << ( ( floatType )_sparse_BQhatQ.nonZeros( ) ) / ( ( floatType )_sparse_BQhatQ.size( ) ) << "\n";
+//            std::cerr << ( ( floatType )_sparse_BQhatD.nonZeros( ) ) / ( ( floatType )_sparse_BQhatD.size( ) ) << "\n";
+//            std::cerr << ( ( floatType )_sparse_BDhatQ.nonZeros( ) ) / ( ( floatType )_sparse_BDhatQ.size( ) ) << "\n";
+//            std::cerr << ( ( floatType )_sparse_BDhatD.nonZeros( ) ) / ( ( floatType )_sparse_BDhatD.size( ) ) << "\n";
 
-            std::cout << "coeffs:\n" << BQhatQ_coeff << " " << BQhatD_coeff << " " << BDhatQ_coeff << " " << BDhatD_coeff << "\n";
-
-            std::cout << "Zero ratios\n";
-            std::cerr << ( ( floatType )_sparse_BQhatQ.nonZeros( ) ) / ( ( floatType )_sparse_BQhatQ.size( ) ) << "\n";
-            std::cerr << ( ( floatType )_sparse_BQhatD.nonZeros( ) ) / ( ( floatType )_sparse_BQhatD.size( ) ) << "\n";
-            std::cerr << ( ( floatType )_sparse_BDhatQ.nonZeros( ) ) / ( ( floatType )_sparse_BDhatQ.size( ) ) << "\n";
-            std::cerr << ( ( floatType )_sparse_BDhatD.nonZeros( ) ) / ( ( floatType )_sparse_BDhatD.size( ) ) << "\n";
-
-            MQQ = MQ;
-            std::cerr << "mul1\n";
+            SparseMatrix MQQ = MQ;
+//            std::cerr << "mul1\n";
             MQQ += _sparse_BQhatQ.transpose( ) * MQhat * _sparse_BQhatQ;
-            std::cerr << "mul2\n";
+//            std::cerr << "mul2\n";
             MQQ += _sparse_BDhatQ.transpose( ) * MDhat * _sparse_BDhatQ;
 
             std::cerr << "  ASSEMBLING MQD\n";
@@ -6064,6 +6258,20 @@ namespace overlapCoupling{
             std::cerr << "  CDD\n";
             SparseMatrix CDD = aD * MD;
             CDD += aQ * _sparse_BQhatD.transpose( ) * MQhat * _sparse_BQhatD;
+
+#ifdef TESTACCESS
+
+            _test_dense_MQQ = MQQ;
+            _test_dense_MQD = MQD;
+            _test_dense_MDQ = MDQ;
+            _test_dense_MDD = MDD;
+
+            _test_dense_CQQ = CQQ;
+            _test_dense_CQD = CQD;
+            _test_dense_CDQ = CDQ;
+            _test_dense_CDD = CDD;
+
+#endif
 
             //Assemble the full mass and damping matrices
             std::cout << "ASSEMBLING FULL MASS AND DAMPING MATRICES\n";
@@ -9038,6 +9246,15 @@ namespace overlapCoupling{
          */
 
         return &_FORCE;
+    }
+
+    const std::unordered_map< uIntType, floatType > *overlapCoupling::getArlequinMicroWeightingFactors( ){
+        /*!
+         * Get a constant reference to the Arlequin micro weighting factors
+         */
+
+        return &arlequinMicroWeightingFactors;
+
     }
 
 #endif
