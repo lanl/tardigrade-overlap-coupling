@@ -419,7 +419,9 @@ namespace overlapCoupling{
             errorOut writeUpdatedDOFToFile( const uIntType collectionNumber = 0 );
 
             errorOut computeDomainMicroNodeArlequinWeights( const uIntType &macroCellID, const uIntType &domainNodes );
-                                                                   
+
+            errorOut applyKZProjection( const uIntType &macroIncrement, const uIntType &microIncrement );
+
             //The interpolation matrix
             SparseMatrix _N;
 

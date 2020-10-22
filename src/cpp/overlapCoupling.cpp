@@ -150,88 +150,27 @@ namespace overlapCoupling{
 
         //Project the degrees of freedom
         std::cerr << "PROJECT THE DEGREES OF FREEDOM\n";
-        error = projectDegreesOfFreedom( );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "processIncrement", "Error in the projection of the ghost degrees of freedom" );
-            result->addNext( error );
-            return result;
-
-        }
-
-#ifdef TESTACCESS
-
-        _test_initial_projected_ghost_micro_displacement = _projected_ghost_micro_displacement;
-        _test_initial_projected_ghost_macro_displacement = _projected_ghost_macro_displacement;
-
-#endif
-
-        //Homogenize the material properties at the micro-scale to the macro-scale
-        std::cerr << "HOMOGENIZE THE MICROSCALE\n";
-        error = homogenizeMicroScale( microIncrement );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "processIncrement", "Error in the homogenization of the micro-scale to the macro-scale" );
-            result->addNext( error );
-            return result;
-
-        }
-
         YAML::Node couplingConfiguration = _inputProcessor.getCouplingInitialization( );
 
-        if ( !couplingConfiguration[ "update_displacement" ].IsScalar( ) ){
+        if ( !couplingConfiguration[ "projection_type" ].as< std::string >( ).compare( "arlequin" ) == 0 ){
 
-            //Assemble the mass matrix for the free micromorphic domians
-            std::cerr << "ASSEMBLING THE FREE MICROMORPHIC MASS MATRIX\n";
-            error = assembleFreeMicromorphicMassMatrix( );
-    
-            if ( error ){
-    
-                errorOut result = new errorNode( "processIncrement", "Error in the assembly of the mass matrix for the free macro domains" );
-                result->addNext( error );
-                return result;
-    
-            }
+            error = applyKZProjection( macroIncrement, microIncrement );
 
-            //Assemble the coupling mass and damping matrices
-            std::cerr << "ASSEMBLING THE COUPLING MASS AND DAMPING MATRICES\n";
-            error = assembleCouplingMassAndDampingMatrices( );
-    
             if ( error ){
     
-                errorOut result = new errorNode( "processIncrement", "Error in the construction of the coupling mass and damping matrices" );
-                result->addNext( error );
-                return result;
-    
-            }
-
-            //Assemble the coupling force vector
-            std::cerr << "ASSEMBLING THE COUPLING FORCE VECTOR\n";
-            error = assembleCouplingForceVector( );
-    
-            if ( error ){
-    
-                errorOut result = new errorNode( "processIncrement", "Error in the construction of the coupling force vector" );
-                result->addNext( error );
-                return result;
-    
-            }
-    
-            //Solve for the free displacements
-            std::cout << "SOLVE FOR THE FREE DISPLACEMENT\n";
-            error = solveFreeDisplacement( true );
-    
-            if ( error ){
-    
-                errorOut result = new errorNode( "processIncrement", "Error when solving for the free displacements" );
+                errorOut result = new errorNode( "processIncrement", "Error in applying the Klein-Zimmerman projection" );
                 result->addNext( error );
                 return result;
     
             }
 
         }
+        else{
+
+            return new errorNode( "processIncrement", "Not implemented" );
+
+        }
+
 
         if ( !couplingConfiguration [ "output_homogenized_response" ].IsScalar( ) ){
 
@@ -264,6 +203,101 @@ namespace overlapCoupling{
         }
 
         return NULL;
+    }
+
+    errorOut overlapCoupling::applyKZProjection( const uIntType &macroIncrement, const uIntType &microIncrement ){
+        /*!
+         * Apply the projection of Klein and Zimmerman
+         * to the current increment
+         *
+         * :param const uIntType &macroIncrement: The increment number for the macro-scale
+         * :param const uIntType &microIncrement: The increment number for the micro-scale
+         */
+
+        errorOut error = projectDegreesOfFreedom( );
+    
+        if ( error ){
+    
+            errorOut result = new errorNode( "processIncrement", "Error in the projection of the ghost degrees of freedom" );
+            result->addNext( error );
+            return result;
+    
+        }
+
+#ifdef TESTACCESS
+
+        _test_initial_projected_ghost_micro_displacement = _projected_ghost_micro_displacement;
+        _test_initial_projected_ghost_macro_displacement = _projected_ghost_macro_displacement;
+
+#endif
+
+        //Homogenize the material properties at the micro-scale to the macro-scale
+        std::cerr << "HOMOGENIZE THE MICROSCALE\n";
+        error = homogenizeMicroScale( microIncrement );
+    
+        if ( error ){
+    
+            errorOut result = new errorNode( "applyKZProjection", "Error in the homogenization of the micro-scale to the macro-scale" );
+            result->addNext( error );
+            return result;
+    
+        }
+
+        YAML::Node couplingConfiguration = _inputProcessor.getCouplingInitialization( );
+        if ( !couplingConfiguration[ "update_displacement" ].IsScalar( ) ){
+
+            //Assemble the mass matrix for the free micromorphic domians
+            std::cerr << "ASSEMBLING THE FREE MICROMORPHIC MASS MATRIX\n";
+            error = assembleFreeMicromorphicMassMatrix( );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "applyKZProjection", "Error in the assembly of the mass matrix for the free macro domains" );
+                result->addNext( error );
+                return result;
+    
+            }
+
+            //Assemble the coupling mass and damping matrices
+            std::cerr << "ASSEMBLING THE COUPLING MASS AND DAMPING MATRICES\n";
+            error = assembleCouplingMassAndDampingMatrices( );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "applyKZProjection", "Error in the construction of the coupling mass and damping matrices" );
+                result->addNext( error );
+                return result;
+    
+            }
+
+            //Assemble the coupling force vector
+            std::cerr << "ASSEMBLING THE COUPLING FORCE VECTOR\n";
+            error = assembleCouplingForceVector( );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "applyKZProjection", "Error in the construction of the coupling force vector" );
+                result->addNext( error );
+                return result;
+    
+            }
+    
+            //Solve for the free displacements
+            std::cout << "SOLVE FOR THE FREE DISPLACEMENT\n";
+            error = solveFreeDisplacement( true );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "applyKZProjection", "Error when solving for the free displacements" );
+                result->addNext( error );
+                return result;
+    
+            }
+
+        }
+
+        return NULL;
+
     }
 
     errorOut overlapCoupling::initializeCoupling( ){
@@ -2579,6 +2613,8 @@ namespace overlapCoupling{
     errorOut overlapCoupling::homogenizeMicroScale( const unsigned int &microIncrement ){
         /*!
          * Homogenize the micro-scale properties to the macro scale.
+         *
+         * TODO: Allow for update to ghost micromorphic DOF prior to homogenization for the filtering case
          *
          * :param const unsigned int &microIncrement: The increment at the micro-scale to homogenize
          */
