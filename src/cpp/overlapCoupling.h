@@ -426,6 +426,8 @@ namespace overlapCoupling{
 
             errorOut computeArlequinMicroWeightingFactors( const uIntType &microIncrement );
 
+            errorOut computeArlequinMicromorphicMassMatrix( );
+
             //The interpolation matrix
             SparseMatrix _N;
 
@@ -483,6 +485,8 @@ namespace overlapCoupling{
             SparseMatrix freeMicromorphicMassMatrix;
             std::unordered_map< uIntType, floatType > macroKineticPartitioningCoefficient;
 
+            SparseMatrix _MD;
+            SparseMatrix _MQ;
             SparseMatrix _sparse_MASS;
             SparseMatrix _sparse_DAMPING;
 

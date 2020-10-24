@@ -233,11 +233,22 @@ namespace overlapCoupling{
 
         }
 
+        //Compute the micromorphic mass matrix
+        error = computeArlequinMicromorphicMassMatrix( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the micromorphic mass matrix" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
 
     }
 
-    errorOut overlapCoupling::computeArlequinMicroWeightingFactors( const uIntType &microIncrement){
+    errorOut overlapCoupling::computeArlequinMicroWeightingFactors( const uIntType &microIncrement ){
         /*!
          * Compute the weighting factor at each of the micro nodes
          *
@@ -395,6 +406,203 @@ namespace overlapCoupling{
  
                 }
 
+            }
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut overlapCoupling::computeArlequinMicromorphicMassMatrix( ){
+        /*!
+         * Compute the Arlequin micromorphic mass matrix
+         *
+         * Note that we will be using the basic structure from the Klein-Zimmerman formulation
+         * ( i.e. ghost and free nodes ) but Arlequin doesn't make this distinction.
+         */
+
+        const uIntVector *freeMacroCellIds = _inputProcessor.getFreeMacroCellIds( );
+        const uIntVector *ghostMacroCellIds = _inputProcessor.getGhostMacroCellIds( );
+
+        const uIntVector macroCellIds = vectorTools::appendVectors( { *freeMacroCellIds, *ghostMacroCellIds } );
+
+        //Set the displacement degrees of freedom for the element
+        const unsigned int nMacroDOF = _dim + _dim * _dim;
+
+        //Get the micromorphic densities in the reference configuration
+        const std::unordered_map< uIntType, std::string > *macroReferenceDensityTypes = _inputProcessor.getMacroReferenceDensityTypes( );
+        const std::unordered_map< uIntType, floatVector > *macroReferenceDensities = _inputProcessor.getMacroReferenceDensities( );
+
+        //Get the micromorphic moments of inertia in the reference configuration
+        const std::unordered_map< uIntType, std::string > *macroReferenceMomentOfInertiaTypes
+            = _inputProcessor.getMacroReferenceMomentOfInertiaTypes( );
+        const std::unordered_map< uIntType, floatVector > *macroReferenceMomentsOfInertia
+            = _inputProcessor.getMacroReferenceMomentsOfInertia( );
+
+        //Get the macro nodal Arlequin weights
+        const std::unordered_map< uIntType, floatType > *macroArlequinWeights = _inputProcessor.getMacroArlequinWeights( );
+
+        //TODO: Using the reference densities and moments of inertia may not be correct
+
+        errorOut error;
+        floatVector arlequinWeights;
+        std::vector< DOFProjection::T > coefficients;
+        uIntType index = 0;
+        for ( auto cellID = macroCellIds.begin(); cellID != macroCellIds.end(); cellID++, index++){
+
+            //Construct the element
+            std::unique_ptr< elib::Element > element;
+            error = buildMacroDomainElement( *cellID, *_inputProcessor.getMacroNodeReferencePositions( ),
+                                             *_inputProcessor.getMacroDisplacements( ),
+                                             *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                             element );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "computeArlequinMicromorphicMassMatrix",
+                                                 "Error in building the macro-scale element" );
+                result->addNext( error );
+                return result;
+    
+            }
+
+            //Get the degree of freedom values for the free macro-domain element
+            arlequinWeights = floatVector( element->global_node_ids.size( ), 0 );
+            const std::unordered_map< uIntType, floatVector >* macroDispDOFVector = _inputProcessor.getMacroDispDOFVector( );
+            floatVector elementDOFVector( 0 );
+
+            for ( auto nodeID  = element->global_node_ids.begin( );
+                       nodeID != element->global_node_ids.end( );
+                       nodeID++ ){
+
+                auto macroDisplacement = macroDispDOFVector->find( *nodeID );
+
+                if ( macroDisplacement == macroDispDOFVector->end( ) ){
+
+                    return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                                          "Macro node " + std::to_string( *nodeID ) + " was not found in the macro displacement DOF vector map" );
+
+                }
+
+                elementDOFVector
+                    = vectorTools::appendVectors( { elementDOFVector, macroDisplacement->second } );
+
+                auto weight = macroArlequinWeights->find( *nodeID );
+
+                if ( weight == macroArlequinWeights->end( ) ){
+
+                    return new errorNode( "computeArlequinMicroWeightingFactors",
+                                          "Macro node " + std::to_string( *nodeID ) +
+                                          " was not found in the macro node to weighting factor map" );
+
+                }
+
+                arlequinWeights[ nodeID - element->global_node_ids.begin( ) ] = weight->second;
+
+            }
+
+            //Extract the density and moment of inertia in the reference configuration
+            auto densityType = macroReferenceDensityTypes->find( *cellID );
+
+            if ( densityType == macroReferenceDensityTypes->end( ) ){
+
+                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                                      "The macro cell with ID " + std::to_string( *cellID ) +
+                                      " was not found in the density type map" );
+
+            }
+
+            auto momentOfInertiaType = macroReferenceMomentOfInertiaTypes->find( *cellID );
+
+            if ( momentOfInertiaType == macroReferenceMomentOfInertiaTypes->end( ) ){
+
+                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                                      "The macro cell with ID " + std::to_string( *cellID ) +
+                                      " was not found in the moment of inertia type map" );
+
+            }
+
+            if ( densityType->second.compare( "constant" ) != 0 ){
+
+                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                                      "Only constant densities for the macro-scale are allowed currently. This is not true for macro cell ID " + std::to_string( *cellID ) );
+
+            }
+
+            if ( momentOfInertiaType->second.compare( "constant" ) != 0 ){
+
+                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                                      "Only constant moments of inertia for the macro-scale are allowed currently. This is not true for macro cell ID " + std::to_string( *cellID ) );
+
+            }
+
+            auto macroDensities = macroReferenceDensities->find( *cellID );
+
+            if ( macroDensities == macroReferenceDensities->end( ) ){
+
+                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                                      "Macro cell ID " + std::to_string( *cellID ) +
+                                      " is not in the macro reference density map" );
+
+            }
+
+            if ( macroDensities->second.size( ) != 1 ){
+
+                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                                      "The macro densities for macro cell " + std::to_string( *cellID ) +
+                                      "Define " + std::to_string( macroDensities->second.size( ) ) +
+                                      " values when only 1 can be defined" );
+
+            }
+
+            auto macroMomentsOfInertia = macroReferenceMomentsOfInertia->find( *cellID );
+
+            if ( macroMomentsOfInertia == macroReferenceMomentsOfInertia->end( ) ){
+
+                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                                      "Macro cell ID " + std::to_string( *cellID ) +
+                                      " is not in the macro reference moments of inertia map" );
+
+            }
+
+            if ( macroMomentsOfInertia->second.size( ) != _dim * _dim ){
+
+                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                                      "The macro moments of inertia for macro cell " + std::to_string( *cellID ) +
+                                      "Define " + std::to_string( macroDensities->second.size( ) ) +
+                                      " values when only " + std::to_string( _dim * _dim ) + " can be defined" );
+
+            }
+
+            floatVector densities( element->qrule.size( ), macroDensities->second[ 0 ] );
+
+            floatVector momentsOfInertia
+                = vectorTools::appendVectors( floatMatrix( element->qrule.size( ), macroMomentsOfInertia->second ) );
+
+            error = formMicromorphicElementMassMatrix( element, elementDOFVector, momentsOfInertia, densities, 
+                                                       _inputProcessor.getMacroGlobalToLocalDOFMap( ), coefficients,
+                                                       &arlequinWeights );
+
+            if ( error ){
+
+                std::string outstr  = "Error in the construction of the contributions of the macro element to ";
+                            outstr += "the micromorphic mass matrix";
+
+                errorOut result = new errorNode( "assembleArlequinMicromorphicMassMatrix", outstr );
+                result->addNext( error );
+                return result;
+
+            }
+
+            SparseMatrix _MDe( nMacroDOF * _inputProcessor.getMacroGlobalToLocalDOFMap( )->size( ),
+                               nMacroDOF * _inputProcessor.getMacroGlobalToLocalDOFMap( )->size( ) );
+            _MDe.setFromTriplets( coefficients.begin( ), coefficients.end( ) );
+            if( index==0 ){
+                _MD = _MDe;
+            }
+            else{
+                _MD += _MDe;
             }
 
         }
