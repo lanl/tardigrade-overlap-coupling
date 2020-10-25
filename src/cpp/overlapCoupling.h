@@ -179,6 +179,7 @@ namespace overlapCoupling{
 
             const std::unordered_map< uIntType, floatType > *getArlequinMicroWeightingFactors( );
             const SparseMatrix *getMD( );
+            const floatVector *getFQ( );
 
             floatVector _test_freeMicroMasses;
             floatVector _test_ghostMicroMasses;
@@ -428,6 +429,7 @@ namespace overlapCoupling{
             errorOut computeArlequinMicroWeightingFactors( const uIntType &microIncrement );
 
             errorOut computeArlequinMicromorphicMassMatrix( );
+            errorOut computeArlequinForceAndErrorVectors( );
 
             //The interpolation matrix
             SparseMatrix _N;
@@ -508,6 +510,8 @@ namespace overlapCoupling{
             cellDomainUIntVectorMap cellDomainMacroSurfaces;
 
             std::unordered_map< uIntType, floatType > arlequinMicroWeightingFactors;
+
+            floatVector FQ, FD;
 
     };
 

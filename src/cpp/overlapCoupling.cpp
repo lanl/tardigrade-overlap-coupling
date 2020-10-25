@@ -244,6 +244,17 @@ namespace overlapCoupling{
 
         }
 
+        //Compute the remaining terms required for Arlequin
+        error = computeArlequinForceAndErrorVectors( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the force and error vectors" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
 
     }
@@ -625,6 +636,156 @@ namespace overlapCoupling{
 
         return NULL;
 
+    }
+
+    errorOut overlapCoupling::computeArlequinForceAndErrorVectors( ){
+        /*!
+         * Compute the Arlequin force vectors along with the error vector
+         */
+
+        //Set the configuration
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
+
+        std::string projection_type = config[ "projection_type" ].as< std::string >( );
+        const floatType gamma = *_inputProcessor.getNewmarkGamma( );
+        const floatType beta = *_inputProcessor.getNewmarkBeta( );
+
+        //Get the timestep
+        const floatType *dt = _inputProcessor.getDt( );
+
+        //Set the number of displacement degrees of freedom for each scale
+        const uIntType nMicroDispDOF = _dim;
+        const uIntType nMacroDispDOF = _dim + _dim * _dim;
+
+        //Get the maps from the global to the local degrees of freedom
+        const DOFMap *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
+        const DOFMap *macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+        //Get the micro densities
+        const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroDensities( );
+        const std::unordered_map< uIntType, floatType > *microVolumes = _inputProcessor.getMicroVolumes( );
+
+        //Get the forces
+        const std::unordered_map< uIntType, floatVector > *microInternalForces = _inputProcessor.getMicroInternalForces( );
+        const std::unordered_map< uIntType, floatVector > *microExternalForces = _inputProcessor.getMicroExternalForces( );
+
+        //Get the degree of freedom vectors
+        const std::unordered_map< uIntType, floatVector > *previousMicroDisplacements = _inputProcessor.getPreviousMicroDisplacements( );
+        const std::unordered_map< uIntType, floatVector > *previousMicroVelocities    = _inputProcessor.getPreviousMicroVelocities( );
+        const std::unordered_map< uIntType, floatVector > *previousMicroAccelerations = _inputProcessor.getPreviousMicroAccelerations( );
+
+        floatType aQ = config[ "micro_proportionality_coefficient" ].as< floatType >( );
+        floatType aD = config[ "macro_proportionality_coefficient" ].as< floatType >( );
+
+        FQ = floatVector( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
+        FD = floatVector( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
+
+        //Assemble the micro-force vector
+        for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+
+            floatVector nodeForce( nMicroDispDOF, 0 );
+
+            //Get the external force contribution
+            if( _inputProcessor.microExternalForceDefined( ) ){
+
+                auto externalForce = microExternalForces->find( node->first );
+    
+                if ( externalForce == microInternalForces->end( ) ){
+    
+                    return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                                          " not found in external force vector" );
+    
+                }
+
+                nodeForce += externalForce->second;
+
+            }
+
+            //Get the internal force contribution
+            if( _inputProcessor.microInternalForceDefined( ) ){
+
+                auto internalForce = microInternalForces->find( node->first );
+    
+                if ( internalForce == microInternalForces->end( ) ){
+    
+                    return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                                          " not found in internal force vector" );
+    
+                }
+
+                nodeForce -= internalForce->second;
+
+            }
+
+            auto microDensity = microDensities->find( node->first );
+
+            if ( microDensity == microDensities->end( ) ){
+
+                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                                      " not found in micro densities vector" );
+
+            }
+
+            auto microVolume = microVolumes->find( node->first );
+
+            if ( microVolume == microVolumes->end( ) ){
+
+                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                                      " not found in micro volumes vector" );
+
+            }
+
+
+            //Get the velocity contribution to the damping force
+            if ( _inputProcessor.microVelocitiesDefined( ) ){
+
+                auto microVelocity = previousMicroVelocities->find( node->first );
+
+                if ( microVelocity == previousMicroVelocities->end( ) ){
+
+                    return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                                          " not found in previous micro velocities vector" );
+
+                }
+
+                nodeForce -= aQ * microDensity->second * microVolume->second * microVelocity->second;
+
+            }
+
+            //Get the acceleration contribution to the damping force
+            if ( _inputProcessor.microAccelerationDefined( ) ){
+
+                auto microAcceleration = previousMicroAccelerations->find( node->first );
+
+                if ( microAcceleration == previousMicroAccelerations->end( ) ){
+
+                    return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                                          " not found in previous micro accelerations vector" );
+
+                }
+
+                nodeForce -= aQ * microDensity->second * microVolume->second * ( 1 - gamma ) * ( *dt ) * microAcceleration->second;
+
+            }
+
+            //Get the arlequin weight
+            auto arlequinWeight = arlequinMicroWeightingFactors.find( node->first );
+            if ( arlequinWeight == arlequinMicroWeightingFactors.end( ) ){
+
+                return new errorNode( "computeArlequinForceAndErrorVectors",
+                                      "Micro node " + std::to_string( node->first ) + " not found in arlequin weight vector" );
+
+            }
+
+            for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
+
+                FQ[ nMicroDispDOF * node->second + i ] += ( 1 - arlequinWeight->second ) * nodeForce[ i ];
+
+            }
+
+        }
+
+        return NULL;
     }
 
     errorOut overlapCoupling::applyKZProjection( const uIntType &macroIncrement, const uIntType &microIncrement ){
@@ -9521,6 +9682,14 @@ namespace overlapCoupling{
          */
 
         return &_MD;
+    }
+
+    const floatVector *overlapCoupling::getFQ( ){
+        /*!
+         * Get a constant reference to the micro-force vector
+         */
+
+        return &FQ;
     }
 
 #endif
