@@ -443,8 +443,6 @@ namespace overlapCoupling{
         //Get the macro nodal Arlequin weights
         const std::unordered_map< uIntType, floatType > *macroArlequinWeights = _inputProcessor.getMacroArlequinWeights( );
 
-        //TODO: Using the reference densities and moments of inertia may not be correct
-
         errorOut error;
         floatVector arlequinWeights;
         std::vector< DOFProjection::T > coefficients;
@@ -575,6 +573,8 @@ namespace overlapCoupling{
 
             }
 
+            bool quantitiesInReference = true; //TODO: This is hard coded for now but, in the future when functionally-graded micromorphic is implemented, we will want to change this.
+
             floatVector densities( element->qrule.size( ), macroDensities->second[ 0 ] );
 
             floatVector momentsOfInertia
@@ -582,7 +582,7 @@ namespace overlapCoupling{
 
             error = formMicromorphicElementMassMatrix( element, elementDOFVector, momentsOfInertia, densities, 
                                                        _inputProcessor.getMacroGlobalToLocalDOFMap( ), coefficients,
-                                                       &arlequinWeights );
+                                                       &arlequinWeights, quantitiesInReference );
 
             if ( error ){
 
@@ -4902,7 +4902,8 @@ namespace overlapCoupling{
                                                 const floatVector &density,
                                                 const DOFMap *nodeIDToIndex,
                                                 tripletVector &coefficients,
-                                                const floatVector *arlequinNodalWeights ){
+                                                const floatVector *arlequinNodalWeights,
+                                                const bool quantitiesInReference ){
         /*!
          * Form the micromorphic mass matrix for an element
          *
@@ -4918,6 +4919,8 @@ namespace overlapCoupling{
          * :param tripletVector &coefficients: The coefficients of the mass matrix
          * :param const floatVector *arlequinNodalWeights: The weights of the nodes for the Arlequin method.
          *     Defaults to NULL.
+         * :param const bool floatVector: Flag for if the density and moments of inerta are actually defined
+         *     in the reference configuration.
          */
 
         //Get the dimension of the element
@@ -4961,6 +4964,7 @@ namespace overlapCoupling{
         //Variable initialize
         floatVector shapeFunctions;
         floatVector interpolatedValues, deformationGradient;
+        floatType qptDensity, referenceDensity;
         floatVector qptMomentOfInertia;
         floatVector uQpt, XiQpt, invXiQpt, referenceMomentOfInertia, inertiaTerm;
         floatMatrix gradShapeFunctions;
@@ -4994,16 +4998,30 @@ namespace overlapCoupling{
 
             invXiQpt = vectorTools::inverse( XiQpt, dim, dim );
 
+            //Get the current density
+            qptDensity = density[ qptIndex ];
+
             //Compute the moment of inertia in the reference configuration
             qptMomentOfInertia = floatVector( momentOfInertia.begin( ) + dim * dim * qptIndex,
                                               momentOfInertia.begin( ) + dim * dim * ( qptIndex + 1 ) );
 
-            referenceMomentOfInertia
-                = vectorTools::matrixMultiply( vectorTools::matrixMultiply( invXiQpt, qptMomentOfInertia, dim, dim, dim, dim ),
-                                               invXiQpt, dim, dim, dim, dim, false, true );
+            if ( quantitiesInReference ){
+
+                referenceDensity = qptDensity;
+                referenceMomentOfInertia = qptMomentOfInertia;
+
+            }
+            else{
+
+                referenceDensity = J * qptDensity;
+                referenceMomentOfInertia
+                    = vectorTools::matrixMultiply( vectorTools::matrixMultiply( invXiQpt, qptMomentOfInertia, dim, dim, dim, dim ),
+                                                   invXiQpt, dim, dim, dim, dim, false, true );
+
+            }
 
             //Evaluate the integrand term
-            inertiaTerm = density[ qptIndex ] * J * referenceMomentOfInertia * Jxw;
+            inertiaTerm = referenceDensity * referenceMomentOfInertia * Jxw;
 
             floatType arlequinWeight = 1;
             if ( arlequinNodalWeights ){
@@ -5051,7 +5069,7 @@ namespace overlapCoupling{
 
                             coefficients.push_back( DOFProjection::T( row0 + j,
                                                                       col0 + k,
-                                                                      arlequinWeight * eye[ dim * j + k ] * density[ qptIndex ] * J * sFo * sFp * Jxw ) );
+                                                                      arlequinWeight * eye[ dim * j + k ] * referenceDensity * sFo * sFp * Jxw ) );
     
                             for ( unsigned int K = 0; K < dim; K++ ){
     
@@ -5900,6 +5918,7 @@ namespace overlapCoupling{
     errorOut overlapCoupling::assembleFreeMicromorphicMassMatrix( ){
         /*!
          * Assemble the micromorphic mass matrix for the free micromorphic domains.
+         *
          * It is noted that while we are only processing the free micromorphic domains,
          * there WILL be ghost nodes because even though a micromorphic domain may be
          * marked as free, some of the nodes can ( and will in the current framework )
@@ -6015,6 +6034,8 @@ namespace overlapCoupling{
 
             }
 
+            bool quantitiesInReference = true; //TODO: We currently assume all of the quantities are defined in the reference configuration
+
             auto macroDensities = macroReferenceDensities->find( *macroCellID );
 
             if ( macroDensities == macroReferenceDensities->end( ) ){
@@ -6089,7 +6110,8 @@ namespace overlapCoupling{
             }
 
             error = formMicromorphicElementMassMatrix( element, elementDOFVector, momentsOfInertia, densities, 
-                                                       _inputProcessor.getMacroGlobalToLocalDOFMap( ), coefficients );
+                                                       _inputProcessor.getMacroGlobalToLocalDOFMap( ), coefficients,
+                                                       NULL, quantitiesInReference );
 
             if ( error ){
 

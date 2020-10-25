@@ -519,7 +519,8 @@ namespace overlapCoupling{
                                                 const floatVector &density,
                                                 const DOFMap *nodeIDToIndex,
                                                 std::vector< DOFProjection::T > &coefficients,
-                                                const floatVector *arlequinNodalWeights = NULL );
+                                                const floatVector *arlequinNodalWeights = NULL,
+                                                const bool quantitiesInReference = false );
 
     errorOut formMicromorphicElementInternalForceVector( const std::unique_ptr< elib::Element > &element,
                                                          const floatVector &degreeOfFreedomValues,
