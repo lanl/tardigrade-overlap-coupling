@@ -56,18 +56,18 @@ namespace inputFileProcessor{
             return;
         }
 
-        //Initialize the coupling domains
-        error = initializeCouplingDomains( );
-        if ( error ){
-            _error = new errorNode( "initialize", "Error in initialization of the coupling domains" );
-            _error->addNext( error );
-            return;
-        }
-
         //Check the coupling initialization
         error = checkCouplingInitialization( );
         if ( error ){
             _error = new errorNode( "initialize", "Error in the coupling initialization configuration" );
+            _error->addNext( error );
+            return;
+        }
+
+        //Initialize the coupling domains
+        error = initializeCouplingDomains( );
+        if ( error ){
+            _error = new errorNode( "initialize", "Error in initialization of the coupling domains" );
             _error->addNext( error );
             return;
         }
@@ -695,6 +695,7 @@ namespace inputFileProcessor{
          * Initialize the coupling domains
          */
 
+        errorOut error;
         if ( _config[ "free_macroscale_domains" ] ){
 
             _microDomainSurfaceCount.clear( );
@@ -703,19 +704,17 @@ namespace inputFileProcessor{
             _macroReferenceMomentOfInertiaTypes.clear( );
             _macroReferenceDensities.clear( );
             _macroReferenceMomentsOfInertia.clear( );
-            errorOut error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ],
-                                                             _free_macro_cell_ids,
-//                                                             _free_macro_cell_micro_domain_counts,
-                                                             _free_macro_volume_sets,
-                                                             _ghost_micro_volume_sets,
-//                                                             _ghost_micro_surface_approximate_split_count,
-                                                             _microDomainSurfaceCount,
-                                                             _macroCellDomainMap,
-                                                             _freeMacroMassPropertiesRequired,
-                                                             _macroReferenceDensityTypes,
-                                                             _macroReferenceMomentOfInertiaTypes,
-                                                             _macroReferenceDensities,
-                                                             _macroReferenceMomentsOfInertia );
+            error = checkCommonDomainConfiguration( _config[ "free_macroscale_domains" ],
+                                                    _free_macro_cell_ids,
+                                                    _free_macro_volume_sets,
+                                                    _ghost_micro_volume_sets,
+                                                    _microDomainSurfaceCount,
+                                                    _macroCellDomainMap,
+                                                    _freeMacroMassPropertiesRequired,
+                                                    _macroReferenceDensityTypes,
+                                                    _macroReferenceMomentOfInertiaTypes,
+                                                    _macroReferenceDensities,
+                                                    _macroReferenceMomentsOfInertia );
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the free macroscale domains" );
@@ -727,14 +726,27 @@ namespace inputFileProcessor{
 
         if ( _config[ "ghost_macroscale_domains" ] ){
 
-            errorOut error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ],
-                                                             _ghost_macro_cell_ids,
-//                                                             _ghost_macro_cell_micro_domain_counts,
-                                                             _ghost_macro_volume_sets,
-                                                             _free_micro_volume_sets,
-                                                             _microDomainSurfaceCount,
-                                                             //_free_micro_surface_approximate_split_count,
-                                                             _macroCellDomainMap );
+            if ( _useArlequinMethod ){
+                error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ],
+                                                        _ghost_macro_cell_ids,
+                                                        _ghost_macro_volume_sets,
+                                                        _free_micro_volume_sets,
+                                                        _microDomainSurfaceCount,
+                                                        _macroCellDomainMap,
+                                                        _freeMacroMassPropertiesRequired,
+                                                        _macroReferenceDensityTypes,
+                                                        _macroReferenceMomentOfInertiaTypes,
+                                                        _macroReferenceDensities,
+                                                        _macroReferenceMomentsOfInertia );
+            }
+            else{
+                error = checkCommonDomainConfiguration( _config[ "ghost_macroscale_domains" ],
+                                                        _ghost_macro_cell_ids,
+                                                        _ghost_macro_volume_sets,
+                                                        _free_micro_volume_sets,
+                                                        _microDomainSurfaceCount,
+                                                        _macroCellDomainMap );
+            }
             if ( error ){
                 errorOut result = new errorNode( "initializeCouplingDomains",
                                                  "Error in input-file check of the ghost macroscale domains" );
