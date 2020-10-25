@@ -496,7 +496,9 @@ namespace overlapCoupling{
 
                 }
 
-                arlequinWeights[ nodeID - element->global_node_ids.begin( ) ] = weight->second;
+                //Set the Arlequin weights at the nodes. We do force the weights to be between 0.001 and 0.999 so that
+                //The mass matrix won't be degenerate
+                arlequinWeights[ nodeID - element->global_node_ids.begin( ) ] = std::fmin( std::fmax( weight->second, 0.001 ), 0.999 );
 
             }
 
@@ -579,6 +581,20 @@ namespace overlapCoupling{
 
             floatVector momentsOfInertia
                 = vectorTools::appendVectors( floatMatrix( element->qrule.size( ), macroMomentsOfInertia->second ) );
+
+            //Initialize the coefficients vector
+            coefficients.clear( );
+
+            uIntType numCoefficients = 0;
+            for ( auto it = element->global_node_ids.begin( ); it != element->global_node_ids.end( ); it++ ){
+    
+                //Get the number of nodes in the element
+                uIntType elementNodeCount = element->global_node_ids.size( );
+                numCoefficients += element->qrule.size( ) * elementNodeCount * elementNodeCount * _dim * _dim * ( 1 + _dim * _dim );
+    
+            }
+    
+            coefficients.reserve( numCoefficients );
 
             error = formMicromorphicElementMassMatrix( element, elementDOFVector, momentsOfInertia, densities, 
                                                        _inputProcessor.getMacroGlobalToLocalDOFMap( ), coefficients,
@@ -9497,6 +9513,14 @@ namespace overlapCoupling{
 
         return &arlequinMicroWeightingFactors;
 
+    }
+
+    const SparseMatrix *overlapCoupling::getMD( ){
+        /*!
+         * Get a constant reference to the micromoprhic mass matrix
+         */
+
+        return &_MD;
     }
 
 #endif
