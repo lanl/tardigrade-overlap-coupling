@@ -266,6 +266,18 @@ namespace overlapCoupling{
 
         }
 
+        //Homogenize the material properties at the micro-scale to the macro-scale
+        std::cerr << "HOMOGENIZE THE MICROSCALE\n";
+        error = homogenizeMicroScale( microIncrement );
+    
+        if ( error ){
+    
+            errorOut result = new errorNode( "applyArlequinProjection", "Error in the homogenization of the micro-scale to the macro-scale" );
+            result->addNext( error );
+            return result;
+    
+        }
+
         return NULL;
 
     }
