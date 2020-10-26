@@ -688,8 +688,11 @@ namespace overlapCoupling{
         floatType aQ = config[ "micro_proportionality_coefficient" ].as< floatType >( );
         floatType aD = config[ "macro_proportionality_coefficient" ].as< floatType >( );
 
-        FQ = floatVector( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
-        FD = floatVector( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
+        Ge = floatVector( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
+        floatVector De( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ), 0 );
+
+        FQ = floatVector( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
+        FD = floatVector( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ), 0 );
 
         //Assemble the micro-force vector
         for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
@@ -746,8 +749,19 @@ namespace overlapCoupling{
 
             }
 
+            floatVector qe( 3, 0 );
+            auto microDisplacement = previousMicroDisplacements->find( node->first );
 
-            //Get the velocity contribution to the damping force
+            if ( microDisplacement == previousMicroDisplacements->end( ) ){
+
+                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                                      " not found in micro displacement vector" );
+
+            }
+
+            qe = microDisplacement->second;
+
+            //Get the velocity contribution to the damping force and error
             if ( _inputProcessor.microVelocitiesDefined( ) ){
 
                 auto microVelocity = previousMicroVelocities->find( node->first );
@@ -760,6 +774,8 @@ namespace overlapCoupling{
                 }
 
                 nodeForce -= aQ * microDensity->second * microVolume->second * microVelocity->second;
+
+                qe += ( *dt ) * microVelocity->second;
 
             }
 
@@ -777,6 +793,8 @@ namespace overlapCoupling{
 
                 nodeForce -= aQ * microDensity->second * microVolume->second * ( 1 - gamma ) * ( *dt ) * microAcceleration->second;
 
+                qe += 0.5 * ( *dt ) * ( *dt ) * ( 1 - 2 * beta ) * microAcceleration->second;
+
             }
 
             //Get the arlequin weight
@@ -791,12 +809,13 @@ namespace overlapCoupling{
             for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
                 FQ[ nMicroDispDOF * node->second + i ] += ( 1 - arlequinWeight->second ) * nodeForce[ i ];
+                Ge[ nMicroDispDOF * node->second + i ] -= qe[ i ];
 
             }
 
         }
 
-        //Assemble the macro-force vector
+        //Assemble the macro-force and error vector
         floatVector explicitVelocity;
 
         if ( ( _inputProcessor.macroVelocitiesDefined( ) ) || ( _inputProcessor.macroAccelerationDefined( ) ) ){
@@ -805,7 +824,6 @@ namespace overlapCoupling{
 
         for( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
 
-            std::cout << "node: " << node->first << ", " << node->second << "\n";
             floatVector nodeForce( nMacroDispDOF, 0 );
 
             //Add the external force contribution
@@ -819,7 +837,6 @@ namespace overlapCoupling{
                                           "Macro node " + std::to_string( node->first ) + " not found in external force map" );
 
                 }
-                std::cout << "  fext: "; vectorTools::print( externalForce->second );
 
                 nodeForce += externalForce->second;
 
@@ -836,7 +853,6 @@ namespace overlapCoupling{
                                           "Macro node " + std::to_string( node->first ) + " not found in internal force map" );
 
                 }
-                std::cout << "  fint: "; vectorTools::print( internalForce->second );
 
                 nodeForce -= internalForce->second;
 
@@ -859,6 +875,21 @@ namespace overlapCoupling{
 
             }
 
+            auto macroDisplacement = previousMacroDispDOFVector->find( node->first );
+
+            if ( macroDisplacement == previousMacroDispDOFVector->end( ) ){
+
+                return new errorNode( "computeArlequinForceAndErrorVectors", "Macro node " + std::to_string( node->first ) +
+                                      " not found in macro displacement vector" );
+
+            }
+
+            for ( uIntType i = 0; i < macroDisplacement->second.size( ); i++ ){
+
+                De[ nMacroDispDOF * node->second + i ] += macroDisplacement->second[ i ];
+
+            }
+
             //Add the contribution from the previous velocity term
             if ( _inputProcessor.macroVelocitiesDefined( ) ){
 
@@ -874,6 +905,7 @@ namespace overlapCoupling{
                 for ( uIntType i = 0; i < previousVelocity->second.size( ); i++ ){
 
                     explicitVelocity[ nMacroDispDOF * node->second + i ] += previousVelocity->second[ i ];
+                    De[ nMacroDispDOF * node->second + i ] += ( *dt ) * previousVelocity->second[ i ];
 
                 }
 
@@ -895,6 +927,8 @@ namespace overlapCoupling{
 
                     explicitVelocity[ nMacroDispDOF * node->second + i ]
                         += ( 1 - gamma ) * ( *dt ) * previousAcceleration->second[ i ];
+                    De[ nMacroDispDOF * node->second + i ] += 0.5 * ( *dt ) * ( *dt ) * ( 1 - 2 * beta )
+                                                            * previousAcceleration->second[ i ];
 
                 }
 
@@ -911,6 +945,11 @@ namespace overlapCoupling{
             _FD -= aD * _MD * _explicitVelocity;
 
         }
+
+        Eigen::Map< Eigen::Matrix< floatType, -1, 1 > > _De( De.data( ), De.size( ), 1 );
+        Eigen::Map< Eigen::Matrix< floatType, -1, 1 > > _Ge( Ge.data( ), Ge.size( ), 1 );
+
+        _Ge += _N * _De;
 
         return NULL;
     }
@@ -9825,6 +9864,14 @@ namespace overlapCoupling{
          */
 
         return &FD;
+    }
+
+    const floatVector *overlapCoupling::getGe( ){
+        /*!
+         * Get a constant reference to the micro dof explicit error vector
+         */
+
+        return &Ge;
     }
 
 
