@@ -661,18 +661,29 @@ namespace overlapCoupling{
         const DOFMap *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
         const DOFMap *macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
 
-        //Get the micro densities
+        //Get the micro properties
         const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroDensities( );
         const std::unordered_map< uIntType, floatType > *microVolumes = _inputProcessor.getMicroVolumes( );
+
+        //Get the macro properties
+        const std::unordered_map< uIntType, floatType > *macroArlequinWeights = _inputProcessor.getMacroArlequinWeights( );
 
         //Get the forces
         const std::unordered_map< uIntType, floatVector > *microInternalForces = _inputProcessor.getMicroInternalForces( );
         const std::unordered_map< uIntType, floatVector > *microExternalForces = _inputProcessor.getMicroExternalForces( );
 
+        const std::unordered_map< uIntType, floatVector > *macroInternalForces = _inputProcessor.getMacroInternalForces( );
+        const std::unordered_map< uIntType, floatVector > *macroExternalForces = _inputProcessor.getMacroExternalForces( );
+
+
         //Get the degree of freedom vectors
         const std::unordered_map< uIntType, floatVector > *previousMicroDisplacements = _inputProcessor.getPreviousMicroDisplacements( );
         const std::unordered_map< uIntType, floatVector > *previousMicroVelocities    = _inputProcessor.getPreviousMicroVelocities( );
         const std::unordered_map< uIntType, floatVector > *previousMicroAccelerations = _inputProcessor.getPreviousMicroAccelerations( );
+
+        const std::unordered_map< uIntType, floatVector > *previousMacroDispDOFVector = _inputProcessor.getPreviousMacroDispDOFVector( );
+        const std::unordered_map< uIntType, floatVector > *previousMacroVelocities    = _inputProcessor.getPreviousMacroVelocities( );
+        const std::unordered_map< uIntType, floatVector > *previousMacroAccelerations = _inputProcessor.getPreviousMacroAccelerations( );
 
         floatType aQ = config[ "micro_proportionality_coefficient" ].as< floatType >( );
         floatType aD = config[ "macro_proportionality_coefficient" ].as< floatType >( );
@@ -782,6 +793,122 @@ namespace overlapCoupling{
                 FQ[ nMicroDispDOF * node->second + i ] += ( 1 - arlequinWeight->second ) * nodeForce[ i ];
 
             }
+
+        }
+
+        //Assemble the macro-force vector
+        floatVector explicitVelocity;
+
+        if ( ( _inputProcessor.macroVelocitiesDefined( ) ) || ( _inputProcessor.macroAccelerationDefined( ) ) ){
+            explicitVelocity = floatVector( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ), 0 );
+        }
+
+        for( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+
+            std::cout << "node: " << node->first << ", " << node->second << "\n";
+            floatVector nodeForce( nMacroDispDOF, 0 );
+
+            //Add the external force contribution
+            if ( _inputProcessor.macroExternalForceDefined( ) ){
+
+                auto externalForce = macroExternalForces->find( node->first );
+
+                if ( externalForce == macroExternalForces->end( ) ){
+
+                    return new errorNode( "computeArlequinForceAndErrorVectors",
+                                          "Macro node " + std::to_string( node->first ) + " not found in external force map" );
+
+                }
+                std::cout << "  fext: "; vectorTools::print( externalForce->second );
+
+                nodeForce += externalForce->second;
+
+            }
+
+            //Add the internal force contribution
+            if ( _inputProcessor.macroInternalForceDefined( ) ){
+
+                auto internalForce = macroInternalForces->find( node->first );
+
+                if ( internalForce == macroInternalForces->end( ) ){
+
+                    return new errorNode( "computeArlequinForceAndErrorVectors",
+                                          "Macro node " + std::to_string( node->first ) + " not found in internal force map" );
+
+                }
+                std::cout << "  fint: "; vectorTools::print( internalForce->second );
+
+                nodeForce -= internalForce->second;
+
+            }
+
+            //Get the Arlequin weight
+            auto arlequinWeight = macroArlequinWeights->find( node->first );
+
+            if ( arlequinWeight == macroArlequinWeights->end( ) ){
+
+                return new errorNode( "computeArlequinForceAndErrorVectors",
+                                      "Macro node " + std::to_string( node->first ) + " not found in arlequin weights map" );
+
+            }
+
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                FD[ nMacroDispDOF * node->second + i ]
+                    += std::fmin( std::fmax( arlequinWeight->second, 0.001 ), 0.999 ) * nodeForce[ i ];
+
+            }
+
+            //Add the contribution from the previous velocity term
+            if ( _inputProcessor.macroVelocitiesDefined( ) ){
+
+                auto previousVelocity = previousMacroVelocities->find( node->first );
+
+                if ( previousVelocity == previousMacroVelocities->end( ) ){
+
+                    return new errorNode( "computeArlequinForceAndErrorVectors",
+                                          "Macro node " + std::to_string( node->first ) + " not found in previous macro velocity map" );
+
+                }
+
+                for ( uIntType i = 0; i < previousVelocity->second.size( ); i++ ){
+
+                    explicitVelocity[ nMacroDispDOF * node->second + i ] += previousVelocity->second[ i ];
+
+                }
+
+            }
+
+            //Add the contribution from the previous acceleration term
+            if ( _inputProcessor.macroAccelerationDefined( ) ){
+
+                auto previousAcceleration = previousMacroAccelerations->find( node->first );
+
+                if ( previousAcceleration == previousMacroAccelerations->end( ) ){
+
+                    return new errorNode( "computeArlequinForceAndErrorVectors",
+                                          "Macro node " + std::to_string( node->first ) + " not found in previous macro acceleration map" );
+
+                }
+
+                for ( uIntType i = 0; i < previousAcceleration->second.size( ); i++ ){
+
+                    explicitVelocity[ nMacroDispDOF * node->second + i ]
+                        += ( 1 - gamma ) * ( *dt ) * previousAcceleration->second[ i ];
+
+                }
+
+            }
+
+        }
+
+        if ( ( _inputProcessor.macroVelocitiesDefined( ) ) || ( _inputProcessor.macroAccelerationDefined( ) ) ){
+
+            
+            Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _explicitVelocity( explicitVelocity.data(), explicitVelocity.size( ), 1 );
+            Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _FD( FD.data( ), FD.size( ), 1 ); 
+
+            _FD -= aD * _MD * _explicitVelocity;
 
         }
 
@@ -9691,6 +9818,15 @@ namespace overlapCoupling{
 
         return &FQ;
     }
+
+    const floatVector *overlapCoupling::getFD( ){
+        /*!
+         * Get a constant reference to the macro-force vector
+         */
+
+        return &FD;
+    }
+
 
 #endif
 

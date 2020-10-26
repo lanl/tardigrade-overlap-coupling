@@ -180,6 +180,7 @@ namespace overlapCoupling{
             const std::unordered_map< uIntType, floatType > *getArlequinMicroWeightingFactors( );
             const SparseMatrix *getMD( );
             const floatVector *getFQ( );
+            const floatVector *getFD( );
 
             floatVector _test_freeMicroMasses;
             floatVector _test_ghostMicroMasses;
