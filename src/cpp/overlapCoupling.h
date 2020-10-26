@@ -220,6 +220,9 @@ namespace overlapCoupling{
             Eigen::MatrixXd _test_DOF_tp1;
             Eigen::MatrixXd _test_DotDotDOF_tp1;
 
+            Eigen::MatrixXd _test_DotDotD_tp1;
+            Eigen::MatrixXd _test_DotDotQ_tp1;
+
 #endif
 
         private:
@@ -432,6 +435,7 @@ namespace overlapCoupling{
 
             errorOut computeArlequinMicromorphicMassMatrix( );
             errorOut computeArlequinForceAndErrorVectors( );
+            errorOut computeArlequinDeformationUpdate( );
 
             //The interpolation matrix
             SparseMatrix _N;

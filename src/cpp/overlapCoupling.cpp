@@ -255,6 +255,17 @@ namespace overlapCoupling{
 
         }
 
+        //Update the degrees of freedom
+        error = computeArlequinDeformationUpdate( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the updated deformation values" );
+            result->addNext( error );
+            return result;
+
+        }
+
         return NULL;
 
     }
@@ -946,10 +957,101 @@ namespace overlapCoupling{
 
         }
 
-        Eigen::Map< Eigen::Matrix< floatType, -1, 1 > > _De( De.data( ), De.size( ), 1 );
-        Eigen::Map< Eigen::Matrix< floatType, -1, 1 > > _Ge( Ge.data( ), Ge.size( ), 1 );
+        Eigen::Map< Eigen::Vector< floatType, -1 > > _De( De.data( ), De.size( ) );
+        Eigen::Map< Eigen::Vector< floatType, -1 > > _Ge( Ge.data( ), Ge.size( ) );
 
         _Ge += _N * _De;
+
+        return NULL;
+    }
+
+    errorOut overlapCoupling::computeArlequinDeformationUpdate( ){
+        /*!
+         * Compute the deformation update using the Arlequin method
+         */
+
+        //Set the configuration
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
+
+        std::string projection_type = config[ "projection_type" ].as< std::string >( );
+        const floatType gamma = *_inputProcessor.getNewmarkGamma( );
+        const floatType beta = *_inputProcessor.getNewmarkBeta( );
+
+        //Get the timestep
+        const floatType *dt = _inputProcessor.getDt( );
+
+        //Get the proportionality constants
+        floatType aQ = config[ "micro_proportionality_coefficient" ].as< floatType >( );
+        floatType aD = config[ "macro_proportionality_coefficient" ].as< floatType >( );
+
+        //Set the micro mass vector
+        uIntType nMicroDispDOF = _dim;
+
+        const std::unordered_map< uIntType, uIntType > *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
+        const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroDensities( );
+        const std::unordered_map< uIntType, floatType > *microVolumes = _inputProcessor.getMicroVolumes( );
+
+        floatVector MQ( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
+        for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+
+            auto microDensity = microDensities->find( node->first );
+
+            if ( microDensity == microDensities->end( ) ){
+
+                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                                      " not found in micro densities vector" );
+
+            }
+
+            auto microVolume = microVolumes->find( node->first );
+
+            if ( microVolume == microVolumes->end( ) ){
+
+                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                                      " not found in micro volumes vector" );
+
+            }
+
+            for ( uIntType i = 0; i < _dim; i++ ){
+
+                MQ[ nMicroDispDOF * node->second + i ] += microDensity->second * microVolume->second;
+
+            }
+
+        }
+
+        //Solve for D acceleration
+        Eigen::Map< Eigen::Vector< floatType, -1 > > _MQ( MQ.data( ), MQ.size( ) );
+        Eigen::Map< Eigen::Vector< floatType, -1 > > _FD( FD.data( ), FD.size( ) );
+        Eigen::Map< Eigen::Vector< floatType, -1 > > _FQ( FQ.data( ), FQ.size( ) );
+        Eigen::Map< Eigen::Vector< floatType, -1 > > _Ge( Ge.data( ), Ge.size( ) );
+
+        SparseMatrix LHS = _MD;
+        floatType factor = ( 1 + gamma * ( *dt ) * aQ ) / ( 1 + gamma * ( *dt ) * aD );
+
+        LHS += _N.transpose( ) * ( factor * _MQ ).asDiagonal( ) * _N;
+
+        Eigen::MatrixXd RHS = _FD;
+        RHS += _N.transpose( ) * _FQ;
+
+        floatType factor2 = ( 1 + gamma * ( *dt ) * aQ ) / ( ( *dt ) * ( *dt ) * beta );
+        RHS -= factor2 * ( _N.transpose( ) * _MQ.asDiagonal( ) ) * _Ge;
+        RHS /= ( 1 + gamma * ( *dt ) * aD );
+
+        Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
+        solver.compute( LHS );
+        Eigen::VectorXd _DotDotD_tp1 = solver.solve( RHS );
+
+#ifdef TESTACCESS
+        _test_DotDotD_tp1 = _DotDotD_tp1;
+#endif
+
+        //Solve for Q acceleration
+        Eigen::VectorXd _DotDotQ_tp1 = _N * _DotDotD_tp1 + _Ge / ( ( *dt ) * ( *dt ) * beta );
+
+#ifdef TESTACCESS
+        _test_DotDotQ_tp1 = _DotDotQ_tp1;
+#endif
 
         return NULL;
     }
