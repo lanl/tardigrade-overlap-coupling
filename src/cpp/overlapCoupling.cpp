@@ -986,10 +986,24 @@ namespace overlapCoupling{
 
         //Set the micro mass vector
         uIntType nMicroDispDOF = _dim;
+        uIntType nMacroDispDOF = _dim + _dim * _dim;
 
+        //Get the DOF maps
         const std::unordered_map< uIntType, uIntType > *microGlobalToLocalDOFMap = _inputProcessor.getMicroGlobalToLocalDOFMap( );
+        const std::unordered_map< uIntType, uIntType > *macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+        //Required properties to compute the micro mass vector
         const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroDensities( );
         const std::unordered_map< uIntType, floatType > *microVolumes = _inputProcessor.getMicroVolumes( );
+
+        //Get the required DOF values
+        const std::unordered_map< uIntType, floatVector > *previousMicroDisplacements = _inputProcessor.getPreviousMicroDisplacements( );
+        const std::unordered_map< uIntType, floatVector > *previousMicroVelocities    = _inputProcessor.getPreviousMicroVelocities( );
+        const std::unordered_map< uIntType, floatVector > *previousMicroAccelerations = _inputProcessor.getPreviousMicroAccelerations( );
+
+        const std::unordered_map< uIntType, floatVector > *previousMacroDispDOFVector = _inputProcessor.getPreviousMacroDispDOFVector( );
+        const std::unordered_map< uIntType, floatVector > *previousMacroVelocities    = _inputProcessor.getPreviousMacroVelocities( );
+        const std::unordered_map< uIntType, floatVector > *previousMacroAccelerations = _inputProcessor.getPreviousMacroAccelerations( );
 
         floatVector MQ( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
         for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
@@ -998,7 +1012,7 @@ namespace overlapCoupling{
 
             if ( microDensity == microDensities->end( ) ){
 
-                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
                                       " not found in micro densities vector" );
 
             }
@@ -1007,7 +1021,7 @@ namespace overlapCoupling{
 
             if ( microVolume == microVolumes->end( ) ){
 
-                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
                                       " not found in micro volumes vector" );
 
             }
@@ -1052,6 +1066,156 @@ namespace overlapCoupling{
 #ifdef TESTACCESS
         _test_DotDotQ_tp1 = _DotDotQ_tp1;
 #endif
+
+        //Solve for the updated DOF vectors
+        _updatedFreeMicroDispDOFValues = floatVector( nMicroDispDOF * _inputProcessor.getFreeMicroNodeIds( )->size( ), 0 );
+        _updatedFreeMacroDispDOFValues = floatVector( nMacroDispDOF * _inputProcessor.getFreeMacroNodeIds( )->size( ), 0 );
+
+        _projected_ghost_micro_displacement = floatVector( nMicroDispDOF * _inputProcessor.getGhostMicroNodeIds( )->size( ) );
+        _projected_ghost_macro_displacement = floatVector( nMacroDispDOF * _inputProcessor.getGhostMacroNodeIds( )->size( ) );
+
+        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+
+            floatVector q;
+            auto microDisplacement = previousMicroDisplacements->find( node->first );
+
+            if ( microDisplacement == previousMicroDisplacements->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->second ) +
+                                      " not found in previous micro deformations map" );
+
+            }
+            q = microDisplacement->second;
+
+            if ( _inputProcessor.microVelocitiesDefined( ) ){
+
+                auto microVelocity = previousMicroVelocities->find( node->first );
+
+                if ( microVelocity == previousMicroVelocities->end( ) ){
+
+                    return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->second ) +
+                                          " not found in previous micro velocities map" );
+
+                }
+
+                q += ( *dt ) * microVelocity->second;
+
+            }
+
+            if ( _inputProcessor.microAccelerationDefined( ) ){
+
+                auto microAcceleration = previousMicroAccelerations->find( node->first );
+
+                if ( microAcceleration == previousMicroAccelerations->end( ) ){
+
+                    return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->second ) +
+                                          " not found in previous micro accelerations map" );
+
+                }
+
+                q += 0.5 * ( ( *dt ) * ( *dt ) ) * ( 1 - 2 * beta ) * microAcceleration->second;
+
+            }
+
+            q += ( ( *dt ) * ( *dt ) ) * beta * floatVector( _DotDotQ_tp1.begin( ) + nMicroDispDOF * node->second,
+                                                             _DotDotQ_tp1.begin( ) + nMicroDispDOF * ( node->second + 1 ) );
+
+            //Assign to the ghost or free vectors as required. Ghost and Free don't have meaning in the
+            //Arlequin method but we hold this over from the L2 projection method
+
+            if ( node->second < _inputProcessor.getFreeMicroNodeIds( )->size( ) ){
+
+                for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
+
+                    _updatedFreeMicroDispDOFValues[ nMicroDispDOF * node->second + i ] = q[ i ];
+
+                }
+
+            }
+            else{
+
+                for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
+
+                    _projected_ghost_micro_displacement[ nMicroDispDOF * ( node->second - _inputProcessor.getFreeMicroNodeIds( )->size( ) ) + i ] = q[ i ];
+
+                }
+
+            }
+
+        }
+
+        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+
+            floatVector d;
+            auto macroDispDOF = previousMacroDispDOFVector->find( node->first );
+
+            if ( macroDispDOF == previousMacroDispDOFVector->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->second ) +
+                                      " not found in previous micro deformations map" );
+
+            }
+
+            d = macroDispDOF->second;
+
+            if ( _inputProcessor.macroVelocitiesDefined( ) ){
+
+                auto macroVelocity = previousMacroVelocities->find( node->first );
+
+                if ( macroVelocity == previousMacroVelocities->end( ) ){
+
+                    return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->second ) +
+                                          " not found in previous macro velocities map" );
+
+                }
+
+                d += ( *dt ) * macroVelocity->second;
+
+            }
+
+            if ( _inputProcessor.macroAccelerationDefined( ) ){
+
+                auto macroAcceleration = previousMacroAccelerations->find( node->first );
+
+                if ( macroAcceleration == previousMacroAccelerations->end( ) ){
+
+                    return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->second ) +
+                                          " not found in previous macro accelerations map" );
+
+                }
+
+                d += 0.5 * ( ( *dt ) * ( *dt ) ) * ( 1 - 2 * beta ) * macroAcceleration->second;
+
+            }
+
+            d += ( ( *dt ) * ( *dt ) ) * beta * floatVector( _DotDotD_tp1.begin( ) + nMacroDispDOF * node->second,
+                                                             _DotDotD_tp1.begin( ) + nMacroDispDOF * ( node->second + 1 ) );
+
+            //Assign to the ghost or free vectors as required. Ghost and Free don't have meaning in the
+            //Arlequin method but we hold this over from the L2 projection method
+            
+            if ( node->second < _inputProcessor.getFreeMacroNodeIds( )->size( ) ){
+
+                for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                    _updatedFreeMacroDispDOFValues[ nMacroDispDOF * node->second + i ] = d[ i ];
+
+                }
+
+            }
+            else{
+
+                for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                    _projected_ghost_macro_displacement[ nMacroDispDOF * ( node->second - _inputProcessor.getFreeMacroNodeIds( )->size( ) ) + i ] = d[ i ];
+
+                }
+
+            }
+
+        }
+
+
 
         return NULL;
     }
@@ -9587,6 +9751,22 @@ namespace overlapCoupling{
 
         return &_referenceCellDomainCenterOfMassShapefunctions;
 
+    }
+
+    const floatVector* overlapCoupling::getUpdatedFreeMacroDispDOFValues( ){
+        /*!
+         * Get a constant reference to the macro displacement DOF values
+         */
+
+        return &_updatedFreeMacroDispDOFValues;
+    }
+
+    const floatVector* overlapCoupling::getUpdatedFreeMicroDispDOFValues( ){
+        /*!
+         * Get a constant reference to the micro displacement DOF values
+         */
+
+        return &_updatedFreeMicroDispDOFValues;
     }
 
 #ifdef TESTACCESS

@@ -93,6 +93,9 @@ namespace overlapCoupling{
             const floatVector* getProjectedGhostMacroDisplacement( );
             const floatVector* getProjectedGhostMicroDisplacement( );
 
+            const floatVector* getUpdatedFreeMacroDispDOFValues( );
+            const floatVector* getUpdatedFreeMicroDispDOFValues( );
+
             DOFMap getMicroGlobalLocalNodeMap( );
 
             DOFMap getMacroGlobalLocalNodeMap( );
