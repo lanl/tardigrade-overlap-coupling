@@ -277,8 +277,9 @@ int test_XDMFDataFile_getSetNames( std::ofstream &results ){
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     std::vector< std::string > answer = { "free_nodes", "ghost_nodes",
-                                          "left", "right", "bottom", "top", "back", "front",
-                                          "non_overlapped_elements", "free_elements", "ghost_elements" };
+                                          "left", "right", "bottom", "top", "back", "front", "all",
+                                          "non_overlapped_nodes", "non_overlapped_elements",
+                                          "free_elements", "ghost_elements" };
     std::vector< std::string > result;
 
     errorOut error = xdmf.getSetNames( 1, result );
@@ -362,29 +363,11 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
                                        0, 0, 3, 0, 1, 3, 1, 1, 3,
                                        1, 0, 3 };
 
-    uIntVector connectivityAnswer = { 16, 6,
-                                      4, 0, 3, 2, 1,
-                                      4, 0, 1, 5, 4,
-                                      4, 1, 2, 6, 5,
-                                      4, 2, 3, 7, 6,
-                                      4, 3, 0, 4, 7,
-                                      4, 4, 5, 6, 7,
-                                      16, 6,
-                                      4, 8, 9, 4, 7,
-                                      4, 8, 7, 3, 10,
-                                      4, 7, 4, 0, 3,
-                                      4, 4, 9, 11, 0,
-                                      4, 9, 8, 10, 11,
-                                      4, 10, 3, 0, 11,
-                                      16, 6,
-                                      4, 12, 15, 14, 13,
-                                      4, 12, 13, 8, 10,
-                                      4, 13, 14, 9, 8,
-                                      4, 14, 15, 11, 9,
-                                      4, 15, 12, 10, 11,
-                                      4, 10, 8, 9, 11 };
+    uIntVector connectivityAnswer = { 9,  0,  1,  2,  3,  4, 5, 6,  7,
+                                      9,  8,  7,  4,  9, 10, 3, 0, 11,
+                                      9, 12, 13, 14, 15, 10, 8, 9, 11 };
 
-    uIntVector connectivityCellIndicesAnswer = { 0, 32, 64 };
+    uIntVector connectivityCellIndicesAnswer = { 0, 9, 18 };
 
     unsigned int cellCountAnswer = 3;
 
