@@ -57,6 +57,24 @@ errorOut _createXDMFDatafiles( ){
 
     }
 
+    fg = fileGenerator::fileGenerator( "macroscale_realistic.yaml" );
+    if ( fg.build( ) ){
+
+        fg.getError( )->print( );
+        errorOut result = new errorNode( "_createXDMFDatafiles", "Error in creation of the macroscale realistic datafile" );
+        return result;
+
+    }
+
+    fg = fileGenerator::fileGenerator( "microscale_realistic.yaml" );
+    if ( fg.build( ) ){
+
+        fg.getError( )->print( );
+        errorOut result = new errorNode( "_createXDMFDatafiles", "Error in creation of the microscale realistic datafile" );
+        return result;
+
+    }
+
     return NULL;
 
 }
@@ -9189,28 +9207,28 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-    test_overlapCoupling_constructor( results );
-    test_overlapCoupling_initializeCoupling_l2_projection( results );
-    test_overlapCoupling_initializeCoupling_averaged_l2_projection( results );
-    test_overlapCoupling_initializeCoupling_Arlequin( results );
-    test_overlapCoupling_processIncrement( results );
-    test_overlapCoupling_processIncrement_Arlequin( results );
-    test_overlapCoupling_processLastIncrements( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
-//    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
-//    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
-////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
-////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+//    test_overlapCoupling_constructor( results );
+//    test_overlapCoupling_initializeCoupling_l2_projection( results );
+//    test_overlapCoupling_initializeCoupling_averaged_l2_projection( results );
+//    test_overlapCoupling_initializeCoupling_Arlequin( results );
+//    test_overlapCoupling_processIncrement( results );
+//    test_overlapCoupling_processIncrement_Arlequin( results );
+//    test_overlapCoupling_processLastIncrements( results );
+////    test_overlapCoupling_getReferenceFreeMicroDomainMasses( results );
+////    test_overlapCoupling_getReferenceGhostMicroDomainMasses( results );
+////    test_overlapCoupling_getReferenceFreeMicroDomainCentersOfMass( results );
+////    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
+//////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
+//////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
     test_overlapCoupling_runOverlapCoupling_Arlequin_realistic( results );
-    test_MADOutlierDetection( results );
-    test_formMicromorphicElementMassMatrix( results );
-    test_computeMicromorphicElementRequiredValues( results );
-    test_computeMicromorphicElementInternalForceVector( results );
-    test_readWriteSparseMatrixToXDMF( results );
-    test_readWriteDenseMatrixToXDMF( results );
-
-//    temp_processBigFile( );
+//    test_MADOutlierDetection( results );
+//    test_formMicromorphicElementMassMatrix( results );
+//    test_computeMicromorphicElementRequiredValues( results );
+//    test_computeMicromorphicElementInternalForceVector( results );
+//    test_readWriteSparseMatrixToXDMF( results );
+//    test_readWriteDenseMatrixToXDMF( results );
+//
+////    temp_processBigFile( );
 
     //Close the results file
     results.close();
