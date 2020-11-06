@@ -95,7 +95,7 @@ namespace fileGenerator{
         if ( _config[ "increments" ] ){
 
             if ( _config[ "increments" ].IsSequence( ) ){
-   
+
                 uIntType increment_number = 0; 
                 for ( auto increment = _config[ "increments" ].begin( ); increment != _config[ "increments" ].end( ); increment++, increment_number++ ){
 
