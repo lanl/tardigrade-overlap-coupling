@@ -1,4 +1,4 @@
-filename: microscale
+filename: xdmf_out
 increments:
 - connectivity:
   - 1
@@ -4114,4 +4114,4 @@ increments:
   reference_increment: 0
   time: 1.0
 output_configuration:
-  filename: microscale
+  filename: xdmf_out
