@@ -346,6 +346,71 @@ int test_XDMFDataFile_getSolutionData( std::ofstream &results ){
 
 }
 
+// NOTE: Commenting this out because we don't actually use this representation
+//       of the macro-scale anymore. If we did make a mesh that didn't have
+//       an explicit type in XDMF or if we hadn't put it in yet, then this
+//       would be the function to test with
+//int test_XDMFDataFile_getMeshData_polyhedron( std::ofstream &results ){
+//    /*!
+//     * Test the function to get the mesh data
+//     *
+//     * :param std::ofstream &results: The output file
+//     */
+//
+//    YAML::Node yf = YAML::LoadFile( "testConfig_polyhedron.yaml" );
+//    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
+//
+//    floatVector nodePositionAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
+//                                       0, 0, 1, 1, 1, 1, 1, 1, 0,
+//                                       0, 1, 0, 0, 1, 1, 0, 1, 2,
+//                                       1, 1, 2, 0, 0, 2, 1, 0, 2,
+//                                       0, 0, 3, 0, 1, 3, 1, 1, 3,
+//                                       1, 0, 3 };
+//
+//    uIntVector connectivityAnswer = { 9,  0,  1,  2,  3,  4, 5, 6,  7,
+//                                      9,  8,  7,  4,  9, 10, 3, 0, 11,
+//                                      9, 12, 13, 14, 15, 10, 8, 9, 11 };
+//
+//    uIntVector connectivityCellIndicesAnswer = { 0, 9, 18 };
+//
+//    unsigned int cellCountAnswer = 3;
+//
+//    floatVector nodePositionResult;
+//    uIntVector connectivityResult, connectivityCellIndicesResult;
+//    unsigned int cellCountResult;
+//
+//    errorOut error = xdmf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
+//
+//    if ( error ){
+//        error->print( );
+//        results << "test_XDMFDataFile_getMeshData_polyhedron & False\n";
+//        return 1;
+//    }
+//
+//    if ( !vectorTools::fuzzyEquals( nodePositionAnswer, nodePositionResult ) ){
+//        results << "test_XDMFDataFile_getMeshData_polyhedron (test 1) & False\n";
+//        return 1;
+//    }
+//
+//    if ( !vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) ){
+//        results << "test_XDMFDataFile_getMeshData_polyhedron (test 2) & False\n";
+//        return 1;
+//    }
+//
+//    if ( !vectorTools::fuzzyEquals( cellCountAnswer, cellCountResult ) ){
+//        results << "test_XDMFDataFile_getMeshData_polyhedron (test 3) & False\n";
+//        return 1;
+//    }
+//
+//    if ( !vectorTools::fuzzyEquals( connectivityCellIndicesAnswer, connectivityCellIndicesResult ) ){
+//        results << "test_XDMFDataFile_getMeshData_polyhedron (test 4) & False\n";
+//        return 1;
+//    }
+//
+//    results << "test_XDMFDataFile_getMeshData_polyhedron & True\n";
+//    return 0;
+//}
+
 int test_XDMFDataFile_getMeshData( std::ofstream &results ){
     /*!
      * Test the function to get the mesh data
@@ -353,7 +418,7 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
      * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig_polyhedron.yaml" );
+    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector nodePositionAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
@@ -404,67 +469,6 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
     }
 
     results << "test_XDMFDataFile_getMeshData & True\n";
-    return 0;
-}
-
-int test_XDMFDataFile_getMeshData2( std::ofstream &results ){
-    /*!
-     * Second test the function to get the mesh data
-     *
-     * :param std::ofstream &results: The output file
-     */
-
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
-    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
-
-    floatVector nodePositionAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
-                                       0, 0, 1, 1, 1, 1, 1, 1, 0,
-                                       0, 1, 0, 0, 1, 1, 0, 1, 2,
-                                       1, 1, 2, 0, 0, 2, 1, 0, 2,
-                                       0, 0, 3, 0, 1, 3, 1, 1, 3,
-                                       1, 0, 3 };
-
-    uIntVector connectivityAnswer = { 9,  0,  1,  2,  3,  4, 5, 6,  7,
-                                      9,  8,  7,  4,  9, 10, 3, 0, 11,
-                                      9, 12, 13, 14, 15, 10, 8, 9, 11 };
-
-    uIntVector connectivityCellIndicesAnswer = { 0, 9, 18 };
-
-    unsigned int cellCountAnswer = 3;
-
-    floatVector nodePositionResult;
-    uIntVector connectivityResult, connectivityCellIndicesResult;
-    unsigned int cellCountResult;
-
-    errorOut error = xdmf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
-
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_getMeshData2 & False\n";
-        return 1;
-    }
-
-    if ( !vectorTools::fuzzyEquals( nodePositionAnswer, nodePositionResult ) ){
-        results << "test_XDMFDataFile_getMeshData2 (test 1) & False\n";
-        return 1;
-    }
-
-    if ( !vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) ){
-        results << "test_XDMFDataFile_getMeshData2 (test 2) & False\n";
-        return 1;
-    }
-
-    if ( !vectorTools::fuzzyEquals( cellCountAnswer, cellCountResult ) ){
-        results << "test_XDMFDataFile_getMeshData2 (test 3) & False\n";
-        return 1;
-    }
-
-    if ( !vectorTools::fuzzyEquals( connectivityCellIndicesAnswer, connectivityCellIndicesResult ) ){
-        results << "test_XDMFDataFile_getMeshData2 (test 4) & False\n";
-        return 1;
-    }
-
-    results << "test_XDMFDataFile_getMeshData2 & True\n";
     return 0;
 }
 
@@ -1479,6 +1483,10 @@ int main(){
     if the test passes or fails respectively.
     */
 
+    //TODO: Some of these tests require that ./testFiles/macrcoscale.i be
+    //      run with Tardigrade prior evaluation. I need to make this more
+    //      robust.
+
     //Open the results file
     std::ofstream results;
     results.open("results.tex");
@@ -1494,8 +1502,8 @@ int main(){
     test_XDMFDataFile_getSetNames( results );
     test_XDMFDataFile_getSolutionData( results );
     test_XDMFDataFile_getSolutionVectorDataFromComponents( results );
+//    test_XDMFDataFile_getMeshData_polyhedron( results );
     test_XDMFDataFile_getMeshData( results );
-    test_XDMFDataFile_getMeshData2( results );
     test_XDMFDataFile_getIncrementTime( results );
 
     test_XDMFDataFile_initializeIncrement( results );
