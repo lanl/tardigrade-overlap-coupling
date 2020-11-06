@@ -9102,6 +9102,61 @@ int test_readWriteDenseMatrixToXDMF( std::ofstream &results ){
 
 }
 
+int test_overlapCoupling_runOverlapCoupling_Arlequin_realistic( std::ofstream &results ){
+    /*!
+     * Test the function that runs the overlap coupling for a more realistic macro and
+     * micro-scale using the Arlequin method
+     *
+     * :param std::ofstream &results: The output file
+     */
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
+    remove( "macroscale_dof.xdmf" );
+    remove( "macroscale_dof.h5" );
+
+    remove( "microscale_dof.xdmf" );
+    remove( "microscale_dof.h5" );
+
+    std::string filename = "testConfig_Arlequin_realistic.yaml";
+
+    std::unordered_map< uIntType, uIntType > microGlobalLocalNodeMap;
+    std::unordered_map< uIntType, uIntType > macroGlobalLocalNodeMap;
+
+    floatVector updatedMicroDisplacementDOFResult;
+    floatVector updatedMacroDisplacementDOFResult;
+
+    errorOut overlapCoupling::runOverlapCoupling( filename,
+                                                  microGlobalLocalNodeMap, updatedMicroDisplacementDOFResult,
+                                                  macroGlobalLocalNodeMap, updatedMacroDisplacementDOFResult,
+                                                );
+
+    std::cout << "updated micro displacement DOF Result:\n";
+    vectorTools::print(updatedMicroDisplacementDOFResult);
+    std::cout << "\n";
+    std::cout << "updated macro displacement DOF Result:\n";
+    vectorTools::print(updatedMacroDisplacementDOFResult);
+
+    remove( "reference_information.xdmf" );
+    remove( "reference_information.h5" );
+
+    remove( "homogenized_response.xdmf" );
+    remove( "homogenized_response.h5" );
+
+    remove( "macroscale_dof.xdmf" );
+    remove( "macroscale_dof.h5" );
+
+    remove( "microscale_dof.xdmf" );
+    remove( "microscale_dof.h5" );
+
+    results << "test_overlapCoupling_runOverlapCoupling_Arlequin_realistic & True\n";
+    return 0;
+}
+
 int temp_processBigFile( ){
 
 
@@ -9147,6 +9202,7 @@ int main(){
 //    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
 ////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
 ////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
+    test_overlapCoupling_runOverlapCoupling_Arlequin_realistic( results );
     test_MADOutlierDetection( results );
     test_formMicromorphicElementMassMatrix( results );
     test_computeMicromorphicElementRequiredValues( results );
