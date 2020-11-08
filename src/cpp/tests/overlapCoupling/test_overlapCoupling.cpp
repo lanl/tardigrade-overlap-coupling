@@ -9148,10 +9148,16 @@ int test_overlapCoupling_runOverlapCoupling_Arlequin_realistic( std::ofstream &r
     floatVector updatedMicroDisplacementDOFResult;
     floatVector updatedMacroDisplacementDOFResult;
 
-    errorOut overlapCoupling::runOverlapCoupling( filename,
-                                                  microGlobalLocalNodeMap, updatedMicroDisplacementDOFResult,
-                                                  macroGlobalLocalNodeMap, updatedMacroDisplacementDOFResult,
-                                                );
+    errorOut error = overlapCoupling::runOverlapCoupling( filename,
+                                                          microGlobalLocalNodeMap, updatedMicroDisplacementDOFResult,
+                                                          macroGlobalLocalNodeMap, updatedMacroDisplacementDOFResult
+                                                        );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_runOverlapCoupling_Arlequin_realistic & False\n";
+        return 1;
+    }
 
     std::cout << "updated micro displacement DOF Result:\n";
     vectorTools::print(updatedMicroDisplacementDOFResult);
