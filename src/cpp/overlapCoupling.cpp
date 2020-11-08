@@ -1009,15 +1009,18 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, floatType > *microVolumes = _inputProcessor.getMicroVolumes( );
 
         //Get the required DOF values
+        const std::unordered_map< uIntType, floatVector > *microDisplacements         = _inputProcessor.getMicroDisplacements( );
         const std::unordered_map< uIntType, floatVector > *previousMicroDisplacements = _inputProcessor.getPreviousMicroDisplacements( );
         const std::unordered_map< uIntType, floatVector > *previousMicroVelocities    = _inputProcessor.getPreviousMicroVelocities( );
         const std::unordered_map< uIntType, floatVector > *previousMicroAccelerations = _inputProcessor.getPreviousMicroAccelerations( );
 
+        const std::unordered_map< uIntType, floatVector > *macroDispDOFVector         = _inputProcessor.getMacroDispDOFVector( );
         const std::unordered_map< uIntType, floatVector > *previousMacroDispDOFVector = _inputProcessor.getPreviousMacroDispDOFVector( );
         const std::unordered_map< uIntType, floatVector > *previousMacroVelocities    = _inputProcessor.getPreviousMacroVelocities( );
         const std::unordered_map< uIntType, floatVector > *previousMacroAccelerations = _inputProcessor.getPreviousMacroAccelerations( );
 
-        floatVector MQ( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
+        Eigen::VectorXd Gtrial( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
+        Eigen::VectorXd MQ( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
         for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
 
             auto microDensity = microDensities->find( node->first );
@@ -1038,13 +1041,81 @@ namespace overlapCoupling{
 
             }
 
-            for ( uIntType i = 0; i < _dim; i++ ){
+            for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
-                MQ[ nMicroDispDOF * node->second + i ] += microDensity->second * microVolume->second;
+                MQ( nMicroDispDOF * node->second + i ) += microDensity->second * microVolume->second;
+
+            }
+
+            auto microDisplacement = microDisplacements->find( node->first );
+
+            if ( microDisplacement == microDisplacements->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                                      " not found in micro displacements vector" );
+
+            }
+
+            for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
+
+                Gtrial( nMicroDispDOF * node->second + i ) -= microDisplacement->second[ i ];
 
             }
 
         }
+
+        Eigen::VectorXd Dtrial( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
+        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+
+            auto macroDisplacement = macroDispDOFVector->find( node->first );
+
+            if ( macroDisplacement == macroDispDOFVector->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                                      " not found in macro displacement DOF vector" );
+
+            }
+
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                Dtrial[ nMacroDispDOF * node->second + i ] += macroDisplacement->second[ i ];
+
+            }
+
+        }
+
+        //Construct the trial version of G
+        Gtrial += _N * Dtrial;
+
+        //Compute the diagonal Micromorphic mass matrix ( HRZ homogenization )
+        floatType massWeightingFactor = 0;
+        floatType totalMass = 0;
+        Eigen::VectorXd _MD_Diag = _MD.diagonal( );
+        for ( uIntType n = 0; n < macroGlobalToLocalDOFMap->size(); n++ ){
+
+            for ( uIntType i = 0; i < _dim; i++ ){
+                massWeightingFactor += _MD_Diag( nMacroDispDOF * n + i);
+                totalMass += _MD.row( nMacroDispDOF * n + i ).sum( );
+            }
+
+        }
+
+        _MD_Diag *= ( totalMass / massWeightingFactor );
+
+        //Construct the A matrix
+        floatType AFactor1 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aD * gamma * ( *dt ) );
+        floatType AFactor2 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aQ * gamma * ( *dt ) );
+        SparseMatrix _A = _N * ( AFactor1 * _MD_Diag.cwiseInverse( ) ).asDiagonal( ) * _N.transpose( );
+        _A += ( AFactor2 * MQ.cwiseInverse( ) ).asDiagonal( );
+
+        Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > lagrangeSolver;
+        lagrangeSolver.compute( _A );
+        Eigen::VectorXd _Lagrange = lagrangeSolver.solve( Gtrial );
+        std::cout << "_Lagrange:\n" << _Lagrange << "\n";
+        std::cout << "lagrangeSolver.rank " << lagrangeSolver.rank( ) << "\n";
+        return new errorNode( "derp", "derp" );
+        return new errorNode( "computeArlequinDeformationUpdate", "Penalty parameter isn't implemented" );
+        
 
         //Solve for D acceleration
         Eigen::Map< Eigen::Vector< floatType, -1 > > _MQ( MQ.data( ), MQ.size( ) );
@@ -1055,7 +1126,12 @@ namespace overlapCoupling{
         SparseMatrix LHS = _MD;
         floatType factor = ( 1 + gamma * ( *dt ) * aQ ) / ( 1 + gamma * ( *dt ) * aD );
 
+        std::cout << "_MD:\n" << _MD << "\n";
+
         LHS += _N.transpose( ) * ( factor * _MQ ).asDiagonal( ) * _N;
+
+        std::cout << "factor:\n" << factor << "\n";
+        std::cout << "Projected micro mass:\n" << _N.transpose( ) * (factor * _MQ ).asDiagonal( ) * _N << "\n";
 
         Eigen::MatrixXd RHS = _FD;
         RHS += _N.transpose( ) * _FQ;
@@ -1064,9 +1140,13 @@ namespace overlapCoupling{
         RHS -= factor2 * ( _N.transpose( ) * _MQ.asDiagonal( ) ) * _Ge;
         RHS /= ( 1 + gamma * ( *dt ) * aD );
 
+        std::cout << "RHS:\n" << RHS << "\n";
+
         Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
         solver.compute( LHS );
         Eigen::VectorXd _DotDotD_tp1 = solver.solve( RHS );
+
+        std::cout << "DotDotD_tp1:\n" << _DotDotD_tp1 << "\n";
 
 #ifdef TESTACCESS
         _test_DotDotD_tp1 = _DotDotD_tp1;
@@ -1074,6 +1154,8 @@ namespace overlapCoupling{
 
         //Solve for Q acceleration
         Eigen::VectorXd _DotDotQ_tp1 = _N * _DotDotD_tp1 + _Ge / ( ( *dt ) * ( *dt ) * beta );
+
+        std::cout << "DotDotQ_tp1:\n" << _DotDotQ_tp1 << "\n";
 
 #ifdef TESTACCESS
         _test_DotDotQ_tp1 = _DotDotQ_tp1;
