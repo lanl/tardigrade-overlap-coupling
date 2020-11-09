@@ -1085,6 +1085,35 @@ namespace overlapCoupling{
 
         }
 
+        // Print statements for debugging
+        std::cout << "Initial micro deformations\n";
+        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+
+            auto mnd = _inputProcessor.getMicroDisplacements( )->find( node->first );
+            std::printf( "%2i, %2i: ", node->first, node->second );
+            for ( unsigned int i = 0; i < 3; i++ ){
+
+                std::printf( "%+1.7f ", mnd->second[ i ] );
+
+            }
+            std::cout << "\n";
+
+        }
+
+        std::cout << "\nInitial macro deformations\n";
+        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+
+            auto mnd = _inputProcessor.getMacroDispDOFVector( )->find( node->first );
+            std::printf( "%2i, %2i: ", node->first, node->second );
+            for ( unsigned int i = 0; i < 12; i++ ){
+
+                std::printf( "%+1.7f ", mnd->second[ i ] );
+
+            }
+            std::cout << "\n";
+
+        }
+
         Eigen::VectorXd Dtrial( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
         for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
 
@@ -1379,55 +1408,34 @@ namespace overlapCoupling{
 
         }
 
-        floatVector QNEW = vectorTools::appendVectors( { _updatedFreeMicroDispDOFValues, _projected_ghost_micro_displacement } );
-        floatVector DNEW = vectorTools::appendVectors( { _updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement } );
+        // Print statements for debugging
+        std::cout << "\nUpdated micro deformations\n";
+        floatVector microDef = vectorTools::appendVectors( {_updatedFreeMicroDispDOFValues, _projected_ghost_micro_displacement} );
+        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
 
-        Eigen::Map< Eigen::Vector< floatType, -1 > > _QNEW( QNEW.data( ), QNEW.size( ) );
-        Eigen::Map< Eigen::Vector< floatType, -1 > > _DNEW( DNEW.data( ), DNEW.size( ) );
+            std::printf( "%2i, %2i: ", node->first, node->second );
+            for ( unsigned int i = 0; i < 3; i++ ){
 
-        std::cout << "ERROR:\n" << _N * _DNEW - _QNEW << "\n";
+                std::printf( "%+1.7f ", microDef[ 3 * node->second + i ] );
 
-
-        std::cout << "free micro disp DOF values:\n";
-        for ( unsigned int i = 0; i < _updatedFreeMicroDispDOFValues.size( ); i+=nMicroDispDOF ){
-        
-            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
-                std::cout << _updatedFreeMicroDispDOFValues[ i + j ] << " ";
-            }
-            std::cout << "\n";
-
-        }
-        std::cout << "projected ghost micro displacements:\n";
-        for ( unsigned int i = 0; i < _projected_ghost_micro_displacement.size( ); i+=nMicroDispDOF ){
-        
-            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
-                std::cout << _projected_ghost_micro_displacement[ i + j ] << " ";
             }
             std::cout << "\n";
 
         }
 
-        std::cout << "free macro disp DOF values:\n";
-        for ( unsigned int i = 0; i < _updatedFreeMacroDispDOFValues.size( ); i+=nMacroDispDOF ){
-        
-            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
-                std::cout << _updatedFreeMacroDispDOFValues[ i + j ] << " ";
+        std::cout << "\nUpdated macro deformations\n";
+        floatVector macroDef = vectorTools::appendVectors( {_updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement} );
+        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+
+            std::printf( "%2i, %2i: ", node->first, node->second );
+            for ( unsigned int i = 0; i < 12; i++ ){
+
+                std::printf( "%+1.7f ", macroDef[ 12 * node->second + i ] );
+
             }
             std::cout << "\n";
 
         }
-        std::cout << "projected ghost micro displacements:\n";
-        for ( unsigned int i = 0; i < _projected_ghost_macro_displacement.size( ); i+=nMacroDispDOF ){
-        
-            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
-                std::cout << _projected_ghost_macro_displacement[ i + j ] << " ";
-            }
-            std::cout << "\n";
-
-        }
-
-        return new errorNode( "derp", "derp" );
-        return new errorNode( "computeArlequinDeformationUpdate", "Penalty parameter isn't implemented" );
 
         return NULL;
     }
