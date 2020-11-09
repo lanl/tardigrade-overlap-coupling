@@ -977,6 +977,27 @@ namespace overlapCoupling{
         return NULL;
     }
 
+    errorOut computeArlequinTrialDeformation( const uIntType &microIncrement ){
+        /*!
+         * Compute the Arlequin trial deformation. This is one by making the assumption
+         * that the deformation at a given micro node can be described as
+         *
+         * \f$q_i^{tr,n} = ( 1 - w^n ) q_i^n + w^n u_i^{\prime, n}\f$
+         *
+         * where \f$w_i\f$ is the Arlequin weight, \f$q_i^n\f$ is the micro deformation,
+         * and \f$u_i^{\prime, i}\f$ is the interpolated micromorphic deformation. For
+         * the micromorphic degrees of freedom we interpolate using a least-squares
+         * approach. This is done via
+         *
+         * \f$d_i^{tr,n} = ( 1 - w^n ) P_iJ \bar{d}^{com}_J + w^n d_i^n\f$
+         *
+         * Where \f$d_i^{tr,n}\f$ is the trial value of the micromorphic degree of freedom,
+         * \f$w^n\f$ is the Arlequin weight of the macro-scal enode, \f$P_iJ\f$ is the
+         * projector from the homogenization domain to the macro nodes, $\bar{d}^{com}_J$ is
+         * the averaged micro-scale 
+         */
+    }
+
     errorOut overlapCoupling::computeArlequinDeformationUpdate( ){
         /*!
          * Compute the deformation update using the Arlequin method
@@ -1091,16 +1112,29 @@ namespace overlapCoupling{
         floatType massWeightingFactor = 0;
         floatType totalMass = 0;
         Eigen::VectorXd _MD_Diag = _MD.diagonal( );
-        for ( uIntType n = 0; n < macroGlobalToLocalDOFMap->size(); n++ ){
 
-            for ( uIntType i = 0; i < _dim; i++ ){
-                massWeightingFactor += _MD_Diag( nMacroDispDOF * n + i);
-                totalMass += _MD.row( nMacroDispDOF * n + i ).sum( );
+//        //HRZ homogenization
+//        for ( uIntType n = 0; n < macroGlobalToLocalDOFMap->size( ); n++ ){
+//
+//            for ( uIntType i = 0; i < _dim; i++ ){
+//                massWeightingFactor += _MD_Diag( nMacroDispDOF * n + i);
+//                totalMass += _MD.row( nMacroDispDOF * n + i ).sum( );
+//            }
+//
+//        }
+//
+//        _MD_Diag *= ( totalMass / massWeightingFactor );
+
+        //Row sum homogenization
+        for ( uIntType n = 0; n < macroGlobalToLocalDOFMap->size( ); n++ ){
+
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                _MD_Diag( nMacroDispDOF * n + i ) = _MD.row( nMacroDispDOF * n + i ).sum( );
+
             }
 
         }
-
-        _MD_Diag *= ( totalMass / massWeightingFactor );
 
         //Construct the A matrix
         floatType AFactor1 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aD * gamma * ( *dt ) );
@@ -1108,54 +1142,90 @@ namespace overlapCoupling{
         SparseMatrix _A = _N * ( AFactor1 * _MD_Diag.cwiseInverse( ) ).asDiagonal( ) * _N.transpose( );
         _A += ( AFactor2 * MQ.cwiseInverse( ) ).asDiagonal( );
 
+        //Solve for the Lagrange multipliers
         Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > lagrangeSolver;
         lagrangeSolver.compute( _A );
         Eigen::VectorXd _Lagrange = lagrangeSolver.solve( Gtrial );
         std::cout << "_Lagrange:\n" << _Lagrange << "\n";
         std::cout << "lagrangeSolver.rank " << lagrangeSolver.rank( ) << "\n";
-        return new errorNode( "derp", "derp" );
-        return new errorNode( "computeArlequinDeformationUpdate", "Penalty parameter isn't implemented" );
-        
+        std::cout << "ERROR1:\n" << _A * _Lagrange - Gtrial << "\n";
 
-        //Solve for D acceleration
-        Eigen::Map< Eigen::Vector< floatType, -1 > > _MQ( MQ.data( ), MQ.size( ) );
-        Eigen::Map< Eigen::Vector< floatType, -1 > > _FD( FD.data( ), FD.size( ) );
+        //Solve for the Q accelerations
         Eigen::Map< Eigen::Vector< floatType, -1 > > _FQ( FQ.data( ), FQ.size( ) );
-        Eigen::Map< Eigen::Vector< floatType, -1 > > _Ge( Ge.data( ), Ge.size( ) );
 
-        SparseMatrix LHS = _MD;
-        floatType factor = ( 1 + gamma * ( *dt ) * aQ ) / ( 1 + gamma * ( *dt ) * aD );
+        Eigen::VectorXd _DotDotQ_tp1 = ( ( _FQ + _Lagrange ) / ( 1 + aQ * gamma * ( *dt ) ) ).cwiseProduct( MQ.cwiseInverse( ) );
+        std::cout << "DotDotQ_tp1:\n" << _DotDotQ_tp1 << "\n";
 
-        std::cout << "_MD:\n" << _MD << "\n";
+        Eigen::VectorXd _Q_tp1 = ( ( *dt ) * ( *dt ) * beta ) * _DotDotQ_tp1;
+        std::cout << "Q_tp1:\n" << _Q_tp1 << "\n";
 
-        LHS += _N.transpose( ) * ( factor * _MQ ).asDiagonal( ) * _N;
+        std::cout << "micro reference positions:\n";
+        floatMatrix tmp( microGlobalToLocalDOFMap->size( ), floatVector( 6, 0 ) );
+        for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
 
-        std::cout << "factor:\n" << factor << "\n";
-        std::cout << "Projected micro mass:\n" << _N.transpose( ) * (factor * _MQ ).asDiagonal( ) * _N << "\n";
+            floatVector tmpsub( 6, 0 );
+            auto mrp = _inputProcessor.getMicroNodeReferencePositions( )->find( node->first );
+            tmpsub[ 0 ] = mrp->second[ 0 ];
+            tmpsub[ 1 ] = mrp->second[ 1 ];
+            tmpsub[ 2 ] = mrp->second[ 2 ];
 
-        Eigen::MatrixXd RHS = _FD;
-        RHS += _N.transpose( ) * _FQ;
+            tmpsub[ 3 ] = _DotDotQ_tp1[ 3 * node->second + 0 ];
+            tmpsub[ 4 ] = _DotDotQ_tp1[ 3 * node->second + 1 ];
+            tmpsub[ 5 ] = _DotDotQ_tp1[ 3 * node->second + 2 ];
+            tmp[node->second] = tmpsub;
 
-        floatType factor2 = ( 1 + gamma * ( *dt ) * aQ ) / ( ( *dt ) * ( *dt ) * beta );
-        RHS -= factor2 * ( _N.transpose( ) * _MQ.asDiagonal( ) ) * _Ge;
-        RHS /= ( 1 + gamma * ( *dt ) * aD );
+        }
+        vectorTools::print( tmp );
 
-        std::cout << "RHS:\n" << RHS << "\n";
+        //Solve for the D accelerations
+        Eigen::Map< Eigen::Vector< floatType, -1 > > _FD( FD.data( ), FD.size( ) );
 
-        Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
-        solver.compute( LHS );
-        Eigen::VectorXd _DotDotD_tp1 = solver.solve( RHS );
-
+        Eigen::VectorXd _DotDotD_tp1 = ( ( _FD - _N.transpose( ) * _Lagrange ) / ( 1 + aD * gamma * ( *dt ) ) ).cwiseProduct( _MD_Diag.cwiseInverse( ) );
         std::cout << "DotDotD_tp1:\n" << _DotDotD_tp1 << "\n";
+
+        Eigen::VectorXd _D_tp1 = ( ( *dt ) * ( *dt ) * beta ) * _DotDotD_tp1;
+        std::cout << "D_tp1:\n" << _D_tp1 << "\n";
+        return new errorNode( "derp", "derp2" );
+
+
+//        //Solve for D acceleration
+//        Eigen::Map< Eigen::Vector< floatType, -1 > > _MQ( MQ.data( ), MQ.size( ) );
+//        Eigen::Map< Eigen::Vector< floatType, -1 > > _FQ( FQ.data( ), FQ.size( ) );
+//        Eigen::Map< Eigen::Vector< floatType, -1 > > _Ge( Ge.data( ), Ge.size( ) );
+//
+//        SparseMatrix LHS = _MD;
+//        floatType factor = ( 1 + gamma * ( *dt ) * aQ ) / ( 1 + gamma * ( *dt ) * aD );
+//
+//        std::cout << "_MD:\n" << _MD << "\n";
+//
+//        LHS += _N.transpose( ) * ( factor * _MQ ).asDiagonal( ) * _N;
+//
+//        std::cout << "factor:\n" << factor << "\n";
+//        std::cout << "Projected micro mass:\n" << _N.transpose( ) * (factor * _MQ ).asDiagonal( ) * _N << "\n";
+//
+//        Eigen::MatrixXd RHS = _FD;
+//        RHS += _N.transpose( ) * _FQ;
+//
+//        floatType factor2 = ( 1 + gamma * ( *dt ) * aQ ) / ( ( *dt ) * ( *dt ) * beta );
+//        RHS -= factor2 * ( _N.transpose( ) * _MQ.asDiagonal( ) ) * _Ge;
+//        RHS /= ( 1 + gamma * ( *dt ) * aD );
+//
+//        std::cout << "RHS:\n" << RHS << "\n";
+//
+//        Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
+//        solver.compute( LHS );
+//        Eigen::VectorXd _DotDotD_tp1 = solver.solve( RHS );
+//
+//        std::cout << "DotDotD_tp1:\n" << _DotDotD_tp1 << "\n";
 
 #ifdef TESTACCESS
         _test_DotDotD_tp1 = _DotDotD_tp1;
 #endif
 
-        //Solve for Q acceleration
-        Eigen::VectorXd _DotDotQ_tp1 = _N * _DotDotD_tp1 + _Ge / ( ( *dt ) * ( *dt ) * beta );
-
-        std::cout << "DotDotQ_tp1:\n" << _DotDotQ_tp1 << "\n";
+//        //Solve for Q acceleration
+//        Eigen::VectorXd _DotDotQ_tp1 = _N * _DotDotD_tp1 + _Ge / ( ( *dt ) * ( *dt ) * beta );
+//
+//        std::cout << "DotDotQ_tp1:\n" << _DotDotQ_tp1 << "\n";
 
 #ifdef TESTACCESS
         _test_DotDotQ_tp1 = _DotDotQ_tp1;
@@ -1309,7 +1379,55 @@ namespace overlapCoupling{
 
         }
 
+        floatVector QNEW = vectorTools::appendVectors( { _updatedFreeMicroDispDOFValues, _projected_ghost_micro_displacement } );
+        floatVector DNEW = vectorTools::appendVectors( { _updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement } );
 
+        Eigen::Map< Eigen::Vector< floatType, -1 > > _QNEW( QNEW.data( ), QNEW.size( ) );
+        Eigen::Map< Eigen::Vector< floatType, -1 > > _DNEW( DNEW.data( ), DNEW.size( ) );
+
+        std::cout << "ERROR:\n" << _N * _DNEW - _QNEW << "\n";
+
+
+        std::cout << "free micro disp DOF values:\n";
+        for ( unsigned int i = 0; i < _updatedFreeMicroDispDOFValues.size( ); i+=nMicroDispDOF ){
+        
+            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
+                std::cout << _updatedFreeMicroDispDOFValues[ i + j ] << " ";
+            }
+            std::cout << "\n";
+
+        }
+        std::cout << "projected ghost micro displacements:\n";
+        for ( unsigned int i = 0; i < _projected_ghost_micro_displacement.size( ); i+=nMicroDispDOF ){
+        
+            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
+                std::cout << _projected_ghost_micro_displacement[ i + j ] << " ";
+            }
+            std::cout << "\n";
+
+        }
+
+        std::cout << "free macro disp DOF values:\n";
+        for ( unsigned int i = 0; i < _updatedFreeMacroDispDOFValues.size( ); i+=nMacroDispDOF ){
+        
+            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
+                std::cout << _updatedFreeMacroDispDOFValues[ i + j ] << " ";
+            }
+            std::cout << "\n";
+
+        }
+        std::cout << "projected ghost micro displacements:\n";
+        for ( unsigned int i = 0; i < _projected_ghost_macro_displacement.size( ); i+=nMacroDispDOF ){
+        
+            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
+                std::cout << _projected_ghost_macro_displacement[ i + j ] << " ";
+            }
+            std::cout << "\n";
+
+        }
+
+        return new errorNode( "derp", "derp" );
+        return new errorNode( "computeArlequinDeformationUpdate", "Penalty parameter isn't implemented" );
 
         return NULL;
     }

@@ -436,6 +436,8 @@ namespace overlapCoupling{
 
             errorOut computeArlequinMicroWeightingFactors( const uIntType &microIncrement );
 
+            errorOut computeArlequinTrialDeformation( const uIntType &microIncrement );
+
             errorOut computeArlequinMicromorphicMassMatrix( );
             errorOut computeArlequinForceAndErrorVectors( );
             errorOut computeArlequinDeformationUpdate( );
