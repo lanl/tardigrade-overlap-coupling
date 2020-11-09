@@ -2993,7 +2993,7 @@ namespace inputFileProcessor{
 
         uIntVector elementIds;
         std::string elementIDName = _config[ "macroscale_definition" ][ "cell_id_variable_name" ].as< std::string >( );
-        error = _microscale->getCellIds( increment, elementIDName, elementIds );
+        error = _macroscale->getCellIds( increment, elementIDName, elementIds );
 
         if ( cellCounts > elementIds.size( ) ){
 
