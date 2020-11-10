@@ -9,6 +9,8 @@
 #include<micromorphic_tools.h>
 #include<balance_equations.h>
 
+#include<boost/format.hpp>
+
 namespace overlapCoupling{
 
     overlapCoupling::overlapCoupling( ){
@@ -1040,7 +1042,7 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, floatVector > *previousMacroVelocities    = _inputProcessor.getPreviousMacroVelocities( );
         const std::unordered_map< uIntType, floatVector > *previousMacroAccelerations = _inputProcessor.getPreviousMacroAccelerations( );
 
-        Eigen::VectorXd Gtrial( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
+        Eigen::VectorXd Qtrial( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
         Eigen::VectorXd MQ( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
         for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
 
@@ -1062,9 +1064,18 @@ namespace overlapCoupling{
 
             }
 
+            auto microWeight = arlequinMicroWeightingFactors.find( node->first );
+
+            if ( microWeight == arlequinMicroWeightingFactors.end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                                      " not found in micro weighting factor vector" );
+
+            }
+
             for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
-                MQ( nMicroDispDOF * node->second + i ) += microDensity->second * microVolume->second;
+                MQ( nMicroDispDOF * node->second + i ) += ( 1 - microWeight->second ) * microDensity->second * microVolume->second;
 
             }
 
@@ -1079,21 +1090,21 @@ namespace overlapCoupling{
 
             for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
-                Gtrial( nMicroDispDOF * node->second + i ) -= microDisplacement->second[ i ];
+                Qtrial( nMicroDispDOF * node->second + i ) = microDisplacement->second[ i ];
 
             }
 
         }
 
         // Print statements for debugging
-        std::cout << "Initial micro deformations\n";
+        std::cerr << "Initial micro deformations\n";
         for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
 
             auto mnd = _inputProcessor.getMicroDisplacements( )->find( node->first );
-            std::printf( "%2i, %2i: ", node->first, node->second );
+            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
             for ( unsigned int i = 0; i < 3; i++ ){
 
-                std::printf( "%+1.7f ", mnd->second[ i ] );
+                std::cerr << boost::format( "%+1.7f ") % mnd->second[ i ];
 
             }
             std::cout << "\n";
@@ -1104,13 +1115,13 @@ namespace overlapCoupling{
         for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
 
             auto mnd = _inputProcessor.getMacroDispDOFVector( )->find( node->first );
-            std::printf( "%2i, %2i: ", node->first, node->second );
+            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
             for ( unsigned int i = 0; i < 12; i++ ){
 
-                std::printf( "%+1.7f ", mnd->second[ i ] );
+                std::cerr << boost::format( "%+1.7f " ) % mnd->second[ i ];
 
             }
-            std::cout << "\n";
+            std::cerr << "\n";
 
         }
 
@@ -1133,9 +1144,6 @@ namespace overlapCoupling{
             }
 
         }
-
-        //Construct the trial version of G
-        Gtrial += _N * Dtrial;
 
         //Compute the diagonal Micromorphic mass matrix ( HRZ homogenization )
         floatType massWeightingFactor = 0;
@@ -1165,6 +1173,22 @@ namespace overlapCoupling{
 
         }
 
+        std::cerr << "micro mass:\n";
+        for ( uIntType i = 0; i < MQ.size( ) / 3; i++ ){
+            for ( uIntType j = 0; j < _dim; j++ ){
+                std::cerr << boost::format( "%1.7f " ) % MQ[ 3 * i + j ];
+            }
+            std::cerr << "\n";
+        }
+
+        std::cerr << "macro mass:\n";
+        for ( uIntType i = 0; i < _MD_Diag.size( ) / 12; i++ ){
+            for ( uIntType j = 0; j < 12; j++ ){
+                std::cerr << boost::format( "%1.7f " ) % _MD_Diag[ 12 * i + j ];
+            }
+            std::cerr << "\n";
+        }
+
         //Construct the A matrix
         floatType AFactor1 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aD * gamma * ( *dt ) );
         floatType AFactor2 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aQ * gamma * ( *dt ) );
@@ -1174,266 +1198,89 @@ namespace overlapCoupling{
         //Solve for the Lagrange multipliers
         Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > lagrangeSolver;
         lagrangeSolver.compute( _A );
-        Eigen::VectorXd _Lagrange = lagrangeSolver.solve( Gtrial );
-        std::cout << "_Lagrange:\n" << _Lagrange << "\n";
-        std::cout << "lagrangeSolver.rank " << lagrangeSolver.rank( ) << "\n";
-        std::cout << "ERROR1:\n" << _A * _Lagrange - Gtrial << "\n";
+        Eigen::VectorXd _Lagrange = lagrangeSolver.solve( _N * Dtrial - Qtrial );
 
-        //Solve for the Q accelerations
-        Eigen::Map< Eigen::Vector< floatType, -1 > > _FQ( FQ.data( ), FQ.size( ) );
+        std::cout << "LAGRANGE:\n";
+        uIntType _indx = 0;
+        std::cerr << "gid, lid: mass      R_1        R_2        R_3        L_1        L_2        L_3\n";
+        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++, _indx++ ){
 
-        Eigen::VectorXd _DotDotQ_tp1 = ( ( _FQ + _Lagrange ) / ( 1 + aQ * gamma * ( *dt ) ) ).cwiseProduct( MQ.cwiseInverse( ) );
-        std::cout << "DotDotQ_tp1:\n" << _DotDotQ_tp1 << "\n";
+            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+            std::cerr << boost::format( "%1.7f " ) % MQ[ _dim * node->second ];
 
-        Eigen::VectorXd _Q_tp1 = ( ( *dt ) * ( *dt ) * beta ) * _DotDotQ_tp1;
-        std::cout << "Q_tp1:\n" << _Q_tp1 << "\n";
+            auto mnp = _inputProcessor.getMicroNodeReferencePositions( )->find( node->first );
+            for ( unsigned int j = 0; j < _dim; j++ ){
 
-        std::cout << "micro reference positions:\n";
-        floatMatrix tmp( microGlobalToLocalDOFMap->size( ), floatVector( 6, 0 ) );
-        for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
 
-            floatVector tmpsub( 6, 0 );
-            auto mrp = _inputProcessor.getMicroNodeReferencePositions( )->find( node->first );
-            tmpsub[ 0 ] = mrp->second[ 0 ];
-            tmpsub[ 1 ] = mrp->second[ 1 ];
-            tmpsub[ 2 ] = mrp->second[ 2 ];
+            }
 
-            tmpsub[ 3 ] = _DotDotQ_tp1[ 3 * node->second + 0 ];
-            tmpsub[ 4 ] = _DotDotQ_tp1[ 3 * node->second + 1 ];
-            tmpsub[ 5 ] = _DotDotQ_tp1[ 3 * node->second + 2 ];
-            tmp[node->second] = tmpsub;
+            for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    std::cerr << boost::format( "%+1.7f " ) % _Lagrange( _dim * node->second + j );
+
+            }
+            std::cerr << "\n";
 
         }
-        vectorTools::print( tmp );
 
-        //Solve for the D accelerations
-        Eigen::Map< Eigen::Vector< floatType, -1 > > _FD( FD.data( ), FD.size( ) );
-
-        Eigen::VectorXd _DotDotD_tp1 = ( ( _FD - _N.transpose( ) * _Lagrange ) / ( 1 + aD * gamma * ( *dt ) ) ).cwiseProduct( _MD_Diag.cwiseInverse( ) );
-        std::cout << "DotDotD_tp1:\n" << _DotDotD_tp1 << "\n";
-
-        Eigen::VectorXd _D_tp1 = ( ( *dt ) * ( *dt ) * beta ) * _DotDotD_tp1;
-        std::cout << "D_tp1:\n" << _D_tp1 << "\n";
-        return new errorNode( "derp", "derp2" );
-
-
-//        //Solve for D acceleration
-//        Eigen::Map< Eigen::Vector< floatType, -1 > > _MQ( MQ.data( ), MQ.size( ) );
-//        Eigen::Map< Eigen::Vector< floatType, -1 > > _FQ( FQ.data( ), FQ.size( ) );
-//        Eigen::Map< Eigen::Vector< floatType, -1 > > _Ge( Ge.data( ), Ge.size( ) );
-//
-//        SparseMatrix LHS = _MD;
-//        floatType factor = ( 1 + gamma * ( *dt ) * aQ ) / ( 1 + gamma * ( *dt ) * aD );
-//
-//        std::cout << "_MD:\n" << _MD << "\n";
-//
-//        LHS += _N.transpose( ) * ( factor * _MQ ).asDiagonal( ) * _N;
-//
-//        std::cout << "factor:\n" << factor << "\n";
-//        std::cout << "Projected micro mass:\n" << _N.transpose( ) * (factor * _MQ ).asDiagonal( ) * _N << "\n";
-//
-//        Eigen::MatrixXd RHS = _FD;
-//        RHS += _N.transpose( ) * _FQ;
-//
-//        floatType factor2 = ( 1 + gamma * ( *dt ) * aQ ) / ( ( *dt ) * ( *dt ) * beta );
-//        RHS -= factor2 * ( _N.transpose( ) * _MQ.asDiagonal( ) ) * _Ge;
-//        RHS /= ( 1 + gamma * ( *dt ) * aD );
-//
-//        std::cout << "RHS:\n" << RHS << "\n";
-//
-//        Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > solver;
-//        solver.compute( LHS );
-//        Eigen::VectorXd _DotDotD_tp1 = solver.solve( RHS );
-//
-//        std::cout << "DotDotD_tp1:\n" << _DotDotD_tp1 << "\n";
-
-#ifdef TESTACCESS
-        _test_DotDotD_tp1 = _DotDotD_tp1;
-#endif
-
-//        //Solve for Q acceleration
-//        Eigen::VectorXd _DotDotQ_tp1 = _N * _DotDotD_tp1 + _Ge / ( ( *dt ) * ( *dt ) * beta );
-//
-//        std::cout << "DotDotQ_tp1:\n" << _DotDotQ_tp1 << "\n";
-
-#ifdef TESTACCESS
-        _test_DotDotQ_tp1 = _DotDotQ_tp1;
-#endif
+        //Compute the new values of the degrees of freedom
+        Eigen::VectorXd _D_tp1 = Dtrial - ( AFactor1 * _MD_Diag.cwiseInverse( ).asDiagonal( ) ) * ( _N.transpose( ) * _Lagrange );
+        Eigen::VectorXd _Q_tp1 = Qtrial + ( AFactor2 * MQ.cwiseInverse( ).asDiagonal( ) ) * _Lagrange;
 
         //Solve for the updated DOF vectors
-        _updatedFreeMicroDispDOFValues = floatVector( nMicroDispDOF * _inputProcessor.getFreeMicroNodeIds( )->size( ), 0 );
-        _updatedFreeMacroDispDOFValues = floatVector( nMacroDispDOF * _inputProcessor.getFreeMacroNodeIds( )->size( ), 0 );
+        _updatedFreeMicroDispDOFValues
+            = floatVector( _Q_tp1.begin( ), _Q_tp1.begin( ) + nMicroDispDOF * _inputProcessor.getFreeMicroNodeIds( )->size( ) );
+        _updatedFreeMacroDispDOFValues
+            = floatVector( _D_tp1.begin( ), _D_tp1.begin( ) + nMacroDispDOF * _inputProcessor.getFreeMacroNodeIds( )->size( ) );
 
-        _projected_ghost_micro_displacement = floatVector( nMicroDispDOF * _inputProcessor.getGhostMicroNodeIds( )->size( ) );
-        _projected_ghost_macro_displacement = floatVector( nMacroDispDOF * _inputProcessor.getGhostMacroNodeIds( )->size( ) );
-
-        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
-
-            floatVector q;
-            auto microDisplacement = previousMicroDisplacements->find( node->first );
-
-            if ( microDisplacement == previousMicroDisplacements->end( ) ){
-
-                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->second ) +
-                                      " not found in previous micro deformations map" );
-
-            }
-            q = microDisplacement->second;
-
-            if ( _inputProcessor.microVelocitiesDefined( ) ){
-
-                auto microVelocity = previousMicroVelocities->find( node->first );
-
-                if ( microVelocity == previousMicroVelocities->end( ) ){
-
-                    return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->second ) +
-                                          " not found in previous micro velocities map" );
-
-                }
-
-                q += ( *dt ) * microVelocity->second;
-
-            }
-
-            if ( _inputProcessor.microAccelerationDefined( ) ){
-
-                auto microAcceleration = previousMicroAccelerations->find( node->first );
-
-                if ( microAcceleration == previousMicroAccelerations->end( ) ){
-
-                    return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->second ) +
-                                          " not found in previous micro accelerations map" );
-
-                }
-
-                q += 0.5 * ( ( *dt ) * ( *dt ) ) * ( 1 - 2 * beta ) * microAcceleration->second;
-
-            }
-
-            q += ( ( *dt ) * ( *dt ) ) * beta * floatVector( _DotDotQ_tp1.begin( ) + nMicroDispDOF * node->second,
-                                                             _DotDotQ_tp1.begin( ) + nMicroDispDOF * ( node->second + 1 ) );
-
-            //Assign to the ghost or free vectors as required. Ghost and Free don't have meaning in the
-            //Arlequin method but we hold this over from the L2 projection method
-
-            if ( node->second < _inputProcessor.getFreeMicroNodeIds( )->size( ) ){
-
-                for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
-
-                    _updatedFreeMicroDispDOFValues[ nMicroDispDOF * node->second + i ] = q[ i ];
-
-                }
-
-            }
-            else{
-
-                for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
-
-                    _projected_ghost_micro_displacement[ nMicroDispDOF * ( node->second - _inputProcessor.getFreeMicroNodeIds( )->size( ) ) + i ] = q[ i ];
-
-                }
-
-            }
-
-        }
-
-        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
-
-            floatVector d;
-            auto macroDispDOF = previousMacroDispDOFVector->find( node->first );
-
-            if ( macroDispDOF == previousMacroDispDOFVector->end( ) ){
-
-                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->second ) +
-                                      " not found in previous micro deformations map" );
-
-            }
-
-            d = macroDispDOF->second;
-
-            if ( _inputProcessor.macroVelocitiesDefined( ) ){
-
-                auto macroVelocity = previousMacroVelocities->find( node->first );
-
-                if ( macroVelocity == previousMacroVelocities->end( ) ){
-
-                    return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->second ) +
-                                          " not found in previous macro velocities map" );
-
-                }
-
-                d += ( *dt ) * macroVelocity->second;
-
-            }
-
-            if ( _inputProcessor.macroAccelerationDefined( ) ){
-
-                auto macroAcceleration = previousMacroAccelerations->find( node->first );
-
-                if ( macroAcceleration == previousMacroAccelerations->end( ) ){
-
-                    return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->second ) +
-                                          " not found in previous macro accelerations map" );
-
-                }
-
-                d += 0.5 * ( ( *dt ) * ( *dt ) ) * ( 1 - 2 * beta ) * macroAcceleration->second;
-
-            }
-
-            d += ( ( *dt ) * ( *dt ) ) * beta * floatVector( _DotDotD_tp1.begin( ) + nMacroDispDOF * node->second,
-                                                             _DotDotD_tp1.begin( ) + nMacroDispDOF * ( node->second + 1 ) );
-
-            //Assign to the ghost or free vectors as required. Ghost and Free don't have meaning in the
-            //Arlequin method but we hold this over from the L2 projection method
-            
-            if ( node->second < _inputProcessor.getFreeMacroNodeIds( )->size( ) ){
-
-                for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
-
-                    _updatedFreeMacroDispDOFValues[ nMacroDispDOF * node->second + i ] = d[ i ];
-
-                }
-
-            }
-            else{
-
-                for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
-
-                    _projected_ghost_macro_displacement[ nMacroDispDOF * ( node->second - _inputProcessor.getFreeMacroNodeIds( )->size( ) ) + i ] = d[ i ];
-
-                }
-
-            }
-
-        }
+        _projected_ghost_micro_displacement
+            = floatVector( _Q_tp1.begin( ) + nMicroDispDOF * _inputProcessor.getFreeMicroNodeIds( )->size( ), _Q_tp1.end( ) );
+        _projected_ghost_macro_displacement
+            = floatVector( _D_tp1.begin( ) + nMacroDispDOF * _inputProcessor.getFreeMacroNodeIds( )->size( ), _D_tp1.end( ) );
 
         // Print statements for debugging
-        std::cout << "\nUpdated micro deformations\n";
+        std::cerr << "\nUpdated micro deformations\n";
         floatVector microDef = vectorTools::appendVectors( {_updatedFreeMicroDispDOFValues, _projected_ghost_micro_displacement} );
+        std::cerr << "gid, lid: R_1        R_2        R_3        U_1        U_2        U_3\n";
         for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
 
-            std::printf( "%2i, %2i: ", node->first, node->second );
+            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+            auto mnp = _inputProcessor.getMicroNodeReferencePositions( )->find( node->first );
+            for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
+
+            }
+
             for ( unsigned int i = 0; i < 3; i++ ){
 
-                std::printf( "%+1.7f ", microDef[ 3 * node->second + i ] );
+                std::cerr << boost::format( "%+1.7f ") % microDef[ 3 * node->second + i ];
 
             }
             std::cout << "\n";
 
         }
 
-        std::cout << "\nUpdated macro deformations\n";
+        std::cerr << "\nUpdated macro deformations\n";
         floatVector macroDef = vectorTools::appendVectors( {_updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement} );
+        std::cerr << "gid, gid: R_1        R_2        R_3        U_1        U_2        U_3        PHI_11     PHI_12     PHI_13     PHI_21     PHI_22     PHI_23     PHI_31     PHI_32     PHI_33\n";
         for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
 
-            std::printf( "%2i, %2i: ", node->first, node->second );
-            for ( unsigned int i = 0; i < 12; i++ ){
+            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+            auto mnp = _inputProcessor.getMacroNodeReferencePositions( )->find( node->first );
+            for ( unsigned int j = 0; j < _dim; j++ ){
 
-                std::printf( "%+1.7f ", macroDef[ 12 * node->second + i ] );
+                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
 
             }
-            std::cout << "\n";
+
+            for ( unsigned int i = 0; i < 12; i++ ){
+
+                std::cerr << boost::format( "%+1.7f " ) % macroDef[ 12 * node->second + i ];
+
+            }
+            std::cerr << "\n";
 
         }
 
