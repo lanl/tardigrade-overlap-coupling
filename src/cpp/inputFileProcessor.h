@@ -191,6 +191,8 @@ namespace inputFileProcessor{
             const std::unordered_map< std::string, uIntType > *getMicroDomainIDMap( );
             const std::unordered_map< std::string, uIntType > *getMicroDomainSurfaceApproximateSplitCount( );
 
+            const floatType* getArlequinPenaltyParameter( );
+
         private:
 
             uIntType _dim = 3;
@@ -360,6 +362,7 @@ namespace inputFileProcessor{
             bool _macroInertialForceFlag = false;
             bool _couplingODESolutionLocationFlag = false;
             bool _useArlequinMethod = false;
+            floatType _arlequinPenaltyParameter;
 
 //            stringVector _non_overlapped_micro_surface_sets;
 //            stringVector _free_micro_surface_sets;
