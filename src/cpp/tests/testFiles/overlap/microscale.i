@@ -363,6 +363,42 @@
   [../]
 []
 
+[UserObjects]
+    [./macro_coupling]
+        type = OverlapCoupling
+        is_macroscale = False
+        overlap_configuration_filename = "testConfig.yaml"
+        execute_on = "TIMESTEP_BEGIN"
+    [../]
+[]
+
+[BCs]
+  [./bc_coupled_x]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 0
+    is_macroscale = False
+    variable = disp_x
+    boundary = 'all'
+  []
+  [./bc_coupled_y]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 1
+    is_macroscale = False
+    variable = disp_y
+    boundary = 'all'
+  []
+  [./bc_coupled_z]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 2
+    is_macroscale = False
+    variable = disp_z
+    boundary = 'all'
+  []
+[]
+
 [Executioner]
 #  type = Steady
   type = Transient

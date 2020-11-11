@@ -1075,13 +1075,13 @@
     type = DirichletBC
     variable = arlequin_weight
     boundary = 'front'
-    value = 0
+    value = 0.
   [../]
   [./non_overlapped_arlequin]
     type = DirichletBC
     variable = arlequin_weight
     boundary = 'non_overlapped_nodes'
-    value = 1
+    value = 1.
   [../]
 []
 
@@ -1106,6 +1106,105 @@
         overlap_configuration_filename = "testConfig.yaml"
         execute_on = "TIMESTEP_END"
     [../]
+[]
+
+[BCs]
+  [./bc_coupled_x]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 0
+    is_macroscale = True
+    variable = disp_x
+    boundary = 'all'
+  []
+  [./bc_coupled_y]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 1
+    is_macroscale = True
+    variable = disp_y
+    boundary = 'all'
+  []
+  [./bc_coupled_z]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 2
+    is_macroscale = True
+    variable = disp_z
+    boundary = 'all'
+  []
+  [./bc_coupled_phi11]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 3
+    is_macroscale = True
+    variable = phi_xx
+    boundary = 'all'
+  []
+  [./bc_coupled_phi12]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 4
+    is_macroscale = True
+    variable = phi_xy
+    boundary = 'all'
+  []
+  [./bc_coupled_phi13]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 5
+    is_macroscale = True
+    variable = phi_xz
+    boundary = 'all'
+  []
+  [./bc_coupled_phi21]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 6
+    is_macroscale = True
+    variable = phi_yx
+    boundary = 'all'
+  []
+  [./bc_coupled_phi22]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 7
+    is_macroscale = True
+    variable = phi_yy
+    boundary = 'all'
+  []
+  [./bc_coupled_phi23]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 8
+    is_macroscale = True
+    variable = phi_yz
+    boundary = 'all'
+  []
+  [./bc_coupled_phi31]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 9
+    is_macroscale = True
+    variable = phi_zx
+    boundary = 'all'
+  []
+  [./bc_coupled_phi32]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 10
+    is_macroscale = True
+    variable = phi_zy
+    boundary = 'all'
+  []
+  [./bc_coupled_phi33]
+    type = CoupledDirichletBC
+    overlap_coupling_object = macro_coupling
+    component = 11
+    is_macroscale = True
+    variable = phi_zz
+    boundary = 'all'
+  []
 []
 
 [Materials]
@@ -1138,6 +1237,26 @@
   [../]
 []
 
+[MultiApps]
+  [microscale]
+    type = TransientMultiApp
+    input_files = 'microscale.i'
+    catch_up = True
+    keep_solution_during_restore = True
+  []
+[]
+
+[Transfers]
+  [overlap_coupling]
+    type = MultiAppOverlapCouplingTransfer
+    source_user_object = macro_coupling
+    target_user_object = macro_coupling
+    execute_on = "TIMESTEP_END"
+    direction = "to_multiapp"
+    multi_app = microscale
+  []
+[]
+
 [Executioner]
   type = Transient
   num_steps = 1
@@ -1147,6 +1266,7 @@
   nl_rel_tol = 1e-8
   nl_abs_tol = 1e-8
   nl_max_its = 100
+  picard_max_its = 2
   [./TimeIntegrator]
     type = NewmarkBeta
     beta = 0.25

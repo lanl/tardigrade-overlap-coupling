@@ -120,7 +120,7 @@ macroscale_definition:
                 #                C33: sc_33
 
 microscale_definition:
-        filename: microscale_xdmf.xdmf
+        filename: macroscale_out_microscale0_xdmf.xdmf
         mode: read
         volume_variable_name: volume #The name of the volume attribute at the nodes
         density_variable_name: density #The name of the density attribute at the nodes
