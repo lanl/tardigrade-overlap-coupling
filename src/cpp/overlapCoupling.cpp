@@ -1011,6 +1011,7 @@ namespace overlapCoupling{
         std::string projection_type = config[ "projection_type" ].as< std::string >( );
         const floatType gamma = *_inputProcessor.getNewmarkGamma( );
         const floatType beta = *_inputProcessor.getNewmarkBeta( );
+        const floatType mu = *_inputProcessor.getArlequinPenaltyParameter( );
 
         //Get the timestep
         const floatType *dt = _inputProcessor.getDt( );
@@ -1173,21 +1174,7 @@ namespace overlapCoupling{
 
         }
 
-        std::cerr << "micro mass:\n";
-        for ( uIntType i = 0; i < MQ.size( ) / 3; i++ ){
-            for ( uIntType j = 0; j < _dim; j++ ){
-                std::cerr << boost::format( "%1.7f " ) % MQ[ 3 * i + j ];
-            }
-            std::cerr << "\n";
-        }
-
-        std::cerr << "macro mass:\n";
-        for ( uIntType i = 0; i < _MD_Diag.size( ) / 12; i++ ){
-            for ( uIntType j = 0; j < 12; j++ ){
-                std::cerr << boost::format( "%1.7f " ) % _MD_Diag[ 12 * i + j ];
-            }
-            std::cerr << "\n";
-        }
+        //
 
         //Construct the A matrix
         floatType AFactor1 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aD * gamma * ( *dt ) );
@@ -1202,11 +1189,12 @@ namespace overlapCoupling{
 
         std::cout << "LAGRANGE:\n";
         uIntType _indx = 0;
-        std::cerr << "gid, lid: mass      R_1        R_2        R_3        L_1        L_2        L_3\n";
+        std::cerr << "gid, lid: mass      weight    R_1        R_2        R_3        L_1        L_2        L_3\n";
         for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++, _indx++ ){
 
             std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
             std::cerr << boost::format( "%1.7f " ) % MQ[ _dim * node->second ];
+            std::cerr << boost::format( "%1.7f " ) % (1 - arlequinMicroWeightingFactors.find( node->first )->second );
 
             auto mnp = _inputProcessor.getMicroNodeReferencePositions( )->find( node->first );
             for ( unsigned int j = 0; j < _dim; j++ ){
