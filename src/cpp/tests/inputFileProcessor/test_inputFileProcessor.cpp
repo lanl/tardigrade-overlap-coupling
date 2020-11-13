@@ -5275,6 +5275,13 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
     }
 
+    if ( !vectorTools::fuzzyEquals( *reader.getArlequinUpdatePenaltyParameter( ), 1. ) ){
+
+        results << "test_initializeIncrement_Arlequin (test 116) & False\n";
+        return 1;
+
+    }
+
     results << "test_initializeIncrement_Arlequin & True\n";
     return 0;
 }

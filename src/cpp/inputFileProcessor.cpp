@@ -3362,6 +3362,12 @@ namespace inputFileProcessor{
 
             }
 
+            if ( !_config[ "coupling_initialization" ][ "arlequin_update_penalty_parameter" ] ){
+
+                _arlequinUpdatePenaltyParameter = 1;
+
+            }
+
             _useArlequinMethod = true;
 
         }
@@ -4951,5 +4957,14 @@ namespace inputFileProcessor{
 
         return &_arlequinPenaltyParameter;
     }
+
+    const floatType* inputFileProcessor::getArlequinUpdatePenaltyParameter( ){
+        /*!
+         * Get the Arlequin penalty parameter
+         */
+
+        return &_arlequinUpdatePenaltyParameter;
+    }
+
 
 }
