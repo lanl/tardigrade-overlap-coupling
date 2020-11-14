@@ -3358,14 +3358,25 @@ namespace inputFileProcessor{
 
             if ( !_config[ "coupling_initialization" ][ "arlequin_penalty_parameter" ] ){
 
+                _config[ "coupling_initialization" ][ "arlequin_penalty_parameter" ] = 1;
                 _arlequinPenaltyParameter = 1;
+
+            }
+            else{
+
+                _arlequinPenaltyParameter = _config[ "coupling_initialization" ][ "arlequin_penalty_parameter" ].as< floatType >( );
 
             }
 
             if ( !_config[ "coupling_initialization" ][ "arlequin_update_penalty_parameter" ] ){
 
+                _config[ "coupling_initialization" ][ "arlequin_update_penalty_parameter" ] = 1;
                 _arlequinUpdatePenaltyParameter = 1;
 
+            }
+            else{
+
+                _arlequinUpdatePenaltyParameter = _config[ "coupling_initialization" ][ "arlequin_update_penalty_parameter" ].as< floatType >( );
             }
 
             _useArlequinMethod = true;
