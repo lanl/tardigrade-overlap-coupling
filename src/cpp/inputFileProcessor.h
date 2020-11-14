@@ -168,6 +168,7 @@ namespace inputFileProcessor{
             bool macroExternalForceDefined( );
             bool macroInertialForceDefined( );
             bool extractPreviousDOFValues( );
+            bool useReconstructedVolumeForMassMatrix( );
 
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
@@ -399,6 +400,7 @@ namespace inputFileProcessor{
             bool _outputReferenceInformation = false;
             bool _outputHomogenizedInformation = false;
             bool _outputUpdatedDOF = false;
+            bool _useReconstructedVolumeForMassMatrix = false;
 
             std::unordered_map< uIntType, floatVector > _previousMicroDisplacements;
             std::unordered_map< uIntType, floatVector > _previousMacroDispDOFVector;
