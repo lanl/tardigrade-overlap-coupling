@@ -400,28 +400,15 @@
 []
 
 [Executioner]
-#  type = Steady
   type = Transient
   num_steps = 1
-  dt        = 1
+  dt        = 1e-2
   solve_type = 'PJFNK'
 #  solve_type = 'NEWTON'
-  nl_rel_tol = 1e-8
-  nl_abs_tol = 1e-8
-#  nl_max_its = 100
-  #Terms for debugging
-#  petsc_options = '-ksp_monitor_true_residual -ksp_compute_singularvalues' 
-#  petsc_options = '-snes_converged_reason -ksp_converged_reason'
+  nl_rel_tol = 1e-9
+  nl_abs_tol = 1e-9
   nl_max_its = 20
   l_max_its  = 5
-#  petsc_options_iname = '-pc_type -pc_hypre_type -ksp_gmres_restart'
-#  petsc_options_value = 'hypre    boomeramg      100'
-#  petsc_options_iname = '-ksp_gmres_restart'
-#  petsc_options_value = '100'
-#  petsc_options = '-snes_ksp_ew -ksp_monitor_true_residual -ksp_compute_singularvalues'# -pc_svd_monitor'
-#  petsc_options = '-ksp_monitor_true_residual -ksp_compute_singularvalues'# -pc_svd_monitor'
-  petsc_options_iname = '-pc_type -sub_pc_type -pc_asm_overlap -ksp_gmres_restart -print_linear_residuals'# -ksp_view_mat'
-  petsc_options_value = 'asm      lu           1               101                false                  '# binary'
   [./TimeIntegrator]
     type = NewmarkBeta
     beta = 0.25

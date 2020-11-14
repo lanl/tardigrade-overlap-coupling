@@ -330,6 +330,9 @@ namespace overlapCoupling{
 
             }
 
+            //Reset the position to the element reference position
+            element->nodes = element->reference_nodes;
+
             //Get the micro weights for the cell
             floatVector elementNodalWeights( element->global_node_ids.size( ) );
 
@@ -401,17 +404,18 @@ namespace overlapCoupling{
                     }
 
                     //compute the position
-                    floatVector globalCoordinates = microDisplacement->second + microReferencePosition->second;
+//                    floatVector globalCoordinates = microDisplacement->second + microReferencePosition->second;
 
                     //Get the local coordinates of the micro-node
                     floatVector localCoordinates;
                     std::unique_ptr< errorNode > tmp;
-                    tmp.reset( element->compute_local_coordinates( globalCoordinates, localCoordinates ) );
+                    tmp.reset( element->compute_local_coordinates( microReferencePosition->second, localCoordinates ) );
 
                     if ( error ){
                            
                         if ( arlequinMicroWeightingFactors.find( *it ) == arlequinMicroWeightingFactors.end( ) ){
-                         
+                        
+                            std::cout << "error in local coordinates\n"; 
                             arlequinMicroWeightingFactors.emplace( *it, 0.001 ); //The micro-node is free
 
                         }
@@ -422,7 +426,6 @@ namespace overlapCoupling{
 
                     //See if the micro point is inside of the element
                     if ( !element->local_point_inside( localCoordinates, volumeReconstructionConfig[ "element_contain_tolerance" ].as< floatType >( ) ) ){
-
                         if ( arlequinMicroWeightingFactors.find( *it ) == arlequinMicroWeightingFactors.end( ) ){
 
                             arlequinMicroWeightingFactors.emplace( *it, 0.001 ); //The micro-node is free
@@ -480,7 +483,7 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, floatType > *macroArlequinWeights = _inputProcessor.getMacroArlequinWeights( );
 
         errorOut error;
-        floatVector arlequinWeights;
+//        floatVector arlequinWeights;
         std::vector< DOFProjection::T > coefficients;
         uIntType index = 0;
         for ( auto cellID = macroCellIds.begin(); cellID != macroCellIds.end(); cellID++, index++){
@@ -501,8 +504,8 @@ namespace overlapCoupling{
     
             }
 
-            //Get the degree of freedom values for the free macro-domain element
-            arlequinWeights = floatVector( element->global_node_ids.size( ), 0 );
+//            //Get the degree of freedom values for the free macro-domain element
+//            arlequinWeights = floatVector( element->global_node_ids.size( ), 0 );
             const std::unordered_map< uIntType, floatVector >* macroDispDOFVector = _inputProcessor.getMacroDispDOFVector( );
             floatVector elementDOFVector( 0 );
 
@@ -531,10 +534,10 @@ namespace overlapCoupling{
                                           " was not found in the macro node to weighting factor map" );
 
                 }
-
-                //Set the Arlequin weights at the nodes. We do force the weights to be between 0.001 and 0.999 so that
-                //The mass matrix won't be degenerate
-                arlequinWeights[ nodeID - element->global_node_ids.begin( ) ] = std::fmin( std::fmax( weight->second, 0.001 ), 0.999 );
+//
+//                //Set the Arlequin weights at the nodes. We do force the weights to be between 0.001 and 0.999 so that
+//                //The mass matrix won't be degenerate
+//                arlequinWeights[ nodeID - element->global_node_ids.begin( ) ] = std::fmin( std::fmax( weight->second, 0.001 ), 0.999 );
 
             }
 
@@ -634,7 +637,8 @@ namespace overlapCoupling{
 
             error = formMicromorphicElementMassMatrix( element, elementDOFVector, momentsOfInertia, densities, 
                                                        _inputProcessor.getMacroGlobalToLocalDOFMap( ), coefficients,
-                                                       &arlequinWeights, quantitiesInReference );
+//                                                       &arlequinWeights, quantitiesInReference );
+                                                       NULL, quantitiesInReference );
 
             if ( error ){
 
@@ -713,8 +717,8 @@ namespace overlapCoupling{
         floatType aQ = config[ "micro_proportionality_coefficient" ].as< floatType >( );
         floatType aD = config[ "macro_proportionality_coefficient" ].as< floatType >( );
 
-        Ge = floatVector( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
-        floatVector De( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ), 0 );
+        Qe = floatVector( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
+        De = floatVector( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ), 0 );
 
         FQ = floatVector( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
         FD = floatVector( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ), 0 );
@@ -834,7 +838,7 @@ namespace overlapCoupling{
             for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
                 FQ[ nMicroDispDOF * node->second + i ] += ( 1 - arlequinWeight->second ) * nodeForce[ i ];
-                Ge[ nMicroDispDOF * node->second + i ] -= qe[ i ];
+                Qe[ nMicroDispDOF * node->second + i ] -= qe[ i ];
 
             }
 
@@ -880,23 +884,6 @@ namespace overlapCoupling{
                 }
 
                 nodeForce -= internalForce->second;
-
-            }
-
-            //Get the Arlequin weight
-            auto arlequinWeight = macroArlequinWeights->find( node->first );
-
-            if ( arlequinWeight == macroArlequinWeights->end( ) ){
-
-                return new errorNode( "computeArlequinForceAndErrorVectors",
-                                      "Macro node " + std::to_string( node->first ) + " not found in arlequin weights map" );
-
-            }
-
-            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
-
-                FD[ nMacroDispDOF * node->second + i ]
-                    += std::fmin( std::fmax( arlequinWeight->second, 0.001 ), 0.999 ) * nodeForce[ i ];
 
             }
 
@@ -959,45 +946,43 @@ namespace overlapCoupling{
 
             }
 
+            //Add the lumped inertia contribution
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+                nodeForce[ i ] -= ( 1 - aD * gamma * ( *dt ) ) * explicitVelocity[ nMacroDispDOF * node->second + i ]
+                                * _MD.row( nMacroDispDOF * node->second + i ).sum( );
+            }
+
+            //Get the Arlequin weight
+            auto arlequinWeight = macroArlequinWeights->find( node->first );
+
+            if ( arlequinWeight == macroArlequinWeights->end( ) ){
+
+                return new errorNode( "computeArlequinForceAndErrorVectors",
+                                      "Macro node " + std::to_string( node->first ) + " not found in arlequin weights map" );
+
+            }
+
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                FD[ nMacroDispDOF * node->second + i ]
+                    += std::fmin( std::fmax( arlequinWeight->second, 0.001 ), 0.999 ) * nodeForce[ i ];
+
+            }
+
+
         }
 
         if ( ( _inputProcessor.macroVelocitiesDefined( ) ) || ( _inputProcessor.macroAccelerationDefined( ) ) ){
 
             
             Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _explicitVelocity( explicitVelocity.data(), explicitVelocity.size( ), 1 );
-            Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _FD( FD.data( ), FD.size( ), 1 ); 
+            Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _FD( FD.data( ), FD.size( ), 1 );
 
             _FD -= aD * _MD * _explicitVelocity;
 
         }
 
-        Eigen::Map< Eigen::Vector< floatType, -1 > > _De( De.data( ), De.size( ) );
-        Eigen::Map< Eigen::Vector< floatType, -1 > > _Ge( Ge.data( ), Ge.size( ) );
-
-        _Ge += _N * _De;
-
         return NULL;
-    }
-
-    errorOut computeArlequinTrialDeformation( const uIntType &microIncrement ){
-        /*!
-         * Compute the Arlequin trial deformation. This is one by making the assumption
-         * that the deformation at a given micro node can be described as
-         *
-         * \f$q_i^{tr,n} = ( 1 - w^n ) q_i^n + w^n u_i^{\prime, n}\f$
-         *
-         * where \f$w_i\f$ is the Arlequin weight, \f$q_i^n\f$ is the micro deformation,
-         * and \f$u_i^{\prime, i}\f$ is the interpolated micromorphic deformation. For
-         * the micromorphic degrees of freedom we interpolate using a least-squares
-         * approach. This is done via
-         *
-         * \f$d_i^{tr,n} = ( 1 - w^n ) P_iJ \bar{d}^{com}_J + w^n d_i^n\f$
-         *
-         * Where \f$d_i^{tr,n}\f$ is the trial value of the micromorphic degree of freedom,
-         * \f$w^n\f$ is the Arlequin weight of the macro-scal enode, \f$P_iJ\f$ is the
-         * projector from the homogenization domain to the macro nodes, $\bar{d}^{com}_J$ is
-         * the averaged micro-scale 
-         */
     }
 
     errorOut overlapCoupling::computeArlequinDeformationUpdate( ){
@@ -1012,6 +997,7 @@ namespace overlapCoupling{
         const floatType gamma = *_inputProcessor.getNewmarkGamma( );
         const floatType beta = *_inputProcessor.getNewmarkBeta( );
         const floatType mu = *_inputProcessor.getArlequinPenaltyParameter( );
+        const floatType mu_update = *_inputProcessor.getArlequinUpdatePenaltyParameter( );
 
         //Get the timestep
         const floatType *dt = _inputProcessor.getDt( );
@@ -1042,9 +1028,12 @@ namespace overlapCoupling{
         const std::unordered_map< uIntType, floatVector > *previousMacroDispDOFVector = _inputProcessor.getPreviousMacroDispDOFVector( );
         const std::unordered_map< uIntType, floatVector > *previousMacroVelocities    = _inputProcessor.getPreviousMacroVelocities( );
         const std::unordered_map< uIntType, floatVector > *previousMacroAccelerations = _inputProcessor.getPreviousMacroAccelerations( );
+        const std::unordered_map< uIntType, floatType > *macroArlequinWeights = _inputProcessor.getMacroArlequinWeights( );
 
-        Eigen::VectorXd Qtrial( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
+        Eigen::VectorXd Q( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
         Eigen::VectorXd MQ( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
+        Eigen::VectorXd WQ( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
+        std::cerr << "Building Q and MQ\n";
         for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
 
             auto microDensity = microDensities->find( node->first );
@@ -1074,6 +1063,7 @@ namespace overlapCoupling{
 
             }
 
+            std::cout << microWeight->first << ": " << microWeight->second << ": " << microDensity->second << ": " << microVolume->second << "\n";
             for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
                 MQ( nMicroDispDOF * node->second + i ) += ( 1 - microWeight->second ) * microDensity->second * microVolume->second;
@@ -1091,7 +1081,49 @@ namespace overlapCoupling{
 
             for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
-                Qtrial( nMicroDispDOF * node->second + i ) = microDisplacement->second[ i ];
+                Q( nMicroDispDOF * node->second + i ) = microDisplacement->second[ i ];
+
+            }
+
+            for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
+
+                WQ( nMicroDispDOF * node->second + i ) = ( 1 - microWeight->second );
+
+            }
+
+        }
+
+        Eigen::VectorXd D( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
+        Eigen::VectorXd WD( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
+        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+
+            auto macroDisplacement = macroDispDOFVector->find( node->first );
+
+            if ( macroDisplacement == macroDispDOFVector->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                                      " not found in macro displacement DOF vector" );
+
+            }
+
+            auto macroWeight = macroArlequinWeights->find( node->first );
+
+            if ( macroWeight == macroArlequinWeights->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                                      " not found in macro Arlequin weight map" );
+
+            }
+
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                D( nMacroDispDOF * node->second + i ) = macroDisplacement->second[ i ];
+
+            }
+
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                WD( nMacroDispDOF * node->second + i ) = macroWeight->second;
 
             }
 
@@ -1126,25 +1158,23 @@ namespace overlapCoupling{
 
         }
 
-        Eigen::VectorXd Dtrial( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
-        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
-
-            auto macroDisplacement = macroDispDOFVector->find( node->first );
-
-            if ( macroDisplacement == macroDispDOFVector->end( ) ){
-
-                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
-                                      " not found in macro displacement DOF vector" );
-
-            }
-
-            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
-
-                Dtrial[ nMacroDispDOF * node->second + i ] += macroDisplacement->second[ i ];
-
-            }
-
-        }
+//        // Compute the penalty force
+//        Eigen::VectorXd FPenalty = mu * ( _N * D - Q );
+//        std::cout << "FPenalty:\n";
+//        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//            std::cerr << boost::format( "%1.7f " ) % MQ[ _dim * node->second ];
+//            std::cerr << boost::format( "%1.7f " ) % (1 - arlequinMicroWeightingFactors.find( node->first )->second );
+//
+//            for ( unsigned int j = 0; j < _dim; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % FPenalty[ nMicroDispDOF * node->second + j ];
+//
+//            }
+//
+//            std::cerr << "\n";
+//
+//        }
 
         //Compute the diagonal Micromorphic mass matrix ( HRZ homogenization )
         floatType massWeightingFactor = 0;
@@ -1164,28 +1194,53 @@ namespace overlapCoupling{
 //        _MD_Diag *= ( totalMass / massWeightingFactor );
 
         //Row sum homogenization
-        for ( uIntType n = 0; n < macroGlobalToLocalDOFMap->size( ); n++ ){
+        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+
+            auto macroArlequinWeight = macroArlequinWeights->find( node->first );
+
+            if ( macroArlequinWeight == macroArlequinWeights->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                                      " not found in macro Arlequin weight vector" );
+
+            }
 
             for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
 
-                _MD_Diag( nMacroDispDOF * n + i ) = _MD.row( nMacroDispDOF * n + i ).sum( );
+                _MD_Diag( nMacroDispDOF * node->second + i )
+                    = std::fmin( 0.999, std::fmax( 0.001, macroArlequinWeight->second ) ) *_MD.row( nMacroDispDOF * node->second + i ).sum( );
 
             }
 
         }
 
-        //
+        // Compute AD and AQ
+        Eigen::VectorXd AD = ( ( 1 + aD * gamma * ( *dt ) ) * _MD_Diag + mu_update * beta * ( *dt ) * ( *dt ) * WD ).cwiseInverse( );
+        Eigen::VectorXd AQ = ( ( 1 + aQ * gamma * ( *dt ) ) * MQ + mu_update * beta * ( *dt ) * ( *dt ) * WQ ).cwiseInverse( );
 
-        //Construct the A matrix
-        floatType AFactor1 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aD * gamma * ( *dt ) );
-        floatType AFactor2 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aQ * gamma * ( *dt ) );
-        SparseMatrix _A = _N * ( AFactor1 * _MD_Diag.cwiseInverse( ) ).asDiagonal( ) * _N.transpose( );
-        _A += ( AFactor2 * MQ.cwiseInverse( ) ).asDiagonal( );
+        std::cout << "AD:\n" << AD << "\n";
+        std::cout << "AQ:\n" << AQ << "\n";
 
-        //Solve for the Lagrange multipliers
+        // Form the right hand vector for the computation of the Lagrange multiplier values
+        Eigen::Map< Eigen::VectorXd > _FD( FD.data( ), FD.size( ) ); 
+        Eigen::Map< Eigen::VectorXd > _FQ( FQ.data( ), FQ.size( ) );
+
+        Eigen::Map< Eigen::VectorXd > _De( De.data( ), De.size( ) ); 
+        Eigen::Map< Eigen::VectorXd > _Qe( Qe.data( ), Qe.size( ) );
+
+        Eigen::VectorXd RHS = _N * _De - _Qe
+                            + beta * ( *dt ) * ( *dt ) * ( _N * AD.asDiagonal( ) * ( _FD + mu_update * WD.asDiagonal( ) * ( D - _De ) ) - AQ.asDiagonal( ) * ( _FQ + mu_update * WQ.asDiagonal( ) * ( Q - _Qe ) ) );
+
+        std::cout << "RHS:\n" << RHS << "\n";
+
+        // Form the left hand matrix for the computation of the Lagrange multiplier values
+        SparseMatrix LHS = beta * ( *dt ) * ( *dt ) * _N * AD.asDiagonal( ) * _N.transpose();
+        LHS += beta * ( *dt ) * ( *dt ) * AQ.asDiagonal( );
+
+        // Solve for the Lagrange multipliers
         Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > lagrangeSolver;
-        lagrangeSolver.compute( _A );
-        Eigen::VectorXd _Lagrange = lagrangeSolver.solve( _N * Dtrial - Qtrial );
+        lagrangeSolver.compute( LHS );
+        Eigen::VectorXd _Lagrange = lagrangeSolver.solve( RHS );
 
         std::cout << "LAGRANGE:\n";
         uIntType _indx = 0;
@@ -1212,9 +1267,208 @@ namespace overlapCoupling{
 
         }
 
-        //Compute the new values of the degrees of freedom
-        Eigen::VectorXd _D_tp1 = Dtrial - ( AFactor1 * _MD_Diag.cwiseInverse( ).asDiagonal( ) ) * ( _N.transpose( ) * _Lagrange );
-        Eigen::VectorXd _Q_tp1 = Qtrial + ( AFactor2 * MQ.cwiseInverse( ).asDiagonal( ) ) * _Lagrange;
+        // Compute the new accelerations
+        std::cout << "DDotDot_tp1\n";
+        Eigen::VectorXd DDotDot_tp1 = AD.asDiagonal( ) * ( _FD + mu_update * WD.asDiagonal( ) * ( D - _De ) - _N.transpose( ) * _Lagrange );
+        std::cout << DDotDot_tp1 << "\n";
+        std::cout << "QDotDot_tp1\n";
+        Eigen::VectorXd QDotDot_tp1 = AQ.asDiagonal( ) * ( _FQ + mu_update * WQ.asDiagonal( ) * ( Q - _Qe ) + _Lagrange );
+        std::cout << QDotDot_tp1 << "\n";
+
+        std::cerr << "\nUpdated micro accelerations\n";
+        std::cerr << "gid, lid: R_1        R_2        R_3        U_1        U_2        U_3\n";
+        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+
+            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+            auto mnp = _inputProcessor.getMicroNodeReferencePositions( )->find( node->first );
+            for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
+
+            }
+
+            for ( unsigned int i = 0; i < 3; i++ ){
+
+                std::cerr << boost::format( "%+1.7f ") % QDotDot_tp1[ 3 * node->second + i ];
+
+            }
+            std::cout << "\n";
+
+        }
+
+        std::cerr << "\nUpdated macro deformations\n";
+        std::cerr << "gid, gid: R_1        R_2        R_3        U_1        U_2        U_3        PHI_11     PHI_12     PHI_13     PHI_21     PHI_22     PHI_23     PHI_31     PHI_32     PHI_33\n";
+        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+
+            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+            auto mnp = _inputProcessor.getMacroNodeReferencePositions( )->find( node->first );
+            for ( unsigned int j = 0; j < _dim; j++ ){
+
+                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
+
+            }
+
+            for ( unsigned int i = 0; i < 12; i++ ){
+
+                std::cerr << boost::format( "%+1.7f " ) % DDotDot_tp1[ 12 * node->second + i ];
+
+            }
+            std::cerr << "\n";
+
+        }
+
+        // Compute the new deformations
+        Eigen::VectorXd _D_tp1 = _De + beta * ( *dt ) * ( *dt ) * DDotDot_tp1;
+        Eigen::VectorXd _Q_tp1 = _Qe + beta * ( *dt ) * ( *dt ) * QDotDot_tp1;
+
+//        return new errorNode( "derp", "derp" );
+//
+//        std::cout << "_MD_Diag:\n" << _MD_Diag << "\n";
+//        std::cout << "MQ:\n" << MQ << "\n";
+//
+//        // Compute the trial acceleration
+//        Eigen::Map< Eigen::VectorXd > _FD( FD.data( ), FD.size( ) ); 
+//        Eigen::Map< Eigen::VectorXd > _FQ( FQ.data( ), FQ.size( ) );
+//        std::cout << "FQ:\n";
+//        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+//
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//            std::cerr << boost::format( "%1.7f " ) % MQ[ _dim * node->second ];
+//            std::cerr << boost::format( "%1.7f " ) % (1 - arlequinMicroWeightingFactors.find( node->first )->second );
+//
+//            for ( unsigned int j = 0; j < _dim; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % FQ[ nMicroDispDOF * node->second + j ];
+//
+//            }
+//
+//            std::cerr << "\n";
+//        }
+//
+//        std::cout << "FD:\n";
+//        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//
+//            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % FD[ nMacroDispDOF * node->second + j ];
+//
+//            }
+//
+//            std::cerr << "\n";
+//        }
+//
+//        std::cout << "Computing trial accelerations\n";
+//        std::cout << "QDotDotTrial:\n";
+//        Eigen::VectorXd QDotDotTrial = MQ.cwiseInverse( ).cwiseProduct( _FQ + FPenalty ) / ( 1 + aQ * gamma * ( *dt ) );
+//        Eigen::VectorXd DDotDotTrial
+//            = _MD_Diag.cwiseInverse( ).cwiseProduct( _FD - _N.transpose( ) * FPenalty ) / ( 1 + aD * gamma * ( *dt ) );
+//
+//        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//            std::cerr << boost::format( "%1.7f " ) % MQ[ _dim * node->second ];
+//            std::cerr << boost::format( "%1.7f " ) % (1 - arlequinMicroWeightingFactors.find( node->first )->second );
+//
+//            for ( unsigned int j = 0; j < _dim; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % QDotDotTrial[ nMicroDispDOF * node->second + j ];
+//
+//            }
+//
+//            std::cerr << "\n";
+//
+//        }
+//
+//        std::cout << "DDotDotTrial:\n";
+//        uIntType _indx = 0;
+//        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++, _indx++ ){
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//
+//            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % DDotDotTrial[ nMacroDispDOF * node->second + j ];
+//
+//            }
+//
+//            std::cerr << "\n";
+//
+//        }
+//
+//        // Compute the trial values of D and Q
+//        Eigen::Map< Eigen::VectorXd > _De( De.data( ), De.size( ) ); 
+//        Eigen::Map< Eigen::VectorXd > _Qe( Qe.data( ), Qe.size( ) ); 
+//
+//        Eigen::VectorXd Dtrial = _De + ( ( *dt ) * ( *dt ) * beta ) * DDotDotTrial;
+//        Eigen::VectorXd Qtrial = _Qe + ( ( *dt ) * ( *dt ) * beta ) * QDotDotTrial;
+//
+//        std::cout << "Dtrial:\n";
+//        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++, _indx++ ){
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//
+//            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % Dtrial[ nMacroDispDOF * node->second + j ];
+//
+//            }
+//
+//            std::cerr << "\n";
+//
+//        }
+//        std::cout << "Qtrial:\n";
+//        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//            std::cerr << boost::format( "%1.7f " ) % MQ[ _dim * node->second ];
+//            std::cerr << boost::format( "%1.7f " ) % (1 - arlequinMicroWeightingFactors.find( node->first )->second );
+//
+//            for ( unsigned int j = 0; j < _dim; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % Qtrial[ nMicroDispDOF * node->second + j ];
+//
+//            }
+//
+//            std::cerr << "\n";
+//
+//        }
+//
+//        //Construct the A matrix
+//        floatType AFactor1 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aD * gamma * ( *dt ) );
+//        floatType AFactor2 = ( ( *dt ) * ( *dt ) * beta ) / ( 1 + aQ * gamma * ( *dt ) );
+//        SparseMatrix _A = _N * ( AFactor1 * _MD_Diag.cwiseInverse( ) ).asDiagonal( ) * _N.transpose( );
+//        _A += ( AFactor2 * MQ.cwiseInverse( ) ).asDiagonal( );
+//
+//        //Solve for the Lagrange multipliers
+//        Eigen::SparseQR< SparseMatrix, Eigen::COLAMDOrdering<int> > lagrangeSolver;
+//        lagrangeSolver.compute( _A );
+//        Eigen::VectorXd _Lagrange = lagrangeSolver.solve( mu * ( _N * Dtrial - Qtrial ) );
+//
+//        std::cout << "LAGRANGE:\n";
+//        _indx = 0;
+//        std::cerr << "gid, lid: mass      weight    R_1        R_2        R_3        L_1        L_2        L_3\n";
+//        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++, _indx++ ){
+//
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//            std::cerr << boost::format( "%1.7f " ) % MQ[ _dim * node->second ];
+//            std::cerr << boost::format( "%1.7f " ) % (1 - arlequinMicroWeightingFactors.find( node->first )->second );
+//
+//            auto mnp = _inputProcessor.getMicroNodeReferencePositions( )->find( node->first );
+//            for ( unsigned int j = 0; j < _dim; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
+//
+//            }
+//
+//            for ( unsigned int j = 0; j < _dim; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % _Lagrange( _dim * node->second + j );
+//
+//            }
+//            std::cerr << "\n";
+//
+//        }
+//
+//        //Compute the new values of the degrees of freedom
+//        Eigen::VectorXd _D_tp1 = Dtrial - ( AFactor1 * _MD_Diag.cwiseInverse( ).asDiagonal( ) ) * ( _N.transpose( ) * _Lagrange );
+//        Eigen::VectorXd _Q_tp1 = Qtrial + ( AFactor2 * MQ.cwiseInverse( ).asDiagonal( ) ) * _Lagrange;
 
         //Solve for the updated DOF vectors
         _updatedFreeMicroDispDOFValues
@@ -10202,15 +10456,6 @@ namespace overlapCoupling{
 
         return &FD;
     }
-
-    const floatVector *overlapCoupling::getGe( ){
-        /*!
-         * Get a constant reference to the micro dof explicit error vector
-         */
-
-        return &Ge;
-    }
-
 
 #endif
 

@@ -1260,7 +1260,7 @@
 [Executioner]
   type = Transient
   num_steps = 1
-  dt        = 1
+  dt        = 1e-2
   solve_type = 'PJFNK'
 #  solve_type = 'NEWTON'
   nl_rel_tol = 1e-8

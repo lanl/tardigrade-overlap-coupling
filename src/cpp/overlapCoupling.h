@@ -184,7 +184,6 @@ namespace overlapCoupling{
             const SparseMatrix *getMD( );
             const floatVector *getFQ( );
             const floatVector *getFD( );
-            const floatVector *getGe( );
 
             floatVector _test_freeMicroMasses;
             floatVector _test_ghostMicroMasses;
@@ -522,7 +521,7 @@ namespace overlapCoupling{
 
             std::unordered_map< uIntType, floatType > arlequinMicroWeightingFactors;
 
-            floatVector FQ, FD, Ge;
+            floatVector FQ, FD, Qe, De;
 
     };
 
