@@ -2406,9 +2406,32 @@ namespace overlapCoupling{
         //Process the domain mass data
         floatVector domainCenterOfMass;
 
+        //Form the macro element if required
+        std::unique_ptr< elib::Element > element;
+        element.reset(NULL);
+
+        if ( _inputProcessor.useReconstructedVolumeForMassMatrix( ) ){
+
+            errorOut error = buildMacroDomainElement( cellID,
+                                                      *_inputProcessor.getMacroNodeReferencePositions( ),
+                                                      *_inputProcessor.getMacroDisplacements( ),
+                                                      *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                                      element );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "processDomainReference",
+                                                 "Error in the construction of the macro-scale element " + std::to_string( cellID ) );
+                result->addNext( error );
+                return result;
+
+            }
+
+        }
+
         errorOut error = processDomainMassData( microIncrement, domainName, referenceMicroDomainMass,
                                                 referenceMicroDomainCentersOfMass, referenceMicroDomainMomentsOfInertia,
-                                                domainReferenceXiVectors );
+                                                domainReferenceXiVectors, element );
 #ifdef TESTACCESS
         _test_domainMass[ cellID ].emplace( domainName, referenceMicroDomainMass[ domainName ] );
         _test_domainCOM[ cellID ].emplace( domainName, referenceMicroDomainCentersOfMass[ domainName ] );
@@ -2519,7 +2542,8 @@ namespace overlapCoupling{
     errorOut overlapCoupling::processDomainMassData( const unsigned int &microIncrement, const std::string &domainName,
                                                      domainFloatMap &domainMass, domainFloatVectorMap &domainCenterOfMass,
                                                      domainFloatVectorMap &domainMomentOfInertia,
-                                                     std::unordered_map< uIntType, floatVector > &domainXiVectors ){
+                                                     std::unordered_map< uIntType, floatVector > &domainXiVectors,
+                                                     std::unique_ptr< elib::Element > &element ){
         /*!
          * Process a micro-scale domain
          *
@@ -2529,6 +2553,7 @@ namespace overlapCoupling{
          * :param domainFloatVectorMap &domainCenterOfMass: The center of mass of the domain
          * :param domainFloatVectorMap &domainMomentOfInertia: The moment of inertia of the domain
          * :param std::unordered_map< uIntType, floatVector > &domainXiVectors: The Xi vectors of the domain
+         * :param std::unique_ptr< elib::Element > &element: The macroscale element. Defualts to NULL;
          */
 
         //Get the domain's nodes
@@ -2545,24 +2570,103 @@ namespace overlapCoupling{
 
         }
 
-        //TODO: Add ability to use the reconstructed mass centers for this to enable consistency with the 
-        //      homogenization.
-
-        //Compute the center of mass of the domain
         floatType   mass;
         floatVector centerOfMass;
-        error = DOFProjection::computeDomainCenterOfMass( _dim, domainNodes, *_inputProcessor.getMicroVolumes( ),
-                                                          *_inputProcessor.getMicroDensities( ),
-                                                          *_inputProcessor.getMicroNodeReferencePositions( ),
-                                                          *_inputProcessor.getMicroDisplacements( ),
-                                                          *_inputProcessor.getMicroWeights( ),
-                                                          mass, centerOfMass );
 
-        if ( error ){
+        if ( element ){
 
-            errorOut result = new errorNode( "processDomain", "Error in calculation of '" + domainName + "' center of mass" );
-            result->addNext( error );
-            return result;
+            std::shared_ptr< volumeReconstruction::volumeReconstructionBase > reconstructedVolume;
+
+            //Reconstruct the domain
+            floatVector microNodePositions;
+            error = reconstructDomain( microIncrement, domainName, domainNodes, microNodePositions,
+                                       element, reconstructedVolume );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "processDomainMassData",
+                                                 "Error in the reconstruction of the microscale domain" );
+                result->addNext( error );
+                return result;
+
+            }
+
+            const std::unordered_map< uIntType, floatType > *microDensities = _inputProcessor.getMicroDensities( );
+            const std::unordered_map< uIntType, floatType > *microVolumes = _inputProcessor.getMicroVolumes( );
+            const std::unordered_map< uIntType, floatVector > *microReferencePositions = _inputProcessor.getMicroNodeReferencePositions( );
+            const std::unordered_map< uIntType, floatVector > *microDisplacements = _inputProcessor.getMicroDisplacements( );
+
+            //Compute the domain mass properties
+            uIntType dataCountAtPoint = 2 + _dim;
+            uIntType index = 0;
+            floatVector dataAtMicroPoints( dataCountAtPoint * domainNodes.size( ), 0 );
+            for ( auto node = domainNodes.begin( ); node != domainNodes.end( ); node++, index++ ){
+
+                dataAtMicroPoints[ dataCountAtPoint * index + 0 ] = 1.; //Integrate the volume of the domain
+    
+                auto microDensity = microDensities->find( *node );
+                if ( microDensity == microDensities->end( ) ){
+                    return new errorNode( "processDomainMassData",
+                                          "Micro node " + std::to_string( *node ) + " was not found in the micro density map" );
+                }
+    
+                dataAtMicroPoints[ dataCountAtPoint * index + 1 ] = microDensity->second; //Integrate the density of the domain
+    
+                auto microReferencePosition = microReferencePositions->find( *node );
+                if ( microReferencePosition == microReferencePositions->end( ) ){
+                    return new errorNode( "processDomainMassData",
+                                          "Micro node " + std::to_string( *node ) +
+                                          " was not found in the micro reference position map" );
+                }
+    
+                auto microDisplacement = microDisplacements->find( *node );
+                if ( microDisplacement == microDisplacements->end( ) ){
+                    return new errorNode( "processDomainMassData",
+                                          "Micro node " + std::to_string( *node ) +
+                                          " was not found in the micro displacement map" );
+                }
+    
+                //Integrate for the domain's center of mass
+                for ( unsigned int i = 0; i < _dim; i++ ){
+        
+                    dataAtMicroPoints[ dataCountAtPoint * index + 2 + i ] =
+                        microDensity->second * ( microReferencePosition->second[ i ] + microDisplacement->second[ i ] );
+        
+                }
+
+            }
+
+            floatVector integratedValues;
+            error = reconstructedVolume->performVolumeIntegration( dataAtMicroPoints, dataCountAtPoint, integratedValues );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "processDomainMassData", "Error in performing volume integration" );
+                result->addNext( error );
+                return result;
+            }
+
+            mass = integratedValues[ 1 ];
+            centerOfMass = floatVector( integratedValues.begin( ) + 2, integratedValues.end( ) ) / mass;
+
+        }
+        else{
+
+            //Compute the center of mass of the domain
+            error = DOFProjection::computeDomainCenterOfMass( _dim, domainNodes, *_inputProcessor.getMicroVolumes( ),
+                                                              *_inputProcessor.getMicroDensities( ),
+                                                              *_inputProcessor.getMicroNodeReferencePositions( ),
+                                                              *_inputProcessor.getMicroDisplacements( ),
+                                                              *_inputProcessor.getMicroWeights( ),
+                                                              mass, centerOfMass );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "processDomain", "Error in calculation of '" + domainName + "' center of mass" );
+                result->addNext( error );
+                return result;
+    
+            }
 
         }
 

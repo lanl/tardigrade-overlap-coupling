@@ -2,8 +2,10 @@
 
 coupling_initialization:
         type: use_first_increment #Other options will be "from_file" and "use_current_increment"
-        projection_type: "averaged_l2_projection" #Other options are "l2_projection" or "direct_projection"
-        use_reconstructed_mass_centers: false #Whether to use the reconstructed or particle particle mass centers in the homogenization
+        projection_type: "arlequin" #Options are "l2_projection", "averaged_l2_projection", "direct_projection", and "arlequin"
+        arlequin_weighting_variable_name: "Arlequin_Weights"
+        use_reconstructed_mass_centers: true #Whether to use the reconstructed or particle particle mass centers in the homogenization
+        use_reconstructed_volume_for_mass_matrix: true #Whether to use the reconstructed or particle mass centers for the mass matrix
         potential_energy_weighting_factor: 0.5 #The weighting factor for the potential energy between length-scales. ( qhat in Regueiro 2012 )
         potential_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( qtilde in Regueiro 2012 )
                 type: volume_fraction #The type of partitioning. Currently only "volume_fraction" is available
@@ -11,8 +13,8 @@ coupling_initialization:
         kinetic_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( rtilde in Regueiro 2012 )
                 type: volume_fraction #The type of partitioning. Currently only "volume_fraction" is available
         extract_previous_dof_values: true #Flag indicating if the previously converged accelerations and velocities should be extracted or if the current increment's should be used. If true, previous_macro_increment and previous_micro_increment must be defined with the increment to be used indicated
-        solve_coupling_odes_at_microdomains: false #Flag for whether the coupling odes should be solved at the microdomains. This is potentially useful if there are a lot of micro points.
-        use_reconstructed_volume_for_mass_matrix: true
+        micro_proportionality_coefficient: 1e-1
+        macro_proportionality_coefficient: 2e-1
         previous_micro_increment: 0
         previous_macro_increment: 0
         update_displacement:
@@ -22,7 +24,7 @@ coupling_initialization:
         output_updated_dof:
 
 macroscale_definition:
-        filename: macroscale.xdmf
+        filename: macroscale_Arlequin.xdmf
         mode: read
         node_id_variable_name: NODEID #The variable name of the node IDs
         cell_id_variable_name: ELEMID #The variable name of the cell IDs
@@ -200,7 +202,7 @@ free_macroscale_domains:
                   value: 2. #The density value in the reference configuration.
           reference_moment_of_inertia: #The moment of inertia in the reference configuration
                   type: constant #Only constant is currently recognized
-                  value: [ 1e-5, 2e-5, 3e-5, 4e-5, 5e-5, 6e-5 ] #The components of the moment of inertia. Note only six components are stored because it is symmetric
+                  value: [ 1e-2, 2e-2, 3e-2, 4e-2, 5e-2, 6e-2 ] #The components of the moment of inertia. Note only six components are stored because it is symmetric
 
 ghost_macroscale_domains:
         -
@@ -224,3 +226,9 @@ ghost_macroscale_domains:
                     name: free_nodeset_volume_7
                   - 
                     name: free_nodeset_volume_8
+          reference_density: #The density in the reference configuration
+                  type: constant #Only constant is currently recognized
+                  value: 2. #The density value in the reference configuration.
+          reference_moment_of_inertia: #The moment of inertia in the reference configuration
+                  type: constant #Only constant is currently recognized
+                  value: [ 1e-2, 2e-2, 3e-2, 4e-2, 5e-2, 6e-2 ] #The components of the moment of inertia. Note only six components are stored because it is symmetric

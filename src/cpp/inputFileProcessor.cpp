@@ -3749,6 +3749,16 @@ namespace inputFileProcessor{
         }
         _couplingODESolutionLocationFlag = _config[ "coupling_initialization" ][ "solve_coupling_odes_at_microdomains" ].as< bool >( );
 
+        if ( !_config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ] ){
+
+            _config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ] = false;
+            _useReconstructedVolumeForMassMatrix = false;
+
+        }
+
+        _useReconstructedVolumeForMassMatrix
+            = _config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ].as< bool >( );
+
         return NULL;
 
     }
@@ -4977,5 +4987,13 @@ namespace inputFileProcessor{
         return &_arlequinUpdatePenaltyParameter;
     }
 
+    bool inputFileProcessor::useReconstructedVolumeForMassMatrix( ){
+        /*!
+         * Use the reconstructed volume properties for the mass matrix rather than the 
+         * discrete points.
+         */
+
+        return _useReconstructedVolumeForMassMatrix;
+    }
 
 }
