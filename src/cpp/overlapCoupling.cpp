@@ -1066,7 +1066,7 @@ namespace overlapCoupling{
             std::cout << microWeight->first << ": " << microWeight->second << ": " << microDensity->second << ": " << microVolume->second << "\n";
             for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
-                MQ( nMicroDispDOF * node->second + i ) += ( 1 - microWeight->second ) * microDensity->second * microVolume->second;
+                MQ( nMicroDispDOF * node->second + i ) = ( 1 - microWeight->second ) * microDensity->second * microVolume->second;
 
             }
 
@@ -1213,6 +1213,10 @@ namespace overlapCoupling{
             }
 
         }
+
+        std::cout << "_MD_Diag:\n" << _MD_Diag << "\n";
+        std::cout << "MQ:\n" << MQ << "\n";
+        return new errorNode("derp","derp");
 
         // Compute AD and AQ
         Eigen::VectorXd AD = ( ( 1 + aD * gamma * ( *dt ) ) * _MD_Diag + mu_update * beta * ( *dt ) * ( *dt ) * WD ).cwiseInverse( );
