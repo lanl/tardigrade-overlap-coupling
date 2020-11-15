@@ -1123,7 +1123,7 @@ namespace overlapCoupling{
 
             for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
 
-                WD( nMacroDispDOF * node->second + i ) = macroWeight->second;
+                WD( nMacroDispDOF * node->second + i ) = std::fmin(std::fmax(macroWeight->second, 0.001), 0.999);
 
             }
 
@@ -1214,11 +1214,9 @@ namespace overlapCoupling{
 
         }
 
-        std::cout << "_MD_Diag:\n" << _MD_Diag << "\n";
-        std::cout << "MQ:\n" << MQ << "\n";
-        return new errorNode("derp","derp");
-
         // Compute AD and AQ
+        std::cout << "WD:\n" << WD << "\n";
+        std::cout << "WQ:\n" << WQ << "\n";
         Eigen::VectorXd AD = ( ( 1 + aD * gamma * ( *dt ) ) * _MD_Diag + mu_update * beta * ( *dt ) * ( *dt ) * WD ).cwiseInverse( );
         Eigen::VectorXd AQ = ( ( 1 + aQ * gamma * ( *dt ) ) * MQ + mu_update * beta * ( *dt ) * ( *dt ) * WQ ).cwiseInverse( );
 
@@ -1300,7 +1298,7 @@ namespace overlapCoupling{
 
         }
 
-        std::cerr << "\nUpdated macro deformations\n";
+        std::cerr << "\nUpdated macro accelerations\n";
         std::cerr << "gid, gid: R_1        R_2        R_3        U_1        U_2        U_3        PHI_11     PHI_12     PHI_13     PHI_21     PHI_22     PHI_23     PHI_31     PHI_32     PHI_33\n";
         for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
 
