@@ -2354,11 +2354,6 @@ namespace overlapCoupling{
             mass = integratedValues[ 1 ];
             centerOfMass = floatVector( integratedValues.begin( ) + 2, integratedValues.end( ) ) / mass;
 
-            std::cout << domainName << "\n";
-            std::cout << "volume: " << integratedValues[ 0 ] << "\n";
-            std::cout << "mass: " << mass << "\n";
-            std::cout << "centerOfMass: "; vectorTools::print( centerOfMass );
-
         }
         else{
 

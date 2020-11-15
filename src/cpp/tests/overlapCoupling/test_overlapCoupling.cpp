@@ -9504,7 +9504,6 @@ int test_overlapCoupling_initializeCoupling_Arlequin_reconstructed( std::ofstrea
         return 1;
     }
 
-    std::cout << "shape functions\n";
     cellDomainFloatVectorMap domainCOMSFAnswer
         =
         {
@@ -9589,7 +9588,6 @@ int test_overlapCoupling_initializeCoupling_Arlequin_reconstructed( std::ofstrea
         return 1;
     }
 
-    std::cout << "Shapefunction matrix\n";
     std::string xdmf_filename = "reference_information.xdmf";
     shared_ptr< XdmfReader > reader = XdmfReader::New( );
     shared_ptr< XdmfDomain > _readDomain = shared_dynamic_cast< XdmfDomain >( reader->read( xdmf_filename ) );
@@ -9677,13 +9675,12 @@ int test_overlapCoupling_initializeCoupling_Arlequin_reconstructed( std::ofstrea
     testNum += 1;
 
     //Check the center of mass interpolation matrix and the center of mass projector
-    std::cout << "center of mass interpolator\n";
     SparseMatrix centerOfMassInterpolator;
     error = overlapCoupling::readSparseMatrixFromXDMF( _readGrid, "centerOfMassInterpolator", centerOfMassInterpolator );
 
     if ( error ){
         error->print( );
-        results << "test_overlapCoupling_initializeCoupling_averaged_l2_projection & False\n";
+        results << "test_" + testName + " & False\n";
         return 1;
     }
 
@@ -9693,9 +9690,9 @@ int test_overlapCoupling_initializeCoupling_Arlequin_reconstructed( std::ofstrea
            1.4369616 , -0.41944997;
 
     Eigen::MatrixXd PA( 16, 1 );
-    PA << -0.40381902, -0.85441036, -0.64758047, -0.59150002, -0.05132026,
-          -0.46167635,  0.26993602, -0.09548531, -0.37851177,  0.45119406,
-           0.53527639, -0.35298579, -0.4960972 , -0.53141861, -0.51544242,
+    PA << -0.40381903, -0.85441036, -0.64758047, -0.59150002, -0.10167723,
+          -0.51778121,  0.13886224, -0.16634456, -0.37851177,  0.45119406,
+           0.53527639, -0.35298579, -0.49609721, -0.53141861, -0.51544242,
           -0.65371376;
     
     R = centerOfMassInterpolator * DX;
@@ -9708,7 +9705,6 @@ int test_overlapCoupling_initializeCoupling_Arlequin_reconstructed( std::ofstrea
     }
     testNum += 1;
 
-    std::cout <<"center of mass projector\n";
     Eigen::MatrixXd centerOfMassProjector;
     error = overlapCoupling::readDenseMatrixFromXDMF( _readGrid, "centerOfMassProjector", centerOfMassProjector );
 
@@ -9734,7 +9730,7 @@ int test_overlapCoupling_initializeCoupling_Arlequin_reconstructed( std::ofstrea
     remove( "homogenized_response.xdmf" );
     remove( "homogenized_response.h5" );
 
-    results << "test_overlapCoupling_initializeCoupling_Arlequin & True\n";
+    results << "test_" + testName + " & True\n";
     return 0;
 }
 
