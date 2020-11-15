@@ -2273,8 +2273,6 @@ namespace overlapCoupling{
 
         }
 
-        //TODO: Add ability to use the reconstructed mass centers for this to enable consistency with the 
-        //      homogenization.
         floatType   mass;
         floatVector centerOfMass;
 
