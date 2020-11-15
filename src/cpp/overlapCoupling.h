@@ -280,7 +280,8 @@ namespace overlapCoupling{
             errorOut processDomainMassData( const unsigned int &microIncrement, const std::string &domainName,
                                             domainFloatMap &domainMass, domainFloatVectorMap &domainCenterOfMass,
                                             domainFloatVectorMap &domainMomentsOfInertia,
-                                            std::unordered_map< uIntType, floatVector > &domainXiVectors );
+                                            std::unordered_map< uIntType, floatVector > &domainXiVectors,
+                                            std::unique_ptr< elib::Element > &element );
 
             //Compute initial values
             errorOut setReferenceStateFromIncrement( const unsigned int &microIncrement, const unsigned int &macroIncrement );
