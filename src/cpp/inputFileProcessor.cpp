@@ -3646,6 +3646,12 @@ namespace inputFileProcessor{
             }
 
         }
+        else{
+
+            _config[ "coupling_initialization" ][ "output_homogenized_response" ] = false;
+            _outputHomogenizedInformation = false;
+
+        }
 
         if ( _config[ "coupling_initialization" ][ "output_updated_dof" ] ){
 
