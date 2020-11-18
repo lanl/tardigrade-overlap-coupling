@@ -104,6 +104,10 @@ namespace overlapCoupling{
 
             floatVector getUpdatedMacroDisplacementDOF( );
 
+            floatVector getMicroAugmentedLagrangianForce( );
+
+            floatVector getMacroAugmentedLagrangianForce( );
+
 #ifdef TESTACCESS
             //Functions and attributes that will ONLY be accessible when compiled with TESTACCESS defined
             cellDomainFloatMap _test_domainMass;
@@ -524,6 +528,8 @@ namespace overlapCoupling{
 
             floatVector FQ, FD, Qe, De;
 
+            floatVector FALD, FALQ;
+
     };
 
     errorOut MADOutlierDetection( const floatVector &x, uIntVector &outliers, const floatType threshold = 10,
@@ -571,7 +577,9 @@ namespace overlapCoupling{
 
     errorOut runOverlapCoupling( const std::string &filename,
                                  DOFMap &microGlobalLocalNodeMap, floatVector &updatedMicroDisplacementDOF,
-                                 DOFMap &macroGlobalLocalNodeMap, floatVector &updatedMacroDisplacementDOF
+                                 floatVector &Lagrangian_FALQ,
+                                 DOFMap &macroGlobalLocalNodeMap, floatVector &updatedMacroDisplacementDOF,
+                                 floatVector &Lagrangian_FALD
                                );
 
 }
