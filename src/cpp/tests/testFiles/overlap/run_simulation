@@ -1,0 +1,2 @@
+source clean_files
+/home/nathan/research/tardigrade/tardigrade-opt -i macroscale.i
