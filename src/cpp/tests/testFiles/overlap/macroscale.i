@@ -318,7 +318,7 @@
     u3     = disp_z
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     
   [../]
 
@@ -335,7 +335,7 @@
     u3     = disp_z
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     
   [../]
 
@@ -352,7 +352,7 @@
     u3     = disp_z
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     
   [../]
 
@@ -360,7 +360,7 @@
     type = MicromorphicInertialCouple
     component_i = 0
     component_j = 0
-    dof_num = 0
+    dof_num = 3
     variable = phi_xx
 
     #Coupled variables
@@ -375,7 +375,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -388,7 +388,7 @@
     type = MicromorphicInertialCouple
     component_i = 0
     component_j = 1
-    dof_num = 1
+    dof_num = 4
     variable = phi_xy
 
     #Coupled variables
@@ -403,7 +403,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -416,7 +416,7 @@
     type = MicromorphicInertialCouple
     component_i = 0
     component_j = 2
-    dof_num = 2
+    dof_num = 5
     variable = phi_xz
 
     #Coupled variables
@@ -431,7 +431,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -444,7 +444,7 @@
     type = MicromorphicInertialCouple
     component_i = 1
     component_j = 0
-    dof_num = 3
+    dof_num = 6
     variable = phi_yx
 
     #Coupled variables
@@ -459,7 +459,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -472,7 +472,7 @@
     type = MicromorphicInertialCouple
     component_i = 1
     component_j = 1
-    dof_num = 4
+    dof_num = 7
     variable = phi_yy
 
     #Coupled variables
@@ -487,7 +487,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -500,7 +500,7 @@
     type = MicromorphicInertialCouple
     component_i = 1
     component_j = 2
-    dof_num = 5
+    dof_num = 8
     variable = phi_yz
 
     #Coupled variables
@@ -515,7 +515,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -528,7 +528,7 @@
     type = MicromorphicInertialCouple
     component_i = 2
     component_j = 0
-    dof_num = 6
+    dof_num = 9
     variable = phi_zx
 
     #Coupled variables
@@ -543,7 +543,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -556,7 +556,7 @@
     type = MicromorphicInertialCouple
     component_i = 2
     component_j = 1
-    dof_num = 7
+    dof_num = 10
     variable = phi_zy
 
     #Coupled variables
@@ -571,7 +571,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -584,7 +584,7 @@
     type = MicromorphicInertialCouple
     component_i = 2
     component_j = 2
-    dof_num = 8
+    dof_num = 11
     variable = phi_zz
 
     #Coupled variables
@@ -599,7 +599,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 1e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -1108,103 +1108,91 @@
     [../]
 []
 
-[BCs]
-  [./bc_coupled_x]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 0
-    is_macroscale = True
-    variable = disp_x
-    boundary = 'all'
-  []
-  [./bc_coupled_y]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 1
-    is_macroscale = True
-    variable = disp_y
-    boundary = 'all'
-  []
+[NodalKernels]
+#  [./bc_coupled_x]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 0
+#    is_macroscale = True
+#    variable = disp_x
+#  []
+#  [./bc_coupled_y]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 1
+#    is_macroscale = True
+#    variable = disp_y
+#  []
   [./bc_coupled_z]
-    type = CoupledDirichletBC
+    type = CouplingForce
     overlap_coupling_object = macro_coupling
     component = 2
     is_macroscale = True
     variable = disp_z
-    boundary = 'all'
   []
-  [./bc_coupled_phi11]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 3
-    is_macroscale = True
-    variable = phi_xx
-    boundary = 'all'
-  []
-  [./bc_coupled_phi12]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 4
-    is_macroscale = True
-    variable = phi_xy
-    boundary = 'all'
-  []
-  [./bc_coupled_phi13]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 5
-    is_macroscale = True
-    variable = phi_xz
-    boundary = 'all'
-  []
-  [./bc_coupled_phi21]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 6
-    is_macroscale = True
-    variable = phi_yx
-    boundary = 'all'
-  []
-  [./bc_coupled_phi22]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 7
-    is_macroscale = True
-    variable = phi_yy
-    boundary = 'all'
-  []
-  [./bc_coupled_phi23]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 8
-    is_macroscale = True
-    variable = phi_yz
-    boundary = 'all'
-  []
-  [./bc_coupled_phi31]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 9
-    is_macroscale = True
-    variable = phi_zx
-    boundary = 'all'
-  []
-  [./bc_coupled_phi32]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 10
-    is_macroscale = True
-    variable = phi_zy
-    boundary = 'all'
-  []
-  [./bc_coupled_phi33]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 11
-    is_macroscale = True
-    variable = phi_zz
-    boundary = 'all'
-  []
+#  [./bc_coupled_phi11]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 3
+#    is_macroscale = True
+#    variable = phi_xx
+#  []
+#  [./bc_coupled_phi12]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 4
+#    is_macroscale = True
+#    variable = phi_xy
+#  []
+#  [./bc_coupled_phi13]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 5
+#    is_macroscale = True
+#    variable = phi_xz
+#  []
+#  [./bc_coupled_phi21]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 6
+#    is_macroscale = True
+#    variable = phi_yx
+#  []
+#  [./bc_coupled_phi22]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 7
+#    is_macroscale = True
+#    variable = phi_yy
+#  []
+#  [./bc_coupled_phi23]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 8
+#    is_macroscale = True
+#    variable = phi_yz
+#  []
+#  [./bc_coupled_phi31]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 9
+#    is_macroscale = True
+#    variable = phi_zx
+#  []
+#  [./bc_coupled_phi32]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 10
+#    is_macroscale = True
+#    variable = phi_zy
+#  []
+#  [./bc_coupled_phi33]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 11
+#    is_macroscale = True
+#    variable = phi_zz
+#  []
 []
 
 [Materials]
@@ -1242,7 +1230,8 @@
     type = TransientMultiApp
     input_files = 'microscale.i'
     catch_up = True
-    keep_solution_during_restore = True
+    keep_solution_during_restore = False
+    execute_on = "TIMESTEP_BEGIN"
   []
 []
 
@@ -1250,7 +1239,7 @@
   [overlap_coupling]
     type = MultiAppOverlapCouplingTransfer
     source_user_object = macro_coupling
-    target_user_object = macro_coupling
+    target_user_object = micro_coupling
     execute_on = "TIMESTEP_END"
     direction = "to_multiapp"
     multi_app = microscale
@@ -1266,7 +1255,7 @@
   nl_rel_tol = 1e-8
   nl_abs_tol = 1e-8
   nl_max_its = 100
-  picard_max_its = 2
+  picard_max_its = 30
   [./TimeIntegrator]
     type = NewmarkBeta
     beta = 0.25

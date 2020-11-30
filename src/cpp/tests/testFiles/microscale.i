@@ -5,7 +5,7 @@
 ############################################################
 
 [Mesh]
-  file = /media/nathan/projects/overlapTestMeshes/microscale.e
+  file = /media/nathan/projects/overlapTestMeshes/microscale_small.e
 []
 
 [GlobalParams]
@@ -25,7 +25,7 @@
 []
 
 [BCs]
-  active = 'left_x bottom_y front_z'
+  active = 'left_x bottom_y front_z back_z'
   [./left_x]
     type = DirichletBC
     variable = disp_x
@@ -46,6 +46,13 @@
     boundary = 'front'
     preset = true
     function = front_bc
+  [../]
+  [./back_z]
+    type = DirichletBC
+    variable = disp_z
+    boundary = 'back'
+    preset = true
+    value = 0
   [../]
 []
 

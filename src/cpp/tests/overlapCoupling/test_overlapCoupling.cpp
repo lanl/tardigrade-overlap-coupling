@@ -9100,9 +9100,14 @@ int test_overlapCoupling_runOverlapCoupling_Arlequin_realistic( std::ofstream &r
     floatVector updatedMicroDisplacementDOFResult;
     floatVector updatedMacroDisplacementDOFResult;
 
+    floatVector microAugmentedLagrangianForceResult;
+    floatVector macroAugmentedLagrangianForceResult;
+
     errorOut error = overlapCoupling::runOverlapCoupling( filename,
                                                           microGlobalLocalNodeMap, updatedMicroDisplacementDOFResult,
-                                                          macroGlobalLocalNodeMap, updatedMacroDisplacementDOFResult
+                                                          microAugmentedLagrangianForceResult,
+                                                          macroGlobalLocalNodeMap, updatedMacroDisplacementDOFResult,
+                                                          macroAugmentedLagrangianForceResult
                                                         );
 
     if ( error ){
@@ -9764,8 +9769,8 @@ int temp_processBigFile( ){
 
     std::string filename = "testConfig.yaml";
     overlapCoupling::DOFMap d1, d2;
-    floatVector f1, f2;
-    errorOut error = overlapCoupling::runOverlapCoupling( filename, d1, f1, d2, f2 );
+    floatVector f1, f2, f3, f4;
+    errorOut error = overlapCoupling::runOverlapCoupling( filename, d1, f1, f2, d2, f3, f4 );
     if ( error ){
         error->print( );
     }
@@ -9815,7 +9820,7 @@ int main(){
 //    test_computeMicromorphicElementInternalForceVector( results );
 //    test_readWriteSparseMatrixToXDMF( results );
 //    test_readWriteDenseMatrixToXDMF( results );
-
+//
 //    temp_processBigFile( );
 
     //Close the results file

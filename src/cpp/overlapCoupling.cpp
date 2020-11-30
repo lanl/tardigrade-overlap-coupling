@@ -1033,17 +1033,24 @@ namespace overlapCoupling{
 
         //Get the required DOF values
         const std::unordered_map< uIntType, floatVector > *microDisplacements         = _inputProcessor.getMicroDisplacements( );
+        const std::unordered_map< uIntType, floatVector > *microVelocities            = _inputProcessor.getMicroVelocities( );
+        const std::unordered_map< uIntType, floatVector > *microAccelerations         = _inputProcessor.getMicroAccelerations( );
         const std::unordered_map< uIntType, floatVector > *previousMicroDisplacements = _inputProcessor.getPreviousMicroDisplacements( );
         const std::unordered_map< uIntType, floatVector > *previousMicroVelocities    = _inputProcessor.getPreviousMicroVelocities( );
         const std::unordered_map< uIntType, floatVector > *previousMicroAccelerations = _inputProcessor.getPreviousMicroAccelerations( );
 
         const std::unordered_map< uIntType, floatVector > *macroDispDOFVector         = _inputProcessor.getMacroDispDOFVector( );
+        const std::unordered_map< uIntType, floatVector > *macroVelocities            = _inputProcessor.getMacroVelocities( );
+        const std::unordered_map< uIntType, floatVector > *macroAccelerations         = _inputProcessor.getMacroAccelerations( );
         const std::unordered_map< uIntType, floatVector > *previousMacroDispDOFVector = _inputProcessor.getPreviousMacroDispDOFVector( );
         const std::unordered_map< uIntType, floatVector > *previousMacroVelocities    = _inputProcessor.getPreviousMacroVelocities( );
         const std::unordered_map< uIntType, floatVector > *previousMacroAccelerations = _inputProcessor.getPreviousMacroAccelerations( );
         const std::unordered_map< uIntType, floatType > *macroArlequinWeights = _inputProcessor.getMacroArlequinWeights( );
 
         Eigen::VectorXd Q( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
+        Eigen::VectorXd QDot( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
+        Eigen::VectorXd QDotDot( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
+
         Eigen::VectorXd MQ( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
         Eigen::VectorXd WQ( nMicroDispDOF * microGlobalToLocalDOFMap->size( ) );
         std::cerr << "Building Q and MQ\n";
@@ -1097,6 +1104,36 @@ namespace overlapCoupling{
 
             }
 
+            auto microVelocity = microVelocities->find( node->first );
+
+            if ( microVelocity == microVelocities->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                                      " not found in micro velocity vector" );
+
+            }
+
+            for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
+
+                QDot( nMicroDispDOF * node->second + i ) = microVelocity->second[ i ];
+
+            }
+
+            auto microAcceleration = microAccelerations->find( node->first );
+
+            if ( microAcceleration == microAccelerations->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                                      " not found in micro acceleration vector" );
+
+            }
+
+            for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
+
+                QDotDot( nMicroDispDOF * node->second + i ) = microAcceleration->second[ i ];
+
+            }
+
             for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
                 WQ( nMicroDispDOF * node->second + i ) = ( 1 - microWeight->second );
@@ -1106,6 +1143,9 @@ namespace overlapCoupling{
         }
 
         Eigen::VectorXd D( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
+        Eigen::VectorXd DDot( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
+        Eigen::VectorXd DDotDot( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
+
         Eigen::VectorXd WD( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ) );
         for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
 
@@ -1118,18 +1158,48 @@ namespace overlapCoupling{
 
             }
 
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                D( nMacroDispDOF * node->second + i ) = macroDisplacement->second[ i ];
+
+            }
+
+            auto macroVelocity = macroVelocities->find( node->first );
+
+            if ( macroVelocity == macroVelocities->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                                      " not found in macro velocity DOF vector" );
+
+            }
+
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                DDot( nMacroDispDOF * node->second + i ) = macroVelocity->second[ i ];
+
+            }
+
+            auto macroAcceleration = macroAccelerations->find( node->first );
+
+            if ( macroAcceleration == macroAccelerations->end( ) ){
+
+                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                                      " not found in macro acceleration DOF vector" );
+
+            }
+
+            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
+
+                DDotDot( nMacroDispDOF * node->second + i ) = macroAcceleration->second[ i ];
+
+            }
+
             auto macroWeight = macroArlequinWeights->find( node->first );
 
             if ( macroWeight == macroArlequinWeights->end( ) ){
 
                 return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
                                       " not found in macro Arlequin weight map" );
-
-            }
-
-            for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
-
-                D( nMacroDispDOF * node->second + i ) = macroDisplacement->second[ i ];
 
             }
 
@@ -1226,6 +1296,15 @@ namespace overlapCoupling{
 
         }
 
+        // Form the right hand vector for the computation of the Lagrange multiplier values
+        Eigen::Map< Eigen::VectorXd > _FD( FD.data( ), FD.size( ) ); 
+        Eigen::Map< Eigen::VectorXd > _FQ( FQ.data( ), FQ.size( ) );
+        Eigen::Map< Eigen::VectorXd > _De( De.data( ), De.size( ) ); 
+        Eigen::Map< Eigen::VectorXd > _Qe( Qe.data( ), Qe.size( ) );
+
+//        // Compute the value of the Lagrangian from the micro-scale equation
+//        Eigen::VectorXd _Lagrange = MQ.asDiagonal( ) * QDotDot + aQ * MQ.asDiagonal( ) * QDot - _FQ - mu * ( _N * D - Q );
+
         // Compute AD and AQ
 //        std::cout << "WD:\n" << WD << "\n";
 //        std::cout << "WQ:\n" << WQ << "\n";
@@ -1234,14 +1313,8 @@ namespace overlapCoupling{
 
 //        std::cout << "AD:\n" << AD << "\n";
 //        std::cout << "AQ:\n" << AQ << "\n";
-
-        // Form the right hand vector for the computation of the Lagrange multiplier values
-        Eigen::Map< Eigen::VectorXd > _FD( FD.data( ), FD.size( ) ); 
-        Eigen::Map< Eigen::VectorXd > _FQ( FQ.data( ), FQ.size( ) );
-
-        Eigen::Map< Eigen::VectorXd > _De( De.data( ), De.size( ) ); 
-        Eigen::Map< Eigen::VectorXd > _Qe( Qe.data( ), Qe.size( ) );
-
+//
+//
         Eigen::VectorXd RHS = _N * _De - _Qe
                             + beta * ( *dt ) * ( *dt ) * ( _N * AD.asDiagonal( ) * ( _FD + mu_update * WD.asDiagonal( ) * ( D - _De ) ) - AQ.asDiagonal( ) * ( _FQ + mu_update * WQ.asDiagonal( ) * ( Q - _Qe ) ) );
 

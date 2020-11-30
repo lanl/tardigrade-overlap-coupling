@@ -67,7 +67,7 @@
   [../]
   [./density]
     type = Density
-    density = 2.
+    density = 1e-9
   [../]
 []
 
@@ -213,6 +213,20 @@
     family = LAGRANGE
   [../]
 
+  [./FCoupling_1 ]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FCoupling_2 ]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FCoupling_3 ]
+    order = FIRST
+    family = LAGRANGE
+  [../]
 []
 
 [AuxKernels]
@@ -364,7 +378,7 @@
 []
 
 [UserObjects]
-    [./macro_coupling]
+    [./micro_coupling]
         type = OverlapCoupling
         is_macroscale = False
         overlap_configuration_filename = "testConfig.yaml"
@@ -372,30 +386,30 @@
     [../]
 []
 
-[BCs]
-  [./bc_coupled_x]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 0
-    is_macroscale = False
-    variable = disp_x
-    boundary = 'all'
-  []
-  [./bc_coupled_y]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
-    component = 1
-    is_macroscale = False
-    variable = disp_y
-    boundary = 'all'
-  []
+[NodalKernels]
+#  [./bc_coupled_x]
+#    type = CouplingForce
+#    overlap_coupling_object = micro_coupling
+#    component = 0
+#    is_macroscale = False
+#    variable = disp_x
+#    save_in = FCoupling_1
+#  []
+#  [./bc_coupled_y]
+#    type = CouplingForce
+#    overlap_coupling_object = micro_coupling
+#    component = 1
+#    is_macroscale = False
+#    variable = disp_y
+#    save_in = FCoupling_2
+#  []
   [./bc_coupled_z]
-    type = CoupledDirichletBC
-    overlap_coupling_object = macro_coupling
+    type = CouplingForce
+    overlap_coupling_object = micro_coupling
     component = 2
     is_macroscale = False
     variable = disp_z
-    boundary = 'all'
+    save_in = FCoupling_3
   []
 []
 
@@ -405,8 +419,8 @@
   dt        = 1e-2
   solve_type = 'PJFNK'
 #  solve_type = 'NEWTON'
-  nl_rel_tol = 1e-9
-  nl_abs_tol = 1e-9
+  nl_rel_tol = 1e-10
+  nl_abs_tol = 1e-10
   nl_max_its = 20
   l_max_its  = 5
   [./TimeIntegrator]

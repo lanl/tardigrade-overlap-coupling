@@ -849,6 +849,11 @@
     order = FIRST
     family = LAGRANGE
   [../]
+
+  [./Coupling_3]
+    order = FIRST
+    family = LAGRANGE
+  [../]
 []
 
 [AuxKernels]
@@ -1046,6 +1051,15 @@
     preset = true
     value = 0
   [../]
+  [./front_z]
+    type = DirichletBC
+    #type = PresetBC
+    variable = disp_z
+    boundary = 'front'
+    #boundary = 'left right bottom top front back'
+    preset = true
+    value = 0
+  [../]
   [./back_z]
     type = FunctionDirichletBC
     #type = PresetBC
@@ -1132,4 +1146,24 @@
   [./xdmf]
     type = Xdmf
   [../]
+[]
+
+[UserObjects]
+    [./macro_coupling]
+        type = OverlapCoupling
+        is_macroscale = False
+        overlap_configuration_filename = "testConfig.yaml"
+        execute_on = "TIMESTEP_END"
+    [../]
+[]
+
+[NodalKernels]
+  [./bc_coupled_z]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 2
+    is_macroscale = True
+    variable = disp_z
+    save_in = Coupling_3
+  []
 []
