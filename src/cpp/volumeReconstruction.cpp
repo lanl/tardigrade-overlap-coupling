@@ -2120,7 +2120,6 @@ namespace volumeReconstruction{
             //Solve for the boundary point
             bool converged;
             bool fatalError;
-            bool singularJ;
 
             //Assemble the floating point argments matrix
             floatArgs.resize( 2 + 2 * points.size( ), floatVector( _dim, 0 ) );
@@ -2151,7 +2150,7 @@ namespace volumeReconstruction{
 
             }
 
-            error = solverTools::newtonRaphson(func, X0, X, converged, singularJ, fatalError, floatOuts, intOuts, floatArgs, intArgs );
+            error = solverTools::newtonRaphson(func, X0, X, converged, fatalError, floatOuts, intOuts, floatArgs, intArgs );
 
             if ( fatalError ){
 
