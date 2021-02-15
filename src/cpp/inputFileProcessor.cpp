@@ -956,7 +956,7 @@ namespace inputFileProcessor{
                         if ( !( *domain )[ "reference_density" ] ){
         
                             return new errorNode( "checkCommonDomainConfiguration",
-                                                  "The reference density is required for the macro-domian in entry " + std::to_string( indx ) +
+                                                  "The reference density is required for the macro-domain in entry " + std::to_string( indx ) +
                                                   " but is not defined." );
         
                         }
@@ -1016,7 +1016,7 @@ namespace inputFileProcessor{
                         if ( !( *domain )[ "reference_moment_of_inertia" ] ){
         
                             return new errorNode( "checkCommonDomainConfiguration",
-                                                  "The reference moment of inertia is required for the macro-domian in entry " +
+                                                  "The reference moment of inertia is required for the macro-domain in entry " +
                                                   std::to_string( indx ) + " but is not defined." );
         
                         }
