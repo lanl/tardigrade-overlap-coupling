@@ -302,6 +302,8 @@ namespace inputFileProcessor{
             bool _freeMacroMassPropertiesRequired = true; //Flag indicating if the free macro-domain
                                                           //mass properties are required. This *may*
                                                           //be something to be set from the input file
+            bool _ghostMacroMassPropertiesRequired = true;
+
             bool _increment_initialized = false;
             unsigned int _current_macroIncrement = 0;
             unsigned int _current_microIncrement = 0;

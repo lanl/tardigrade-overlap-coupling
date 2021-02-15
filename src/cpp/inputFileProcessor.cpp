@@ -733,7 +733,7 @@ namespace inputFileProcessor{
                                                         _free_micro_volume_sets,
                                                         _microDomainSurfaceCount,
                                                         _macroCellDomainMap,
-                                                        _freeMacroMassPropertiesRequired,
+                                                        _ghostMacroMassPropertiesRequired,
                                                         _macroReferenceDensityTypes,
                                                         _macroReferenceMomentOfInertiaTypes,
                                                         _macroReferenceDensities,
@@ -3769,6 +3769,7 @@ namespace inputFileProcessor{
         if ( _config[ "coupling_initialization" ][ "apply_micro_to_macro_filter" ] ){
 
             _isFiltering = _config[ "coupling_initialization" ][ "apply_micro_to_macro_filter" ].as< bool >( );
+            _ghostMacroMassPropertiesRequired = false;
 
         }
 
