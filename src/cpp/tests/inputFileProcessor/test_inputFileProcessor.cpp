@@ -2735,6 +2735,13 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    if ( reader.isFiltering( ) ){
+
+        results << "test_initializeIncrement (test 112) & False\n";
+        return 1;
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

@@ -3765,6 +3765,13 @@ namespace inputFileProcessor{
         _useReconstructedVolumeForMassMatrix
             = _config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ].as< bool >( );
 
+        _isFiltering = false;
+        if ( _config[ "coupling_initialization" ][ "apply_micro_to_macro_filter" ] ){
+
+            _isFiltering = _config[ "coupling_initialization" ][ "apply_micro_to_macro_filter" ].as< bool >( );
+
+        }
+
         return NULL;
 
     }
@@ -5000,6 +5007,15 @@ namespace inputFileProcessor{
          */
 
         return _useReconstructedVolumeForMassMatrix;
+    }
+
+    bool inputFileProcessor::isFiltering( ){
+        /*!
+         * Flag to indicate if the coupling is a filtering operation meaning no
+         * macroscale information is returned to the microscale
+         */
+
+        return _isFiltering;
     }
 
 }

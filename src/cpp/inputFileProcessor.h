@@ -169,6 +169,7 @@ namespace inputFileProcessor{
             bool macroInertialForceDefined( );
             bool extractPreviousDOFValues( );
             bool useReconstructedVolumeForMassMatrix( );
+            bool isFiltering( );
 
             //Core initialization routines
             errorOut initializeIncrement( const unsigned int microIncrement, const unsigned int macroIncrement );
@@ -427,6 +428,8 @@ namespace inputFileProcessor{
             std::unordered_map< unsigned int, stringVector > _macroCellDomainMap;
             std::unordered_map< std::string, uIntType > _microDomainIDMap;
             std::unordered_map< std::string, uIntType > _microDomainSurfaceCount;
+
+            bool _isFiltering = false;
 
     };
 
