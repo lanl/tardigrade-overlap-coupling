@@ -2786,19 +2786,21 @@ namespace inputFileProcessor{
         std::string configurationName = "displacement_variable_names";
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
 
-
         floatVector values;
-        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, values );
+        if ( !_isFiltering ){
 
-        if ( error ){
-
-            errorOut result = new errorNode( "extractMacroDisplacements",
-                                             "Error in the extraction of the macro displacements" );
-            result->addNext( error );
-            return result;
-
+            errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                            populateWithNullOnUndefined, configurationName,
+                                                                            configuration, flag, values );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "extractMacroDisplacements",
+                                                 "Error in the extraction of the macro displacements" );
+                result->addNext( error );
+                return result;
+    
+            }
         }
 
         _macroDisplacements.clear( );
@@ -2813,8 +2815,13 @@ namespace inputFileProcessor{
 
             }
 
-            _macroDisplacements.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
-                                                                values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            if ( _isFiltering ){
+                _macroDisplacements.emplace( n->first, floatVector( variableKeys.size( ), 0 ) );
+            }
+            else{
+                _macroDisplacements.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                    values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            }
 
         }
 
