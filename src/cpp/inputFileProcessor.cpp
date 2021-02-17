@@ -525,165 +525,161 @@ namespace inputFileProcessor{
             return result;
         }
 
-        if ( !_isFiltering ){
-
-            //Extract the timestamp of the macro domain at the indicated increment
-            error = extractMacroTime( macroIncrement );
+        //Extract the timestamp of the macro domain at the indicated increment
+        error = extractMacroTime( macroIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro timestamp" );
+            result->addNext( error );
+            return result;
+        }
+    
+        //Extract the macro displacements
+        error = extractMacroDisplacements( macroIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro displacements" );
+            result->addNext( error );
+            return result;
+        }
+    
+        //Extract the macro displacement DOF vector
+        error = extractMacroDispDOFVector( macroIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro displacement DOF vector" );
+            result->addNext( error );
+            return result;
+        }
+    
+        //Extract the macro velocities
+        error = extractMacroVelocities( macroIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro velocities" );
+            result->addNext( error );
+            return result;
+        }
+    
+        //Extract the macro accelerations
+        error = extractMacroAccelerations( macroIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro accelerations" );
+            result->addNext( error );
+            return result;
+        }
+    
+        if ( _extractPreviousDOFValues ){
+    
+            bool tmpFlag;
+            uIntType previousMacroIncrement = _config[ "coupling_initialization" ][ "previous_macro_increment" ].as< uIntType >( );
+    
+            //Extract the previous time
+            error = extractMacroTime( previousMacroIncrement, _previousMacroTime );
     
             if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro timestamp" );
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous micro time" );
                 result->addNext( error );
                 return result;
             }
+    
+            if ( !vectorTools::fuzzyEquals( _microTime - _previousMicroTime, _macroTime - _previousMacroTime ) ){
+    
+                return new errorNode( "initializeIncrement",
+                                      "The change in time between increments for the macro-scale and micro-scale is not consistent" );
+    
+            }
+    
+            _Dt = _macroTime - _previousMacroTime;
     
             //Extract the macro displacements
-            error = extractMacroDisplacements( macroIncrement );
-    
+            error = extractMacroDispDOFVector( previousMacroIncrement, tmpFlag, _previousMacroDispDOFVector );
+        
             if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro displacements" );
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro displacements" );
                 result->addNext( error );
                 return result;
             }
-    
-            //Extract the macro displacement DOF vector
-            error = extractMacroDispDOFVector( macroIncrement );
-    
-            if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro displacement DOF vector" );
-                result->addNext( error );
-                return result;
-            }
-    
+        
             //Extract the macro velocities
-            error = extractMacroVelocities( macroIncrement );
-    
+            error = extractMacroVelocities( previousMacroIncrement, tmpFlag, _previousMacroVelocities );
+        
             if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro velocities" );
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro velocities" );
                 result->addNext( error );
                 return result;
             }
-    
+        
             //Extract the macro accelerations
-            error = extractMacroAccelerations( macroIncrement );
-    
-            if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro accelerations" );
-                result->addNext( error );
-                return result;
-            }
-    
-            if ( _extractPreviousDOFValues ){
-    
-                bool tmpFlag;
-                uIntType previousMacroIncrement = _config[ "coupling_initialization" ][ "previous_macro_increment" ].as< uIntType >( );
-    
-                //Extract the previous time
-                error = extractMacroTime( previousMacroIncrement, _previousMacroTime );
-    
-                if ( error ){
-                    errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous micro time" );
-                    result->addNext( error );
-                    return result;
-                }
-    
-                if ( !vectorTools::fuzzyEquals( _microTime - _previousMicroTime, _macroTime - _previousMacroTime ) ){
-    
-                    return new errorNode( "initializeIncrement",
-                                          "The change in time between increments for the macro-scale and micro-scale is not consistent" );
-    
-                }
-    
-                _Dt = _macroTime - _previousMacroTime;
-    
-                //Extract the macro displacements
-                error = extractMacroDispDOFVector( previousMacroIncrement, tmpFlag, _previousMacroDispDOFVector );
+            error = extractMacroAccelerations( previousMacroIncrement, tmpFlag, _previousMacroAccelerations );
         
-                if ( error ){
-                    errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro displacements" );
-                    result->addNext( error );
-                    return result;
-                }
-        
-                //Extract the macro velocities
-                error = extractMacroVelocities( previousMacroIncrement, tmpFlag, _previousMacroVelocities );
-        
-                if ( error ){
-                    errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro velocities" );
-                    result->addNext( error );
-                    return result;
-                }
-        
-                //Extract the macro accelerations
-                error = extractMacroAccelerations( previousMacroIncrement, tmpFlag, _previousMacroAccelerations );
-        
-                if ( error ){
-                    errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro accelerations" );
-                    result->addNext( error );
-                    return result;
-                }
-    
-            }
-    
-            //Extract the macro internal forces
-            error = extractMacroInternalForces( macroIncrement );
-    
             if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro internal forces" );
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro accelerations" );
                 result->addNext( error );
                 return result;
             }
     
-            //Extract the macro inertial forces
-            error = extractMacroInertialForces( macroIncrement );
+        }
+    
+        //Extract the macro internal forces
+        error = extractMacroInternalForces( macroIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro internal forces" );
+            result->addNext( error );
+            return result;
+        }
+    
+        //Extract the macro inertial forces
+        error = extractMacroInertialForces( macroIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro inertial forces" );
+            result->addNext( error );
+            return result;
+        }
+    
+        //Extract the macro body forces / couples
+        error = extractMacroBodyForces( microIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro body forces and couples" );
+            result->addNext( error );
+            return result;
+        }
+    
+        //Extract the macro surface forces / couples
+        error = extractMacroSurfaceForces( microIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro surface forces and couples" );
+            result->addNext( error );
+            return result;
+        }
+    
+    
+        //Extract the macro external forces
+        error = extractMacroExternalForces( macroIncrement );
+    
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro external forces" );
+            result->addNext( error );
+            return result;
+        }
+    
+        if ( _useArlequinMethod ){
+    
+            error = extractMacroArlequinWeights( macroIncrement );
     
             if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro inertial forces" );
+    
+                errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the Arlequin macro node weights\n" );
                 result->addNext( error );
                 return result;
-            }
-    
-            //Extract the macro body forces / couples
-            error = extractMacroBodyForces( microIncrement );
-    
-            if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro body forces and couples" );
-                result->addNext( error );
-                return result;
-            }
-    
-            //Extract the macro surface forces / couples
-            error = extractMacroSurfaceForces( microIncrement );
-    
-            if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro surface forces and couples" );
-                result->addNext( error );
-                return result;
-            }
-    
-    
-            //Extract the macro external forces
-            error = extractMacroExternalForces( macroIncrement );
-    
-            if ( error ){
-                errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro external forces" );
-                result->addNext( error );
-                return result;
-            }
-    
-            if ( _useArlequinMethod ){
-    
-                error = extractMacroArlequinWeights( macroIncrement );
-    
-                if ( error ){
-    
-                    errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the Arlequin macro node weights\n" );
-                    result->addNext( error );
-                    return result;
-    
-                }
     
             }
-
+    
         }
 
         //Set the current increment
