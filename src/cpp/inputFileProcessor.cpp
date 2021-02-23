@@ -584,14 +584,14 @@ namespace inputFileProcessor{
                 return result;
             }
     
-            if ( !vectorTools::fuzzyEquals( _microTime - _previousMicroTime, _macroTime - _previousMacroTime ) ){
+            if ( !vectorTools::fuzzyEquals( _microTime - _previousMicroTime, _macroTime - _previousMacroTime ) && !_isFiltering ){
     
                 return new errorNode( "initializeIncrement",
                                       "The change in time between increments for the macro-scale and micro-scale is not consistent" );
     
             }
     
-            _Dt = _macroTime - _previousMacroTime;
+            _Dt = _microTime - _previousMicroTime;
     
             //Extract the macro displacements
             error = extractMacroDispDOFVector( previousMacroIncrement, tmpFlag, _previousMacroDispDOFVector );
@@ -2650,34 +2650,47 @@ namespace inputFileProcessor{
 
         //Get the values of the micro volumes from the output file
         floatVector values;
-        errorOut error = _macroscale->getSolutionData( increment,
-                                                       _config[ "coupling_initialization" ][ "arlequin_weighting_variable_name" ].as< std::string >( ),
-                                                       "Node", values );
 
-        if ( error ){
+        if ( !_isFiltering ){
 
-            errorOut result = new errorNode( "extractMacroArlequinWeights", "Error in extraction of the macro Arlequin nodal weights" );
-            result->addNext( error );
-            return result;
+            errorOut error = _macroscale->getSolutionData( increment,
+                                                           _config[ "coupling_initialization" ][ "arlequin_weighting_variable_name" ].as< std::string >( ),
+                                                           "Node", values );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "extractMacroArlequinWeights", "Error in extraction of the macro Arlequin nodal weights" );
+                result->addNext( error );
+                return result;
+    
+            }
 
         }
 
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
-            if ( n->second >= values.size( ) ){
+            if ( _isFiltering ){
 
-                return new errorNode( "extractMacroArlequinWeights", "The Arlequin weights vector is too short for the required index" );
+                _macroArlequinWeights.emplace( n->first, 0 );
 
             }
+            else{
 
-            _macroArlequinWeights.emplace( n->first, values[ n->second ] );
+                if ( n->second >= values.size( ) ){
+    
+                    return new errorNode( "extractMacroArlequinWeights", "The Arlequin weights vector is too short for the required index" );
+    
+                }
+    
+                _macroArlequinWeights.emplace( n->first, values[ n->second ] );
+
+            }
 
         }
 
         return NULL;
 
     }
-
 
     errorOut inputFileProcessor::extractMicroDisplacements( const unsigned int &increment ){
         /*!
@@ -2808,17 +2821,20 @@ namespace inputFileProcessor{
 
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
-            if ( n->second >= values.size( ) ){
-
-                return new errorNode( "extractMacroDisplacements",
-                                      "The outputDOF vector is too short for the required index" );
-
-            }
-
             if ( _isFiltering ){
+
                 _macroDisplacements.emplace( n->first, floatVector( variableKeys.size( ), 0 ) );
+
             }
             else{
+
+                if ( n->second >= values.size( ) ){
+    
+                    return new errorNode( "extractMacroDisplacements",
+                                          "The outputDOF vector is too short for the required index" );
+    
+                }
+
                 _macroDisplacements.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
                                                                     values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
             }
@@ -2878,16 +2894,20 @@ namespace inputFileProcessor{
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
         floatVector values;
 
-        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, values );
+        if ( !_isFiltering ){
 
-        if ( error ){
-
-            errorOut result = new errorNode( "extractMicroDispDOFVector",
-                                             "Error in the extraction of the micro displacement degree of freedom vector" );
-            result->addNext( error );
-            return result;
+            errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                            populateWithNullOnUndefined, configurationName,
+                                                                            configuration, flag, values );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "extractMicroDispDOFVector",
+                                                 "Error in the extraction of the micro displacement degree of freedom vector" );
+                result->addNext( error );
+                return result;
+    
+            }
 
         }
 
@@ -2896,15 +2916,24 @@ namespace inputFileProcessor{
 
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
-            if ( n->second >= values.size( ) ){
+            if ( _isFiltering ){
 
-                return new errorNode( "extractMacroDispDOFVector",
-                                      "The DOF vector is too short for the required index" );
+                macroDispDOFVector.emplace( n->first, floatVector( variableKeys.size( ), 0 ) );
 
             }
+            else{
 
-            macroDispDOFVector.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
-                                                               values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+                if ( n->second >= values.size( ) ){
+    
+                    return new errorNode( "extractMacroDispDOFVector",
+                                          "The DOF vector is too short for the required index" );
+    
+                }
+
+                macroDispDOFVector.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                   values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+
+            }
 
         }
 
