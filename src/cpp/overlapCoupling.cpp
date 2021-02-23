@@ -154,13 +154,227 @@ namespace overlapCoupling{
         std::cerr << "PROJECT THE DEGREES OF FREEDOM\n";
         YAML::Node couplingConfiguration = _inputProcessor.getCouplingInitialization( );
 
-        if ( !couplingConfiguration[ "projection_type" ].as< std::string >( ).compare( "arlequin" ) == 0 ){
+        domainFloatVectorMap centerOfMassDisplacements;
+        domainFloatVectorMap centerOfMassPhis;
 
-            error = applyKZProjection( macroIncrement, microIncrement );
+        if ( _inputProcessor.isFiltering( ) ){
+
+            // Solve for displacements directly
+            floatVector domainAMatrix( _dim * _dim, 0);
+            
+            // Loop through the Ghost Cells
+            const uIntVector *ghostMacroCellIds = _inputProcessor.getGhostMacroCellIds( );
+    
+            for ( auto cellID = ghostMacroCellIds->begin( ); cellID != ghostMacroCellIds->end( ); cellID++ ){
+    
+                // Get the centers of mass of the macro-domain
+                auto referenceCellCentersOfMass = _referenceFreeMicroDomainCentersOfMass.find( *cellID );
+    
+                if ( referenceCellCentersOfMass == _referenceFreeMicroDomainCentersOfMass.end( ) ){
+    
+                    return new errorNode( "processIncrement",
+                                          "The macro cell " + std::to_string( *cellID ) +
+                                          " was not found in the reference free micro domain centers of mass" );
+    
+                }
+
+                // Get the moments of inertia of the macro-domain
+                auto referenceMomentsOfInertia = _referenceFreeMicroDomainMomentsOfInertia.find( *cellID );
+    
+                if ( referenceMomentsOfInertia == _referenceFreeMicroDomainMomentsOfInertia.end( ) ){
+    
+                    return new errorNode( "processIncrement",
+                                          "The macro cell " + std::to_string( *cellID ) +
+                                          " was not found in the reference free micro domain moments of inertia" );
+    
+                }
+    
+                // Loop through the micro domains
+                for ( auto domain = referenceCellCentersOfMass->second.begin( ); domain != referenceCellCentersOfMass->second.end( ); domain++ ){
+
+                    auto currentCenterOfMass = _freeMicroDomainCentersOfMass.find( domain->first );
+
+                    if ( currentCenterOfMass == _freeMicroDomainCentersOfMass.end( ) ){
+
+                        return new errorNode( "processIncrement", "Micro domain " + domain->first +
+                                                                  " not found in the current free micro centers of mass" );
+
+                    }
+
+                    auto domainMass = _freeMicroDomainMasses.find( domain->first );
+
+                    if ( domainMass == _freeMicroDomainMasses.end( ) ){
+
+                        return new errorNode( "processIncrement", "Micro domain " + domain->first +
+                                                                  " not found in the current free micro domain mass" );
+
+                    }
+
+                    auto domainMomentOfInertia = referenceMomentsOfInertia->second.find( domain->first );
+
+                    if ( domainMomentOfInertia == referenceMomentsOfInertia->second.end( ) ){
+
+                        return new errorNode( "processIncrement", "Micro domain " + domain->first +
+                                                                  " not found in the reference free reference moments of inertia" );
+
+                    }
+
+                    floatVector invI = vectorTools::inverse( domainMomentOfInertia->second, _dim, _dim );
+
+                    // Compute the center of mass displacement
+                    centerOfMassDisplacements.emplace( domain->first, currentCenterOfMass->second - domain->second );
+
+                    // Loop through the micro nodes
+
+                    //Get the domain node ids
+                    uIntVector microDomainNodes;
+                    errorOut error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, domain->first, microDomainNodes );
+    
+                    if ( error ){
+    
+                        errorOut result = new errorNode( "processIncrement",
+                                                         "Error in getting the node ids for the domain ( " + domain->first + " )" );
+                        result->addNext( error );
+                        return result;
+    
+                    }
+    
+                    const std::unordered_map< uIntType, floatVector > *microDisplacements = _inputProcessor.getMicroDisplacements( );
+                    const std::unordered_map< uIntType, floatType >   *microVolumes       = _inputProcessor.getMicroVolumes( );
+                    const std::unordered_map< uIntType, floatType >   *microDensities     = _inputProcessor.getMicroDensities( );
+                    const std::unordered_map< uIntType, floatType >   *microWeights       = _inputProcessor.getMicroWeights( );
+                      
+                    domainAMatrix = floatVector( _dim * _dim, 0 );
+                    for ( auto it = microDomainNodes.begin( ); it != microDomainNodes.end( ); it++ ){
+    
+                        auto microDisplacement = microDisplacements->find( *it );
+    
+                        if ( microDisplacement == microDisplacements->end( ) ){
+    
+                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                                                  " was not found in the micro displacement map" );
+    
+                        }
+
+                        auto microVolume = microVolumes->find( *it );
+
+                        if ( microVolume == microVolumes->end( ) ){
+
+                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                                                                      " was not found in the micro volume map" );
+
+                        }
+
+                        auto microDensity = microDensities->find( *it );
+
+                        if ( microDensity == microDensities->end( ) ){
+
+                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                                                                      " was not found in the micro density map" );
+
+                        }
+
+                        auto microWeight = microWeights->find( *it );
+
+                        if ( microWeight == microWeights->end( ) ){
+
+                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                                                                      " was not found in the micro weight map" );
+
+                        }
+
+                        auto microReferencePosition = _inputProcessor.getMicroNodeReferencePositions( )->find( *it );
+
+                        if ( microReferencePosition == _inputProcessor.getMicroNodeReferencePositions( )->end( ) ){
+
+                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                                                                      " was not found in the micro reference position map" );
+
+                        }
+
+                        domainAMatrix += vectorTools::appendVectors( vectorTools::dyadic( microDisplacement->second, microReferencePosition->second - domain->second ) )
+                                       * microVolume->second * microDensity->second * microWeight->second / domainMass->second;
+
+                    }
+
+                    centerOfMassPhis.emplace( domain->first, vectorTools::matrixMultiply( domainAMatrix, invI, _dim, _dim, _dim, _dim ) );
+
+                }
+
+            }
+
+            // Project the center of mass DOF values to the nodes
+            auto microDomainIDMap = _inputProcessor.getMicroDomainIDMap( );
+            unsigned int nMacroDOF = _dim + ( _dim * _dim );
+
+            Eigen::MatrixXd comValues( microDomainIDMap->size( ), 1 );
+            Eigen::MatrixXd nodeValues;
+
+            // Project the displacements
+            _projected_ghost_macro_displacement.clear( );
+            _projected_ghost_macro_displacement.resize( _inputProcessor.getGhostMacroNodeIds( )->size( ) * nMacroDOF );
+
+            for ( unsigned int index = 0; index < _dim; index++ ){
+
+                for ( auto domain = microDomainIDMap->begin( ); domain != microDomainIDMap->end( ); domain++ ){
+    
+                    auto us = centerOfMassDisplacements.find( domain->first );
+    
+                    if ( us == centerOfMassDisplacements.end( ) ){
+    
+                        return new errorNode( "processIncrement", "Micro domain " + domain->first + " was not found in the center of mass displacement map" );
+    
+                    }
+    
+                    comValues( domain->second, 0 ) = us->second[ index ];
+    
+                }
+   
+                nodeValues = _centerOfMassProjector * comValues;
+
+                // Assign the values
+                for ( unsigned int i = 0; i < nodeValues.size( ); i++ ){
+
+                    _projected_ghost_macro_displacement[ nMacroDOF * i + index ] = nodeValues( i );
+
+                }
+
+            }
+
+            for ( unsigned int index = 0; index < _dim * _dim; index++ ){
+
+                for ( auto domain = microDomainIDMap->begin( ); domain != microDomainIDMap->end( ); domain++ ){
+
+                    auto phis = centerOfMassPhis.find( domain->first );
+
+                    if ( phis == centerOfMassPhis.end( ) ){
+
+                        return new errorNode( "processIncrement", "Micro domain " + domain->first + " was not found in the phi map" );
+
+                    }
+
+                    comValues( domain->second, 0 ) = phis->second[ index ];
+
+                }
+
+                nodeValues = _centerOfMassProjector * comValues;
+
+                // Assign the values
+                for ( unsigned int i = 0; i < nodeValues.size( ); i++ ){
+
+                    _projected_ghost_macro_displacement[ nMacroDOF * i + index + _dim ] = nodeValues( i );
+
+                }
+
+            }
+
+            // Homogenize the response
+
+            error = homogenizeMicroScale( microIncrement );
 
             if ( error ){
     
-                errorOut result = new errorNode( "processIncrement", "Error in applying the Klein-Zimmerman projection" );
+                errorOut result = new errorNode( "processIncrement", "Error in the homogenization of the micro-scale to the macro-scale" );
                 result->addNext( error );
                 return result;
     
@@ -169,23 +383,38 @@ namespace overlapCoupling{
         }
         else{
 
-            error = applyArlequinProjection( macroIncrement, microIncrement );
-
-            if ( error ){
-
-                errorOut result = new errorNode( "processIncrement", "Error in applying the Arlequin projection" );
-                result->addNext( error );
-                return result;
-
+            if ( !couplingConfiguration[ "projection_type" ].as< std::string >( ).compare( "arlequin" ) == 0 ){
+    
+                error = applyKZProjection( macroIncrement, microIncrement );
+    
+                if ( error ){
+        
+                    errorOut result = new errorNode( "processIncrement", "Error in applying the Klein-Zimmerman projection" );
+                    result->addNext( error );
+                    return result;
+        
+                }
+    
+            }
+            else{
+    
+                error = applyArlequinProjection( macroIncrement, microIncrement );
+    
+                if ( error ){
+    
+                    errorOut result = new errorNode( "processIncrement", "Error in applying the Arlequin projection" );
+                    result->addNext( error );
+                    return result;
+    
+                }
+    
             }
 
         }
 
-
         if ( !couplingConfiguration [ "output_homogenized_response" ].IsScalar( ) ){
 
             //Output the homogenized material response to a data file
-            std::cout << "outputting the homogenized response\n";
             error = outputHomogenizedResponse( );
             if ( error ){
 
@@ -2969,7 +3198,7 @@ namespace overlapCoupling{
                                                              domainFloatVectorMap &freeDomainCM,
                                                              domainFloatVectorMap &ghostDomainCM ){
         /*!
-         * Compute the centers of mass for an micro increment. Also computes the mass of the micro-scale domains
+         * Compute the centers of mass for a micro increment. Also computes the mass of the micro-scale domains
          *
          * :param const unsigned int microIncrement: The micro increment at which to compute the centers of mass
          * :param const unsigned int macroIncrement: The macro increment at which to compute the centers of mass
@@ -3296,7 +3525,7 @@ namespace overlapCoupling{
 
         if ( point.size( ) != _dim ){
 
-            return new errorNode( "computeShapeFunctionsAtPoints",
+            return new errorNode( "computeShapeFunctionsAtPoint",
                                   "This function only works for a single point of dimension " + std::to_string( _dim ) );
 
         }
@@ -3311,7 +3540,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeShapeFunctionsAtPoints",
+            errorOut result = new errorNode( "computeShapeFunctionsAtPoint",
                                              "Error when computing shape functions" );
             result->addNext( error );
             return result;
@@ -3343,6 +3572,14 @@ namespace overlapCoupling{
         std::unique_ptr< elib::Element > element;
         errorOut error = overlapCoupling::buildMacroDomainElement( cellID, nodeLocations,
                                                                    connectivity, element );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeShapeFunctionsAtPoints", "Error in element formulation" );
+            result->addNext( error );
+            return result;
+
+        }
 
         //Make sure the number of points and the size of the output are consistent
         unsigned nPoints = points.size( );
@@ -3411,6 +3648,14 @@ namespace overlapCoupling{
         std::unique_ptr< elib::Element > element;
         errorOut error = overlapCoupling::buildMacroDomainElement( cellID, nodeReferenceLocations, nodeDisplacements,
                                                                    connectivity, element );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeShapeFunctionsAtPoints", "Error in element formulation" );
+            result->addNext( error );
+            return result;
+
+        }
 
         //Make sure the number of points and the size of the output are consistent
         unsigned nPoints = points.size( );
@@ -3483,6 +3728,14 @@ namespace overlapCoupling{
         std::unique_ptr< elib::Element > element;
         errorOut error = overlapCoupling::buildMacroDomainElement( cellID, nodeReferenceLocations, nodeDisplacements,
                                                                    connectivity, element );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "computeShapeFunctionGradientsAtPoints", "Error in element formulation" );
+            result->addNext( error );
+            return result;
+
+        }
 
         //Make sure the number of points and the size of the output are consistent
         unsigned nPoints = points.size( ) / _dim;
@@ -4204,8 +4457,6 @@ namespace overlapCoupling{
         /*!
          * Homogenize the micro-scale properties to the macro scale.
          *
-         * TODO: Allow for update to ghost micromorphic DOF prior to homogenization for the filtering case
-         *
          * :param const unsigned int &microIncrement: The increment at the micro-scale to homogenize
          */
 
@@ -4379,10 +4630,63 @@ namespace overlapCoupling{
                    macroCell != _inputProcessor.getGhostMacroCellIds( )->end( );
                    macroCell++ ){
 
-            //Build the macro element
-            error = overlapCoupling::buildMacroDomainElement( *macroCell, *macroNodeReferenceLocations,
-                                                              *macroDisplacements, *macroConnectivity,
-                                                              element );
+    
+            if ( _inputProcessor.isFiltering( ) ){
+    
+                std::unordered_map< uIntType, floatVector > projectedMacroDisplacements;
+    
+                auto cellConnectivity = macroConnectivity->find( *macroCell );
+    
+                if ( cellConnectivity == macroConnectivity->end( ) ){
+    
+                    return new errorNode( "homogenizeMicroscale", "Macro cell " + std::to_string( *macroCell ) + " not found in connectivity map" );
+    
+                }
+
+                auto macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+                unsigned int nMacroFreeNodes = _inputProcessor.getFreeMacroNodeIds( )->size( ); // I anticipate this should always be zero
+
+                unsigned int nMacroDOF = _dim + _dim * _dim;
+
+                for ( auto node = cellConnectivity->second.begin( ) + 1; node != cellConnectivity->second.end( ); node++ ){
+
+                    auto local_node = macroGlobalToLocalDOFMap->find( *node );
+
+                    if ( local_node == macroGlobalToLocalDOFMap->end( ) ){
+
+                        return new errorNode( "homogenizeMicroscale", "Micro node " + std::to_string( *node) + " not found in the global to local map" );
+
+                    }
+
+                    projectedMacroDisplacements.emplace( *node, floatVector( _projected_ghost_macro_displacement.begin( ) + nMacroDOF * local_node->second,
+                                                                             _projected_ghost_macro_displacement.begin( ) + nMacroDOF * local_node->second + 3 ) );
+
+                }
+
+                //Build the macro element
+                error = overlapCoupling::buildMacroDomainElement( *macroCell, *macroNodeReferenceLocations,
+                                                                  projectedMacroDisplacements, *macroConnectivity,
+                                                                  element );
+ 
+            }
+            else{
+    
+                //Build the macro element
+                error = overlapCoupling::buildMacroDomainElement( *macroCell, *macroNodeReferenceLocations,
+                                                                  *macroDisplacements, *macroConnectivity,
+                                                                  element );
+
+            }
+
+            if ( error ){
+
+                errorOut result = new errorNode( "homogenizeMicroScale",
+                                                 "Error constructing the macro element" );
+                result->addNext( error );
+                return result;
+
+            }
 
             //Get the micro domain names within this cell
             auto microDomains = macroCellToMicroDomainMap->find( *macroCell );
@@ -5154,8 +5458,8 @@ namespace overlapCoupling{
         //Get the centers of mass of the surface regions
 
         dataCountAtPoint = 1     //Surface area of region
-                         + 1     //Mass of region
-                         + _dim; //Micro point position
+                         + 1;    //Mass of region
+//                         + _dim; //Micro point position
 
         dataAtMicroPoints.clear( );
         dataAtMicroPoints.reserve( dataCountAtPoint * microDomainNodeIDs.size( ) );
@@ -5177,19 +5481,19 @@ namespace overlapCoupling{
                                       "Micro node " + std::to_string( *node ) + " was not found in the micro reference position map" );
             }
 
-            auto microDisplacement = microDisplacements->find( *node );
-            if ( microDisplacement == microDisplacements->end( ) ){
-                return new errorNode( "computeDomainSurfaceAverages",
-                                      "Micro node " + std::to_string( *node ) + " was not found in the micro displacement map" );
-            }
-
-            floatVector microPoint = microReferencePosition->second + microDisplacement->second;
-
-            for ( unsigned int i = 0; i < microPoint.size( ); i++ ){
-
-                dataAtMicroPoints.push_back( microDensity->second * microPoint[ i ] );
-
-            }
+//            auto microDisplacement = microDisplacements->find( *node );
+//            if ( microDisplacement == microDisplacements->end( ) ){
+//                return new errorNode( "computeDomainSurfaceAverages",
+//                                      "Micro node " + std::to_string( *node ) + " was not found in the micro displacement map" );
+//            }
+//
+//            floatVector microPoint = microReferencePosition->second + microDisplacement->second;
+//
+//            for ( unsigned int i = 0; i < microPoint.size( ); i++ ){
+//
+//                dataAtMicroPoints.push_back( microDensity->second * microPoint[ i ] );
+//
+//            }
 
         }
 
@@ -5209,7 +5513,7 @@ namespace overlapCoupling{
 
             if ( ( *sN ).size( ) > 0 ){
 
-                //Perform the surface integration
+                // Perform the surface integration
                 uIntVector *nodesOnSurface = &( *sN );
                 error = reconstructedVolume->performSurfaceIntegration( dataAtMicroPoints, dataCountAtPoint,
                                                                         integratedValue, nodesOnSurface,
@@ -5225,15 +5529,31 @@ namespace overlapCoupling{
                     return result;
     
                 }
-    
-                //Extract the region surface areas and the region surface densities
-                homogenizedSurfaceRegionAreas[  macroCellID ][ microDomainName ][ index ] = integratedValue[ 0 ];
+
+                // Extract the region surface areas and the region surface densities
+                homogenizedSurfaceRegionAreas[ macroCellID ][ microDomainName ][ index ] = integratedValue[ 0 ];
                 regionDensities[ index ] = integratedValue[ 1 ] / integratedValue[ 0 ];
 
-                floatVector centerOfMass( integratedValue.begin( ) + 2,
-                                          integratedValue.begin( ) + 2 + _dim );
-                centerOfMass /= integratedValue[ 1 ];
-   
+                // Perform the position weighted surface integration
+                error = reconstructedVolume->performPositionWeightedSurfaceIntegration( dataAtMicroPoints, dataCountAtPoint,
+                                                                                        integratedValue, nodesOnSurface,
+                                                                                        NULL,
+                                                                                        &subdomainNodeNormals[ index ] );
+
+                if ( error ){
+    
+                    errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                                                     "Error in the integration of the position weighted macro surface ( "
+                                                     + std::to_string( sN - subdomainNodeIDs.begin( ) ) + " )" );
+                    result->addNext( error );
+                    return result;
+    
+                }
+
+                floatVector centerOfMass( integratedValue.begin( ) + _dim,
+                                          integratedValue.begin( ) + 2 * _dim );
+                centerOfMass /= ( homogenizedSurfaceRegionAreas[ macroCellID ][ microDomainName ][ index ] * regionDensities[ index ] );
+
                 for ( uIntType i = 0; i < _dim; i++ ){
 
                     homogenizedSurfaceRegionCentersOfMass[ macroCellID ][ microDomainName ][ index * _dim + i ] = centerOfMass[ i ];
@@ -5322,7 +5642,7 @@ namespace overlapCoupling{
                                                                             integratedValue, nodesOnSurface,
                                                                             NULL,
                                                                             &subdomainNodeNormals[ index ], useMacroNormals );
-    
+
                 if ( error ){
     
                     errorOut result = new errorNode( "computeDomainSurfaceAverages",
@@ -5341,7 +5661,7 @@ namespace overlapCoupling{
                 //Compute the couples
                 floatVector regionCenterOfMass( homogenizedSurfaceRegionCentersOfMass[ macroCellID ][ microDomainName ].begin( ) + _dim * index,
                                                 homogenizedSurfaceRegionCentersOfMass[ macroCellID ][ microDomainName ].begin( ) + _dim * ( index + 1 ) );
-    
+
                 error = reconstructedVolume->performRelativePositionSurfaceFluxIntegration( dataAtMicroPoints, dataCountAtPoint,
                                                                                             regionCenterOfMass, integratedValue,
                                                                                             nodesOnSurface,
@@ -5363,7 +5683,6 @@ namespace overlapCoupling{
     //            homogenizedSurfaceRegionCouples[ macroCellID ]
     //                = vectorTools::appendVectors( { homogenizedSurfaceRegionCouples[ macroCellID ],
     //                                                integratedValue } );
-    
                 for ( uIntType i = 0; i < _dim * _dim; i++ ){
     
                     homogenizedSurfaceRegionCouples[ macroCellID ][ microDomainName ][ _dim * _dim * index + i ]
@@ -5396,9 +5715,55 @@ namespace overlapCoupling{
 
         //Form the finite element representation of the macro-scale
         std::unique_ptr< elib::Element > element;
-        errorOut error = overlapCoupling::buildMacroDomainElement( macroCellID, *macroNodeReferenceLocations,
-                                                                   *macroDisplacements, *macroConnectivity,
-                                                                   element );
+        errorOut error;
+
+        std::unordered_map< uIntType, floatVector > projectedMacroDisplacements;
+    
+        if ( _inputProcessor.isFiltering( ) ){
+    
+            auto cellConnectivity = macroConnectivity->find( macroCellID );
+    
+            if ( cellConnectivity == macroConnectivity->end( ) ){
+    
+                return new errorNode( "homogenizeMicroscale", "Macro cell " + std::to_string( macroCellID ) + " not found in connectivity map" );
+    
+            }
+
+            auto macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+
+            unsigned int nMacroFreeNodes = _inputProcessor.getFreeMacroNodeIds( )->size( ); // I anticipate this should always be zero
+
+            unsigned int nMacroDOF = _dim + _dim * _dim;
+
+            for ( auto node = cellConnectivity->second.begin( ) + 1; node != cellConnectivity->second.end( ); node++ ){
+
+                auto local_node = macroGlobalToLocalDOFMap->find( *node );
+
+                if ( local_node == macroGlobalToLocalDOFMap->end( ) ){
+
+                    return new errorNode( "homogenizeMicroscale", "Micro node " + std::to_string( *node) + " not found in the global to local map" );
+
+                }
+
+                projectedMacroDisplacements.emplace( *node, floatVector( _projected_ghost_macro_displacement.begin( ) + nMacroDOF * local_node->second,
+                                                                         _projected_ghost_macro_displacement.begin( ) + nMacroDOF * local_node->second + 3 ) );
+
+            }
+
+            //Build the macro element
+            error = overlapCoupling::buildMacroDomainElement( macroCellID, *macroNodeReferenceLocations,
+                                                              projectedMacroDisplacements, *macroConnectivity,
+                                                              element );
+ 
+        }
+        else{
+    
+            //Build the macro element
+            error = overlapCoupling::buildMacroDomainElement(  macroCellID, *macroNodeReferenceLocations,
+                                                              *macroDisplacements, *macroConnectivity,
+                                                              element );
+
+        }
 
         if ( error ){
 
@@ -5425,10 +5790,22 @@ namespace overlapCoupling{
         
 
         std::unordered_map< uIntType, floatVector > shapefunctionsAtCentersOfMassByID;
-        error = overlapCoupling::computeShapeFunctionsAtPoints( macroCellID, *macroNodeReferenceLocations, *macroDisplacements,
-                                                                *macroConnectivity,
-                                                                centerOfMassMap,
-                                                                shapefunctionsAtCentersOfMassByID );
+
+        if ( _inputProcessor.isFiltering( ) ){
+
+            error = overlapCoupling::computeShapeFunctionsAtPoints( macroCellID, *macroNodeReferenceLocations,
+                                                                    projectedMacroDisplacements, *macroConnectivity,
+                                                                    centerOfMassMap, shapefunctionsAtCentersOfMassByID );
+
+        }
+        else{
+
+            error = overlapCoupling::computeShapeFunctionsAtPoints( macroCellID, *macroNodeReferenceLocations, *macroDisplacements,
+                                                                    *macroConnectivity,
+                                                                    centerOfMassMap,
+                                                                    shapefunctionsAtCentersOfMassByID );
+
+        }
 
         if ( error ){
 
@@ -9571,11 +9948,54 @@ namespace overlapCoupling{
 
                 //Form the element
                 std::unique_ptr< elib::Element > element;
-                error = buildMacroDomainElement( *cellId,
-                                                 *_inputProcessor.getMacroNodeReferencePositions( ),
-                                                 *_inputProcessor.getMacroDisplacements( ),
-                                                 *_inputProcessor.getMacroNodeReferenceConnectivity( ),
-                                                 element );
+
+                if ( _inputProcessor.isFiltering( ) ){
+        
+                    std::unordered_map< uIntType, floatVector > projectedMacroDisplacements;
+        
+                    auto cellConnectivity = _inputProcessor.getMacroNodeReferenceConnectivity( )->find( *cellId );
+        
+                    if ( cellConnectivity == _inputProcessor.getMacroNodeReferenceConnectivity( )->end( ) ){
+        
+                        return new errorNode( "outputHomogenizedResponse", "Macro cell " + std::to_string( *cellId ) + " not found in connectivity map" );
+        
+                    }
+    
+                    auto macroGlobalToLocalDOFMap = _inputProcessor.getMacroGlobalToLocalDOFMap( );
+    
+                    unsigned int nMacroDOF = _dim + _dim * _dim;
+    
+                    for ( auto node = cellConnectivity->second.begin( ) + 1; node != cellConnectivity->second.end( ); node++ ){
+    
+                        auto local_node = macroGlobalToLocalDOFMap->find( *node );
+    
+                        if ( local_node == macroGlobalToLocalDOFMap->end( ) ){
+    
+                            return new errorNode( "ouputHomogenizedResponse", "Micro node " + std::to_string( *node) + " not found in the global to local map" );
+    
+                        }
+    
+                        projectedMacroDisplacements.emplace( *node, floatVector( _projected_ghost_macro_displacement.begin( ) + nMacroDOF * local_node->second,
+                                                                                 _projected_ghost_macro_displacement.begin( ) + nMacroDOF * local_node->second + 3 ) );
+    
+                    }
+
+                    error = buildMacroDomainElement( *cellId,
+                                                     *_inputProcessor.getMacroNodeReferencePositions( ),
+                                                     projectedMacroDisplacements,
+                                                     *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                                     element );
+
+                }
+                else{
+
+                    error = buildMacroDomainElement( *cellId,
+                                                     *_inputProcessor.getMacroNodeReferencePositions( ),
+                                                     *_inputProcessor.getMacroDisplacements( ),
+                                                     *_inputProcessor.getMacroNodeReferenceConnectivity( ),
+                                                     element );
+
+                }
 
                 //Build the DOF vector
                 floatMatrix dofMatrix( element->qrule.size( ), floatVector( _dim + _dim * _dim, 0 ) );

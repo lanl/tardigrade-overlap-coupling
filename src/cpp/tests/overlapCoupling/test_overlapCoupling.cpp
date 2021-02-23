@@ -9777,6 +9777,42 @@ int temp_processBigFile( ){
 
 }
 
+int test_overlapCoupling_filterMode( std::ofstream &results ){
+    /*!
+     * Test the overlap coupling used in filter mode
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    std::string inputFilename = "filterConfig.yaml";
+
+    overlapCoupling::overlapCoupling oc( inputFilename );
+
+    if ( oc.getConstructorError( ) ){
+        oc.getConstructorError( )->print( );
+        results << "test_overlapCoupling_filterMode & False\n";
+        return 1;
+    }
+
+    errorOut error = oc.initializeCoupling( );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_filterMode & False\n";
+        return 1;
+    }
+
+    error = oc.processIncrement( 10, 0 );
+
+    if ( error ){
+        error->print( );
+        results << "test_overlapCoupling_filterMode & False\n";
+        return 1;
+    }
+
+    return 0;
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -9813,7 +9849,8 @@ int main(){
 ////    test_overlapCoupling_getReferenceGhostMicroDomainCentersOfMass( results );
 //////    test_overlapCoupling_getReferenceFreeMicroDomainCenterOfMassShapeFunctions( results );
 //////    test_overlapCoupling_getReferenceGhostMicroDomainCenterOfMassShapeFunctions( results );
-    test_overlapCoupling_runOverlapCoupling_Arlequin_realistic( results );
+//    test_overlapCoupling_runOverlapCoupling_Arlequin_realistic( results );
+    test_overlapCoupling_filterMode( results );
 //    test_MADOutlierDetection( results );
 //    test_formMicromorphicElementMassMatrix( results );
 //    test_computeMicromorphicElementRequiredValues( results );

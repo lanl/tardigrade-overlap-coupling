@@ -1,0 +1,91 @@
+# Mesh and datafile definitions of the macro and micro-scales
+
+coupling_initialization:
+        type: use_first_increment #Other options will be "from_file" and "use_current_increment"
+        projection_type: "arlequin" #Options are "l2_projection", "averaged_l2_projection", "direct_projection", and "arlequin"
+        arlequin_weighting_variable_name: "Arlequin_Weights"
+        use_reconstructed_mass_centers: true #Whether to use the reconstructed or particle particle mass centers in the homogenization
+        potential_energy_weighting_factor: 0.5 #The weighting factor for the potential energy between length-scales. ( qhat in Regueiro 2012 )
+        potential_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( qtilde in Regueiro 2012 )
+                type: volume_fraction #The type of partitioning. Currently only "volume_fraction" is available
+        kinetic_energy_weighting_factor: 0.5 #The weighting factor for the kinetic energy between length-scales. ( rhat in Regueiro 2012 )
+        kinetic_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( rtilde in Regueiro 2012 )
+                type: volume_fraction #The type of partitioning. Currently only "volume_fraction" is available
+        extract_previous_dof_values: true #Flag indicating if the previously converged accelerations and velocities should be extracted or if the current increment's should be used. If true, previous_macro_increment and previous_micro_increment must be defined with the increment to be used indicated
+        micro_proportionality_coefficient: 1e-1
+        macro_proportionality_coefficient: 2e-1
+        previous_micro_increment: 0
+        previous_macro_increment: 0
+        apply_micro_to_macro_filter: true #Flag to indicate if the micromorphic filter is to be applied. If this is true then no macroscale information will be propagated to the microscale
+        update_displacement:
+        output_reference_information:
+                save_interpolation_matrix:
+        output_homogenized_response:
+
+macroscale_definition:
+        filename: ../testFiles/macroscale_filter.xdmf
+        mode: read
+        node_id_variable_name: NODEID
+        cell_id_variable_name: ELEMID
+
+microscale_definition:
+        filename: ../testFiles/microscale_filter_xdmf.xdmf
+        mode: read
+        volume_variable_name: volume #The name of the volume attribute at the nodes
+        density_variable_name: density #The name of the density attribute at the nodes
+        displacement_variable_names: #The names of the displacement attributes at the nodes
+                u1: disp_x
+                u2: disp_y
+                u3: disp_z
+        velocity_variable_names: #The names of the velocity attributes at the nodes
+                v1: uDot_1
+                v2: uDot_2
+                v3: uDot_3
+        acceleration_variable_names: #The names of the acceleration attributes at the nodes
+                a1: uDotDot_1
+                a2: uDotDot_2
+                a3: uDotDot_3
+        stress_variable_names: #The names of the stress attributes at the nodes
+                s11: s11
+                s12: s12
+                s13: s13
+                s21: s21
+                s22: s22
+                s23: s23
+                s31: s31
+                s32: s32
+                s33: s33
+        internal_force_variable_names: #The names of the internal force attributes at the nodes
+                F1: FInternal_1
+                F2: FInternal_2
+                F3: FInternal_3
+        inertial_force_variable_names: #The names of the inertial force attributes at the nodes
+                F1: FInertial_1
+                F2: FInertial_2
+                F3: FInertial_3
+        node_id_variable_name: NODEID
+        cell_id_variable_name: ELEMID
+
+# Definition of the coupling domains
+ghost_macroscale_domains:
+        -
+          name: filter #The macro-scale domains can be named arbitrarily
+          macro_cell: 0 #The index of the cell that corresponds to the macroscale ghost domain
+          macro_nodeset: macro_domain
+          micro_nodesets:
+                  - 
+                    name: micro_volume_nodes_1
+                  - 
+                    name: micro_volume_nodes_2
+                  - 
+                    name: micro_volume_nodes_3
+                  - 
+                    name: micro_volume_nodes_4
+                  - 
+                    name: micro_volume_nodes_5
+                  - 
+                    name: micro_volume_nodes_6
+                  - 
+                    name: micro_volume_nodes_7
+                  - 
+                    name: micro_volume_nodes_8
