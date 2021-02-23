@@ -1220,8 +1220,33 @@ namespace dataFileInterface{
         topology->read( );
 
         //Set the topology values
-        connectivity = uIntVector( topology->getSize( ) );
-        topology->getValues( 0, connectivity.data( ), topology->getSize( ), 1, 1 );
+        if ( topology->getType( ) == XdmfTopologyType::Mixed( ) ){
+
+            connectivity = uIntVector( topology->getSize( ) );
+            topology->getValues( 0, connectivity.data( ), topology->getSize( ), 1, 1 );
+
+        }
+        else{
+
+            // Initialize the connectivity vector size
+            cellCounts   = topology->getSize( ) / topology->getType( )->getNodesPerElement( );
+            connectivity = uIntVector( topology->getSize( ) + cellCounts, 0 );
+            uIntVector elementPoints( topology->getType( )->getNodesPerElement( ) );
+
+            for ( unsigned int i = 0; i < cellCounts; i++ ){
+
+                // Set the element type
+                connectivity[ ( topology->getType( )->getNodesPerElement( ) + 1 ) * i ] = topology->getType( )->getID( );
+
+                // Extract the element nodes
+                topology->getValues( topology->getType( )->getNodesPerElement( ) * i, elementPoints.data( ), topology->getType( )->getNodesPerElement( ), 1, 1 );
+
+                // Set the element nodes to the connectivity vector
+                std::copy_n( elementPoints.begin( ), elementPoints.size( ), connectivity.begin( ) + ( topology->getType( )->getNodesPerElement( ) + 1 ) * i + 1 );
+
+            }
+
+        }
 
         if ( !_config[ "cell_id_variable_name" ] ){
             return new errorNode( "getMeshData", "The key 'cell_id_variable_name' is not defined" );
@@ -1238,6 +1263,14 @@ namespace dataFileInterface{
         }
 
         error = connectivityToCellIndices( cellCounts, connectivity, connectivityCellIndices );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "getMeshData", "Error when getting the cell indices for the connectivity vector" );
+            result->addNext( error );
+            return result;
+
+        }
 
         return NULL;
     }
