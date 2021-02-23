@@ -838,6 +838,44 @@ namespace volumeReconstruction{
         return new errorNode( "performSurfaceIntegration", "Surface integration not implemented" );
     }
 
+    errorOut volumeReconstructionBase::performPositionWeightedSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
+                                                                                  floatVector &integratedValue, const uIntVector *subdomainIDs,
+                                                                                  const floatVector *subdomainWeights,
+                                                                                  const floatVector *macroNormal, const bool useMacroNormal ){
+        /*!
+         * Integrate a quantity known at the point over the surface times the position and return the value for the domain.
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object and the second index is the value of the 
+         *     function to be integrated.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
+         * :param floatVector &integratedValue: The final value of the integral organized as
+         *     [ v_11, v_12, v_13, ..., v_21, v_22, ... ] where the first index is the value and the second is the
+         *     dimension
+         * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
+         *     defaults to NULL and so the full domain is integrated over
+         * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
+         *     in multiple subdomains and they aren't small w.r.t. the domain size
+         * :param const floatVector *macroNormal: A macro-scale normal vector to use to generate the micro
+         *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
+         *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
+         *     at each boundary point.
+         * :param const bool useMacroNormal: Use the macro-scale normal instead of the micro normals. Can help
+         *     drive the integral to be more what is expected in some cases.
+         */
+
+        ( void ) valuesAtPoints;
+        ( void ) valueSize;
+        ( void ) integratedValue;
+        ( void ) subdomainIDs;
+        ( void ) subdomainWeights;
+        ( void ) macroNormal;
+        ( void ) useMacroNormal;
+
+        return new errorNode( "performPositionWeightedSurfaceIntegration", "Surface integration not implemented" );
+    }
+
     errorOut volumeReconstructionBase::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                                       floatVector &integratedValue, const uIntVector *subdomainIDs,
                                                                       const floatVector *subdomainWeights,
@@ -2919,7 +2957,7 @@ namespace volumeReconstruction{
          */
 
         floatVector origin;
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, false,
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, false, false,
                                                         subdomainIDs, subdomainWeights, macroNormal, useMacroNormal );
 
         if ( error ){
@@ -2933,6 +2971,49 @@ namespace volumeReconstruction{
 
         return NULL;
     }
+
+    errorOut dualContouring::performPositionWeightedSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
+                                                                        floatVector &integratedValue, const uIntVector *subdomainIDs,
+                                                                        const floatVector *subdomainWeights,
+                                                                        const floatVector *macroNormal, const bool useMacroNormal ){
+        /*!
+         * Integrate a quantity known at the point over the surface return the value for the domain.
+         *
+         * :param const floatVector &valuesAtPoints: A vector of the values at the data points. Stored as
+         *     [ v_11, v_12, ..., v_21, v22, ... ] where the first index is the point index in order as 
+         *     provided to the volume reconstruction object and the second index is the value of the 
+         *     function to be integrated.
+         * :param const uIntType valueSize: The size of the subvector associated with each of the datapoints.
+         * :param floatVector &integratedValue: The final value of the integral organized as
+         *     [ v_11, v_12, v_13, ..., v_21, v_22, ... ] where the first index is the value and the second is the
+         *     dimension
+         * :param const uIntVector *subdomainIDs: The pointer to the subdomain of the surface to integrate over
+         * :param const floatVector *subdomainWeights: The weights for the subdomains. Useful if points can be
+         *     in multiple subdomains and they aren't small w.r.t. the domain size
+         * :param const floatVector *macroNormal: A macro-scale normal vector to use to generate the micro
+         *     weight. This can be helpful in cases where some points start to, ``wrap,'' around an edge 
+         *     which should be flat. Can either be a single vector of dimension _dim or a collection of vectors
+         *     at each boundary point.
+         * :param const bool useMacroNormal: Use the macro-scale normal instead of the micro normals. Can help
+         *     drive the integral to be more what is expected in some cases.
+         */
+
+        floatVector origin;
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, false, true, false,
+                                                        subdomainIDs, subdomainWeights, macroNormal, useMacroNormal );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "performPositionWeightedSurfaceIntegration",
+                                             "Error in the computation of the surface integral" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        return NULL;
+    }
+
 
     errorOut dualContouring::performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             floatVector &integratedValue, const uIntVector *subdomainIDs,
@@ -2959,7 +3040,7 @@ namespace volumeReconstruction{
          */
 
         floatVector origin;
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false, subdomainIDs,
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false, false, subdomainIDs,
                                                         subdomainWeights, macroNormal, useMacroNormal );
 
         if ( error ){
@@ -3006,7 +3087,7 @@ namespace volumeReconstruction{
          *     drive the integral to be more what is expected in some cases.
          */
 
-        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, true, subdomainIDs,
+        errorOut error = performSurfaceIntegralMethods( valuesAtPoints, valueSize, origin, integratedValue, true, false, true, subdomainIDs,
                                                         subdomainWeights, macroNormal, useMacroNormal );
 
         if ( error ){
@@ -3024,7 +3105,7 @@ namespace volumeReconstruction{
 
     errorOut dualContouring::performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             const floatVector &origin, floatVector &integratedValue,
-                                                            bool computeFlux, bool dyadWithOrigin,
+                                                            bool computeFlux, bool positionWeightedIntegral, bool dyadWithOrigin,
                                                             const uIntVector *subdomainIDs,
                                                             const floatVector *subdomainWeights,
                                                             const floatVector *macroNormal, const bool useMacroNormal ){
@@ -3039,6 +3120,7 @@ namespace volumeReconstruction{
          * :param const floatVector &origin: The origin.
          * :param floatVector &integratedValue: The final value of the integral
          * :param bool computeFlux: The flag indicating if the flux needs to be computed of the values at the surface.
+         * :param bool positionWeightedIntegral: Flag indicated if the integral is weighted by the position
          * :param bool dyadWithOrigin: The flag indicating if the dyadic product between the values on the surface
          *     ( post flux calculation ) needs to be computed.
          * :param uIntVector *subdomainIDs: The IDs of points in the subdomain to integrate over
@@ -3147,12 +3229,12 @@ namespace volumeReconstruction{
 
         if ( computeFlux ){
 
-            integratedValue = floatVector( valueSize / _dim, 0 );
+            integratedValue = floatVector( ( _dim * positionWeightedIntegral + !positionWeightedIntegral ) * valueSize / _dim, 0 );
 
         }
         else{
 
-            integratedValue = floatVector( valueSize, 0 );
+            integratedValue = floatVector( ( _dim * positionWeightedIntegral + !positionWeightedIntegral ) * valueSize, 0 );
 
         }
 
@@ -3241,7 +3323,7 @@ namespace volumeReconstruction{
 
             }
 
-            //Process the nodes which are ouside of the volume
+            //Process the nodes which are outside of the volume
 
             //Compute the values of the function at the quadrature points
             floatMatrix qptValue( element->qrule.size( ) );
@@ -3407,7 +3489,32 @@ namespace volumeReconstruction{
 
             }
 
-            integratedValue += weight * valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
+            if ( positionWeightedIntegral ){
+
+                floatVector positionWeightedValueAtBoundaryPoint( valueAtBoundaryPoint.size( ) * boundaryPoint.size( ), 0 );
+
+                uIntType bPi_index = 0;
+
+                for ( auto bPi = boundaryPoint.begin( ); bPi != boundaryPoint.end( ); bPi++, bPi_index++ ){
+
+                    uIntType vBI_index = 0;
+
+                    for ( auto vBI = valueAtBoundaryPoint.begin( ); vBI != valueAtBoundaryPoint.end( ); vBI++, vBI_index++ ){
+
+                        positionWeightedValueAtBoundaryPoint[ vBI_index * boundaryPoint.size( ) + bPi_index ] = ( *vBI ) * ( *bPi );
+
+                    }
+
+                }
+
+                integratedValue += weight * positionWeightedValueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
+
+            }
+            else{
+
+                integratedValue += weight * valueAtBoundaryPoint * _boundaryPointAreas[ *cell ];
+
+            }
 
         }
 
