@@ -464,38 +464,50 @@ namespace overlapCoupling{
 
         }
 
-        //Compute the micromorphic mass matrix
-        error = computeArlequinMicromorphicMassMatrix( );
+        // Compute the Arlequin coupling force
+
+        error = computeArlequinCouplingForce( );
 
         if ( error ){
 
-            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the micromorphic mass matrix" );
+            errorOut result = new errorNode( "applyArlequinProjection", "Error in computing the coupling force" );
             result->addNext( error );
             return result;
 
         }
 
-        //Compute the remaining terms required for Arlequin
-        error = computeArlequinForceAndErrorVectors( );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the force and error vectors" );
-            result->addNext( error );
-            return result;
-
-        }
-
-        //Update the degrees of freedom
-        error = computeArlequinDeformationUpdate( );
-
-        if ( error ){
-
-            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the updated deformation values" );
-            result->addNext( error );
-            return result;
-
-        }
+//        //Compute the micromorphic mass matrix
+//        error = computeArlequinMicromorphicMassMatrix( );
+//
+//        if ( error ){
+//
+//            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the micromorphic mass matrix" );
+//            result->addNext( error );
+//            return result;
+//
+//        }
+//
+//        //Compute the remaining terms required for Arlequin
+//        error = computeArlequinForceAndErrorVectors( );
+//
+//        if ( error ){
+//
+//            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the force and error vectors" );
+//            result->addNext( error );
+//            return result;
+//
+//        }
+//
+//        //Update the degrees of freedom
+//        error = computeArlequinDeformationUpdate( );
+//
+//        if ( error ){
+//
+//            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the updated deformation values" );
+//            result->addNext( error );
+//            return result;
+//
+//        }
 
         //Homogenize the material properties at the micro-scale to the macro-scale
         std::cerr << "HOMOGENIZE THE MICROSCALE\n";
