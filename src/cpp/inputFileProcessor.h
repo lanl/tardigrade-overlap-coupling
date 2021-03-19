@@ -103,6 +103,7 @@ namespace inputFileProcessor{
             const std::unordered_map< uIntType, floatVector >* getMacroExternalForces( );
             const std::unordered_map< uIntType, floatVector >* getMacroInertialForces( );
             const std::unordered_map< uIntType, floatType >* getMacroArlequinWeights( );
+            const std::unordered_map< uIntType, floatVector >* getMacroLumpedMassMatrix( );
 
             const floatType* getDt( );
             const floatType* getNewmarkGamma( );
@@ -167,6 +168,7 @@ namespace inputFileProcessor{
             bool macroInternalForceDefined( );
             bool macroExternalForceDefined( );
             bool macroInertialForceDefined( );
+            bool macroLumpedMassMatrixDefined( );
             bool extractPreviousDOFValues( );
             bool useReconstructedVolumeForMassMatrix( );
             bool isFiltering( );
@@ -284,6 +286,7 @@ namespace inputFileProcessor{
             errorOut extractMacroInertialForces( const unsigned int &increment );
             errorOut extractReferenceMacroMeshData( const unsigned int &increment );
             errorOut extractMacroArlequinWeights( const unsigned int &increment );
+            errorOut extractMacroLumpedMassMatrix( const unsigned int &increment );
 
             errorOut getUniqueNodesInDomains( const unsigned int &increment,
                                               const std::shared_ptr< dataFileInterface::dataFileBase > &dataFile,
@@ -356,6 +359,7 @@ namespace inputFileProcessor{
             std::unordered_map< uIntType, floatVector > _macroNodeReferencePositions;
             std::unordered_map< uIntType, uIntVector > _macroNodeReferenceConnectivity;
             std::unordered_map< uIntType, floatType > _macroArlequinWeights;
+            std::unordered_map< uIntType, floatVector > _macroLumpedMassMatrix;
 //            uIntVector  _macroNodeReferenceConnectivityCellIndices;
 //            unsigned int _macroCellCounts;
             bool _macroVelocityFlag = false;
@@ -367,6 +371,7 @@ namespace inputFileProcessor{
             bool _macroInertialForceFlag = false;
             bool _couplingODESolutionLocationFlag = false;
             bool _useArlequinMethod = false;
+            bool _macroLumpedMassMatrixFlag = false;
             floatType _arlequinPenaltyParameter;
             floatType _arlequinUpdatePenaltyParameter;
 

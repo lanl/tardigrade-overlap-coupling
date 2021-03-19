@@ -2742,6 +2742,63 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    const std::unordered_map< uIntType, floatVector > macroLumpedMassMatrixAnswer =
+        {
+//            {  7, { 24.1, 26.1, 28.1, 30.1, 32.1, 34.1, 36.1, 38.1, 40.1, 42.1, 44.1, 46.1 } },
+//            { 10, { 24.2, 26.2, 28.2, 30.2, 32.2, 34.2, 36.2, 38.2, 40.2, 42.2, 44.2, 46.2 } },
+//            {  4, { 24.3, 26.3, 28.3, 30.3, 32.3, 34.3, 36.3, 38.3, 40.3, 42.3, 44.3, 46.3 } },
+//            {  0, { 24.4, 26.4, 28.4, 30.4, 32.4, 34.4, 36.4, 38.4, 40.4, 42.4, 44.4, 46.4 } },
+            {  5, { 24.5, 26.5, 28.5, 30.5, 32.5, 34.5, 36.5, 38.5, 40.5, 42.5, 44.5, 46.5 } },
+            {  9, { 24.6, 26.6, 28.6, 30.6, 32.6, 34.6, 36.6, 38.6, 40.6, 42.6, 44.6, 46.6 } },
+            {  8, { 24.7, 26.7, 28.7, 30.7, 32.7, 34.7, 36.7, 38.7, 40.7, 42.7, 44.7, 46.7 } },
+            { 11, { 24.8, 26.8, 28.8, 30.8, 32.8, 34.8, 36.8, 38.8, 40.8, 42.8, 44.8, 46.8 } },
+            {  3, { 24.9, 26.9, 28.9, 30.9, 32.9, 34.9, 36.9, 38.9, 40.9, 42.9, 44.9, 46.9 } },
+            {  1, { 25.0, 27.0, 29.0, 31.0, 33.0, 35.0, 37.0, 39.0, 41.0, 43.0, 45.0, 47.0 } },
+            {  6, { 25.1, 27.1, 29.1, 31.1, 33.1, 35.1, 37.1, 39.1, 41.1, 43.1, 45.1, 47.1 } },
+            { 15, { 25.2, 27.2, 29.2, 31.2, 33.2, 35.2, 37.2, 39.2, 41.2, 43.2, 45.2, 47.2 } },
+            { 12, { 25.3, 27.3, 29.3, 31.3, 33.3, 35.3, 37.3, 39.3, 41.3, 43.3, 45.3, 47.3 } },
+            {  2, { 25.4, 27.4, 29.4, 31.4, 33.4, 35.4, 37.4, 39.4, 41.4, 43.4, 45.4, 47.4 } },
+            { 13, { 25.5, 27.5, 29.5, 31.5, 33.5, 35.5, 37.5, 39.5, 41.5, 43.5, 45.5, 47.5 } },
+            { 14, { 25.6, 27.6, 29.6, 31.6, 33.6, 35.6, 37.6, 39.6, 41.6, 43.6, 45.6, 47.6 } }
+        };
+
+    const std::unordered_map< uIntType, floatVector > *macroLumpedMassMatrixResult = reader.getMacroLumpedMassMatrix( );
+
+    if ( !reader.macroLumpedMassMatrixDefined( ) ){
+
+        results << "test_initializeIncrement (test 112) & False\n";
+        return 1;
+
+    }
+
+    for ( auto answer = macroLumpedMassMatrixAnswer.begin( ); answer != macroLumpedMassMatrixAnswer.end( ); answer++ ){
+
+        auto result = macroLumpedMassMatrixResult->find( answer->first );
+
+        if ( result == macroLumpedMassMatrixResult->end( ) ){
+
+            std::cout << "113 failure\n";
+            std::cout << "answer: " << answer->first << "\n";
+
+            results << "test_initializeIncrement (test 113) & False\n";
+            return 1;
+
+        }
+
+        if ( !vectorTools::fuzzyEquals( result->second, answer->second ) ){
+
+            std::cout << "114 failure\n";
+            std::cout << "node: " << answer->first << "\n";
+            std::cout << "result: "; vectorTools::print( result->second );
+            std::cout << "answer: "; vectorTools::print( answer->second );
+
+            results << "test_initializeIncrement (test 114) & False\n";
+            return 1;
+
+        }
+
+    }
+
     results << "test_initializeIncrement & True\n";
     return 0;
 }

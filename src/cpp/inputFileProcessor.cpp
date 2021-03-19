@@ -667,6 +667,15 @@ namespace inputFileProcessor{
             result->addNext( error );
             return result;
         }
+
+        //Extract the macro lumped-mass matrix
+        error = extractMacroLumpedMassMatrix( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro lumped-mass matrix" );
+            result->addNext( error );
+            return result;
+        }
     
         if ( _useArlequinMethod ){
     
@@ -2238,6 +2247,71 @@ namespace inputFileProcessor{
             _macroInertialForces.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
                                                                  values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
             _macroInertialForces[ n->first ] *= _sign;
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut inputFileProcessor::extractMacroLumpedMassMatrix( const unsigned int &increment ){
+        /*!
+         * Extract the macro lumped-mass matrix
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        stringVector variableKeys =
+            {
+                "M1", "M2", "M3",
+                "I11", "I12", "I13",
+                "I21", "I22", "I23",
+                "I31", "I32", "I33"
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "lumped_mass_matrix_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _macroLumpedMassMatrixFlag, values );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroLumpedMassMatrix",
+                                             "Error in the extraction of the macro lumped mass matrix" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        if ( !_macroLumpedMassMatrixFlag ){
+
+            _macroLumpedMassMatrix.clear( );
+            return NULL;
+
+        }
+
+        _macroLumpedMassMatrix.clear( );
+        _macroLumpedMassMatrix.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+        floatType _sign = _config[ "coupling_initialization" ][ "macro_body_force_sign" ].as< floatType >( );
+        for( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMacroLumpedMassMatrix",
+                                      "The index required by macro node " + std::to_string( n->first ) + " is too large for the values vector" );
+
+            }
+
+            _macroLumpedMassMatrix.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                   values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            _macroLumpedMassMatrix[ n->first ] *= _sign;
 
         }
 
@@ -4575,6 +4649,14 @@ namespace inputFileProcessor{
         return _macroInertialForceFlag;
     }
 
+    bool inputFileProcessor::macroLumpedMassMatrixDefined( ){
+        /*!
+         * Get whether the macro lumped mass matrix has been defined
+         */
+
+        return _macroLumpedMassMatrixFlag;
+    }
+
     const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroDisplacements( ){
         /*!
          * Get the micro-displacements
@@ -5024,6 +5106,14 @@ namespace inputFileProcessor{
          */
 
         return &_macroArlequinWeights;
+    }
+
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroLumpedMassMatrix( ){
+        /*!
+         * Get the macro lumped-mass matrix
+         */
+
+        return &_macroLumpedMassMatrix;
     }
 
     const floatType* inputFileProcessor::getArlequinPenaltyParameter( ){
