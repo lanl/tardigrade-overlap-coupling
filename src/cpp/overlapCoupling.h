@@ -443,6 +443,7 @@ namespace overlapCoupling{
             errorOut computeArlequinTrialDeformation( const uIntType &microIncrement );
 
             errorOut computeArlequinMicromorphicMassMatrix( );
+            errorOut computeArlequinCouplingForce( );
             errorOut computeArlequinForceAndErrorVectors( );
             errorOut computeArlequinDeformationUpdate( );
 
@@ -529,6 +530,9 @@ namespace overlapCoupling{
             floatVector FQ, FD, Qe, De;
 
             floatVector FALD, FALQ;
+
+            floatVector _microCouplingForce;
+            floatVector _macroCouplingForce;
 
     };
 
