@@ -531,9 +531,6 @@ namespace overlapCoupling{
 
             floatVector FALD, FALQ;
 
-            floatVector _microCouplingForce;
-            floatVector _macroCouplingForce;
-
     };
 
     errorOut MADOutlierDetection( const floatVector &x, uIntVector &outliers, const floatType threshold = 10,

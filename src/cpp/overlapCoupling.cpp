@@ -1106,11 +1106,11 @@ namespace overlapCoupling{
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _RHS_D( RHS_D.data(), RHS_D.size( ), 1 );
 
         // Assemble the coupling force vectors
-        _microCouplingForce.resize( RHS.size( ) );
-        _macroCouplingForce.resize( RHS_D.size( ) );
+        FALQ.resize( RHS.size( ) );
+        FALD.resize( RHS_D.size( ) );
 
-        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > microCouplingForce( _microCouplingForce.data(), _microCouplingForce.size( ), 1 );
-        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > macroCouplingForce( _macroCouplingForce.data(), _macroCouplingForce.size( ), 1 );
+        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > microCouplingForce( FALQ.data(), FALQ.size( ), 1 );
+        Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > macroCouplingForce( FALD.data(), FALD.size( ), 1 );
 
         microCouplingForce = _RHS - _N * _RHS_D;
         macroCouplingForce = _N.transpose( ) * microCouplingForce;
