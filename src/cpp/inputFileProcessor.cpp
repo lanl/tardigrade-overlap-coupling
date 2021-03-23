@@ -3867,8 +3867,8 @@ namespace inputFileProcessor{
 
         if ( !_config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ] ){
 
-            _config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ] = false;
-            _useReconstructedVolumeForMassMatrix = false;
+            _config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ] = true;
+            _useReconstructedVolumeForMassMatrix = true;
 
         }
 
