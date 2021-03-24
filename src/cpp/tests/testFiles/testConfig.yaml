@@ -2,7 +2,7 @@
 
 coupling_initialization:
         type: use_first_increment #Other options will be "from_file" and "use_current_increment"
-        projection_type: "direct_projection" #Other options are "l2_projection"
+        projection_type: "arlequin" #Other options are "l2_projection"
         use_reconstructed_mass_centers: false #Whether to use the reconstructed or particle particle mass centers in the homogenization
         potential_energy_weighting_factor: 0.5 #The weighting factor for the potential energy between length-scales. ( qhat in Regueiro 2012 )
         potential_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( qtilde in Regueiro 2012 )
