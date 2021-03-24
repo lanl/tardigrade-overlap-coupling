@@ -945,13 +945,15 @@ namespace overlapCoupling{
         const floatType mu = *_inputProcessor.getArlequinPenaltyParameter( );
 
         //Size the Lagrangian
-        floatVector RHS = floatVector( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
+        floatVector RHS( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
+
+        floatVector G( nMicroDispDOF * microGlobalToLocalDOFMap->size( ), 0 );
 
         //Assemble the micro-force vector
 //        std::cout << "Assembling the micro-force vector:\n";
         for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
 
-//            std::cerr << "  node: " << node->first << ": " << node->second << "\n";
+            std::cerr << "  node: " << node->first << "\n";// << ": " << node->second << "\n";
 //            std::cerr << "    reference position: "; vectorTools::print( _inputProcessor.getMicroNodeReferencePositions( )->find( node->first )->second );
             floatVector nodeForce( nMicroDispDOF, 0 );
 
@@ -959,7 +961,7 @@ namespace overlapCoupling{
             if( _inputProcessor.microExternalForceDefined( ) ){
 
                 auto externalForce = microExternalForces->find( node->first );
-//                std::cerr << "    external force: "; vectorTools::print( externalForce->second );
+                std::cerr << "    external force: "; vectorTools::print( externalForce->second );
     
                 if ( externalForce == microExternalForces->end( ) ){
     
@@ -976,7 +978,7 @@ namespace overlapCoupling{
             if( _inputProcessor.microInternalForceDefined( ) ){
 
                 auto internalForce = microInternalForces->find( node->first );
-//                std::cerr << "    internal force: "; vectorTools::print( internalForce->second );
+                std::cerr << "    internal force: "; vectorTools::print( internalForce->second );
     
                 if ( internalForce == microInternalForces->end( ) ){
     
@@ -1013,6 +1015,8 @@ namespace overlapCoupling{
 
             }
 
+            std::cerr << "    displacement: "; vectorTools::print( microDisplacement->second );
+
             //Get the arlequin weight
             auto arlequinWeight = arlequinMicroWeightingFactors.find( node->first );
             if ( arlequinWeight == arlequinMicroWeightingFactors.end( ) ){
@@ -1024,7 +1028,8 @@ namespace overlapCoupling{
 
             for ( uIntType i = 0; i < nMicroDispDOF; i++ ){
 
-                RHS[ nMicroDispDOF * node->second + i ] += 0.5 * ( 1 - arlequinWeight->second ) * nodeForce[ i ] - mu * microDisplacement->second[i];
+                RHS[ nMicroDispDOF * node->second + i ] += ( 1 - arlequinWeight->second ) * nodeForce[ i ] + mu * microDisplacement->second[i];
+                G[ nMicroDispDOF * node->second + i ] -= microDisplacement->second[ i ];
 
             }
 
@@ -1032,12 +1037,14 @@ namespace overlapCoupling{
 
         //Assemble the macro-force and error vector
         floatVector RHS_D( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ), 0 );
+        floatVector D( nMacroDispDOF * macroGlobalToLocalDOFMap->size( ), 0 );
 
         // Assemble the macro-displacement vector
         for( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
 
             floatVector nodeForce( nMacroDispDOF, 0 );
 
+            std::cout << "node: " << node->first << "\n";
             //Add the external force contribution
             if ( _inputProcessor.macroExternalForceDefined( ) ){
 
@@ -1058,7 +1065,7 @@ namespace overlapCoupling{
             if ( _inputProcessor.macroInternalForceDefined( ) ){
 
                 auto internalForce = macroInternalForces->find( node->first );
-//                std::cerr << "    internal force: "; vectorTools::print( internalForce->second );
+                std::cerr << "    internal force: "; vectorTools::print( internalForce->second );
 
                 if ( internalForce == macroInternalForces->end( ) ){
 
@@ -1097,6 +1104,8 @@ namespace overlapCoupling{
 
             }
 
+            std::cerr << "    deformation: "; vectorTools::print(macroDispDOF->second);
+
             //Get the Macro Arlequin weight
             auto arlequinWeight =  macroArlequinWeights->find( node->first );
             if ( arlequinWeight == macroArlequinWeights->end( ) ){
@@ -1108,11 +1117,14 @@ namespace overlapCoupling{
 
             for ( uIntType i = 0; i < nMacroDispDOF; i++ ){
 
-                RHS_D[ nMacroDispDOF * node->second + i ] += 0.5 * arlequinWeight->second * nodeForce[ i ] + mu * macroDispDOF->second[i];
+                RHS_D[ nMacroDispDOF * node->second + i ] += arlequinWeight->second * nodeForce[ i ];
+                D[ nMacroDispDOF * node->second + i ] = macroDispDOF->second[ i ];
 
             }
 
         }
+
+        std::cerr << "out of loop\n";
 
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _RHS( RHS.data(), RHS.size( ), 1 );
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _RHS_D( RHS_D.data(), RHS_D.size( ), 1 );
@@ -1123,9 +1135,103 @@ namespace overlapCoupling{
 
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > microCouplingForce( FALQ.data(), FALQ.size( ), 1 );
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > macroCouplingForce( FALD.data(), FALD.size( ), 1 );
+        Eigen::Map< Eigen::Matrix< floatType, -1, 1 > > _G( G.data( ), G.size( ), 1 );
+        Eigen::Map< Eigen::Matrix< floatType, -1, 1 > > _D( D.data( ), D.size( ), 1 );
+        _G += _N * _D;
 
-        microCouplingForce = _RHS - _N * _RHS_D;
+        _RHS -= ( _N * _RHS_D + mu * ( _N * _N.transpose( ) * _G + _G ) );
+        SparseMatrix _LHS = _N * _N.transpose( );
+        _LHS.diagonal( ).array( ) += 1;
+
+        Eigen::Matrix< floatType, -1, 1 > _LHS_vec = _LHS * Eigen::VectorXd::Ones( _LHS.cols( ) );
+
+        std::cerr << "building micro coupling force\n";
+        microCouplingForce = _RHS.array( ) / _LHS_vec.array( );
+        std::cerr << "building macro coupling force\n";
         macroCouplingForce = _N.transpose( ) * microCouplingForce;
+
+        std::cerr << "outputting G\n";
+        for ( unsigned int i = 0; i < microGlobalToLocalDOFMap->size( ); i++ ){
+
+            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
+                std::cerr << G[ nMicroDispDOF * i + j ] << ", ";
+            }
+            std::cerr << "\n";
+
+        }
+
+        std::cerr << "microCouplingForce:\n";
+        for ( unsigned int i = 0; i < microGlobalToLocalDOFMap->size( ); i++ ){
+
+            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
+                std::cerr << microCouplingForce[ nMicroDispDOF * i + j ] << ", ";
+            }
+            std::cerr << "\n";
+
+        }
+
+        std::cerr << "macroCouplingForce:\n";
+        for ( unsigned int i = 0; i < macroGlobalToLocalDOFMap->size( ); i++ ){
+
+            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
+                std::cerr << macroCouplingForce[ nMacroDispDOF * i + j ] << ", ";
+            }
+            std::cerr << "\n";
+
+        }
+
+        std::cerr << "G norm: " << vectorTools::l2norm( G ) << "\n";
+
+        std::cerr << "micro-domains:\n";
+        for ( auto domain = _inputProcessor.getMicroDomainIDMap( )->begin( ); domain != _inputProcessor.getMicroDomainIDMap( )->end( ); domain++ ){
+
+            uIntVector domainNodes;
+            errorOut error = _inputProcessor._microscale->getSubDomainNodes( 0, domain->first, domainNodes );
+            if ( error ){
+                return error;
+            }
+            std::cerr << domain->first << ": "; vectorTools::print( domainNodes );
+            std::cerr << "    reference positions\n";
+            auto referencePositions = _inputProcessor.getMicroNodeReferencePositions( );
+            for ( auto d = domainNodes.begin( ); d != domainNodes.end( ); d++ ){std::cerr << "        "; auto p = referencePositions->find( *d ); vectorTools::print( p->second ); };
+
+            std::cerr << "    center of mass: ";
+            for ( auto cell = _referenceFreeMicroDomainCentersOfMass.begin( ); cell != _referenceFreeMicroDomainCentersOfMass.end( ); cell++ ){
+
+                std::cout << "cell: " << cell->first << "\n";
+
+                auto centerOfMass = cell->second.find( domain->first );
+
+                if ( centerOfMass != cell->second.end( ) ){
+
+                    vectorTools::print( centerOfMass->second );
+
+                }
+
+            }
+
+            for ( auto cell = _referenceGhostMicroDomainCentersOfMass.begin( ); cell != _referenceGhostMicroDomainCentersOfMass.end( ); cell++ ){
+
+                std::cout << "cell: " << cell->first << "\n";
+
+                auto centerOfMass = cell->second.find( domain->first );
+
+                if ( centerOfMass != cell->second.end( ) ){
+
+                    vectorTools::print( centerOfMass->second );
+
+                }
+
+            }
+
+            std::cout << "DONE\n";
+
+        }
+        
+//
+//        std::cerr << "microCouplingForce:\n" << microCouplingForce << "\n";
+        std::cerr << "macroCouplingForce:\n" << macroCouplingForce << "\n";
+        assert( 1 == 0 );
 
         return NULL;
 
@@ -3056,6 +3162,9 @@ namespace overlapCoupling{
 
             }
 
+            std::cout << "domainName: " << domainName << "\n";
+            std::cerr << "    element.global_node_ids: "; vectorTools::print( element->global_node_ids );
+
         }
 
         errorOut error = processDomainMassData( microIncrement, domainName, referenceMicroDomainMass,
@@ -3084,6 +3193,9 @@ namespace overlapCoupling{
 
         _referenceCellDomainCenterOfMassShapefunctions[ cellID ].emplace( domainName, domainCenterOfMassShapeFunctionValues );
 
+        std::cerr << "    domainCenterOfMassShapeFunctionValues:\n        "; vectorTools::print( _referenceCellDomainCenterOfMassShapefunctions[ cellID ][ domainName ] );
+        std::cerr << "    domainMicroPositionShapeFunctionValues:\n";
+
 #ifdef TESTACCESS
         if ( _inputProcessor.getCouplingInitialization( )[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
             _test_domainMUP[ cellID ].emplace( domainName, domainMicroPositionShapeFunctionValues );
@@ -3109,6 +3221,7 @@ namespace overlapCoupling{
         }
 
         //Add the domain's contribution to the shape function matrix
+        std::cout << "    macroNodes: "; vectorTools::print( macroNodes );
         error = addDomainContributionToInterpolationMatrix( domainNodes, macroNodes, domainReferenceXiVectors,
                                                             domainCenterOfMassShapeFunctionValues );
 
@@ -3162,7 +3275,6 @@ namespace overlapCoupling{
             }
 
         }
-
 
         return NULL;
 
@@ -5017,15 +5129,21 @@ namespace overlapCoupling{
         }
 
         //Compute the homogenized force vectors and mass matrices
-        std::cerr << "ASSEMBLE HOMOGENIZED MATRICES AND VECTORS\n";
-        error = assembleHomogenizedMatricesAndVectors( );
+        const YAML::Node config = _inputProcessor.getCouplingInitialization( );
 
-        if ( error ){
+        if ( config[ "projection_type" ].as< std::string >( ).compare( "arlequin" ) != 0 ){
 
-            errorOut result = new errorNode( "homogenizeMicroScale",
-                                             "Error in the computation of the homogenized forces and mass matrix" );
-            result->addNext( error );
-            return result;
+            std::cerr << "ASSEMBLE HOMOGENIZED MATRICES AND VECTORS\n";
+            error = assembleHomogenizedMatricesAndVectors( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( "homogenizeMicroScale",
+                                                 "Error in the computation of the homogenized forces and mass matrix" );
+                result->addNext( error );
+                return result;
+
+            }
 
         }
 
