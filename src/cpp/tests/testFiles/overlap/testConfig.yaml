@@ -4,8 +4,8 @@ coupling_initialization:
         type: use_first_increment #Other options will be "from_file" and "use_current_increment"
         projection_type: "arlequin" #Options are "l2_projection", "averaged_l2_projection", "direct_projection", and "arlequin"
         arlequin_weighting_variable_name: "arlequin_weight"
-        arlequin_update_penalty_parameter: 1e2
-        arlequin_penalty_parameter: 1e2
+        arlequin_update_penalty_parameter: 1e0
+        arlequin_penalty_parameter: 1e0
         use_reconstructed_mass_centers: true #Whether to use the reconstructed or particle particle mass centers in the homogenization
         potential_energy_weighting_factor: 0.5 #The weighting factor for the potential energy between length-scales. ( qhat in Regueiro 2012 )
         potential_energy_partitioning_coefficient: #The partitioning coefficient for the potential energy ( qtilde in Regueiro 2012 )
