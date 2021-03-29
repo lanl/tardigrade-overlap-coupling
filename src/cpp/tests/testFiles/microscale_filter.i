@@ -5,7 +5,7 @@
 ############################################################
 
 [Mesh]
-  file = microscale_small.e
+  file = ./microscale_filter.e
 []
 
 [GlobalParams]
@@ -48,18 +48,22 @@
     function = front_bc
   [../]
   [./back_z]
-    type = DirichletBC
+    type = FunctionDirichletBC
     variable = disp_z
     boundary = 'back'
     preset = true
-    value = 0
+    function = back_bc
   [../]
 []
 
 [Functions]
   [./front_bc]
     type  = ParsedFunction
-    value = 1e-3*t
+    value = (1e-3+0.1)*t
+  [../]
+  [./back_bc]
+    type  = ParsedFunction
+    value = (0+0.1)*t
   [../]
 []
 
@@ -74,7 +78,7 @@
   [../]
   [./density]
     type = Density
-    density = 2.73e-9
+    density = 2.72e-9
   [../]
 []
 
@@ -373,8 +377,8 @@
 [Executioner]
 #  type = Steady
   type = Transient
-  num_steps = 1
-  dt        = 1
+  num_steps = 10
+  dt        = 0.1
   solve_type = 'PJFNK'
 #  solve_type = 'NEWTON'
   nl_rel_tol = 1e-8

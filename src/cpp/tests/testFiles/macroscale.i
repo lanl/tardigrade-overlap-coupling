@@ -6,7 +6,7 @@
 #####################################
 
 [Mesh]
-  file = /media/nathan/projects/overlapTestMeshes/macroscale.e
+  file = macroscale.e
 []
 
 [Variables]
@@ -316,7 +316,7 @@
     u3     = disp_z
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     
   [../]
 
@@ -333,7 +333,7 @@
     u3     = disp_z
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     
   [../]
 
@@ -350,7 +350,7 @@
     u3     = disp_z
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     
   [../]
 
@@ -373,7 +373,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -401,7 +401,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -429,7 +429,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -457,7 +457,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -485,7 +485,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -513,7 +513,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -541,7 +541,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -569,7 +569,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -597,7 +597,7 @@
     phi33 = phi_zz
 
     #Material values
-    reference_density = 2.
+    reference_density = 2.73e-9
     I11 = 1e-5
     I12 = 0.
     I13 = 0.
@@ -1148,22 +1148,22 @@
   [../]
 []
 
-[UserObjects]
-    [./macro_coupling]
-        type = OverlapCoupling
-        is_macroscale = False
-        overlap_configuration_filename = "testConfig.yaml"
-        execute_on = "TIMESTEP_END"
-    [../]
-[]
-
-[NodalKernels]
-  [./bc_coupled_z]
-    type = CouplingForce
-    overlap_coupling_object = macro_coupling
-    component = 2
-    is_macroscale = True
-    variable = disp_z
-    save_in = Coupling_3
-  []
-[]
+#[UserObjects]
+#    [./macro_coupling]
+#        type = OverlapCoupling
+#        is_macroscale = False
+#        overlap_configuration_filename = "testConfig.yaml"
+#        execute_on = "TIMESTEP_END"
+#    [../]
+#[]
+#
+#[NodalKernels]
+#  [./bc_coupled_z]
+#    type = CouplingForce
+#    overlap_coupling_object = macro_coupling
+#    component = 2
+#    is_macroscale = True
+#    variable = disp_z
+#    save_in = Coupling_3
+#  []
+#[]

@@ -953,7 +953,7 @@ namespace overlapCoupling{
 //        std::cout << "Assembling the micro-force vector:\n";
         for( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
 
-            std::cerr << "  node: " << node->first << "\n";// << ": " << node->second << "\n";
+//            std::cerr << "  node: " << node->first << "\n";// << ": " << node->second << "\n";
 //            std::cerr << "    reference position: "; vectorTools::print( _inputProcessor.getMicroNodeReferencePositions( )->find( node->first )->second );
             floatVector nodeForce( nMicroDispDOF, 0 );
 
@@ -961,7 +961,7 @@ namespace overlapCoupling{
             if( _inputProcessor.microExternalForceDefined( ) ){
 
                 auto externalForce = microExternalForces->find( node->first );
-                std::cerr << "    external force: "; vectorTools::print( externalForce->second );
+//                std::cerr << "    external force: "; vectorTools::print( externalForce->second );
     
                 if ( externalForce == microExternalForces->end( ) ){
     
@@ -978,7 +978,7 @@ namespace overlapCoupling{
             if( _inputProcessor.microInternalForceDefined( ) ){
 
                 auto internalForce = microInternalForces->find( node->first );
-                std::cerr << "    internal force: "; vectorTools::print( internalForce->second );
+//                std::cerr << "    internal force: "; vectorTools::print( internalForce->second );
     
                 if ( internalForce == microInternalForces->end( ) ){
     
@@ -1015,7 +1015,7 @@ namespace overlapCoupling{
 
             }
 
-            std::cerr << "    displacement: "; vectorTools::print( microDisplacement->second );
+//            std::cerr << "    displacement: "; vectorTools::print( microDisplacement->second );
 
             //Get the arlequin weight
             auto arlequinWeight = arlequinMicroWeightingFactors.find( node->first );
@@ -1044,7 +1044,7 @@ namespace overlapCoupling{
 
             floatVector nodeForce( nMacroDispDOF, 0 );
 
-            std::cout << "node: " << node->first << "\n";
+//            std::cout << "node: " << node->first << "\n";
             //Add the external force contribution
             if ( _inputProcessor.macroExternalForceDefined( ) ){
 
@@ -1065,7 +1065,7 @@ namespace overlapCoupling{
             if ( _inputProcessor.macroInternalForceDefined( ) ){
 
                 auto internalForce = macroInternalForces->find( node->first );
-                std::cerr << "    internal force: "; vectorTools::print( internalForce->second );
+//                std::cerr << "    internal force: "; vectorTools::print( internalForce->second );
 
                 if ( internalForce == macroInternalForces->end( ) ){
 
@@ -1104,7 +1104,7 @@ namespace overlapCoupling{
 
             }
 
-            std::cerr << "    deformation: "; vectorTools::print(macroDispDOF->second);
+//            std::cerr << "    deformation: "; vectorTools::print(macroDispDOF->second);
 
             //Get the Macro Arlequin weight
             auto arlequinWeight =  macroArlequinWeights->find( node->first );
@@ -1124,7 +1124,7 @@ namespace overlapCoupling{
 
         }
 
-        std::cerr << "out of loop\n";
+//        std::cerr << "out of loop\n";
 
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _RHS( RHS.data(), RHS.size( ), 1 );
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > _RHS_D( RHS_D.data(), RHS_D.size( ), 1 );
@@ -1137,12 +1137,17 @@ namespace overlapCoupling{
         Eigen::Map< Eigen::Matrix< floatType, -1,  1 > > macroCouplingForce( FALD.data(), FALD.size( ), 1 );
         Eigen::Map< Eigen::Matrix< floatType, -1, 1 > > _G( G.data( ), G.size( ), 1 );
         Eigen::Map< Eigen::Matrix< floatType, -1, 1 > > _D( D.data( ), D.size( ), 1 );
+        std::cerr << "forming G\n";
         _G += _N * _D;
 
+        std::cerr << "forming RHS\n";
         _RHS -= ( _N * _RHS_D + mu * ( _N * _N.transpose( ) * _G + _G ) );
+
+        std::cerr << "forming LHS\n";
         SparseMatrix _LHS = _N * _N.transpose( );
         _LHS.diagonal( ).array( ) += 1;
 
+        std::cerr << "diagonalizing LHS\n";
         Eigen::Matrix< floatType, -1, 1 > _LHS_vec = _LHS * Eigen::VectorXd::Ones( _LHS.cols( ) );
 
         std::cerr << "building micro coupling force\n";
@@ -1150,88 +1155,88 @@ namespace overlapCoupling{
         std::cerr << "building macro coupling force\n";
         macroCouplingForce = _N.transpose( ) * microCouplingForce;
 
-        std::cerr << "outputting G\n";
-        for ( unsigned int i = 0; i < microGlobalToLocalDOFMap->size( ); i++ ){
-
-            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
-                std::cerr << G[ nMicroDispDOF * i + j ] << ", ";
-            }
-            std::cerr << "\n";
-
-        }
-
-        std::cerr << "microCouplingForce:\n";
-        for ( unsigned int i = 0; i < microGlobalToLocalDOFMap->size( ); i++ ){
-
-            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
-                std::cerr << microCouplingForce[ nMicroDispDOF * i + j ] << ", ";
-            }
-            std::cerr << "\n";
-
-        }
-
-        std::cerr << "macroCouplingForce:\n";
-        for ( unsigned int i = 0; i < macroGlobalToLocalDOFMap->size( ); i++ ){
-
-            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
-                std::cerr << macroCouplingForce[ nMacroDispDOF * i + j ] << ", ";
-            }
-            std::cerr << "\n";
-
-        }
-
-        std::cerr << "G norm: " << vectorTools::l2norm( G ) << "\n";
-
-        std::cerr << "micro-domains:\n";
-        for ( auto domain = _inputProcessor.getMicroDomainIDMap( )->begin( ); domain != _inputProcessor.getMicroDomainIDMap( )->end( ); domain++ ){
-
-            uIntVector domainNodes;
-            errorOut error = _inputProcessor._microscale->getSubDomainNodes( 0, domain->first, domainNodes );
-            if ( error ){
-                return error;
-            }
-            std::cerr << domain->first << ": "; vectorTools::print( domainNodes );
-            std::cerr << "    reference positions\n";
-            auto referencePositions = _inputProcessor.getMicroNodeReferencePositions( );
-            for ( auto d = domainNodes.begin( ); d != domainNodes.end( ); d++ ){std::cerr << "        "; auto p = referencePositions->find( *d ); vectorTools::print( p->second ); };
-
-            std::cerr << "    center of mass: ";
-            for ( auto cell = _referenceFreeMicroDomainCentersOfMass.begin( ); cell != _referenceFreeMicroDomainCentersOfMass.end( ); cell++ ){
-
-                std::cout << "cell: " << cell->first << "\n";
-
-                auto centerOfMass = cell->second.find( domain->first );
-
-                if ( centerOfMass != cell->second.end( ) ){
-
-                    vectorTools::print( centerOfMass->second );
-
-                }
-
-            }
-
-            for ( auto cell = _referenceGhostMicroDomainCentersOfMass.begin( ); cell != _referenceGhostMicroDomainCentersOfMass.end( ); cell++ ){
-
-                std::cout << "cell: " << cell->first << "\n";
-
-                auto centerOfMass = cell->second.find( domain->first );
-
-                if ( centerOfMass != cell->second.end( ) ){
-
-                    vectorTools::print( centerOfMass->second );
-
-                }
-
-            }
-
-            std::cout << "DONE\n";
-
-        }
+//        std::cerr << "outputting G\n";
+//        for ( unsigned int i = 0; i < microGlobalToLocalDOFMap->size( ); i++ ){
+//
+//            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
+//                std::cerr << G[ nMicroDispDOF * i + j ] << ", ";
+//            }
+//            std::cerr << "\n";
+//
+//        }
+//
+//        std::cerr << "microCouplingForce:\n";
+//        for ( unsigned int i = 0; i < microGlobalToLocalDOFMap->size( ); i++ ){
+//
+//            for ( unsigned int j = 0; j < nMicroDispDOF; j++ ){
+//                std::cerr << microCouplingForce[ nMicroDispDOF * i + j ] << ", ";
+//            }
+//            std::cerr << "\n";
+//
+//        }
+//
+//        std::cerr << "macroCouplingForce:\n";
+//        for ( unsigned int i = 0; i < macroGlobalToLocalDOFMap->size( ); i++ ){
+//
+//            for ( unsigned int j = 0; j < nMacroDispDOF; j++ ){
+//                std::cerr << macroCouplingForce[ nMacroDispDOF * i + j ] << ", ";
+//            }
+//            std::cerr << "\n";
+//
+//        }
+//
+//        std::cerr << "G norm: " << vectorTools::l2norm( G ) << "\n";
+//
+//        std::cerr << "micro-domains:\n";
+//        for ( auto domain = _inputProcessor.getMicroDomainIDMap( )->begin( ); domain != _inputProcessor.getMicroDomainIDMap( )->end( ); domain++ ){
+//
+//            uIntVector domainNodes;
+//            errorOut error = _inputProcessor._microscale->getSubDomainNodes( 0, domain->first, domainNodes );
+//            if ( error ){
+//                return error;
+//            }
+//            std::cerr << domain->first << ": "; vectorTools::print( domainNodes );
+//            std::cerr << "    reference positions\n";
+//            auto referencePositions = _inputProcessor.getMicroNodeReferencePositions( );
+//            for ( auto d = domainNodes.begin( ); d != domainNodes.end( ); d++ ){std::cerr << "        "; auto p = referencePositions->find( *d ); vectorTools::print( p->second ); };
+//
+//            std::cerr << "    center of mass: ";
+//            for ( auto cell = _referenceFreeMicroDomainCentersOfMass.begin( ); cell != _referenceFreeMicroDomainCentersOfMass.end( ); cell++ ){
+//
+//                std::cout << "cell: " << cell->first << "\n";
+//
+//                auto centerOfMass = cell->second.find( domain->first );
+//
+//                if ( centerOfMass != cell->second.end( ) ){
+//
+//                    vectorTools::print( centerOfMass->second );
+//
+//                }
+//
+//            }
+//
+//            for ( auto cell = _referenceGhostMicroDomainCentersOfMass.begin( ); cell != _referenceGhostMicroDomainCentersOfMass.end( ); cell++ ){
+//
+//                std::cout << "cell: " << cell->first << "\n";
+//
+//                auto centerOfMass = cell->second.find( domain->first );
+//
+//                if ( centerOfMass != cell->second.end( ) ){
+//
+//                    vectorTools::print( centerOfMass->second );
+//
+//                }
+//
+//            }
+//
+//            std::cout << "DONE\n";
+//
+//        }
         
 //
 //        std::cerr << "microCouplingForce:\n" << microCouplingForce << "\n";
-        std::cerr << "macroCouplingForce:\n" << macroCouplingForce << "\n";
-        assert( 1 == 0 );
+//        std::cerr << "macroCouplingForce:\n" << macroCouplingForce << "\n";
+//        assert( 1 == 0 );
 
         return NULL;
 
@@ -3107,7 +3112,7 @@ namespace overlapCoupling{
 
     errorOut overlapCoupling::processDomainReference( const unsigned int &microIncrement,
                                                       const std::string &domainName,
-                                                      const unsigned int cellID, const uIntVector &macroNodes,
+                                                      const unsigned int cellID, uIntVector &macroNodes,
                                                       domainFloatMap   &referenceMicroDomainMass,
                                                       domainFloatVectorMap &referenceMicroDomainCentersOfMass,
                                                       domainFloatVectorMap &referenceMicroDomainMomentsOfInertia,
@@ -3120,7 +3125,7 @@ namespace overlapCoupling{
          * :param const unsigned int &microIncrement: The micro-scale increment at which to compute the reference
          * :param const std::string &domainName: The name of the domain
          * :param const unsigned int cellID: The global cell ID number
-         * :param const uIntVector &macroNodes: The nodes of the macro domain
+         * :param uIntVector &macroNodes: The nodes of the macro domain
          * :param domainFloatMap   &referenceMicroDomainMass: The reference mass of the micro domain. This
          *     should be a reference to the micro-domain mass vector
          * :param domainFloatVectorMap &referenceMicroDomainCentersOfMass: The reference micro-domain center of mass
@@ -3188,6 +3193,7 @@ namespace overlapCoupling{
         //Compute the domain's shape function information
         error = computeDomainShapeFunctionInformation( cellID, domainName, microIncrement,
                                                        referenceMicroDomainCentersOfMass[ domainName ],
+                                                       macroNodes,
                                                        domainCenterOfMassShapeFunctionValues,
                                                        domainMicroPositionShapeFunctionValues );
 
@@ -3442,6 +3448,7 @@ namespace overlapCoupling{
                                                                      const std::string &domainName,
                                                                      const unsigned int &microIncrement,
                                                                      const floatVector &domainCenterOfMass,
+                                                                     uIntVector &macroNodes,
                                                                      floatVector &domainCenterOfMassShapeFunctionValues,
                                                                      std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues ){
         /*!
@@ -3451,6 +3458,7 @@ namespace overlapCoupling{
          * :param const std::string &domainName: The name of the nodeset which defines the micro-scale domain
          * :param const unsigned int &microIncrement: The micro-scale increment to analyze
          * :param const floatVector &domainCenterOfMass: The center of mass of the domain
+         * :param uIntVector &macroNodes: The IDs of the macro nodes corresponding with the shape functions
          * :param floatVector &domainCenterOfMassShapeFunctionValues: The shapefunction values at the center of mass
          * :param std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues:
          *     The shapefunction values at all of the micro nodes contained within the domain.
@@ -3461,7 +3469,7 @@ namespace overlapCoupling{
                                                        *_inputProcessor.getMacroNodeReferencePositions( ),
                                                        *_inputProcessor.getMacroDisplacements( ),
                                                        *_inputProcessor.getMacroNodeReferenceConnectivity( ),
-                                                       domainCenterOfMass, domainCenterOfMassShapeFunctionValues );
+                                                       domainCenterOfMass, macroNodes, domainCenterOfMassShapeFunctionValues );
 
         if ( error ){
 
@@ -3525,7 +3533,7 @@ namespace overlapCoupling{
                                                    *_inputProcessor.getMacroNodeReferencePositions( ),
                                                    *_inputProcessor.getMacroDisplacements( ),
                                                    *_inputProcessor.getMacroNodeReferenceConnectivity( ),
-                                                   microNodePositions,
+                                                   microNodePositions, macroNodes,
                                                    domainMicroPositionShapeFunctionValues );
 
             if ( error ){
@@ -3815,7 +3823,7 @@ namespace overlapCoupling{
     errorOut overlapCoupling::computeShapeFunctionsAtPoint( const unsigned int cellID,
                                                             const std::unordered_map< uIntType, floatVector > &nodeLocations,
                                                             const std::unordered_map< uIntType, uIntVector > &connectivity,
-                                                            const floatVector &point,
+                                                            const floatVector &point, uIntVector &macroNodes,
                                                             floatVector &shapeFunctions ){
         /*!
          * Compute the shape functions of a given macro-scale domain at a single point
@@ -3824,6 +3832,7 @@ namespace overlapCoupling{
          * :param const std::unordered_map< uIntType, floatVector > &nodeLocations: The nodal location map
          * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity map
          * :param const floatVector &point: The point at which to compute the shape functions
+         * :param uIntVector &macroNodes: The macro node ids
          * :param floatVector &shapeFunctions: The shapefunctions at the point
          */
 
@@ -3839,7 +3848,7 @@ namespace overlapCoupling{
 
         std::unordered_map< uIntType, floatVector > shapefunctionMap;
 
-        errorOut error = computeShapeFunctionsAtPoints( cellID, nodeLocations, connectivity, pointMap, shapefunctionMap );
+        errorOut error = computeShapeFunctionsAtPoints( cellID, nodeLocations, connectivity, pointMap, macroNodes, shapefunctionMap );
 
         if ( error ){
 
@@ -3860,7 +3869,7 @@ namespace overlapCoupling{
                                                             const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
                                                             const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
                                                             const std::unordered_map< uIntType, uIntVector > &connectivity,
-                                                            const floatVector &point,
+                                                            const floatVector &point, uIntVector &macroNodes,
                                                             floatVector &shapeFunctions ){
         /*!
          * Compute the shape functions of a given macro-scale domain at a single point
@@ -3870,6 +3879,7 @@ namespace overlapCoupling{
          * :param const std::unordered_map< uIntType, floatVector > &nodeLocations: The nodal displacement map
          * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity map
          * :param const floatVector &point: The point at which to compute the shape functions
+         * :param uIntVector &macroNodes: The macro node ids
          * :param floatVector &shapeFunctions: The shapefunctions at the point
          */
 
@@ -3886,7 +3896,7 @@ namespace overlapCoupling{
         std::unordered_map< uIntType, floatVector > shapefunctionMap;
 
         errorOut error = computeShapeFunctionsAtPoints( cellID, nodeReferenceLocations, nodeDisplacements, 
-                                                        connectivity, pointMap, shapefunctionMap );
+                                                        connectivity, pointMap, macroNodes, shapefunctionMap );
 
         if ( error ){
 
@@ -3907,6 +3917,7 @@ namespace overlapCoupling{
                                                              const std::unordered_map< uIntType, floatVector > &nodeLocations,
                                                              const std::unordered_map< uIntType, uIntVector > &connectivity,
                                                              const std::unordered_map< uIntType, floatVector > &points,
+                                                             uIntVector &macroNodes,
                                                              std::unordered_map< uIntType, floatVector > &shapeFunctions ){
         /*!
          * Compute the shape functions of a given macro-scale domain at the given points
@@ -3915,6 +3926,7 @@ namespace overlapCoupling{
          * :param const std::unordered_map< uIntType, floatVector > &nodeLocations: The nodal location map
          * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity map
          * :param const std::unordered_map< uIntType, floatVector > &points: The points at which to compute the shape functions
+         * :param uIntVector &macroNodes: The macro node ids
          * :param std::unordered_map< uIntType, floatVector > &shapeFunctions: The shapefunctions at the points
          */
 
@@ -3930,6 +3942,8 @@ namespace overlapCoupling{
             return result;
 
         }
+
+        macroNodes = element->global_node_ids;
 
         //Make sure the number of points and the size of the output are consistent
         unsigned nPoints = points.size( );
@@ -3982,6 +3996,7 @@ namespace overlapCoupling{
                                                              const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
                                                              const std::unordered_map< uIntType, uIntVector > &connectivity,
                                                              const std::unordered_map< uIntType, floatVector > &points,
+                                                             uIntVector &macroNodes,
                                                              std::unordered_map< uIntType, floatVector > &shapeFunctions ){
         /*!
          * Compute the shape functions of a given macro-scale domain at the given points
@@ -3991,6 +4006,7 @@ namespace overlapCoupling{
          * :param const std::unordered_map< uIntType, floatVector > &nodeDisplacements: The nodal displacement map
          * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity map
          * :param const std::unordered_map< uIntType, floatVector > &points: The points at which to compute the shape functions
+         * :param uIntVector &macroNodes: The macro node ids
          * :param std::unordered_map< uIntType, floatVector > &shapeFunctions: The shapefunctions at the points
          */
 
@@ -4006,6 +4022,8 @@ namespace overlapCoupling{
             return result;
 
         }
+
+        macroNodes = element->global_node_ids;
 
         //Make sure the number of points and the size of the output are consistent
         unsigned nPoints = points.size( );
@@ -4059,6 +4077,7 @@ namespace overlapCoupling{
                                                        const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
                                                        const std::unordered_map< uIntType, uIntVector > &connectivity,
                                                        const std::unordered_map< uIntType, floatVector > points,
+                                                       uIntVector &macroNodes,
                                                        std::unordered_map< uIntType, floatVector > &shapeFunctionGradients ){
         /*!
          * Compute the shape functions of a given macro-scale domain at the given points
@@ -4068,6 +4087,7 @@ namespace overlapCoupling{
          * :param const std::unordered_map< uIntType, floatVector > &nodeDisplacements: The nodal reference location vector
          * :param const std::unordered_map< uIntType, uIntVector > &connectivity: The connectivity vector
          * :param const std::unordered_map< uIntType, floatVector > &points: The points at which to compute the shape functions
+         * :param uIntVector &macroNodes: The macro node ids
          * :param std::unordered_map< uIntType, floatVector > &shapeFunctionGradients: The gradients of the shapefunctions
          *     at the points. The output vector is organized [ N11_x, N11_y, N11_z, N12_x, ... ] where the first index is the
          *     point number, the second index is the node number, and the _ indicates a gradient w.r.t. the
@@ -4086,6 +4106,8 @@ namespace overlapCoupling{
             return result;
 
         }
+
+        macroNodes = element->global_node_ids;
 
         //Make sure the number of points and the size of the output are consistent
         unsigned nPoints = points.size( ) / _dim;
@@ -4185,10 +4207,11 @@ namespace overlapCoupling{
 
             }
 
+            uIntVector macroNodes;
             error = computeShapeFunctionsAtPoints( *cellID,
                                                    *_inputProcessor.getMacroNodeReferencePositions( ),
                                                    *_inputProcessor.getMacroNodeReferenceConnectivity( ),
-                                                   domainCOMs, macroDomainShapeFunctions );
+                                                   domainCOMs, macroNodes, macroDomainShapeFunctions );
 
             if ( error ){
 
@@ -4244,10 +4267,11 @@ namespace overlapCoupling{
 
             }
 
+            uIntVector macroNodes;
             error = computeShapeFunctionsAtPoints( *cellID,
                                                    *_inputProcessor.getMacroNodeReferencePositions( ),
                                                    *_inputProcessor.getMacroNodeReferenceConnectivity( ),
-                                                   domainCOMs, macroDomainShapeFunctions );
+                                                   domainCOMs, macroNodes, macroDomainShapeFunctions );
 
             if ( error ){
 
@@ -4637,7 +4661,7 @@ namespace overlapCoupling{
                                                                                            const unsigned int &cellID,
                                                                                            const unsigned int &microIncrement,
                                                                                            const std::string &domainName,
-                                                                                           const uIntVector &macroNodes ){
+                                                                                           uIntVector &macroNodes ){
         /*!
          * Compute the current domain's contribution to the direct free micro to ghost macro
          * projection matrix
@@ -4716,7 +4740,7 @@ namespace overlapCoupling{
                                                *_inputProcessor.getMacroNodeReferencePositions( ),
                                                *_inputProcessor.getMacroDisplacements( ),
                                                *_inputProcessor.getMacroNodeReferenceConnectivity( ),
-                                               microNodePositions,
+                                               microNodePositions, macroNodes,
                                                domainMicroPositionShapeFunctionValues );
 
         if ( error ){
@@ -6147,18 +6171,20 @@ namespace overlapCoupling{
 
         std::unordered_map< uIntType, floatVector > shapefunctionsAtCentersOfMassByID;
 
+        uIntVector macroNodes;
+
         if ( _inputProcessor.isFiltering( ) ){
 
             error = overlapCoupling::computeShapeFunctionsAtPoints( macroCellID, *macroNodeReferenceLocations,
                                                                     projectedMacroDisplacements, *macroConnectivity,
-                                                                    centerOfMassMap, shapefunctionsAtCentersOfMassByID );
+                                                                    centerOfMassMap, macroNodes, shapefunctionsAtCentersOfMassByID );
 
         }
         else{
 
             error = overlapCoupling::computeShapeFunctionsAtPoints( macroCellID, *macroNodeReferenceLocations, *macroDisplacements,
                                                                     *macroConnectivity,
-                                                                    centerOfMassMap,
+                                                                    centerOfMassMap, macroNodes,
                                                                     shapefunctionsAtCentersOfMassByID );
 
         }

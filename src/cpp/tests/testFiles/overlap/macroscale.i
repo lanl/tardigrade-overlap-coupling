@@ -6,7 +6,7 @@
 #####################################
 
 [Mesh]
-  file = /media/nathan/projects/overlapTestMeshes/macroscale.e
+  file = macroscale.e
 []
 
 [Variables]
@@ -856,6 +856,66 @@
     order = FIRST
     family = LAGRANGE
   [../]
+
+  [./FCoupling_1]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FCoupling_2]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./FCoupling_3]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CCoupling_11]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CCoupling_12]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CCoupling_13]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CCoupling_21]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CCoupling_22]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CCoupling_23]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CCoupling_31]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CCoupling_32]
+    order = FIRST
+    family = LAGRANGE
+  [../]
+
+  [./CCoupling_33]
+    order = FIRST
+    family = LAGRANGE
+  [../]
 []
 
 [AuxKernels]
@@ -1109,90 +1169,102 @@
 []
 
 [NodalKernels]
-#  [./bc_coupled_x]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 0
-#    is_macroscale = True
-#    variable = disp_x
-#  []
-#  [./bc_coupled_y]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 1
-#    is_macroscale = True
-#    variable = disp_y
-#  []
+  [./bc_coupled_x]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 0
+    is_macroscale = True
+    variable = disp_x
+    save_in = FCoupling_1
+  []
+  [./bc_coupled_y]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 1
+    is_macroscale = True
+    variable = disp_y
+    save_in = FCoupling_2
+  []
   [./bc_coupled_z]
     type = CouplingForce
     overlap_coupling_object = macro_coupling
     component = 2
     is_macroscale = True
     variable = disp_z
+    save_in = FCoupling_3
   []
-#  [./bc_coupled_phi11]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 3
-#    is_macroscale = True
-#    variable = phi_xx
-#  []
-#  [./bc_coupled_phi12]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 4
-#    is_macroscale = True
-#    variable = phi_xy
-#  []
-#  [./bc_coupled_phi13]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 5
-#    is_macroscale = True
-#    variable = phi_xz
-#  []
-#  [./bc_coupled_phi21]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 6
-#    is_macroscale = True
-#    variable = phi_yx
-#  []
-#  [./bc_coupled_phi22]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 7
-#    is_macroscale = True
-#    variable = phi_yy
-#  []
-#  [./bc_coupled_phi23]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 8
-#    is_macroscale = True
-#    variable = phi_yz
-#  []
-#  [./bc_coupled_phi31]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 9
-#    is_macroscale = True
-#    variable = phi_zx
-#  []
-#  [./bc_coupled_phi32]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 10
-#    is_macroscale = True
-#    variable = phi_zy
-#  []
-#  [./bc_coupled_phi33]
-#    type = CouplingForce
-#    overlap_coupling_object = macro_coupling
-#    component = 11
-#    is_macroscale = True
-#    variable = phi_zz
-#  []
+  [./bc_coupled_phi11]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 3
+    is_macroscale = True
+    variable = phi_xx
+    save_in = CCoupling_11
+  []
+  [./bc_coupled_phi12]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 4
+    is_macroscale = True
+    variable = phi_xy
+    save_in = CCoupling_12
+  []
+  [./bc_coupled_phi13]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 5
+    is_macroscale = True
+    variable = phi_xz
+    save_in = CCoupling_13
+  []
+  [./bc_coupled_phi21]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 6
+    is_macroscale = True
+    variable = phi_yx
+    save_in = CCoupling_21
+  []
+  [./bc_coupled_phi22]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 7
+    is_macroscale = True
+    variable = phi_yy
+    save_in = CCoupling_22
+  []
+  [./bc_coupled_phi23]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 8
+    is_macroscale = True
+    variable = phi_yz
+    save_in = CCoupling_23
+  []
+  [./bc_coupled_phi31]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 9
+    is_macroscale = True
+    variable = phi_zx
+    save_in = CCoupling_31
+  []
+  [./bc_coupled_phi32]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 10
+    is_macroscale = True
+    variable = phi_zy
+    save_in = CCoupling_32
+  []
+  [./bc_coupled_phi33]
+    type = CouplingForce
+    overlap_coupling_object = macro_coupling
+    component = 11
+    is_macroscale = True
+    variable = phi_zz
+    save_in = CCoupling_33
+  []
 []
 
 [Materials]
@@ -1266,6 +1338,7 @@
 [Outputs]
   exodus = true
   perf_graph = true
+  execute_on = "INITIAL TIMESTEP_END"
   [./xdmf]
     type = Xdmf
     execute_on = "INITIAL NONLINEAR"

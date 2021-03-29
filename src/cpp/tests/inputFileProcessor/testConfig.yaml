@@ -117,6 +117,19 @@ macroscale_definition:
                 C31: sc_31
                 C32: sc_32
                 C33: sc_33
+        lumped_mass_matrix_variable_names: #The names of the lumped mass matrix at the nodes
+                M1: m_1
+                M2: m_2
+                M3: m_3
+                I11: i_11
+                I12: i_12
+                I13: i_13
+                I21: i_21
+                I22: i_22
+                I23: i_23
+                I31: i_31
+                I32: i_32
+                I33: i_33
 
 microscale_definition:
         filename: microscale.xdmf

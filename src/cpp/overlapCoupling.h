@@ -309,18 +309,19 @@ namespace overlapCoupling{
             errorOut computeShapeFunctionsAtPoint( const unsigned int cellID,
                                                    const std::unordered_map< uIntType, floatVector > &nodeLocations,
                                                    const std::unordered_map< uIntType, uIntVector >  &connectivity,
-                                                   const floatVector &point, floatVector &shapeFunction );
+                                                   const floatVector &point, uIntVector &macroNodes, floatVector &shapeFunction );
 
             errorOut computeShapeFunctionsAtPoint( const unsigned int cellID,
                                                    const std::unordered_map< uIntType, floatVector > &nodeReferenceLocations,
                                                    const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
                                                    const std::unordered_map< uIntType, uIntVector >  &connectivity,
-                                                   const floatVector &point, floatVector &shapeFunction );
+                                                   const floatVector &point, uIntVector &macroNodes, floatVector &shapeFunction );
 
             errorOut computeShapeFunctionsAtPoints( const unsigned int cellID,
                                                     const std::unordered_map< uIntType, floatVector > &nodeLocations,
                                                     const std::unordered_map< uIntType, uIntVector > &connectivity,
                                                     const std::unordered_map< uIntType, floatVector > &points,
+                                                    uIntVector &macroNodes,
                                                     std::unordered_map< uIntType, floatVector > &shapeFunctions );
 
             errorOut computeShapeFunctionsAtPoints( const unsigned int cellID,
@@ -328,6 +329,7 @@ namespace overlapCoupling{
                                                     const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
                                                     const std::unordered_map< uIntType, uIntVector > &connectivity,
                                                     const std::unordered_map< uIntType, floatVector > &points,
+                                                    uIntVector &macroNodes,
                                                     std::unordered_map< uIntType, floatVector > &shapeFunctions );
 
             errorOut computeShapeFunctionGradientsAtPoints( const unsigned int cellID,
@@ -335,6 +337,7 @@ namespace overlapCoupling{
                                                             const std::unordered_map< uIntType, floatVector > &nodeDisplacements,
                                                             const std::unordered_map< uIntType, uIntVector > &connectivity,
                                                             const std::unordered_map< uIntType, floatVector > points,
+                                                            uIntVector &macroNodes,
                                                             std::unordered_map< uIntType, floatVector > &shapeFunctionGradients );
 
             errorOut computeShapeFunctionsAtReferenceCentersOfMass( );
@@ -343,6 +346,7 @@ namespace overlapCoupling{
                                                             const std::string &domainName,
                                                             const unsigned int &microIncrement,
                                                             const floatVector &domainCenterOfMass,
+                                                            uIntVector &macroNodes,
                                                             floatVector &domainCenterOfMassShapeFunctionValues,
                                                             std::unordered_map< uIntType, floatVector > &domainMicroPositionShapeFunctionValues );
 
@@ -353,7 +357,7 @@ namespace overlapCoupling{
 
             errorOut processDomainReference( const unsigned int &microIncrement,
                                              const std::string &domainName,
-                                             const unsigned int cellID, const uIntVector &macroNodes,
+                                             const unsigned int cellID, uIntVector &macroNodes,
                                              domainFloatMap       &referenceMicroDomainMass,
                                              domainFloatVectorMap &referenceMicroDomainCentersOfMass,
                                              domainFloatVectorMap &referenceMicroDomainMomentsOfInertia,
@@ -379,7 +383,7 @@ namespace overlapCoupling{
                                                                                   const unsigned int &cellID,
                                                                                   const unsigned int &microIncrement,
                                                                                   const std::string &domainName,
-                                                                                  const uIntVector &macroNodes );
+                                                                                  uIntVector &macroNodes );
             errorOut projectDegreesOfFreedom( const bool useUpdatedFreeDOF = false );
 
             errorOut homogenizeMicroScale( const unsigned int &microIncrement );
