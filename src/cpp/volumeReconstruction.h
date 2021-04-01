@@ -126,6 +126,11 @@ namespace volumeReconstruction{
                                                         const floatVector *subdomainWeights = NULL,
                                                         const floatVector *macroNormal = NULL, const bool useMacroNormal = false );
 
+            virtual errorOut performPositionWeightedSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
+                                                                        floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
+                                                                        const floatVector *subdomainWeights = NULL,
+                                                                        const floatVector *macroNormal = NULL, const bool useMacroNormal = false );
+
             virtual errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                             floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
                                                             const floatVector *subdomainWeights = NULL,
@@ -216,6 +221,11 @@ namespace volumeReconstruction{
                                                 const floatVector *subdomainWeights = NULL,
                                                 const floatVector *macroNormal = NULL, const bool useMacroNormal = false );
 
+            errorOut performPositionWeightedSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
+                                                                floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
+                                                                const floatVector *subdomainWeights = NULL,
+                                                                const floatVector *macroNormal = NULL, const bool useMacroNormal = false );
+
             errorOut performSurfaceFluxIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                     floatVector &integratedValue, const uIntVector *subdomainIDs = NULL,
                                                     const floatVector *subdomainWeights = NULL,
@@ -246,7 +256,7 @@ namespace volumeReconstruction{
 
             errorOut performSurfaceIntegralMethods( const floatVector &valuesAtPoints, const uIntType valueSize,
                                                     const floatVector &origin, floatVector &integratedValue,
-                                                    bool computeFlux, bool dyadWithOrigin, const uIntVector *subdomainIDs = NULL,
+                                                    bool computeFlux, bool positionWeightedIntegral, bool dyadWithOrigin, const uIntVector *subdomainIDs = NULL,
                                                     const floatVector *subdomainWeights = NULL, const floatVector *macroNormal = NULL,
                                                     const bool useMacroNormal = false );
 

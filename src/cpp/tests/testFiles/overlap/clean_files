@@ -1,3 +1,4 @@
 rm *.xdmf
 rm *.h5
-rm *.e
+rm *_out_*
+rm *_exodus*

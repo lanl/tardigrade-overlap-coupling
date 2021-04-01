@@ -527,159 +527,168 @@ namespace inputFileProcessor{
 
         //Extract the timestamp of the macro domain at the indicated increment
         error = extractMacroTime( macroIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro timestamp" );
             result->addNext( error );
             return result;
         }
-
+    
         //Extract the macro displacements
         error = extractMacroDisplacements( macroIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro displacements" );
             result->addNext( error );
             return result;
         }
-
+    
         //Extract the macro displacement DOF vector
         error = extractMacroDispDOFVector( macroIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the macro displacement DOF vector" );
             result->addNext( error );
             return result;
         }
-
+    
         //Extract the macro velocities
         error = extractMacroVelocities( macroIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro velocities" );
             result->addNext( error );
             return result;
         }
-
+    
         //Extract the macro accelerations
         error = extractMacroAccelerations( macroIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro accelerations" );
             result->addNext( error );
             return result;
         }
-
+    
         if ( _extractPreviousDOFValues ){
-
+    
             bool tmpFlag;
             uIntType previousMacroIncrement = _config[ "coupling_initialization" ][ "previous_macro_increment" ].as< uIntType >( );
-
+    
             //Extract the previous time
             error = extractMacroTime( previousMacroIncrement, _previousMacroTime );
-
+    
             if ( error ){
                 errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous micro time" );
                 result->addNext( error );
                 return result;
             }
-
-            if ( !vectorTools::fuzzyEquals( _microTime - _previousMicroTime, _macroTime - _previousMacroTime ) ){
-
+    
+            if ( !vectorTools::fuzzyEquals( _microTime - _previousMicroTime, _macroTime - _previousMacroTime ) && !_isFiltering ){
+    
                 return new errorNode( "initializeIncrement",
                                       "The change in time between increments for the macro-scale and micro-scale is not consistent" );
-
+    
             }
-
-            _Dt = _macroTime - _previousMacroTime;
-
+    
+            _Dt = _microTime - _previousMicroTime;
+    
             //Extract the macro displacements
             error = extractMacroDispDOFVector( previousMacroIncrement, tmpFlag, _previousMacroDispDOFVector );
-    
+        
             if ( error ){
                 errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro displacements" );
                 result->addNext( error );
                 return result;
             }
-    
+        
             //Extract the macro velocities
             error = extractMacroVelocities( previousMacroIncrement, tmpFlag, _previousMacroVelocities );
-    
+        
             if ( error ){
                 errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro velocities" );
                 result->addNext( error );
                 return result;
             }
-    
+        
             //Extract the macro accelerations
             error = extractMacroAccelerations( previousMacroIncrement, tmpFlag, _previousMacroAccelerations );
-    
+        
             if ( error ){
                 errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the previous macro accelerations" );
                 result->addNext( error );
                 return result;
             }
-
+    
         }
-
+    
         //Extract the macro internal forces
         error = extractMacroInternalForces( macroIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro internal forces" );
             result->addNext( error );
             return result;
         }
-
+    
         //Extract the macro inertial forces
         error = extractMacroInertialForces( macroIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro inertial forces" );
             result->addNext( error );
             return result;
         }
-
+    
         //Extract the macro body forces / couples
         error = extractMacroBodyForces( microIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro body forces and couples" );
             result->addNext( error );
             return result;
         }
-
+    
         //Extract the macro surface forces / couples
         error = extractMacroSurfaceForces( microIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro surface forces and couples" );
             result->addNext( error );
             return result;
         }
-
-
+    
+    
         //Extract the macro external forces
         error = extractMacroExternalForces( macroIncrement );
-
+    
         if ( error ){
             errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro external forces" );
             result->addNext( error );
             return result;
         }
 
+        //Extract the macro lumped-mass matrix
+        error = extractMacroLumpedMassMatrix( macroIncrement );
+
+        if ( error ){
+            errorOut result = new errorNode( "initializeIncrement", "Error in the extract of the macro lumped-mass matrix" );
+            result->addNext( error );
+            return result;
+        }
+    
         if ( _useArlequinMethod ){
-
+    
             error = extractMacroArlequinWeights( macroIncrement );
-
+    
             if ( error ){
-
+    
                 errorOut result = new errorNode( "initializeIncrement", "Error in the extraction of the Arlequin macro node weights\n" );
                 result->addNext( error );
                 return result;
-
+    
             }
-
+    
         }
 
         //Set the current increment
@@ -733,7 +742,7 @@ namespace inputFileProcessor{
                                                         _free_micro_volume_sets,
                                                         _microDomainSurfaceCount,
                                                         _macroCellDomainMap,
-                                                        _freeMacroMassPropertiesRequired,
+                                                        _ghostMacroMassPropertiesRequired,
                                                         _macroReferenceDensityTypes,
                                                         _macroReferenceMomentOfInertiaTypes,
                                                         _macroReferenceDensities,
@@ -956,7 +965,7 @@ namespace inputFileProcessor{
                         if ( !( *domain )[ "reference_density" ] ){
         
                             return new errorNode( "checkCommonDomainConfiguration",
-                                                  "The reference density is required for the macro-domian in entry " + std::to_string( indx ) +
+                                                  "The reference density is required for the macro-domain in entry " + std::to_string( indx ) +
                                                   " but is not defined." );
         
                         }
@@ -1016,7 +1025,7 @@ namespace inputFileProcessor{
                         if ( !( *domain )[ "reference_moment_of_inertia" ] ){
         
                             return new errorNode( "checkCommonDomainConfiguration",
-                                                  "The reference moment of inertia is required for the macro-domian in entry " +
+                                                  "The reference moment of inertia is required for the macro-domain in entry " +
                                                   std::to_string( indx ) + " but is not defined." );
         
                         }
@@ -2245,6 +2254,71 @@ namespace inputFileProcessor{
 
     }
 
+    errorOut inputFileProcessor::extractMacroLumpedMassMatrix( const unsigned int &increment ){
+        /*!
+         * Extract the macro lumped-mass matrix
+         *
+         * :param const unsigned int &increment: The current increment
+         */
+
+        stringVector variableKeys =
+            {
+                "M1", "M2", "M3",
+                "I11", "I12", "I13",
+                "I21", "I22", "I23",
+                "I31", "I32", "I33"
+            };
+
+        std::string dataType = "Node";
+
+        bool populateWithNullOnUndefined = true;
+
+        std::string configurationName = "lumped_mass_matrix_variable_names";
+        YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
+        floatVector values;
+
+        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                        populateWithNullOnUndefined, configurationName,
+                                                                        configuration, _macroLumpedMassMatrixFlag, values );
+
+        if ( error ){
+
+            errorOut result = new errorNode( "extractMacroLumpedMassMatrix",
+                                             "Error in the extraction of the macro lumped mass matrix" );
+            result->addNext( error );
+            return result;
+
+        }
+
+        if ( !_macroLumpedMassMatrixFlag ){
+
+            _macroLumpedMassMatrix.clear( );
+            return NULL;
+
+        }
+
+        _macroLumpedMassMatrix.clear( );
+        _macroLumpedMassMatrix.reserve( _macroGlobalNodeIDOutputIndex.size( ) );
+        floatType _sign = _config[ "coupling_initialization" ][ "macro_body_force_sign" ].as< floatType >( );
+        for( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
+
+            if ( n->second >= values.size( ) ){
+
+                return new errorNode( "extractMacroLumpedMassMatrix",
+                                      "The index required by macro node " + std::to_string( n->first ) + " is too large for the values vector" );
+
+            }
+
+            _macroLumpedMassMatrix.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                   values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            _macroLumpedMassMatrix[ n->first ] *= _sign;
+
+        }
+
+        return NULL;
+
+    }
+
     errorOut inputFileProcessor::extractDataFileProperties( std::shared_ptr< dataFileInterface::dataFileBase > &dataFile,
                                                             const unsigned int &increment, const stringVector &variableKeys,
                                                             const std::string &dataType,
@@ -2650,34 +2724,47 @@ namespace inputFileProcessor{
 
         //Get the values of the micro volumes from the output file
         floatVector values;
-        errorOut error = _macroscale->getSolutionData( increment,
-                                                       _config[ "coupling_initialization" ][ "arlequin_weighting_variable_name" ].as< std::string >( ),
-                                                       "Node", values );
 
-        if ( error ){
+        if ( !_isFiltering ){
 
-            errorOut result = new errorNode( "extractMacroArlequinWeights", "Error in extraction of the macro Arlequin nodal weights" );
-            result->addNext( error );
-            return result;
+            errorOut error = _macroscale->getSolutionData( increment,
+                                                           _config[ "coupling_initialization" ][ "arlequin_weighting_variable_name" ].as< std::string >( ),
+                                                           "Node", values );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "extractMacroArlequinWeights", "Error in extraction of the macro Arlequin nodal weights" );
+                result->addNext( error );
+                return result;
+    
+            }
 
         }
 
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
-            if ( n->second >= values.size( ) ){
+            if ( _isFiltering ){
 
-                return new errorNode( "extractMacroArlequinWeights", "The Arlequin weights vector is too short for the required index" );
+                _macroArlequinWeights.emplace( n->first, 0 );
 
             }
+            else{
 
-            _macroArlequinWeights.emplace( n->first, values[ n->second ] );
+                if ( n->second >= values.size( ) ){
+    
+                    return new errorNode( "extractMacroArlequinWeights", "The Arlequin weights vector is too short for the required index" );
+    
+                }
+    
+                _macroArlequinWeights.emplace( n->first, values[ n->second ] );
+
+            }
 
         }
 
         return NULL;
 
     }
-
 
     errorOut inputFileProcessor::extractMicroDisplacements( const unsigned int &increment ){
         /*!
@@ -2786,19 +2873,21 @@ namespace inputFileProcessor{
         std::string configurationName = "displacement_variable_names";
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
 
-
         floatVector values;
-        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, values );
+        if ( !_isFiltering ){
 
-        if ( error ){
-
-            errorOut result = new errorNode( "extractMacroDisplacements",
-                                             "Error in the extraction of the macro displacements" );
-            result->addNext( error );
-            return result;
-
+            errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                            populateWithNullOnUndefined, configurationName,
+                                                                            configuration, flag, values );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "extractMacroDisplacements",
+                                                 "Error in the extraction of the macro displacements" );
+                result->addNext( error );
+                return result;
+    
+            }
         }
 
         _macroDisplacements.clear( );
@@ -2806,15 +2895,23 @@ namespace inputFileProcessor{
 
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
-            if ( n->second >= values.size( ) ){
+            if ( _isFiltering ){
 
-                return new errorNode( "extractMacroDisplacements",
-                                      "The outputDOF vector is too short for the required index" );
+                _macroDisplacements.emplace( n->first, floatVector( variableKeys.size( ), 0 ) );
 
             }
+            else{
 
-            _macroDisplacements.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
-                                                                values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+                if ( n->second >= values.size( ) ){
+    
+                    return new errorNode( "extractMacroDisplacements",
+                                          "The outputDOF vector is too short for the required index" );
+    
+                }
+
+                _macroDisplacements.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                    values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+            }
 
         }
 
@@ -2871,16 +2968,20 @@ namespace inputFileProcessor{
         YAML::Node configuration = _config[ "macroscale_definition" ][ configurationName.c_str( ) ];
         floatVector values;
 
-        errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
-                                                                        populateWithNullOnUndefined, configurationName,
-                                                                        configuration, flag, values );
+        if ( !_isFiltering ){
 
-        if ( error ){
-
-            errorOut result = new errorNode( "extractMicroDispDOFVector",
-                                             "Error in the extraction of the micro displacement degree of freedom vector" );
-            result->addNext( error );
-            return result;
+            errorOut error = inputFileProcessor::extractDataFileProperties( _macroscale, increment, variableKeys, dataType,
+                                                                            populateWithNullOnUndefined, configurationName,
+                                                                            configuration, flag, values );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( "extractMicroDispDOFVector",
+                                                 "Error in the extraction of the micro displacement degree of freedom vector" );
+                result->addNext( error );
+                return result;
+    
+            }
 
         }
 
@@ -2889,15 +2990,24 @@ namespace inputFileProcessor{
 
         for ( auto n = _macroGlobalNodeIDOutputIndex.begin( ); n != _macroGlobalNodeIDOutputIndex.end( ); n++ ){
 
-            if ( n->second >= values.size( ) ){
+            if ( _isFiltering ){
 
-                return new errorNode( "extractMacroDispDOFVector",
-                                      "The DOF vector is too short for the required index" );
+                macroDispDOFVector.emplace( n->first, floatVector( variableKeys.size( ), 0 ) );
 
             }
+            else{
 
-            macroDispDOFVector.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
-                                                               values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+                if ( n->second >= values.size( ) ){
+    
+                    return new errorNode( "extractMacroDispDOFVector",
+                                          "The DOF vector is too short for the required index" );
+    
+                }
+
+                macroDispDOFVector.emplace( n->first, floatVector( values.begin( ) + variableKeys.size( ) * n->second,
+                                                                   values.begin( ) + variableKeys.size( ) * ( n->second + 1 ) ) );
+
+            }
 
         }
 
@@ -3757,13 +3867,21 @@ namespace inputFileProcessor{
 
         if ( !_config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ] ){
 
-            _config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ] = false;
-            _useReconstructedVolumeForMassMatrix = false;
+            _config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ] = true;
+            _useReconstructedVolumeForMassMatrix = true;
 
         }
 
         _useReconstructedVolumeForMassMatrix
             = _config[ "coupling_initialization" ][ "use_reconstructed_volume_for_mass_matrix" ].as< bool >( );
+
+        _isFiltering = false;
+        if ( _config[ "coupling_initialization" ][ "apply_micro_to_macro_filter" ] ){
+
+            _isFiltering = _config[ "coupling_initialization" ][ "apply_micro_to_macro_filter" ].as< bool >( );
+            _ghostMacroMassPropertiesRequired = false;
+
+        }
 
         return NULL;
 
@@ -4362,12 +4480,17 @@ namespace inputFileProcessor{
          */
 
         uIntVector nodeIDs;
+        if ( !_config[ "macroscale_definition" ][ "node_id_variable_name" ] ){
+
+            return new errorNode( "setMacroNodeOutputIndexMappings", "'node_id_variable_name' not defined in the input file" );
+
+        }
         std::string attributeName = _config[ "macroscale_definition" ][ "node_id_variable_name" ].as< std::string >( );
         errorOut error = _macroscale->getNodeIds( increment, attributeName, nodeIDs );
 
         if ( error ){
 
-            errorOut result = new errorNode( "_setMacroNodeOutputIndexMappings", "Error when getting the node ids" );
+            errorOut result = new errorNode( "setMacroNodeOutputIndexMappings", "Error when getting the node ids" );
             result->addNext( error );
             return result;
 
@@ -4385,7 +4508,7 @@ namespace inputFileProcessor{
                 outstr += *n;
                 outstr += " not found in nodeIds";
 
-                return new errorNode( "_setMacroNodeOutputIndexMappings", outstr );
+                return new errorNode( "setMacroNodeOutputIndexMappings", outstr );
 
             }
 
@@ -4405,7 +4528,7 @@ namespace inputFileProcessor{
                 outstr += *n;
                 outstr += " not found in nodeIds";
 
-                return new errorNode( "_setMacroNodeOutputIndexMappings", outstr );
+                return new errorNode( "setMacroNodeOutputIndexMappings", outstr );
 
             }
 
@@ -4524,6 +4647,14 @@ namespace inputFileProcessor{
          */
 
         return _macroInertialForceFlag;
+    }
+
+    bool inputFileProcessor::macroLumpedMassMatrixDefined( ){
+        /*!
+         * Get whether the macro lumped mass matrix has been defined
+         */
+
+        return _macroLumpedMassMatrixFlag;
     }
 
     const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMicroDisplacements( ){
@@ -4977,6 +5108,14 @@ namespace inputFileProcessor{
         return &_macroArlequinWeights;
     }
 
+    const std::unordered_map< uIntType, floatVector >* inputFileProcessor::getMacroLumpedMassMatrix( ){
+        /*!
+         * Get the macro lumped-mass matrix
+         */
+
+        return &_macroLumpedMassMatrix;
+    }
+
     const floatType* inputFileProcessor::getArlequinPenaltyParameter( ){
         /*!
          * Get the Arlequin penalty parameter
@@ -5000,6 +5139,15 @@ namespace inputFileProcessor{
          */
 
         return _useReconstructedVolumeForMassMatrix;
+    }
+
+    bool inputFileProcessor::isFiltering( ){
+        /*!
+         * Flag to indicate if the coupling is a filtering operation meaning no
+         * macroscale information is returned to the microscale
+         */
+
+        return _isFiltering;
     }
 
 }

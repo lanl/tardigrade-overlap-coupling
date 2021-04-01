@@ -5,7 +5,7 @@
 ############################################################
 
 [Mesh]
-  file = /media/nathan/projects/overlapTestMeshes/microscale_small.e
+  file = microscale_large.e#_small.e
 []
 
 [GlobalParams]
@@ -387,22 +387,22 @@
 []
 
 [NodalKernels]
-#  [./bc_coupled_x]
-#    type = CouplingForce
-#    overlap_coupling_object = micro_coupling
-#    component = 0
-#    is_macroscale = False
-#    variable = disp_x
-#    save_in = FCoupling_1
-#  []
-#  [./bc_coupled_y]
-#    type = CouplingForce
-#    overlap_coupling_object = micro_coupling
-#    component = 1
-#    is_macroscale = False
-#    variable = disp_y
-#    save_in = FCoupling_2
-#  []
+  [./bc_coupled_x]
+    type = CouplingForce
+    overlap_coupling_object = micro_coupling
+    component = 0
+    is_macroscale = False
+    variable = disp_x
+    save_in = FCoupling_1
+  []
+  [./bc_coupled_y]
+    type = CouplingForce
+    overlap_coupling_object = micro_coupling
+    component = 1
+    is_macroscale = False
+    variable = disp_y
+    save_in = FCoupling_2
+  []
   [./bc_coupled_z]
     type = CouplingForce
     overlap_coupling_object = micro_coupling
@@ -421,8 +421,8 @@
 #  solve_type = 'NEWTON'
   nl_rel_tol = 1e-10
   nl_abs_tol = 1e-10
-  nl_max_its = 20
-  l_max_its  = 5
+  nl_max_its = 50
+  l_max_its  = 50
   [./TimeIntegrator]
     type = NewmarkBeta
     beta = 0.25
@@ -431,9 +431,9 @@
 []
 
 [Outputs]
-  [./exodus]
-    type = Exodus
-  [../]
+  exodus = true
+  perf_graph = true
+  execute_on = "INITIAL TIMESTEP_END"
   [./xdmf]
     type = Xdmf
     execute_on = "INITIAL NONLINEAR"
