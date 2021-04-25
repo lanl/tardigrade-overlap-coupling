@@ -14,7 +14,7 @@ ifdef ICC_EXIST
 #    CFLAGS=-std=c++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
     CFLAGS=-std=c++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5# -lyaml-cpp
 else
-    CXX=/projects/nathanm/python_environments/moose/bin/mpicxx
+    CXX=mpicxx
 #    CFLAGS=-std=gnu++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
     CFLAGS=-std=gnu++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5# -lyaml-cpp
 endif
@@ -29,8 +29,8 @@ ROOTDIR:=$(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))
 QHULL=/projects/nathanm/micromorphic/micromorphic_library/external_repositories/quickhull/
 
 #Python includes ( TODO: Make this more automatic )
-PYTHON_INCLUDE:=/projects/nathanm/python_environments/moose/include
-PYTHON_LIB:=/projects/nathanm/python_environments/moose/lib
+PYTHON_INCLUDE:=$(CONDA_PREFIX)/include
+PYTHON_LIB:=$(CONDA_PREFIX)/lib
 
 # Add the location of the error_tools to the include and library
 ERRORSOURCE = $(ROOTDIR)/error_tools/src/cpp/error_tools.cpp
@@ -114,4 +114,4 @@ INC+=-I$(ROOTDIR)/voro++/voro++-0.4.6/src/
 LIB+=-L$(ROOTDIR)/voro++/voro++-0.4.6/src/
 
 # The python command
-PYTHON=/apps/anaconda3/bin/python
+PYTHON=python
