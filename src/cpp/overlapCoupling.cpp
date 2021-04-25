@@ -2210,61 +2210,61 @@ namespace overlapCoupling{
 //        Eigen::VectorXd _D_tp1 = Dtrial - ( AFactor1 * _MD_Diag.cwiseInverse( ).asDiagonal( ) ) * ( _N.transpose( ) * _Lagrange );
 //        Eigen::VectorXd _Q_tp1 = Qtrial + ( AFactor2 * MQ.cwiseInverse( ).asDiagonal( ) ) * _Lagrange;
 
-        //Solve for the updated DOF vectors
-        _updatedFreeMicroDispDOFValues
-            = floatVector( _Q_tp1.begin( ), _Q_tp1.begin( ) + nMicroDispDOF * _inputProcessor.getFreeMicroNodeIds( )->size( ) );
-        _updatedFreeMacroDispDOFValues
-            = floatVector( _D_tp1.begin( ), _D_tp1.begin( ) + nMacroDispDOF * _inputProcessor.getFreeMacroNodeIds( )->size( ) );
-
-        _projected_ghost_micro_displacement
-            = floatVector( _Q_tp1.begin( ) + nMicroDispDOF * _inputProcessor.getFreeMicroNodeIds( )->size( ), _Q_tp1.end( ) );
-        _projected_ghost_macro_displacement
-            = floatVector( _D_tp1.begin( ) + nMacroDispDOF * _inputProcessor.getFreeMacroNodeIds( )->size( ), _D_tp1.end( ) );
-
-        // Print statements for debugging
-        std::cerr << "\nUpdated micro deformations\n";
-        floatVector microDef = vectorTools::appendVectors( {_updatedFreeMicroDispDOFValues, _projected_ghost_micro_displacement} );
-        std::cerr << "gid, lid: R_1        R_2        R_3        U_1        U_2        U_3\n";
-        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
-
-            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
-            auto mnp = _inputProcessor.getMicroNodeReferencePositions( )->find( node->first );
-            for ( unsigned int j = 0; j < _dim; j++ ){
-
-                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
-
-            }
-
-            for ( unsigned int i = 0; i < 3; i++ ){
-
-                std::cerr << boost::format( "%+1.7f ") % microDef[ 3 * node->second + i ];
-
-            }
-            std::cout << "\n";
-
-        }
-
-        std::cerr << "\nUpdated macro deformations\n";
-        floatVector macroDef = vectorTools::appendVectors( {_updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement} );
-        std::cerr << "gid, gid: R_1        R_2        R_3        U_1        U_2        U_3        PHI_11     PHI_12     PHI_13     PHI_21     PHI_22     PHI_23     PHI_31     PHI_32     PHI_33\n";
-        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
-
-            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
-            auto mnp = _inputProcessor.getMacroNodeReferencePositions( )->find( node->first );
-            for ( unsigned int j = 0; j < _dim; j++ ){
-
-                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
-
-            }
-
-            for ( unsigned int i = 0; i < 12; i++ ){
-
-                std::cerr << boost::format( "%+1.7f " ) % macroDef[ 12 * node->second + i ];
-
-            }
-            std::cerr << "\n";
-
-        }
+//        //Solve for the updated DOF vectors
+//        _updatedFreeMicroDispDOFValues
+//            = floatVector( _Q_tp1.begin( ), _Q_tp1.begin( ) + nMicroDispDOF * _inputProcessor.getFreeMicroNodeIds( )->size( ) );
+//        _updatedFreeMacroDispDOFValues
+//            = floatVector( _D_tp1.begin( ), _D_tp1.begin( ) + nMacroDispDOF * _inputProcessor.getFreeMacroNodeIds( )->size( ) );
+//
+//        _projected_ghost_micro_displacement
+//            = floatVector( _Q_tp1.begin( ) + nMicroDispDOF * _inputProcessor.getFreeMicroNodeIds( )->size( ), _Q_tp1.end( ) );
+//        _projected_ghost_macro_displacement
+//            = floatVector( _D_tp1.begin( ) + nMacroDispDOF * _inputProcessor.getFreeMacroNodeIds( )->size( ), _D_tp1.end( ) );
+//
+//        // Print statements for debugging
+//        std::cerr << "\nUpdated micro deformations\n";
+//        floatVector microDef = vectorTools::appendVectors( {_updatedFreeMicroDispDOFValues, _projected_ghost_micro_displacement} );
+//        std::cerr << "gid, lid: R_1        R_2        R_3        U_1        U_2        U_3\n";
+//        for ( auto node = microGlobalToLocalDOFMap->begin( ); node != microGlobalToLocalDOFMap->end( ); node++ ){
+//
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//            auto mnp = _inputProcessor.getMicroNodeReferencePositions( )->find( node->first );
+//            for ( unsigned int j = 0; j < _dim; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
+//
+//            }
+//
+//            for ( unsigned int i = 0; i < 3; i++ ){
+//
+//                std::cerr << boost::format( "%+1.7f ") % microDef[ 3 * node->second + i ];
+//
+//            }
+//            std::cout << "\n";
+//
+//        }
+//
+//        std::cerr << "\nUpdated macro deformations\n";
+//        floatVector macroDef = vectorTools::appendVectors( {_updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement} );
+//        std::cerr << "gid, gid: R_1        R_2        R_3        U_1        U_2        U_3        PHI_11     PHI_12     PHI_13     PHI_21     PHI_22     PHI_23     PHI_31     PHI_32     PHI_33\n";
+//        for ( auto node = macroGlobalToLocalDOFMap->begin( ); node != macroGlobalToLocalDOFMap->end( ); node++ ){
+//
+//            std::cerr << boost::format( "%3i, %3i: ") % node->first % node->second;
+//            auto mnp = _inputProcessor.getMacroNodeReferencePositions( )->find( node->first );
+//            for ( unsigned int j = 0; j < _dim; j++ ){
+//
+//                    std::cerr << boost::format( "%+1.7f " ) % mnp->second[ j ];
+//
+//            }
+//
+//            for ( unsigned int i = 0; i < 12; i++ ){
+//
+//                std::cerr << boost::format( "%+1.7f " ) % macroDef[ 12 * node->second + i ];
+//
+//            }
+//            std::cerr << "\n";
+//
+//        }
 
         return NULL;
     }
