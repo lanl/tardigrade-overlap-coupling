@@ -29,8 +29,8 @@ ROOTDIR:=$(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))
 QHULL=/projects/nathanm/micromorphic/micromorphic_library/external_repositories/quickhull/
 
 #Python includes ( TODO: Make this more automatic )
-PYTHON_INCLUDE:=/projects/nathanm/python_environments/moose/include
-PYTHON_LIB:=/projects/nathanm/python_environments/moose/lib
+PYTHON_INCLUDE:=$(CONDA_PREFIX)/include
+PYTHON_LIB:=$(CONDA_PREFIX)/lib
 
 # Add the location of the error_tools to the include and library
 ERRORSOURCE = $(ROOTDIR)/error_tools/src/cpp/error_tools.cpp
@@ -106,7 +106,7 @@ LIB += -L$(ROOTDIR)/xdmf/build/lib -lXdmf -lXdmfCore -lXdmfUtils
 LIB += -L$(PYTHON_LIB)# -lxml2
 
 # Add the location of the Boost headers
-BOOST_ROOT = $(ROOTDIR)/boost_1_75_0
+#BOOST_ROOT = $(ROOTDIR)/boost_1_75_0
 INC+= -I$(BOOST_ROOT)
 
 # Add the location of the voro++ libraries
@@ -114,4 +114,4 @@ INC+=-I$(ROOTDIR)/voro++/voro++-0.4.6/src/
 LIB+=-L$(ROOTDIR)/voro++/voro++-0.4.6/src/
 
 # The python command
-PYTHON=/apps/anaconda3/bin/python
+PYTHON=python
