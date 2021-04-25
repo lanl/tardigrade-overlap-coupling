@@ -14,7 +14,7 @@ ifdef ICC_EXIST
 #    CFLAGS=-std=c++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
     CFLAGS=-std=c++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5# -lyaml-cpp
 else
-    CXX=/projects/nathanm/python_environments/moose/bin/mpicxx
+    CXX=mpicxx
 #    CFLAGS=-std=gnu++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5 -lyaml-cpp
     CFLAGS=-std=gnu++11 -Wall -Wextra -ansi -pedantic -I. -O3 -fmax-errors=5# -lyaml-cpp
 endif
