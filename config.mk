@@ -106,7 +106,7 @@ LIB += -L$(ROOTDIR)/xdmf/build/lib -lXdmf -lXdmfCore -lXdmfUtils
 LIB += -L$(PYTHON_LIB)# -lxml2
 
 # Add the location of the Boost headers
-BOOST_ROOT = $(ROOTDIR)/boost_1_75_0
+#BOOST_ROOT = $(ROOTDIR)/boost_1_75_0
 INC+= -I$(BOOST_ROOT)
 
 # Add the location of the voro++ libraries
