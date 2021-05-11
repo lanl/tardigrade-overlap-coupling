@@ -31,7 +31,7 @@ namespace overlapCoupling{
         errorOut error = setConfigurationFilename( configurationFilename );
 
         if ( error ){
-            _error = new errorNode( "overlapCoupling", "Error when setting the configuration filename" );
+            _error = new errorNode( __func__, "Error when setting the configuration filename" );
             _error->addNext( error );
         }
 
@@ -50,7 +50,7 @@ namespace overlapCoupling{
         errorOut error = _inputProcessor.setConfigurationFilename( configurationFilename );
 
         if ( error ){
-            errorOut result = new errorNode( "setConfigurationFilename",
+            errorOut result = new errorNode( __func__,
                                              "Error in setting the configuration filename of the input processor" );
             result->addNext( error );
             return result;
@@ -78,7 +78,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "processLastIncrements",
+            errorOut result = new errorNode( __func__,
                                              "Error in getting the number of micro increments" );
             result->addNext( error );
             return result;
@@ -90,7 +90,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "processLastIncrements",
+            errorOut result = new errorNode( __func__,
                                              "Error in getting the number of macro increments" );
             result->addNext( error );
             return result;
@@ -105,7 +105,7 @@ namespace overlapCoupling{
             std::string outstr = "Error in processing the increments\n";
             outstr += "    macro increment: " + std::to_string( numMacroIncrements - 1 ) + "\n";
             outstr += "    micro increment: " + std::to_string( numMicroIncrements - 1 );
-            errorOut result = new errorNode( "processLastIncrements", outstr );
+            errorOut result = new errorNode( __func__, outstr );
             result->addNext( error );
             return result;
 
@@ -130,7 +130,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "processIncrement", "Error in initialization of the input processor" );
+            errorOut result = new errorNode( __func__, "Error in initialization of the input processor" );
             result->addNext( error );
             return result;
 
@@ -144,7 +144,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "processIncrement", "Error in computation of the domain centers of mass" );
+            errorOut result = new errorNode( __func__, "Error in computation of the domain centers of mass" );
             result->addNext( error );
             return result;
 
@@ -172,7 +172,7 @@ namespace overlapCoupling{
     
                 if ( referenceCellCentersOfMass == _referenceFreeMicroDomainCentersOfMass.end( ) ){
     
-                    return new errorNode( "processIncrement",
+                    return new errorNode( __func__,
                                           "The macro cell " + std::to_string( *cellID ) +
                                           " was not found in the reference free micro domain centers of mass" );
     
@@ -183,7 +183,7 @@ namespace overlapCoupling{
     
                 if ( referenceMomentsOfInertia == _referenceFreeMicroDomainMomentsOfInertia.end( ) ){
     
-                    return new errorNode( "processIncrement",
+                    return new errorNode( __func__,
                                           "The macro cell " + std::to_string( *cellID ) +
                                           " was not found in the reference free micro domain moments of inertia" );
     
@@ -196,7 +196,7 @@ namespace overlapCoupling{
 
                     if ( currentCenterOfMass == _freeMicroDomainCentersOfMass.end( ) ){
 
-                        return new errorNode( "processIncrement", "Micro domain " + domain->first +
+                        return new errorNode( __func__, "Micro domain " + domain->first +
                                                                   " not found in the current free micro centers of mass" );
 
                     }
@@ -205,7 +205,7 @@ namespace overlapCoupling{
 
                     if ( domainMass == _freeMicroDomainMasses.end( ) ){
 
-                        return new errorNode( "processIncrement", "Micro domain " + domain->first +
+                        return new errorNode( __func__, "Micro domain " + domain->first +
                                                                   " not found in the current free micro domain mass" );
 
                     }
@@ -214,7 +214,7 @@ namespace overlapCoupling{
 
                     if ( domainMomentOfInertia == referenceMomentsOfInertia->second.end( ) ){
 
-                        return new errorNode( "processIncrement", "Micro domain " + domain->first +
+                        return new errorNode( __func__, "Micro domain " + domain->first +
                                                                   " not found in the reference free reference moments of inertia" );
 
                     }
@@ -232,7 +232,7 @@ namespace overlapCoupling{
     
                     if ( error ){
     
-                        errorOut result = new errorNode( "processIncrement",
+                        errorOut result = new errorNode( __func__,
                                                          "Error in getting the node ids for the domain ( " + domain->first + " )" );
                         result->addNext( error );
                         return result;
@@ -251,7 +251,7 @@ namespace overlapCoupling{
     
                         if ( microDisplacement == microDisplacements->end( ) ){
     
-                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                            return new errorNode( __func__, "Micro node " + std::to_string( *it ) +
                                                   " was not found in the micro displacement map" );
     
                         }
@@ -260,7 +260,7 @@ namespace overlapCoupling{
 
                         if ( microVolume == microVolumes->end( ) ){
 
-                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                            return new errorNode( __func__, "Micro node " + std::to_string( *it ) +
                                                                       " was not found in the micro volume map" );
 
                         }
@@ -269,7 +269,7 @@ namespace overlapCoupling{
 
                         if ( microDensity == microDensities->end( ) ){
 
-                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                            return new errorNode( __func__, "Micro node " + std::to_string( *it ) +
                                                                       " was not found in the micro density map" );
 
                         }
@@ -278,7 +278,7 @@ namespace overlapCoupling{
 
                         if ( microWeight == microWeights->end( ) ){
 
-                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                            return new errorNode( __func__, "Micro node " + std::to_string( *it ) +
                                                                       " was not found in the micro weight map" );
 
                         }
@@ -287,7 +287,7 @@ namespace overlapCoupling{
 
                         if ( microReferencePosition == _inputProcessor.getMicroNodeReferencePositions( )->end( ) ){
 
-                            return new errorNode( "processIncrement", "Micro node " + std::to_string( *it ) +
+                            return new errorNode( __func__, "Micro node " + std::to_string( *it ) +
                                                                       " was not found in the micro reference position map" );
 
                         }
@@ -322,7 +322,7 @@ namespace overlapCoupling{
     
                     if ( us == centerOfMassDisplacements.end( ) ){
     
-                        return new errorNode( "processIncrement", "Micro domain " + domain->first + " was not found in the center of mass displacement map" );
+                        return new errorNode( __func__, "Micro domain " + domain->first + " was not found in the center of mass displacement map" );
     
                     }
     
@@ -349,7 +349,7 @@ namespace overlapCoupling{
 
                     if ( phis == centerOfMassPhis.end( ) ){
 
-                        return new errorNode( "processIncrement", "Micro domain " + domain->first + " was not found in the phi map" );
+                        return new errorNode( __func__, "Micro domain " + domain->first + " was not found in the phi map" );
 
                     }
 
@@ -374,7 +374,7 @@ namespace overlapCoupling{
 
             if ( error ){
     
-                errorOut result = new errorNode( "processIncrement", "Error in the homogenization of the micro-scale to the macro-scale" );
+                errorOut result = new errorNode( __func__, "Error in the homogenization of the micro-scale to the macro-scale" );
                 result->addNext( error );
                 return result;
     
@@ -389,7 +389,7 @@ namespace overlapCoupling{
     
                 if ( error ){
         
-                    errorOut result = new errorNode( "processIncrement", "Error in applying the Klein-Zimmerman projection" );
+                    errorOut result = new errorNode( __func__, "Error in applying the Klein-Zimmerman projection" );
                     result->addNext( error );
                     return result;
         
@@ -402,7 +402,7 @@ namespace overlapCoupling{
     
                 if ( error ){
     
-                    errorOut result = new errorNode( "processIncrement", "Error in applying the Arlequin projection" );
+                    errorOut result = new errorNode( __func__, "Error in applying the Arlequin projection" );
                     result->addNext( error );
                     return result;
     
@@ -418,7 +418,7 @@ namespace overlapCoupling{
             error = outputHomogenizedResponse( );
             if ( error ){
 
-                errorOut result = new errorNode( "processIncrement", "Error when writing the homogenized response out to file" );
+                errorOut result = new errorNode( __func__, "Error when writing the homogenized response out to file" );
                 result->addNext( error );
                 return result;
 
@@ -433,7 +433,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "processIncrement", "Error when writing the updated dof information to file" );
+                errorOut result = new errorNode( __func__, "Error when writing the updated dof information to file" );
                 result->addNext( error );
                 return result;
 
@@ -458,7 +458,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "applyArlequinProjection", "Error in computing the micro weighting factors" );
+            errorOut result = new errorNode( __func__, "Error in computing the micro weighting factors" );
             result->addNext( error );
             return result;
 
@@ -470,7 +470,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "applyArlequinProjection", "Error in computing the coupling force" );
+            errorOut result = new errorNode( __func__, "Error in computing the coupling force" );
             result->addNext( error );
             return result;
 
@@ -481,7 +481,7 @@ namespace overlapCoupling{
 //
 //        if ( error ){
 //
-//            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the micromorphic mass matrix" );
+//            errorOut result = new errorNode( __func__, "Error in the computation of the micromorphic mass matrix" );
 //            result->addNext( error );
 //            return result;
 //
@@ -492,7 +492,7 @@ namespace overlapCoupling{
 //
 //        if ( error ){
 //
-//            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the force and error vectors" );
+//            errorOut result = new errorNode( __func__, "Error in the computation of the force and error vectors" );
 //            result->addNext( error );
 //            return result;
 //
@@ -503,7 +503,7 @@ namespace overlapCoupling{
 //
 //        if ( error ){
 //
-//            errorOut result = new errorNode( "applyArlequinProjection", "Error in the computation of the updated deformation values" );
+//            errorOut result = new errorNode( __func__, "Error in the computation of the updated deformation values" );
 //            result->addNext( error );
 //            return result;
 //
@@ -515,7 +515,7 @@ namespace overlapCoupling{
     
         if ( error ){
     
-            errorOut result = new errorNode( "applyArlequinProjection", "Error in the homogenization of the micro-scale to the macro-scale" );
+            errorOut result = new errorNode( __func__, "Error in the homogenization of the micro-scale to the macro-scale" );
             result->addNext( error );
             return result;
     
@@ -564,7 +564,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeArlequinMicroWeightingFactors",
+                errorOut result = new errorNode( __func__,
                                                  "Error in building the macro-scale element" );
                 result->addNext( error );
                 return result;
@@ -583,7 +583,7 @@ namespace overlapCoupling{
 
                 if ( weight == macroArlequinWeights->end( ) ){
 
-                    return new errorNode( "computeArlequinMicroWeightingFactors",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( *node ) +
                                           " was not found in the macro node to weighting factor map" );
 
@@ -597,7 +597,7 @@ namespace overlapCoupling{
             auto domains = _inputProcessor.getMacroCellToDomainMap( )->find( *cellID );
             if ( domains == _inputProcessor.getMacroCellToDomainMap( )->end( ) ){
 
-                return new errorNode( "computeArlequinMicroWeightingFactors",
+                return new errorNode( __func__,
                                       "The macro cell " + std::to_string( *cellID ) +
                                       " was not found in the cell ID to micro-domain map" );
 
@@ -612,7 +612,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "computeArlequinMicroWeightingFactors",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in getting the node ids for the domain ( " + *domain + " )" );
                     result->addNext( error );
                     return result;
@@ -630,7 +630,7 @@ namespace overlapCoupling{
 
                     if ( microReferencePosition == microReferencePositions->end( ) ){
 
-                        return new errorNode( "reconstructDomain", "Micro node " + std::to_string( *it ) +
+                        return new errorNode( __func__, "Micro node " + std::to_string( *it ) +
                                               " was not found in the micro reference position map" );
 
                     }
@@ -639,7 +639,7 @@ namespace overlapCoupling{
 
                     if ( microDisplacement == microDisplacements->end( ) ){
 
-                        return new errorNode( "computeArlequinMicroWeightingFactors", "Micro node " + std::to_string( *it ) +
+                        return new errorNode( __func__, "Micro node " + std::to_string( *it ) +
                                               " was not found in the micro displacement map" );
 
                     }
@@ -738,7 +738,7 @@ namespace overlapCoupling{
     
             if ( error ){
     
-                errorOut result = new errorNode( "computeArlequinMicromorphicMassMatrix",
+                errorOut result = new errorNode( __func__,
                                                  "Error in building the macro-scale element" );
                 result->addNext( error );
                 return result;
@@ -758,7 +758,7 @@ namespace overlapCoupling{
 
                 if ( macroDisplacement == macroDispDOFVector->end( ) ){
 
-                    return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( *nodeID ) + " was not found in the macro displacement DOF vector map" );
 
                 }
@@ -770,7 +770,7 @@ namespace overlapCoupling{
 
                 if ( weight == macroArlequinWeights->end( ) ){
 
-                    return new errorNode( "computeArlequinMicroWeightingFactors",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( *nodeID ) +
                                           " was not found in the macro node to weighting factor map" );
 
@@ -787,7 +787,7 @@ namespace overlapCoupling{
 
             if ( densityType == macroReferenceDensityTypes->end( ) ){
 
-                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "The macro cell with ID " + std::to_string( *cellID ) +
                                       " was not found in the density type map" );
 
@@ -797,7 +797,7 @@ namespace overlapCoupling{
 
             if ( momentOfInertiaType == macroReferenceMomentOfInertiaTypes->end( ) ){
 
-                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "The macro cell with ID " + std::to_string( *cellID ) +
                                       " was not found in the moment of inertia type map" );
 
@@ -805,14 +805,14 @@ namespace overlapCoupling{
 
             if ( densityType->second.compare( "constant" ) != 0 ){
 
-                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "Only constant densities for the macro-scale are allowed currently. This is not true for macro cell ID " + std::to_string( *cellID ) );
 
             }
 
             if ( momentOfInertiaType->second.compare( "constant" ) != 0 ){
 
-                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "Only constant moments of inertia for the macro-scale are allowed currently. This is not true for macro cell ID " + std::to_string( *cellID ) );
 
             }
@@ -821,7 +821,7 @@ namespace overlapCoupling{
 
             if ( macroDensities == macroReferenceDensities->end( ) ){
 
-                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "Macro cell ID " + std::to_string( *cellID ) +
                                       " is not in the macro reference density map" );
 
@@ -829,7 +829,7 @@ namespace overlapCoupling{
 
             if ( macroDensities->second.size( ) != 1 ){
 
-                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "The macro densities for macro cell " + std::to_string( *cellID ) +
                                       "Define " + std::to_string( macroDensities->second.size( ) ) +
                                       " values when only 1 can be defined" );
@@ -840,7 +840,7 @@ namespace overlapCoupling{
 
             if ( macroMomentsOfInertia == macroReferenceMomentsOfInertia->end( ) ){
 
-                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "Macro cell ID " + std::to_string( *cellID ) +
                                       " is not in the macro reference moments of inertia map" );
 
@@ -848,7 +848,7 @@ namespace overlapCoupling{
 
             if ( macroMomentsOfInertia->second.size( ) != _dim * _dim ){
 
-                return new errorNode( "assembleArlequinMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "The macro moments of inertia for macro cell " + std::to_string( *cellID ) +
                                       "Define " + std::to_string( macroDensities->second.size( ) ) +
                                       " values when only " + std::to_string( _dim * _dim ) + " can be defined" );
@@ -886,7 +886,7 @@ namespace overlapCoupling{
                 std::string outstr  = "Error in the construction of the contributions of the macro element to ";
                             outstr += "the micromorphic mass matrix";
 
-                errorOut result = new errorNode( "assembleArlequinMicromorphicMassMatrix", outstr );
+                errorOut result = new errorNode( __func__, outstr );
                 result->addNext( error );
                 return result;
 
@@ -965,7 +965,7 @@ namespace overlapCoupling{
     
                 if ( externalForce == microExternalForces->end( ) ){
     
-                    return new errorNode( "computeArlequinCouplingForce", "Micro node " + std::to_string( node->first ) +
+                    return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                           " not found in external force vector" );
     
                 }
@@ -982,7 +982,7 @@ namespace overlapCoupling{
     
                 if ( internalForce == microInternalForces->end( ) ){
     
-                    return new errorNode( "computeArlequinCouplingForce", "Micro node " + std::to_string( node->first ) +
+                    return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                           " not found in internal force vector" );
     
                 }
@@ -997,7 +997,7 @@ namespace overlapCoupling{
 
                 if ( inertialForce == microInertialForces->end( ) ){
 
-                    return new errorNode( "computeArlequinCouplingForce", "Micro node " + std::to_string( node->first ) +
+                    return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                           " not found in inertial force vector" );
 
                 }
@@ -1010,7 +1010,7 @@ namespace overlapCoupling{
 
             if ( microDisplacement == microDisplacements->end( ) ){
 
-                return new errorNode( "computeArlequinCouplingForce", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro displacement vector" );
 
             }
@@ -1021,7 +1021,7 @@ namespace overlapCoupling{
             auto arlequinWeight = arlequinMicroWeightingFactors.find( node->first );
             if ( arlequinWeight == arlequinMicroWeightingFactors.end( ) ){
 
-                return new errorNode( "computeArlequinCouplingForce",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( node->first ) + " not found in arlequin weight vector" );
 
             }
@@ -1052,7 +1052,7 @@ namespace overlapCoupling{
 
                 if ( externalForce == macroExternalForces->end( ) ){
 
-                    return new errorNode( "computeArlequinCouplingForce",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( node->first ) + " not found in external force map" );
 
                 }
@@ -1069,7 +1069,7 @@ namespace overlapCoupling{
 
                 if ( internalForce == macroInternalForces->end( ) ){
 
-                    return new errorNode( "computeArlequinCouplingForce",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( node->first ) + " not found in internal force map" );
 
                 }
@@ -1085,7 +1085,7 @@ namespace overlapCoupling{
 
                 if ( inertialForce == macroInertialForces->end( ) ){
 
-                    return new errorNode( "computeArlequinCouplingForce",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( node->first ) + " not found in inertial force map" );
 
                 }
@@ -1099,7 +1099,7 @@ namespace overlapCoupling{
 
             if ( macroDispDOF == macroDispDOFVector->end( ) ){
 
-                return new errorNode( "computeArlequinCouplingForce", "Macro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( node->first ) +
                                       " not found in macro displacement DOF map" );
 
             }
@@ -1110,7 +1110,7 @@ namespace overlapCoupling{
             auto arlequinWeight =  macroArlequinWeights->find( node->first );
             if ( arlequinWeight == macroArlequinWeights->end( ) ){
 
-                return new errorNode( "computeArlequinCouplingForce",
+                return new errorNode( __func__,
                                       "Macro node " + std::to_string( node->first ) + " not found in arlequin weight vector" );
 
             }
@@ -1314,7 +1314,7 @@ namespace overlapCoupling{
     
                 if ( externalForce == microExternalForces->end( ) ){
     
-                    return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                    return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                           " not found in external force vector" );
     
                 }
@@ -1331,7 +1331,7 @@ namespace overlapCoupling{
     
                 if ( internalForce == microInternalForces->end( ) ){
     
-                    return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                    return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                           " not found in internal force vector" );
     
                 }
@@ -1344,7 +1344,7 @@ namespace overlapCoupling{
 
             if ( microDensity == microDensities->end( ) ){
 
-                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro densities vector" );
 
             }
@@ -1353,7 +1353,7 @@ namespace overlapCoupling{
 
             if ( microVolume == microVolumes->end( ) ){
 
-                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro volumes vector" );
 
             }
@@ -1363,7 +1363,7 @@ namespace overlapCoupling{
 
             if ( microDisplacement == previousMicroDisplacements->end( ) ){
 
-                return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro displacement vector" );
 
             }
@@ -1377,7 +1377,7 @@ namespace overlapCoupling{
 
                 if ( microVelocity == previousMicroVelocities->end( ) ){
 
-                    return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                    return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                           " not found in previous micro velocities vector" );
 
                 }
@@ -1395,7 +1395,7 @@ namespace overlapCoupling{
 
                 if ( microAcceleration == previousMicroAccelerations->end( ) ){
 
-                    return new errorNode( "computeArlequinForceAndErrorVectors", "Micro node " + std::to_string( node->first ) +
+                    return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                           " not found in previous micro accelerations vector" );
 
                 }
@@ -1411,7 +1411,7 @@ namespace overlapCoupling{
 //            std::cout << "    arlequin weight: " << arlequinWeight->second << "\n";
             if ( arlequinWeight == arlequinMicroWeightingFactors.end( ) ){
 
-                return new errorNode( "computeArlequinForceAndErrorVectors",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( node->first ) + " not found in arlequin weight vector" );
 
             }
@@ -1448,7 +1448,7 @@ namespace overlapCoupling{
 
                 if ( externalForce == macroExternalForces->end( ) ){
 
-                    return new errorNode( "computeArlequinForceAndErrorVectors",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( node->first ) + " not found in external force map" );
 
                 }
@@ -1465,7 +1465,7 @@ namespace overlapCoupling{
 
                 if ( internalForce == macroInternalForces->end( ) ){
 
-                    return new errorNode( "computeArlequinForceAndErrorVectors",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( node->first ) + " not found in internal force map" );
 
                 }
@@ -1478,7 +1478,7 @@ namespace overlapCoupling{
 
             if ( macroDisplacement == previousMacroDispDOFVector->end( ) ){
 
-                return new errorNode( "computeArlequinForceAndErrorVectors", "Macro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( node->first ) +
                                       " not found in macro displacement vector" );
 
             }
@@ -1496,7 +1496,7 @@ namespace overlapCoupling{
 
                 if ( previousVelocity == previousMacroVelocities->end( ) ){
 
-                    return new errorNode( "computeArlequinForceAndErrorVectors",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( node->first ) + " not found in previous macro velocity map" );
 
                 }
@@ -1517,7 +1517,7 @@ namespace overlapCoupling{
 
                 if ( previousAcceleration == previousMacroAccelerations->end( ) ){
 
-                    return new errorNode( "computeArlequinForceAndErrorVectors",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( node->first ) + " not found in previous macro acceleration map" );
 
                 }
@@ -1547,7 +1547,7 @@ namespace overlapCoupling{
 
             if ( arlequinWeight == macroArlequinWeights->end( ) ){
 
-                return new errorNode( "computeArlequinForceAndErrorVectors",
+                return new errorNode( __func__,
                                       "Macro node " + std::to_string( node->first ) + " not found in arlequin weights map" );
 
             }
@@ -1638,7 +1638,7 @@ namespace overlapCoupling{
 
             if ( microDensity == microDensities->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro densities vector" );
 
             }
@@ -1647,7 +1647,7 @@ namespace overlapCoupling{
 
             if ( microVolume == microVolumes->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro volumes vector" );
 
             }
@@ -1656,7 +1656,7 @@ namespace overlapCoupling{
 
             if ( microWeight == arlequinMicroWeightingFactors.end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro weighting factor vector" );
 
             }
@@ -1671,7 +1671,7 @@ namespace overlapCoupling{
 
             if ( microDisplacement == microDisplacements->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro displacements vector" );
 
             }
@@ -1686,7 +1686,7 @@ namespace overlapCoupling{
 
             if ( microVelocity == microVelocities->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro velocity vector" );
 
             }
@@ -1701,7 +1701,7 @@ namespace overlapCoupling{
 
             if ( microAcceleration == microAccelerations->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Micro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( node->first ) +
                                       " not found in micro acceleration vector" );
 
             }
@@ -1731,7 +1731,7 @@ namespace overlapCoupling{
 
             if ( macroDisplacement == macroDispDOFVector->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( node->first ) +
                                       " not found in macro displacement DOF vector" );
 
             }
@@ -1746,7 +1746,7 @@ namespace overlapCoupling{
 
             if ( macroVelocity == macroVelocities->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( node->first ) +
                                       " not found in macro velocity DOF vector" );
 
             }
@@ -1761,7 +1761,7 @@ namespace overlapCoupling{
 
             if ( macroAcceleration == macroAccelerations->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( node->first ) +
                                       " not found in macro acceleration DOF vector" );
 
             }
@@ -1776,7 +1776,7 @@ namespace overlapCoupling{
 
             if ( macroWeight == macroArlequinWeights->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( node->first ) +
                                       " not found in macro Arlequin weight map" );
 
             }
@@ -1860,7 +1860,7 @@ namespace overlapCoupling{
 
             if ( macroArlequinWeight == macroArlequinWeights->end( ) ){
 
-                return new errorNode( "computeArlequinDeformationUpdate", "Macro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( node->first ) +
                                       " not found in macro Arlequin weight vector" );
 
             }
@@ -2282,7 +2282,7 @@ namespace overlapCoupling{
     
         if ( error ){
     
-            errorOut result = new errorNode( "processIncrement", "Error in the projection of the ghost degrees of freedom" );
+            errorOut result = new errorNode( __func__, "Error in the projection of the ghost degrees of freedom" );
             result->addNext( error );
             return result;
     
@@ -2301,7 +2301,7 @@ namespace overlapCoupling{
     
         if ( error ){
     
-            errorOut result = new errorNode( "applyKZProjection", "Error in the homogenization of the micro-scale to the macro-scale" );
+            errorOut result = new errorNode( __func__, "Error in the homogenization of the micro-scale to the macro-scale" );
             result->addNext( error );
             return result;
     
@@ -2316,7 +2316,7 @@ namespace overlapCoupling{
     
             if ( error ){
     
-                errorOut result = new errorNode( "applyKZProjection", "Error in the assembly of the mass matrix for the free macro domains" );
+                errorOut result = new errorNode( __func__, "Error in the assembly of the mass matrix for the free macro domains" );
                 result->addNext( error );
                 return result;
     
@@ -2328,7 +2328,7 @@ namespace overlapCoupling{
     
             if ( error ){
     
-                errorOut result = new errorNode( "applyKZProjection", "Error in the construction of the coupling mass and damping matrices" );
+                errorOut result = new errorNode( __func__, "Error in the construction of the coupling mass and damping matrices" );
                 result->addNext( error );
                 return result;
     
@@ -2340,7 +2340,7 @@ namespace overlapCoupling{
     
             if ( error ){
     
-                errorOut result = new errorNode( "applyKZProjection", "Error in the construction of the coupling force vector" );
+                errorOut result = new errorNode( __func__, "Error in the construction of the coupling force vector" );
                 result->addNext( error );
                 return result;
     
@@ -2352,7 +2352,7 @@ namespace overlapCoupling{
     
             if ( error ){
     
-                errorOut result = new errorNode( "applyKZProjection", "Error when solving for the free displacements" );
+                errorOut result = new errorNode( __func__, "Error when solving for the free displacements" );
                 result->addNext( error );
                 return result;
     
@@ -2378,7 +2378,7 @@ namespace overlapCoupling{
         const YAML::Node couplingInitialization = _inputProcessor.getCouplingInitialization( );
 
         if ( !couplingInitialization ){
-            return new errorNode ( "initializeCoupling", "The coupling initialization configuration is not defined" );
+            return new errorNode ( __func__, "The coupling initialization configuration is not defined" );
         }
 
         errorOut error = NULL;
@@ -2388,7 +2388,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "initializeCoupling", "Error in setting the initial reference state" );
+                errorOut result = new errorNode( __func__, "Error in setting the initial reference state" );
                 result->addNext( error );
                 return result;
 
@@ -2414,7 +2414,7 @@ namespace overlapCoupling{
 
                     if ( m == _inputProcessor.getMacroDisplacements( )->end( ) ){
 
-                        return new errorNode( "initializeCoupling", "Macro node " + std::to_string( n->first ) + " not found in the macro displacements map. Fatal error in the input processor" );
+                        return new errorNode( __func__, "Macro node " + std::to_string( n->first ) + " not found in the macro displacements map. Fatal error in the input processor" );
 
                     }
 
@@ -2432,7 +2432,7 @@ namespace overlapCoupling{
 
                     if ( m == _inputProcessor.getMicroDisplacements( )->end( ) ){
 
-                        return new errorNode( "initializeCoupling", "Micro node " + std::to_string( n->first ) + " not found in the micro displacements map. Fatal error in the input processor" );
+                        return new errorNode( __func__, "Micro node " + std::to_string( n->first ) + " not found in the micro displacements map. Fatal error in the input processor" );
 
                     }
 
@@ -2455,13 +2455,13 @@ namespace overlapCoupling{
 
         }
         else{
-            return new errorNode( "initializeCoupling",
+            return new errorNode( __func__,
                                   "The coupling initialization type '" + couplingInitialization[ "type" ].as< std::string >( )
                                 + "' is not recognized" );
         }
         
         if ( error ){
-            errorOut result = new errorNode( "initializeCoupling", "Error in initialization of the coupling" );
+            errorOut result = new errorNode( __func__, "Error in initialization of the coupling" );
             result->addNext( error );
             return result;
         }
@@ -2474,7 +2474,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "initializeCoupling", "Error in the output of the reference information" );
+                errorOut result = new errorNode( __func__, "Error in the output of the reference information" );
                 result->addNext( error );
                 return result;
 
@@ -2499,7 +2499,7 @@ namespace overlapCoupling{
         //Initialize the input processor
         errorOut error = _inputProcessor.initializeIncrement( microIncrement, macroIncrement );
         if ( error ){
-            errorOut result = new errorNode( "setReferenceStateFromIncrement", "Error in initialization of the input processor" );
+            errorOut result = new errorNode( __func__, "Error in initialization of the input processor" );
             result->addNext( error );
             return result;
         }
@@ -2570,7 +2570,7 @@ namespace overlapCoupling{
 
                 if ( microDomains == macroCellToMicroDomainMap->end( ) ){
 
-                    return new errorNode( "setReferenceStateFromIncrement",
+                    return new errorNode( __func__,
                                           "Macro cell " + std::to_string( *cellID ) + " not found in the macro cell to micro domain map" );
 
                 }
@@ -2580,7 +2580,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in extracting the free macro-node set" );
                     result->addNext( error );
                     return result;
@@ -2595,7 +2595,7 @@ namespace overlapCoupling{
                 if ( _referenceCellDomainCenterOfMassShapefunctions.find( *cellID ) !=
                      _referenceCellDomainCenterOfMassShapefunctions.end( ) ){
 
-                    return new errorNode( "setReferenceStateFromIncrement",
+                    return new errorNode( __func__,
                                           "Macro cell " + std::to_string( *cellID ) + " was found twice in the reference cell domain center of mass shapefunctions map" );
 
                 }
@@ -2635,7 +2635,7 @@ namespace overlapCoupling{
 
                     if ( error ){
 
-                        errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                        errorOut result = new errorNode( __func__,
                                                          "Error in processing '" + *domain + "' for a free reference state" );
                         result->addNext( error );
                         return result;
@@ -2658,7 +2658,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in forming the contribution of macro element " + std::to_string( *cellID ) +
                                                      " to the center of mass shapefunction matrix" );
                     result->addNext( error );
@@ -2693,7 +2693,7 @@ namespace overlapCoupling{
 
                 if ( microDomains == macroCellToMicroDomainMap->end( ) ){
 
-                    return new errorNode( "setReferenceStateFromIncrement",
+                    return new errorNode( __func__,
                                           "Macro cell " + std::to_string( *cellID ) + " not found in the macro cell to micro domain map" );
 
                 }
@@ -2703,7 +2703,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in extracting the ghost macro-node set" );
                     result->addNext( error );
                     return result;
@@ -2713,7 +2713,7 @@ namespace overlapCoupling{
                 if ( _referenceCellDomainCenterOfMassShapefunctions.find( *cellID ) !=
                      _referenceCellDomainCenterOfMassShapefunctions.end( ) ){
 
-                    return new errorNode( "setReferenceStateFromIncrement",
+                    return new errorNode( __func__,
                                           "Macro cell " + std::to_string( *cellID ) + " was found twice in the reference cell domain center of mass shapefunctions map" );
 
                 }
@@ -2741,7 +2741,7 @@ namespace overlapCoupling{
 
                     if ( error ){
 
-                        errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                        errorOut result = new errorNode( __func__,
                                                          "Error in processing '" + *domain + "' for a ghost reference state" );
                         result->addNext( error );
                         return result;
@@ -2764,7 +2764,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "setReferenceStateFromIncrement",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in forming the contribution of macro element " + std::to_string( *cellID ) +
                                                      " to the center of mass shapefunction matrix" );
                     result->addNext( error );
@@ -2793,7 +2793,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "setReferenceStateFromIncrement",
+            errorOut result = new errorNode( __func__,
                                              "Error in the formation of the center of mass to macro node projector" );
             result->addNext( error );
             return result;
@@ -2805,7 +2805,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "setReferenceStateFromIncrement",
+            errorOut result = new errorNode( __func__,
                                              "Error in the formation of the projectors" );
             result->addNext( error );
             return result;
@@ -2831,7 +2831,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formTheProjectors",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the formation of the L2 projectors" );
                 result->addNext( error );
                 return result;
@@ -2845,7 +2845,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formTheProjectors",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the formation of the direct projection projectors" );
                 result->addNext( error );
                 return result;
@@ -2859,7 +2859,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formTheProjectors",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the formation of the averaged L2 projectors" );
                 result->addNext( error );
                 return result;
@@ -2874,7 +2874,7 @@ namespace overlapCoupling{
         }
         else{
 
-            return new errorNode( "formTheProjectors",
+            return new errorNode( __func__,
                                   "'projection_type' '" + config[ "projection_type" ].as< std::string >( ) + "' not recognized" );
 
         }
@@ -2909,7 +2909,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "formL2Projectors", "Error in solving for _dense_BDhatQ" );
+            errorOut result = new errorNode( __func__, "Error in solving for _dense_BDhatQ" );
             result->addNext( error );
             return result;
 
@@ -2951,7 +2951,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formAveragedL2Projectors", "Error in the formation of the selection matrix" );
+                errorOut result = new errorNode( __func__, "Error in the formation of the selection matrix" );
                 result->addNext( error );
                 return result;
 
@@ -2961,7 +2961,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formAveragedL2Projectors", "Error in the formation of the expansion matrix" );
+                errorOut result = new errorNode( __func__, "Error in the formation of the expansion matrix" );
                 result->addNext( error );
                 return result;
 
@@ -3021,7 +3021,7 @@ namespace overlapCoupling{
          * :param const unsigned int &macroIncrement: The macro increment at which to form the projectors
          */
 
-        return new errorNode( "formDirectProjectionProjectors",
+        return new errorNode( __func__,
                               "This subroutine, and the routines it calls, requires extensive re-working to obtain the expected results. The method is not recommended so this has not been done yet." );
 
         //Get the ghost macro cell IDs
@@ -3049,7 +3049,7 @@ namespace overlapCoupling{
 
             if ( microDomains == macroCellToMicroDomainMap->end( ) ){
 
-                return new errorNode( "setReferenceStateFromIncrement",
+                return new errorNode( __func__,
                                       "Macro cell " + std::to_string( *cellID ) + " not found in the macro cell to micro domain map" );
 
             }
@@ -3059,7 +3059,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formDirectProjectionProjectors",
+                errorOut result = new errorNode( __func__,
                                                  "Error in extracting the ghost macro-node set" );
                 result->addNext( error );
                 return result;
@@ -3074,7 +3074,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "formDirectProjectionProjectors",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in processing free micro-scale domain '" + *domain + "' for a ghost macro domain reference state" );
                     result->addNext( error );
                     return result;
@@ -3160,7 +3160,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "processDomainReference",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the construction of the macro-scale element " + std::to_string( cellID ) );
                 result->addNext( error );
                 return result;
@@ -3183,7 +3183,7 @@ namespace overlapCoupling{
 
         if ( error ){
             
-            errorOut result = new errorNode( "processDomainReference",
+            errorOut result = new errorNode( __func__,
                                              "Error in processing the mass data for the micro domain '" + domainName + "'" );
             result->addNext( error );
             return result;
@@ -3209,7 +3209,7 @@ namespace overlapCoupling{
 #endif
 
         if ( error ){
-            errorOut result = new errorNode( "processDomainReference",
+            errorOut result = new errorNode( __func__,
                                              "Error in computing the shape function values for the domain center of mass or the domainMicroPositionShapeFunctionValues" );
             result->addNext( error );
             return result;
@@ -3220,7 +3220,7 @@ namespace overlapCoupling{
         error = _inputProcessor._microscale->getSubDomainNodes( microIncrement, domainName, domainNodes );
 
         if ( error ){
-            errorOut result = new errorNode( "processDomainReference",
+            errorOut result = new errorNode( __func__,
                                              "Error in extracting the micro-node set" );
             result->addNext( error );
             return result;
@@ -3232,7 +3232,7 @@ namespace overlapCoupling{
                                                             domainCenterOfMassShapeFunctionValues );
 
         if ( error ){
-            errorOut result = new errorNode( "processDomainReference",
+            errorOut result = new errorNode( __func__,
                                              "Error in adding part of the shapefunction matrix determined from '" + domainName + "'" );
             result->addNext( error );
             return result;
@@ -3247,7 +3247,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "processDomainReference",
+                errorOut result = new errorNode( __func__,
                                                  "Error in saving the direct projection reference values" );
                 result->addNext( error );
                 return result;
@@ -3310,7 +3310,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "processDomain",
+            errorOut result = new errorNode( __func__,
                                              "Error in getting the nodes from the micro domain '" + domainName + "'" );
             result->addNext( error );
             return result;
@@ -3331,7 +3331,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "processDomainMassData",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the reconstruction of the microscale domain" );
                 result->addNext( error );
                 return result;
@@ -3353,7 +3353,7 @@ namespace overlapCoupling{
     
                 auto microDensity = microDensities->find( *node );
                 if ( microDensity == microDensities->end( ) ){
-                    return new errorNode( "processDomainMassData",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) + " was not found in the micro density map" );
                 }
     
@@ -3361,14 +3361,14 @@ namespace overlapCoupling{
     
                 auto microReferencePosition = microReferencePositions->find( *node );
                 if ( microReferencePosition == microReferencePositions->end( ) ){
-                    return new errorNode( "processDomainMassData",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) +
                                           " was not found in the micro reference position map" );
                 }
     
                 auto microDisplacement = microDisplacements->find( *node );
                 if ( microDisplacement == microDisplacements->end( ) ){
-                    return new errorNode( "processDomainMassData",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) +
                                           " was not found in the micro displacement map" );
                 }
@@ -3388,7 +3388,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "processDomainMassData", "Error in performing volume integration" );
+                errorOut result = new errorNode( __func__, "Error in performing volume integration" );
                 result->addNext( error );
                 return result;
             }
@@ -3409,7 +3409,7 @@ namespace overlapCoupling{
     
             if ( error ){
     
-                errorOut result = new errorNode( "processDomain", "Error in calculation of '" + domainName + "' center of mass" );
+                errorOut result = new errorNode( __func__, "Error in calculation of '" + domainName + "' center of mass" );
                 result->addNext( error );
                 return result;
     
@@ -3432,7 +3432,7 @@ namespace overlapCoupling{
 
         if ( error ){
             
-            errorOut result = new errorNode( "processDomain", "Error in calculation of '" + domainName + "' xi vectors" );
+            errorOut result = new errorNode( __func__, "Error in calculation of '" + domainName + "' xi vectors" );
             result->addNext( error );
             return result;
 
@@ -3473,7 +3473,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeDomainShapeFunctionInformation",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the shape function at the center of mass for a micro domain" );
             result->addNext( error );
             return result;
@@ -3487,7 +3487,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeDomainShapeFunctionInformation",
+            errorOut result = new errorNode( __func__,
                                              "Error in the extraction of the nodes in the micro domain" );
             result->addNext( error );
             return result;
@@ -3511,7 +3511,7 @@ namespace overlapCoupling{
 
                 if ( microReferencePosition == microReferencePositions->end( ) ){
 
-                    return new errorNode( "computeDomainShapeFunctionInformation",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *it ) + " was not found in the reference position map" );
 
                 }
@@ -3519,7 +3519,7 @@ namespace overlapCoupling{
                 auto microDisplacement = microDisplacements->find( *it );
                 if ( microDisplacement == microDisplacements->end( ) ){
 
-                    return new errorNode( "computeDomainShapeFunctionInformation",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *it ) + " was not found in the displacement map" );
 
                 }
@@ -3538,7 +3538,7 @@ namespace overlapCoupling{
 
             if ( error ){
     
-                errorOut result = new errorNode( "computeDomainShapeFunctionInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the shape function at the center of mass for a micro domain" );
                 result->addNext( error );
                 return result;
@@ -3569,7 +3569,7 @@ namespace overlapCoupling{
         //Compute the centers of mass of each domain
         errorOut error = _inputProcessor.initializeIncrement( microIncrement, macroIncrement );
         if ( error ){
-            errorOut result = new errorNode( "computeInitialCentersOfMass", "Error in initialization of the initial increment" );
+            errorOut result = new errorNode( __func__, "Error in initialization of the initial increment" );
             result->addNext( error );
             return result;
         }
@@ -3591,7 +3591,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeIncrementCentersOfMass", "Error in extraction of the free domain's nodes" );
+                errorOut result = new errorNode( __func__, "Error in extraction of the free domain's nodes" );
                 result->addNext( error );
                 return result;
 
@@ -3607,7 +3607,7 @@ namespace overlapCoupling{
                                                               mass, centerOfMass );
             if ( error ){
 
-                errorOut result = new errorNode( "computeIncrementCentersOfMass", "Error in calculation of '" + *name + "' center of mass" );
+                errorOut result = new errorNode( __func__, "Error in calculation of '" + *name + "' center of mass" );
                 result->addNext( error );
                 return result;
 
@@ -3634,7 +3634,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeIncrementCentersOfMass", "Error in extraction of the ghost domain's nodes" );
+                errorOut result = new errorNode( __func__, "Error in extraction of the ghost domain's nodes" );
                 result->addNext( error );
                 return result;
 
@@ -3651,7 +3651,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeIncrementCentersOfMass", "Error in calculation of '" + *name + "' center of mass" );
+                errorOut result = new errorNode( __func__, "Error in calculation of '" + *name + "' center of mass" );
                 result->addNext( error );
                 return result;
 
@@ -3684,7 +3684,7 @@ namespace overlapCoupling{
         auto connectivityCellIndices = connectivity.find( cellID );
         if ( connectivityCellIndices == connectivity.end( ) ){
 
-            return new errorNode( "buildMacroDomainElement",
+            return new errorNode( __func__,
                                   "Cell ID " + std::to_string( cellID ) + " was not found in the connectivity map" );
 
         }
@@ -3695,7 +3695,7 @@ namespace overlapCoupling{
 
         if ( it == elib::XDMFTypeToElementName.end( ) ){
 
-            return new errorNode( "buildMacroDomainElement",
+            return new errorNode( __func__,
                                   "The cell type " + std::to_string(cellType) + " is not supported" );
 
         }
@@ -3710,7 +3710,7 @@ namespace overlapCoupling{
 
             if ( nodeLocation == nodeLocations.end( ) ){
 
-                return new errorNode( "Node " + std::to_string( *nodeId ) + " was not found in the node locations map" );
+                return new errorNode( __func__, "Node " + std::to_string( *nodeId ) + " was not found in the node locations map" );
 
             }
 
@@ -3724,7 +3724,7 @@ namespace overlapCoupling{
         auto qrule = elib::default_qrules.find( it->second );
         if ( qrule == elib::default_qrules.end( ) ){
 
-            return new errorNode( "buildMacroDomainElement",
+            return new errorNode( __func__,
                                   "The element type " + it->second + " is not found in the default quadrature rules map" );
 
         }
@@ -3754,7 +3754,7 @@ namespace overlapCoupling{
 
         if ( connectivityCellIndices == connectivity.end( ) ){
 
-            return new errorNode( "buildMacroDomainElement", 
+            return new errorNode( __func__, 
                                   "Cell " + std::to_string( cellID ) + " was not found in the connectivity map" );
 
         }
@@ -3767,7 +3767,7 @@ namespace overlapCoupling{
 
         if ( it == elib::XDMFTypeToElementName.end( ) ){
 
-            return new errorNode( "buildMacroDomainElement",
+            return new errorNode( __func__,
                                   "The cell type " + std::to_string(cellType) + " is not supported" );
 
         }
@@ -3785,7 +3785,7 @@ namespace overlapCoupling{
 
             if ( nodeReferenceLocation == nodeReferenceLocations.end( ) ){
 
-                return new errorNode( "buildMacroDomainElement",
+                return new errorNode( __func__,
                                       "The node " + std::to_string( *nodeId ) + " was not found in the node reference location map" );
 
             }
@@ -3794,7 +3794,7 @@ namespace overlapCoupling{
 
             if ( nodeDisplacement == nodeDisplacements.end( ) ){
 
-                return new errorNode( "buildMacroDomainElement",
+                return new errorNode( __func__,
                                       "The node " + std::to_string( *nodeId ) + " was not found in the node displacement map" );
 
             }
@@ -3808,7 +3808,7 @@ namespace overlapCoupling{
         auto qrule = elib::default_qrules.find( it->second );
         if ( qrule == elib::default_qrules.end( ) ){
 
-            return new errorNode( "buildMacroDomainElement",
+            return new errorNode( __func__,
                                   "The element type " + it->second + " is not found in the default quadrature rules map" );
 
         }
@@ -3838,7 +3838,7 @@ namespace overlapCoupling{
 
         if ( point.size( ) != _dim ){
 
-            return new errorNode( "computeShapeFunctionsAtPoints",
+            return new errorNode( __func__,
                                   "This function only works for a single point of dimension " + std::to_string( _dim ) );
 
         }
@@ -3852,7 +3852,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeShapeFunctionsAtPoints",
+            errorOut result = new errorNode( __func__,
                                              "Error when computing shape functions" );
             result->addNext( error );
             return result;
@@ -3885,7 +3885,7 @@ namespace overlapCoupling{
 
         if ( point.size( ) != _dim ){
 
-            return new errorNode( "computeShapeFunctionsAtPoint",
+            return new errorNode( __func__,
                                   "This function only works for a single point of dimension " + std::to_string( _dim ) );
 
         }
@@ -3900,7 +3900,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeShapeFunctionsAtPoint",
+            errorOut result = new errorNode( __func__,
                                              "Error when computing shape functions" );
             result->addNext( error );
             return result;
@@ -3937,7 +3937,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeShapeFunctionsAtPoints", "Error in element formulation" );
+            errorOut result = new errorNode( __func__, "Error in element formulation" );
             result->addNext( error );
             return result;
 
@@ -3970,7 +3970,7 @@ namespace overlapCoupling{
 
             if ( error ) {
 
-                return new errorNode( "computeShapeFunctionsAtPoints",
+                return new errorNode( __func__,
                                       "Error in computing the local coordinates for point " + std::to_string( p->first ) );
 
             }
@@ -3979,7 +3979,7 @@ namespace overlapCoupling{
 
             if ( error ) {
 
-                return new errorNode( "computeShapeFunctionsAtPoints",
+                return new errorNode( __func__,
                                       "Error in the computation of the shape functions for point " + std::to_string( p->first ) );
 
             }
@@ -4017,7 +4017,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeShapeFunctionsAtPoints", "Error in element formulation" );
+            errorOut result = new errorNode( __func__, "Error in element formulation" );
             result->addNext( error );
             return result;
 
@@ -4050,7 +4050,7 @@ namespace overlapCoupling{
 
             if ( error ) {
 
-                return new errorNode( "computeShapeFunctionsAtPoints",
+                return new errorNode( __func__,
                                       "Error in computing the local coordinates for point " + std::to_string( p->first ) );
 
             }
@@ -4059,7 +4059,7 @@ namespace overlapCoupling{
 
             if ( error ) {
 
-                return new errorNode( "computeShapeFunctionsAtPoints",
+                return new errorNode( __func__,
                                       "Error in the computation of the shape functions for point " + std::to_string( p->first ) );
 
             }
@@ -4101,7 +4101,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeShapeFunctionGradientsAtPoints", "Error in element formulation" );
+            errorOut result = new errorNode( __func__, "Error in element formulation" );
             result->addNext( error );
             return result;
 
@@ -4113,7 +4113,7 @@ namespace overlapCoupling{
         unsigned nPoints = points.size( ) / _dim;
         if ( ( points.size( ) % _dim ) > 0 ){
 
-            return new errorNode( "computeShapeFunctionGradientsAtPoints",
+            return new errorNode( __func__,
                                   "The points vector is inconsistent with the dimension\n"
                                   "    points.size( ): " + std::to_string( points.size( ) ) + "\n" +
                                   "    nPoints: " + std::to_string( nPoints ) );
@@ -4143,7 +4143,7 @@ namespace overlapCoupling{
 
             if ( error ) {
 
-                return new errorNode( "computeShapeFunctionGradientsAtPoints",
+                return new errorNode( __func__,
                                       "Error in computing the local coordinates for point " + std::to_string( p->first ) );
 
             }
@@ -4152,7 +4152,7 @@ namespace overlapCoupling{
 
             if ( error ) {
 
-                return new errorNode( "computeShapeFunctionGradientsAtPoints",
+                return new errorNode( __func__,
                                       "Error in the computation of the shape functions for point " + std::to_string( p->first ) );
 
             }
@@ -4190,7 +4190,7 @@ namespace overlapCoupling{
 
             if ( cellCentersOfMass == _referenceGhostMicroDomainCentersOfMass.end( ) ){
 
-                return new errorNode( "computeShapeFunctionsAtReferenceCentersOfMass",
+                return new errorNode( __func__,
                                       "The macro cell " + std::to_string( *cellID ) +
                                       " was not found in the reference ghost micro domain centers of mass" );
 
@@ -4215,7 +4215,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeShapeFunctionsAtReferenceCentersOfMass",
+                errorOut result = new errorNode( __func__,
                                                  "Error in computation of the shape functions at the reference ghost micro centers of mass" );
                 result->addNext( error );
                 return result;
@@ -4250,7 +4250,7 @@ namespace overlapCoupling{
 
             if ( cellCentersOfMass == _referenceFreeMicroDomainCentersOfMass.end( ) ){
 
-                return new errorNode( "computeShapeFunctionsAtReferenceCentersOfMass",
+                return new errorNode( __func__,
                                       "The macro cell " + std::to_string( *cellID ) +
                                       " was not found in the reference free micro domain centers of mass" );
 
@@ -4275,7 +4275,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeShapeFunctionsAtReferenceCentersOfMass",
+                errorOut result = new errorNode( __func__,
                                                  "Error in computation of the shape functions at the reference free micro centers of mass" );
                 result->addNext( error );
                 return result;
@@ -4335,7 +4335,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "addDomainContributionToInterpolationMatrix",
+            errorOut result = new errorNode( __func__,
                                              "Error in computation of the contribution of the domain to the interpolation matrix" );
             result->addNext( error );
             return result;
@@ -4407,7 +4407,7 @@ namespace overlapCoupling{
 
                 if ( macroDispDOF == macroDispDOFVector->end( ) ){
 
-                    return new errorNode( "projectDegreesOfFreedom",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( *it ) +
                                           " was not found in the macro displacement dof vector map" );
 
@@ -4415,7 +4415,7 @@ namespace overlapCoupling{
 
                 if ( macroDispDOF->second.size( ) != nMacroDispDOF ){
 
-                    return new errorNode( "projectDegreesOfFreedom",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( *it ) +
                                           " does not have a dimensionally consistent number of degrees of freedom" );
 
@@ -4425,7 +4425,7 @@ namespace overlapCoupling{
 
                 if ( map == macroGlobalToLocalDOFMap->end( ) ){
 
-                    return new errorNode( "projectDegreesOfFreedom",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( *it ) +
                                           " was not found in the macro global-to-local node map" );
 
@@ -4446,7 +4446,7 @@ namespace overlapCoupling{
 
                 if ( microDispDOF == microDisplacements->end(  ) ){
 
-                    return new errorNode( "projectDegreesOfFreedom",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *it ) +
                                           " was not found in the micro displacement dof vector map" );
 
@@ -4454,7 +4454,7 @@ namespace overlapCoupling{
 
                 if ( microDispDOF->second.size( ) != nMicroDispDOF ){
 
-                    return new errorNode( "projectDegreesOfFreedom",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *it ) +
                                           " does not have a dimensionally consistent number of degrees of freedom" );
 
@@ -4464,7 +4464,7 @@ namespace overlapCoupling{
 
                 if ( map == microGlobalToLocalDOFMap->end( ) ){
 
-                    return new errorNode( "projectDegreesOfFreedom",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *it ) +
                                           " was not found in the micro global-to-local node map" );
 
@@ -4515,7 +4515,7 @@ namespace overlapCoupling{
         }
         else{
 
-            return new errorNode( "projectDegreesOfFreedom",
+            return new errorNode( __func__,
                                   "'projection_type' '" + config[ "projection_type" ].as< std::string >( ) + "' is not recognized" );
 
         }
@@ -4558,7 +4558,7 @@ namespace overlapCoupling{
 
             if ( microDensity == microDensities->end( ) ){
 
-                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *microNode ) + " was not found in the micro density map" );
 
             }
@@ -4567,7 +4567,7 @@ namespace overlapCoupling{
 
             if ( microVolume == microVolumes->end( ) ){
 
-                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *microNode ) + " was not found in the micro volume map" );
 
             }
@@ -4576,7 +4576,7 @@ namespace overlapCoupling{
 
             if ( microWeight == microWeights->end( ) ){
 
-                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *microNode ) + " was not found in the micro weight map" );
 
             }
@@ -4585,7 +4585,7 @@ namespace overlapCoupling{
 
             if ( referenceXi == domainReferenceXiVectors.end( ) ){
 
-                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *microNode ) + " was not found in the reference Xi map" );
 
             }
@@ -4594,7 +4594,7 @@ namespace overlapCoupling{
 
             if ( shapefunctions == domainMicroPositionShapeFunctionValues.end( ) ){
 
-                return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *microNode ) + " was not found in the shape function values map" );
 
             }
@@ -4620,7 +4620,7 @@ namespace overlapCoupling{
 
                 if ( indx == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
 
-                    return new errorNode( "addDomainToDirectProjectionReferenceValues",
+                    return new errorNode( __func__,
                                           "Macro node '" + std::to_string( *macroNode ) + "' not found in global to local macro node map" );
 
                 }
@@ -4675,7 +4675,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+            errorOut result = new errorNode( __func__,
                                              "Error in extracting the domain ( " + domainName + " ) nodes" );
             result->addNext( error );
             return result;
@@ -4692,7 +4692,7 @@ namespace overlapCoupling{
         auto cellDomainCentersOfMass = _referenceFreeMicroDomainCentersOfMass.find( cellID );
         if ( cellDomainCentersOfMass == _referenceFreeMicroDomainCentersOfMass.end( ) ){
 
-            return new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+            return new errorNode( __func__,
                                   "Macro cell " + std::to_string( cellID ) + " not found in reference domain centers of mass map" );
 
         }
@@ -4704,7 +4704,7 @@ namespace overlapCoupling{
             std::string outstr = "Micro domain ";
             outstr += domainName;
             outstr += " not found in the micro domain centers of mass";
-            return new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector", outstr );
+            return new errorNode( __func__, outstr );
 
         }
  
@@ -4714,7 +4714,7 @@ namespace overlapCoupling{
 
             if ( microReferencePosition == microReferencePositions->end( ) ){
 
-                return new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *it ) + " was not found in the micro reference position map" );
 
             }
@@ -4723,7 +4723,7 @@ namespace overlapCoupling{
 
             if ( microDisplacement == microDisplacements->end( ) ){
 
-                return new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *it ) + " was not found in the micro displacement map" );
 
             }
@@ -4745,7 +4745,7 @@ namespace overlapCoupling{
 
         if ( error ){
  
-            errorOut result = new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the shape functions at the center of mass for a micro domain" );
             result->addNext( error );
             return result;
@@ -4777,7 +4777,7 @@ namespace overlapCoupling{
 
             if ( indx == macroGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+                return new errorNode( __func__,
                                       "'" + std::to_string( *md ) + "' not found in the DOF map" );
 
             }
@@ -4806,7 +4806,7 @@ namespace overlapCoupling{
                                                                        &projectorMacroGlobalToLocalDOFMap );
 
         if ( error ){
-            errorOut result = new errorNode( "addDomainContributionToDirectFreeMicroToGhostMacroProjector",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the domain's contribution to the micro to macro projection matrix" );
             result->addNext( error );
             return result;
@@ -4900,7 +4900,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "homogenizeMicroScale",
+                errorOut result = new errorNode( __func__,
                                                  "Error constructing the macro element" );
                 result->addNext( error );
                 return result;
@@ -4911,7 +4911,7 @@ namespace overlapCoupling{
             auto microDomains = macroCellToMicroDomainMap->find( *macroCell );
             if ( microDomains == macroCellToMicroDomainMap->end( ) ){
 
-                return new errorNode( "homogenizeMicroScale",
+                return new errorNode( __func__,
                                       "Macro cell " + std::to_string( *macroCell ) + " not found in the macro cell to micro domain map" ) ;
 
             }
@@ -4928,7 +4928,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "homogenizeMicroScale",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the reconstruction of the microscale domain" );
                     result->addNext( error );
                     return result;
@@ -4942,7 +4942,7 @@ namespace overlapCoupling{
                     std::string outstr = "Ghost micro domain ";
                     outstr += *microDomain;
                     outstr += " not found in the center of mass map";
-                    return new errorNode( "homogenizedMicroScale", outstr );
+                    return new errorNode( __func__, outstr );
 
                 }
 
@@ -4952,7 +4952,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "homogenizeMicroscale",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the computation of the volume averages of the microscale domain" );
                     result->addNext( error );
                     return result;
@@ -4962,7 +4962,7 @@ namespace overlapCoupling{
                 auto domainSurfaceCount = microDomainSurfaceSplitCount->find( *microDomain );
                 if ( domainSurfaceCount == microDomainSurfaceSplitCount->end( ) ){
 
-                    return new errorNode( "homogenizeMicroscale",
+                    return new errorNode( __func__,
                                           "The micro domain " + *microDomain + " was not found in the domain surface split count map" );
 
                 }
@@ -4975,7 +4975,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "homogenizeMicroScale",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the computation of the surface averages of the microscale domain" );
                     result->addNext( error );
                     return result;
@@ -4989,7 +4989,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "homogenizeMicroScale",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the homogenized stresses" );
                 result->addNext( error );
                 return result;
@@ -5013,7 +5013,7 @@ namespace overlapCoupling{
     
                 if ( cellConnectivity == macroConnectivity->end( ) ){
     
-                    return new errorNode( "homogenizeMicroscale", "Macro cell " + std::to_string( *macroCell ) + " not found in connectivity map" );
+                    return new errorNode( __func__, "Macro cell " + std::to_string( *macroCell ) + " not found in connectivity map" );
     
                 }
 
@@ -5029,7 +5029,7 @@ namespace overlapCoupling{
 
                     if ( local_node == macroGlobalToLocalDOFMap->end( ) ){
 
-                        return new errorNode( "homogenizeMicroscale", "Micro node " + std::to_string( *node) + " not found in the global to local map" );
+                        return new errorNode( __func__, "Micro node " + std::to_string( *node) + " not found in the global to local map" );
 
                     }
 
@@ -5055,7 +5055,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "homogenizeMicroScale",
+                errorOut result = new errorNode( __func__,
                                                  "Error constructing the macro element" );
                 result->addNext( error );
                 return result;
@@ -5066,7 +5066,7 @@ namespace overlapCoupling{
             auto microDomains = macroCellToMicroDomainMap->find( *macroCell );
             if ( microDomains == macroCellToMicroDomainMap->end( ) ){
 
-                return new errorNode( "homogenizedMicroScale",
+                return new errorNode( __func__,
                                       "Macro cell " + std::to_string( *macroCell ) + " not found in the macro cell to micro domain map" ) ;
             }
 
@@ -5082,7 +5082,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "homogenizeMicroScale",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the reconstruction of the microscale domain" );
                     result->addNext( error );
                     return result;
@@ -5096,7 +5096,7 @@ namespace overlapCoupling{
                     std::string outstr = "Free micro domain ";
                     outstr += *microDomain;
                     outstr += " not found in the center of mass map";
-                    return new errorNode( "homogenizedMicroScale", outstr );
+                    return new errorNode( __func__, outstr );
 
                 }
 
@@ -5106,7 +5106,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "computeDomainVolumeAverages",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the computation of the volume averages of the microscale domain" );
                     result->addNext( error );
                     return result;
@@ -5116,7 +5116,7 @@ namespace overlapCoupling{
                 auto domainSurfaceCount = microDomainSurfaceSplitCount->find( *microDomain );
                 if ( domainSurfaceCount == microDomainSurfaceSplitCount->end( ) ){
 
-                    return new errorNode( "homogenizeMicroscale",
+                    return new errorNode( __func__,
                                           "The micro domain " + *microDomain + " was not found in the domain surface split count map" );
 
                 }
@@ -5129,7 +5129,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "homogenizeMicroScale",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the computation of the surface averages of the microscale domain" );
                     result->addNext( error );
                     return result;
@@ -5143,7 +5143,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "homogenizeMicroScale",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the homogenized stresses" );
                 result->addNext( error );
                 return result;
@@ -5162,7 +5162,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "homogenizeMicroScale",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the homogenized forces and mass matrix" );
                 result->addNext( error );
                 return result;
@@ -5201,7 +5201,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "reconstructDomain",
+            errorOut result = new errorNode( __func__,
                                              "Error in getting the node ids for the domain ( " + microDomainName + " )" );
             result->addNext( error );
             return result;
@@ -5223,7 +5223,7 @@ namespace overlapCoupling{
 
             if ( microReferencePosition == microReferencePositions->end( ) ){
 
-                return new errorNode( "reconstructDomain", "Micro node " + std::to_string( *it ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( *it ) +
                                       " was not found in the micro reference position map" );
 
             }
@@ -5232,7 +5232,7 @@ namespace overlapCoupling{
 
             if ( microDisplacement == microDisplacements->end( ) ){
 
-                return new errorNode( "reconstructDomain", "Micro node " + std::to_string( *it ) +
+                return new errorNode( __func__, "Micro node " + std::to_string( *it ) +
                                       " was not found in the micro displacement map" );
 
             }
@@ -5266,7 +5266,7 @@ namespace overlapCoupling{
 
         if ( reconstructedVolume->getError( ) ){
 
-            errorOut result = new errorNode( "reconstructDomain",
+            errorOut result = new errorNode( __func__,
                                              "Error in creating the volume reconstruction object for " + microDomainName );
 
             result->addNext( reconstructedVolume->getError( ) );
@@ -5279,7 +5279,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "reconstructDomain",
+            errorOut result = new errorNode( __func__,
                                              "Error in loading the micro-scale points for " + microDomainName );
             result->addNext( error );
             return result;
@@ -5291,7 +5291,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "reconstructDomain",
+            errorOut result = new errorNode( __func__,
                                              "Error in loading the micro-scale points for " + microDomainName );
             result->addNext( error );
             return result;
@@ -5366,7 +5366,7 @@ namespace overlapCoupling{
 
             auto microDensity = microDensities->find( *node );
             if ( microDensity == microDensities->end( ) ){
-                return new errorNode( "computeDomainVolumeAverages",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *node ) + " was not found in the micro density map" );
             }
 
@@ -5375,7 +5375,7 @@ namespace overlapCoupling{
             //Integrate the micro stresses
             auto microStress = microStresses->find( *node );
             if ( microStress == microStresses->end( ) ){
-                return new errorNode( "computeDomainVolumeAverages",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *node ) + " was not found in the micro stress map" );
             }
             for ( unsigned int i = 0; i < _dim * _dim; i++ ){
@@ -5388,13 +5388,13 @@ namespace overlapCoupling{
 
                 auto microReferencePosition = microReferencePositions->find( *node );
                 if ( microReferencePosition == microReferencePositions->end( ) ){
-                    return new errorNode( "computeDomainVolumeAverages",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) + " was not found in the micro reference position map" );
                 }
 
                 auto microDisplacement = microDisplacements->find( *node );
                 if ( microDisplacement == microDisplacements->end( ) ){
-                    return new errorNode( "computeDomainVolumeAverages",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) + " was not found in the micro displacement map" );
                 }
 
@@ -5416,7 +5416,7 @@ namespace overlapCoupling{
 
                 auto microBodyForce = microBodyForces->find( *node );
                 if ( microBodyForce == microBodyForces->end( ) ){
-                    return new errorNode( "computeDomainVolumeAverages",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) + " was not found in the micro body force map" );
                 }
 
@@ -5436,7 +5436,7 @@ namespace overlapCoupling{
 
                 auto microAcceleration = microAccelerations->find( *node );
                 if ( microAcceleration == microAccelerations->end( ) ){
-                    return new errorNode( "computeDomainVolumeAverages",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) + " was not found in the micro acceleration map" );
                 }
 
@@ -5459,7 +5459,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeDomainVolumeAverages",
+            errorOut result = new errorNode( __func__,
                                              "Error in computing the initial volume averages" );
             result->addNext( error );
             return result;
@@ -5561,19 +5561,19 @@ namespace overlapCoupling{
 
                 auto microDensity = microDensities->find( *node );
                 if ( microDensity == microDensities->end( ) ){
-                    return new errorNode( "computeDomainVolumeAverages",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) + " was not found in the micro density map" );
                 }
 
                 auto microReferencePosition = microReferencePositions->find( *node );
                 if ( microReferencePosition == microReferencePositions->end( ) ){
-                    return new errorNode( "computeDomainVolumeAverages",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) + " was not found in the micro reference position map" );
                 }
 
                 auto microDisplacement = microDisplacements->find( *node );
                 if ( microDisplacement == microDisplacements->end( ) ){
-                    return new errorNode( "computeDomainVolumeAverages",
+                    return new errorNode( __func__,
                                           "Micro node " + std::to_string( *node ) + " was not found in the micro displacement map" );
                 }
 
@@ -5599,7 +5599,7 @@ namespace overlapCoupling{
 
                     auto microBodyForce = microBodyForces->find( *node );
                     if ( microBodyForce == microBodyForces->end( ) ){
-                        return new errorNode( "computeDomainVolumeAverages",
+                        return new errorNode( __func__,
                                               "Micro node " + std::to_string( *node ) + " was not found in the micro body force map" );
                     }
 
@@ -5623,7 +5623,7 @@ namespace overlapCoupling{
 
                     auto microAcceleration = microAccelerations->find( *node );
                     if ( microAcceleration == microAccelerations->end( ) ){
-                        return new errorNode( "computeDomainVolumeAverages",
+                        return new errorNode( __func__,
                                               "Micro node " + std::to_string( *node ) + " was not found in the micro acceleration map" );
                     }
 
@@ -5651,7 +5651,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeDomainVolumeAverages",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the relative position volume integrals" );
                 result->addNext( error );
                 return result;
@@ -5731,7 +5731,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeDomainSurfaceAverages",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the domain's surface area" );
             result->addNext( error );
             return result;
@@ -5848,7 +5848,7 @@ namespace overlapCoupling{
 
             auto microDensity = microDensities->find( *node );
             if ( microDensity == microDensities->end( ) ){
-                return new errorNode( "computeDomainSurfaceAverages",
+                return new errorNode( __func__,
                                       "The micro node " + std::to_string( *node ) + " was not found in the micro density map" );
             }
 
@@ -5857,13 +5857,13 @@ namespace overlapCoupling{
 
             auto microReferencePosition = microReferencePositions->find( *node );
             if ( microReferencePosition == microReferencePositions->end( ) ){
-                return new errorNode( "computeDomainSurfaceAverages",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *node ) + " was not found in the micro reference position map" );
             }
 
 //            auto microDisplacement = microDisplacements->find( *node );
 //            if ( microDisplacement == microDisplacements->end( ) ){
-//                return new errorNode( "computeDomainSurfaceAverages",
+//                return new errorNode( __func__,
 //                                      "Micro node " + std::to_string( *node ) + " was not found in the micro displacement map" );
 //            }
 //
@@ -5902,7 +5902,7 @@ namespace overlapCoupling{
     
                 if ( error ){
     
-                    errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the integration of the macro surface ( "
                                                      + std::to_string( sN - subdomainNodeIDs.begin( ) ) + " )" );
                     result->addNext( error );
@@ -5922,7 +5922,7 @@ namespace overlapCoupling{
 
                 if ( error ){
     
-                    errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the integration of the position weighted macro surface ( "
                                                      + std::to_string( sN - subdomainNodeIDs.begin( ) ) + " )" );
                     result->addNext( error );
@@ -5946,7 +5946,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the computation of the local surface center of mass" );
                     result->addNext( error );
                     return result;
@@ -5970,7 +5970,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the interpolation of the local projected surface center of mass to global coordinates" );
                     result->addNext( error );
                     return result;
@@ -5999,7 +5999,7 @@ namespace overlapCoupling{
 
             auto microStress = microStresses->find( *node );
             if ( microStress == microStresses->end( ) ){
-                return new errorNode( "computeDomainSurfaceAverages",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *node ) + " was not found in the micro stress map" );
             }
 
@@ -6025,7 +6025,7 @@ namespace overlapCoupling{
 
                 if ( error ){
     
-                    errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the computation of the surface traction of the the macro surface ( "
                                                      + std::to_string( sN - subdomainNodeIDs.begin( ) ) + " )" );
                     result->addNext( error );
@@ -6050,7 +6050,7 @@ namespace overlapCoupling{
     
                 if ( error ){
     
-                    errorOut result = new errorNode( "computeDomainSurfaceAverages",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the computation of the surface couple of the micro region ( "
                                                      + std::to_string( sN - subdomainNodeIDs.begin( ) ) + " )" );
                     result->addNext( error );
@@ -6105,7 +6105,7 @@ namespace overlapCoupling{
     
             if ( cellConnectivity == macroConnectivity->end( ) ){
     
-                return new errorNode( "homogenizeMicroscale", "Macro cell " + std::to_string( macroCellID ) + " not found in connectivity map" );
+                return new errorNode( __func__, "Macro cell " + std::to_string( macroCellID ) + " not found in connectivity map" );
     
             }
 
@@ -6121,7 +6121,7 @@ namespace overlapCoupling{
 
                 if ( local_node == macroGlobalToLocalDOFMap->end( ) ){
 
-                    return new errorNode( "homogenizeMicroscale", "Micro node " + std::to_string( *node) + " not found in the global to local map" );
+                    return new errorNode( __func__, "Micro node " + std::to_string( *node) + " not found in the global to local map" );
 
                 }
 
@@ -6147,7 +6147,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeHomogenizedStresses",
+            errorOut result = new errorNode( __func__,
                                              "Error in the formation of the finite element representation of the macro-scale" );
             result->addNext( error );
             return result;
@@ -6191,7 +6191,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeHomogenizedStresses",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the shapefunctions at the micro domain centers of mass for macro cell " + std::to_string( macroCellID ) );
             result->addNext( error );
             return result;
@@ -6211,7 +6211,7 @@ namespace overlapCoupling{
                 output += "and the number of nodes in the macro element for macro-cell " + std::to_string( macroCellID ) + ".\n";
                 output += "This is likely because one of the micro-domains center of mass is located outside of the macro cell";
     
-                return new errorNode( "computeHomogenizedStresses", output );
+                return new errorNode( __func__, output );
 
             }
 
@@ -6227,7 +6227,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeHomogenizedStresses",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the shape functions\n" );
                 result->addNext( error );
                 return result;
@@ -6240,7 +6240,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeHomogenizedStresses",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the local gradient\n" );
                 result->addNext( error );
                 return result;
@@ -6409,7 +6409,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "computeHomogenizedStresses",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the computation of the shapefunctions at the micro-domain surface center of mass for macro cell " + std::to_string( macroCellID ) + " on face " + std::to_string( *face ) );
                     result->addNext( error );
                     return result;
@@ -6513,7 +6513,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeHomogenizedStresses",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the shape functions\n" );
                 result->addNext( error );
                 return result;
@@ -6525,7 +6525,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeHomogenizedStresses",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the shape function gradients\n" );
                 result->addNext( error );
                 return result;
@@ -6537,7 +6537,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeHomogenizedStresses",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the local gradient\n" );
                 result->addNext( error );
                 return result;
@@ -6875,28 +6875,28 @@ namespace overlapCoupling{
         //Check that the degree of freedom value vector's length is consistent with the element
         if ( degreeOfFreedomValues.size( ) != ( uSize + phiSize ) * element->nodes.size( ) ){
 
-            return new errorNode( "formMicromorphicElementMassMatrix",
+            return new errorNode( __func__,
                                   "The degree of freedom vector size is not consistent with the element dimension" );
 
         }
 
         if ( momentOfInertia.size( ) != element->qrule.size( ) * phiSize ){
 
-            return new errorNode( "formMicromorphicElementMassMatrix",
+            return new errorNode( __func__,
                                   "The moment of inertia vector size is not consistent with the quadrature rule and element dimension" );
 
         }
 
         if ( density.size( ) != element->qrule.size( ) ){
 
-            return new errorNode( "formMicromorphicElementMassMatrix",
+            return new errorNode( __func__,
                                   "The density vector size is not consistent with the quadrature rule" );
 
         }
 
         if ( element->global_node_ids.size( ) != element->nodes.size( )  ){
 
-            return new errorNode( "formMicromorphicElementMassMatrix",
+            return new errorNode( __func__,
                                   "The size of the global node id in the element are not the same size as the number of nodes" );
 
         }
@@ -6932,7 +6932,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formMicromorphicElementMassMatrix",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the required values for the element" );
                 result->addNext( error );
                 return result;
@@ -6982,7 +6982,7 @@ namespace overlapCoupling{
 
                 if ( gni1 == nodeIDToIndex->end( ) ){
 
-                    return new errorNode( "formMicromorphicElementMassMatrix",
+                    return new errorNode( __func__,
                                           "Node " + std::to_string( element->global_node_ids[ o ] ) + " not found in the ID map" );
                                           
 
@@ -6998,7 +6998,7 @@ namespace overlapCoupling{
 
                     if ( gni2 == nodeIDToIndex->end( ) ){
     
-                        return new errorNode( "formMicromorphicElementMassMatrix",
+                        return new errorNode( __func__,
                                               "Node " + std::to_string( element->global_node_ids[ p ] ) + " not found in the ID map" );
                                               
     
@@ -7076,42 +7076,42 @@ namespace overlapCoupling{
             std::string output  = "The dimension of the problem is required to be 3. This only matters ( it is believed )\n";
             output             += "because of dNdX, fint, and cint which are currently consistent with a 3D problem as required\n";
             output             += "by balance_equations.h";
-            return new errorNode( "formMicromorphicElementInternalForceVector", output );
+            return new errorNode( __func__, output );
 
         }
 
         //Check that the degree of freedom value vector's length is consistent with the element
         if ( degreeOfFreedomValues.size( ) != ( uSize + phiSize ) * element->nodes.size( ) ){
 
-            return new errorNode( "formMicromorphicElementInternalForceVector",
+            return new errorNode( __func__,
                                   "The degree of freedom vector size is not consistent with the element dimension" );
 
         }
 
         if ( cauchyStress.size( ) != element->qrule.size( ) * dim * dim ){
 
-            return new errorNode( "formMicromorphicElementInternalForceVector",
+            return new errorNode( __func__,
                                   "The Cauchy stress vector size is not consistent with the quadrature rule and element dimension" );
 
         }
 
         if ( symmetricMicroStress.size( ) != element->qrule.size( ) * dim * dim ){
 
-            return new errorNode( "formMicromorphicElementInternalForceVector",
+            return new errorNode( __func__,
                                   "The symmetric micro-stress vector size is not consistent with the quadrature rule" );
 
         }
 
         if ( higherOrderStress.size( ) != element->qrule.size( ) * dim * dim * dim ){
 
-            return new errorNode( "formMicromoprhicElementInternalForceVector",
+            return new errorNode( __func__,
                                   "The higher-order stress vector size is not consistent with the quadrature rule" );
 
         }
 
         if ( element->global_node_ids.size( ) != element->nodes.size( )  ){
 
-            return new errorNode( "formMicromorphicElementInternalForceVector",
+            return new errorNode( __func__,
                                   "The size of the global node id in the element are not the same size as the number of nodes" );
 
         }
@@ -7147,7 +7147,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the computation of the required values for the element" );
                 result->addNext( error );
                 return result;
@@ -7169,7 +7169,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the pull-back operation on the Cauchy stress" );
                 result->addNext( error );
                 return result;
@@ -7181,7 +7181,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the pull-back operation on the symmetric micro-stress" );
                 result->addNext( error );
                 return result;
@@ -7193,7 +7193,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "formMicromorphicElementInternalForceVector",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the pull-back operation on the higher order stress" );
                 result->addNext( error );
                 return result;
@@ -7217,7 +7217,7 @@ namespace overlapCoupling{
 
                 if ( errorCode != 0 ){
 
-                    return new errorNode( "formMicromorphicElementInternalForceVector",
+                    return new errorNode( __func__,
                                           "The internal force term returned an error code: " + std::to_string( errorCode ) );
 
                 }
@@ -7229,7 +7229,7 @@ namespace overlapCoupling{
 
                 if ( errorCode != 0 ){
 
-                    return new errorNode( "formMicromorphicElementInternalForceVector",
+                    return new errorNode( __func__,
                                           "The internal couple term returned an error code: " + std::to_string( errorCode ) );
 
                 }
@@ -7239,7 +7239,7 @@ namespace overlapCoupling{
                 
                 if ( it == nodeIDToIndex->end( ) ){
 
-                    return new errorNode( "formMicromorphicElementInternalForceVector",
+                    return new errorNode( __func__,
                                           "The global node id " + std::to_string( element->global_node_ids[ n ] ) +
                                           " is not found in the id to index map" );
 
@@ -7250,7 +7250,7 @@ namespace overlapCoupling{
 
                 if ( ( row0 + uSize + phiSize ) > internalForceVector.rows( ) ){
 
-                    return new errorNode( "formMicromorphicElementInternalForceVector",
+                    return new errorNode( __func__,
                                           "The global node id " + std::to_string( element->global_node_ids[ n ] ) +
                                           " has an index ( " + std::to_string( it->second ) + " ) which results in a index larger than" +
                                           " the internal force vector size ( " + std::to_string( internalForceVector.rows( ) ) + ")" );
@@ -7301,7 +7301,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the shape functions" );
             result->addNext( error );
             return result;
@@ -7313,7 +7313,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the shape function gradients" );
             result->addNext( error );
             return result;
@@ -7325,7 +7325,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the jacobian" );
             result->addNext( error );
             return result;
@@ -7349,7 +7349,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the local gradient\n" );
             result->addNext( error );
             return result;
@@ -7363,7 +7363,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeMicromorphicElementRequiredValues",
+            errorOut result = new errorNode( __func__,
                                              "Error in the interpolation of the degree of freedom values" );
             result->addNext( error );
             return result;
@@ -7374,7 +7374,7 @@ namespace overlapCoupling{
 
             std::string output = "The interpolated values shape is not consistent with the required dimension for the displacement ";
             output            += "and micro-displacement interpolation";
-            return new errorNode( "computeMicromorphicElementRequiredValues", output );
+            return new errorNode( __func__, output );
 
         }
 
@@ -7410,7 +7410,7 @@ namespace overlapCoupling{
             //Make sure that the macroCellID is stored in the external force vector
             if ( externalForcesAtNodes.find( *macroCellID ) == externalForcesAtNodes.end( ) ){
 
-                return new errorNode( "assembleHomogenizedExternalForceVector",
+                return new errorNode( __func__,
                                       "Macro cell ID " + std::to_string( *macroCellID ) +
                                       " not found in external forces at nodes." );
 
@@ -7419,7 +7419,7 @@ namespace overlapCoupling{
             //Make sure that the macroCellID is stored in the external couple vector
             if ( externalCouplesAtNodes.find( *macroCellID ) == externalCouplesAtNodes.end( ) ){
 
-                return new errorNode( "assembleHomogenizedExternalForceVector",
+                return new errorNode( __func__,
                                       "Macro cell ID " + std::to_string( *macroCellID ) +
                                       " not found in external couples at nodes." );
 
@@ -7434,7 +7434,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "assembleHomogenizedExternalForceVector",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the construction of the macro domain element for macro cell " +
                                                  std::to_string( *macroCellID ) );
                 result->addNext( error );
@@ -7455,7 +7455,7 @@ namespace overlapCoupling{
 
                 if ( index == nodeIDToIndex->end( ) ){
 
-                    return new errorNode( "assembleHomogenizedExternalForceVector",
+                    return new errorNode( __func__,
                                           "Macro global node " + std::to_string( *globalNodeID ) +
                                           " not found in the id to index map" );
 
@@ -7511,7 +7511,7 @@ namespace overlapCoupling{
 
             if ( map == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
 
-                return new errorNode( "assembleHomogenizedInternalForceVector",
+                return new errorNode( __func__,
                                       "Global degree of freedom '" + std::to_string( *it ) + "' not found in degree of freedom map" );
 
             }
@@ -7520,7 +7520,7 @@ namespace overlapCoupling{
 
             if ( macroDisplacement == macroDispDOFVector->end( ) ){
 
-                return new errorNode( "assembleHomogenizedInternalForceVector",
+                return new errorNode( __func__,
                                       "Global macro degree of freedom '" + std::to_string( *it ) + "' not found in the macro displacement dof map" );
 
             }
@@ -7558,7 +7558,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "assembleHomogenizedInternalForceVector",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the construction of the macro domain element for macro cell " +
                                                  std::to_string( *macroCellID ) );
                 result->addNext( error );
@@ -7579,7 +7579,7 @@ namespace overlapCoupling{
 
                 if ( index == nodeIDToIndex->end( ) ){
 
-                    return new errorNode( "assembleHomogenizedInternalForceVector",
+                    return new errorNode( __func__,
                                           "Macro-scale node with global id " + std::to_string( *nodeID ) +
                                           " is not found in the global ID to the local index" );
 
@@ -7608,7 +7608,7 @@ namespace overlapCoupling{
                     }
                     else{
 
-                        return new errorNode( "assembleHomogenizedInternalForceVector",
+                        return new errorNode( __func__,
                                               "The macro node " + std::to_string( *nodeID ) +
                                               " is not found in either the ghost or free macro node IDs" );
 
@@ -7633,7 +7633,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "assembleHomogenizedInternalForceVector",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the assembly of the terms of the internal force vector for element " +
                                                  std::to_string( *macroCellID ) );
                 result->addNext( error );
@@ -7674,7 +7674,7 @@ namespace overlapCoupling{
 
             if ( map == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
 
-                return new errorNode( "assembleHomogenizedInternalForceVector",
+                return new errorNode( __func__,
                                       "Global degree of freedom '" + std::to_string( *it ) + "' not found in degree of freedom map" );
 
             }
@@ -7683,7 +7683,7 @@ namespace overlapCoupling{
 
             if ( macroDisplacement == macroDispDOFVector->end( ) ){
 
-                return new errorNode( "assembleHomogenizedInternalForceVector",
+                return new errorNode( __func__,
                                       "Global macro degree of freedom '" + std::to_string( *it ) + "' not found in the macro displacement dof map" );
 
             }
@@ -7734,7 +7734,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "assembleHomogenizedInternalForceVector",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the construction of the macro domain element for macro cell " +
                                                  std::to_string( *macroCellID ) );
                 result->addNext( error );
@@ -7754,7 +7754,7 @@ namespace overlapCoupling{
 
                 if ( index == nodeIDToIndex->end( ) ){
 
-                    return new errorNode( "assembleHomogenizedInternalForceVector",
+                    return new errorNode( __func__,
                                           "Macro-scale node with global id " + std::to_string( *nodeID ) +
                                           " is not found in the global ID to the local index" );
 
@@ -7783,7 +7783,7 @@ namespace overlapCoupling{
                     }
                     else{
 
-                        return new errorNode( "assembleHomogenizedInternalForceVector",
+                        return new errorNode( __func__,
                                               "The macro node " + std::to_string( *nodeID ) +
                                               " is not found in either the ghost or free macro node IDs" );
 
@@ -7825,7 +7825,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
+            errorOut result = new errorNode( __func__,
                                              "Error in the construction of the homogenized external force vector" );
             result->addNext( error );
             return result;
@@ -7836,7 +7836,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
+            errorOut result = new errorNode( __func__,
                                              "Error in the construction of the homogenized internal force vector" );
             result->addNext( error );
             return result;
@@ -7847,7 +7847,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "assembleHomogenizedMatricesAndVectors",
+            errorOut result = new errorNode( __func__,
                                              "Error in the construction of the homogenized mass matrix" );
             result->addNext( error );
             return result;
@@ -7913,7 +7913,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "assembleFreeMicromorphicMassMatrix",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the construction of the macro element " + std::to_string( *macroCellID ) );
                 result->addNext( error );
                 return result;
@@ -7932,7 +7932,7 @@ namespace overlapCoupling{
 
                 if ( macroDisplacement == macroDispDOFVector->end( ) ){
 
-                    return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                    return new errorNode( __func__,
                                           "Macro node " + std::to_string( *nodeID ) + " was not found in the macro displacement DOF vector map" );
 
                 }
@@ -7947,7 +7947,7 @@ namespace overlapCoupling{
 
             if ( densityType == macroReferenceDensityTypes->end( ) ){
 
-                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "The macro cell with ID " + std::to_string( *macroCellID ) +
                                       " was not found in the density type map" );
 
@@ -7957,7 +7957,7 @@ namespace overlapCoupling{
 
             if ( momentOfInertiaType == macroReferenceMomentOfInertiaTypes->end( ) ){
 
-                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "The macro cell with ID " + std::to_string( *macroCellID ) +
                                       " was not found in the moment of inertia type map" );
 
@@ -7965,14 +7965,14 @@ namespace overlapCoupling{
 
             if ( densityType->second.compare( "constant" ) != 0 ){
 
-                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "Only constant densities for the macro-scale are allowed currently. This is not true for macro cell ID " + std::to_string( *macroCellID ) );
 
             }
 
             if ( momentOfInertiaType->second.compare( "constant" ) != 0 ){
 
-                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "Only constant moments of inertia for the macro-scale are allowed currently. This is not true for macro cell ID " + std::to_string( *macroCellID ) );
 
             }
@@ -7983,7 +7983,7 @@ namespace overlapCoupling{
 
             if ( macroDensities == macroReferenceDensities->end( ) ){
 
-                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "Macro cell ID " + std::to_string( *macroCellID ) +
                                       " is not in the macro reference density map" );
 
@@ -7991,7 +7991,7 @@ namespace overlapCoupling{
 
             if ( macroDensities->second.size( ) != 1 ){
 
-                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "The macro densities for macro cell " + std::to_string( *macroCellID ) +
                                       "Define " + std::to_string( macroDensities->second.size( ) ) +
                                       " values when only 1 can be defined" );
@@ -8002,7 +8002,7 @@ namespace overlapCoupling{
 
             if ( macroMomentsOfInertia == macroReferenceMomentsOfInertia->end( ) ){
 
-                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "Macro cell ID " + std::to_string( *macroCellID ) +
                                       " is not in the macro reference moments of inertia map" );
 
@@ -8010,7 +8010,7 @@ namespace overlapCoupling{
 
             if ( macroMomentsOfInertia->second.size( ) != _dim * _dim ){
 
-                return new errorNode( "assembleFreeMicromorphicMassMatrix",
+                return new errorNode( __func__,
                                       "The macro moments of inertia for macro cell " + std::to_string( *macroCellID ) +
                                       "Define " + std::to_string( macroDensities->second.size( ) ) +
                                       " values when only " + std::to_string( _dim * _dim ) + " can be defined" );
@@ -8028,7 +8028,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "assembleFreeMicromorphicMassMatrix",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the construction of the kinetic energy partitoning coefficient for macro cell " + std::to_string( *macroCellID ) );
                 result->addNext( error );
                 return result;
@@ -8061,7 +8061,7 @@ namespace overlapCoupling{
                 std::string outstr  = "Error in the construction of the contributions of the macro element to ";
                             outstr += "the free micromorphic mass matrix";
 
-                errorOut result = new errorNode( "assembleFreeMicromorphicMassMatrix", outstr );
+                errorOut result = new errorNode( __func__, outstr );
                 result->addNext( error );
                 return result;
 
@@ -8134,7 +8134,7 @@ namespace overlapCoupling{
 
             if ( localMicroNodeIDMap == microGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "assembleMacroMassAndDampingMatrices",
+                return new errorNode( __func__,
                                       "Free micro node: " + std::to_string( *microID ) + " not found in global to local map\n" );
 
             }
@@ -8143,7 +8143,7 @@ namespace overlapCoupling{
 
             if ( microDensity == microDensities->end( ) ){
 
-                return new errorNode( "assembleCouplingMassAndDampingMatrices",
+                return new errorNode( __func__,
                                       "Free micro node " + std::to_string( *microID ) + " was not found in the micro density map" );
 
             }
@@ -8152,7 +8152,7 @@ namespace overlapCoupling{
 
             if ( microVolume == microVolumes->end( ) ){
 
-                return new errorNode( "assembleCouplingMassAndDampingMatrices",
+                return new errorNode( __func__,
                                       "Free micro node " + std::to_string( *microID ) + " was not found in the micro volume map" );
 
             }
@@ -8174,7 +8174,7 @@ namespace overlapCoupling{
 
             if ( localMicroNodeIDMap == microGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "assembleMacroMassAndDampingMatrices",
+                return new errorNode( __func__,
                                       "Ghost micro node: " + std::to_string( *microID ) + " not found in global to local map\n" );
 
             }
@@ -8183,7 +8183,7 @@ namespace overlapCoupling{
 
             if ( microDensity == microDensities->end( ) ){
 
-                return new errorNode( "assembleCouplingMassAndDampingMatrices",
+                return new errorNode( __func__,
                                       "Free micro node " + std::to_string( *microID ) + " was not found in the micro density map" );
 
             }
@@ -8192,7 +8192,7 @@ namespace overlapCoupling{
 
             if ( microVolume == microVolumes->end( ) ){
 
-                return new errorNode( "assembleCouplingMassAndDampingMatrices",
+                return new errorNode( __func__,
                                       "Free micro node " + std::to_string( *microID ) + " was not found in the micro volume map" );
 
             }
@@ -8505,7 +8505,7 @@ namespace overlapCoupling{
         }
         else{
 
-            return new errorNode( "assembleMacroMassAndDampingMatrices",
+            return new errorNode( __func__,
                                   "The projection type " + config[ "projection_type" ].as< std::string >( ) +
                                   " is not recognized" );
 
@@ -8546,7 +8546,7 @@ namespace overlapCoupling{
 
                 if ( error ){
  
-                    errorOut result = new errorNode( "computeHomogenizedStresses",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the computation of the local gradient\n" );
                     result->addNext( error );
                     return result;
@@ -8560,7 +8560,7 @@ namespace overlapCoupling{
             auto microDomainVolumes = homogenizedVolumes.find( macroCellID );
             if ( microDomainVolumes == homogenizedVolumes.end( ) ){
 
-                return new errorNode( "constructKineticEnergyPartitioningCoefficient",
+                return new errorNode( __func__,
                                       "The macro cell " + std::to_string( macroCellID ) +
                                       " is not found in the homogenized volumes map" );
 
@@ -8590,7 +8590,7 @@ namespace overlapCoupling{
         }
         else{
 
-            return new errorNode( "constructKineticEnergyPartitioningCoefficient", "Configuration strategy " + strategy + " not recognized" );
+            return new errorNode( __func__, "Configuration strategy " + strategy + " not recognized" );
 
         }
 
@@ -8658,7 +8658,7 @@ namespace overlapCoupling{
 
             if ( idMap == microGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector",
+                return new errorNode( __func__,
                                       "ghost micro node " + std::to_string( *microID ) +
                                       " is not found in the local to global DOF map" );
 
@@ -8666,13 +8666,13 @@ namespace overlapCoupling{
 
             if ( idMap->second < nFreeMicroNodes ){
 
-                return new errorNode( "assembleCouplingForceVector", "The local index is smaller than the number of free micro nodes" );
+                return new errorNode( __func__, "The local index is smaller than the number of free micro nodes" );
 
             }
 
             if ( ( _dim * ( idMap->second - nFreeMicroNodes ) + _dim ) > FintQhat.size( ) ){
 
-                return new errorNode( "assembleCouplingForceVector", "Local index is larger than the force vector" );
+                return new errorNode( __func__, "Local index is larger than the force vector" );
 
             }
 
@@ -8680,7 +8680,7 @@ namespace overlapCoupling{
 
             if ( internalForce == microInternalForces->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector", "Micro node " + std::to_string( *microID ) + " not found in internal force vector" );
+                return new errorNode( __func__, "Micro node " + std::to_string( *microID ) + " not found in internal force vector" );
 
             }
 
@@ -8688,7 +8688,7 @@ namespace overlapCoupling{
 
             if ( externalForce == microInternalForces->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector", "Micro node " + std::to_string( *microID ) + " not found in external force vector" );
+                return new errorNode( __func__, "Micro node " + std::to_string( *microID ) + " not found in external force vector" );
 
             }
 
@@ -8722,7 +8722,7 @@ namespace overlapCoupling{
 
             if ( idMap == microGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector",
+                return new errorNode( __func__,
                                       "free micro node " + std::to_string( *microID ) +
                                       " is not found in the local to global DOF map" );
 
@@ -8732,7 +8732,7 @@ namespace overlapCoupling{
 
             if ( internalForce == microInternalForces->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector", "Micro node " + std::to_string( *microID ) + " not found in internal force vector" );
+                return new errorNode( __func__, "Micro node " + std::to_string( *microID ) + " not found in internal force vector" );
 
             }
 
@@ -8740,7 +8740,7 @@ namespace overlapCoupling{
 
             if ( externalForce == microInternalForces->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector", "Micro node " + std::to_string( *microID ) + " not found in external force vector" );
+                return new errorNode( __func__, "Micro node " + std::to_string( *microID ) + " not found in external force vector" );
 
             }
 
@@ -8768,7 +8768,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "assembleCouplingForceVector",
+            errorOut result = new errorNode( __func__,
                                              "Error in the construction of the potential energy partitioning coefficients" );
             result->addNext( error );
             return result;
@@ -8785,7 +8785,7 @@ namespace overlapCoupling{
 
             if ( idMap == macroGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector",
+                return new errorNode( __func__,
                                       "ghost macro node " + std::to_string( *nodeID ) +
                                       " is not found in the local to global DOF map" );
 
@@ -8795,7 +8795,7 @@ namespace overlapCoupling{
 
             if ( idMap->second < nFreeMacroNodes ){
 
-                return new errorNode( "assembleCouplingForceVector",
+                return new errorNode( __func__,
                                       "ghost macro node " + std::to_string( *nodeID ) +
                                       " has a local position not consistent with the number of free macro nodes" );
 
@@ -8803,7 +8803,7 @@ namespace overlapCoupling{
 
             if ( ( nMacroNodeForces * ( idMap->second - nFreeMacroNodes ) + nMacroNodeForces ) > FintDhat.size( ) ){
 
-                return new errorNode( "assembleCouplingForceVector",
+                return new errorNode( __func__,
                                       "ghost macro node " + std::to_string( *nodeID ) +
                                       " has a local position larger than allocated in the coupling force vector" );
 
@@ -8813,7 +8813,7 @@ namespace overlapCoupling{
 
             if ( internalForce == macroInternalForces->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector", "Macro node " + std::to_string( *nodeID ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( *nodeID ) +
                                       " not found in internal force vector" );
 
             }
@@ -8822,7 +8822,7 @@ namespace overlapCoupling{
 
             if ( externalForce == macroInternalForces->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector", "Macro node " + std::to_string( *nodeID ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( *nodeID ) +
                                       " not found in external force vector" );
 
             }
@@ -8865,7 +8865,7 @@ namespace overlapCoupling{
 
             if ( idMap == macroGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector",
+                return new errorNode( __func__,
                                       "free macro node " + std::to_string( *nodeID ) +
                                       " is not found in the local to global DOF map" );
 
@@ -8877,7 +8877,7 @@ namespace overlapCoupling{
 
             if ( internalForce == macroInternalForces->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector", "Macro node " + std::to_string( *nodeID ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( *nodeID ) +
                                       " not found in internal force vector" );
 
             }
@@ -8886,7 +8886,7 @@ namespace overlapCoupling{
 
             if ( externalForce == macroInternalForces->end( ) ){
 
-                return new errorNode( "assembleCouplingForceVector", "Macro node " + std::to_string( *nodeID ) +
+                return new errorNode( __func__, "Macro node " + std::to_string( *nodeID ) +
                                       " not found in external force vector" );
 
             }
@@ -8986,7 +8986,7 @@ namespace overlapCoupling{
         }
         else{
 
-            return new errorNode( "assembleCouplingForceVector",
+            return new errorNode( __func__,
                                   "The projection type: " + projection_type + " is not recognized" );
 
         }
@@ -9082,7 +9082,7 @@ namespace overlapCoupling{
 //        }
 //        std::cout << "Sum of FD: "; vectorTools::print( tmpVec );
 //
-//        return new errorNode( "assembleCouplingForceVector", "derp" );
+//        return new errorNode( __func__, "derp" );
 //
 //        std::cout << "FextQ NORM:    " << _FextQ.norm( ) << "\n";
 //        std::cout << "FextD NORM:    " << _FextD.norm( ) << "\n";
@@ -9138,7 +9138,7 @@ namespace overlapCoupling{
     
                 if ( error ){
     
-                    errorOut result = new errorNode( "assembleCouplingForceVector",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the construction of the macro element " + std::to_string( *macroCellID ) );
                     result->addNext( error );
                     return result;
@@ -9156,7 +9156,7 @@ namespace overlapCoupling{
     
                     if ( error ){
      
-                        errorOut result = new errorNode( "assembleCouplingForceVector",
+                        errorOut result = new errorNode( __func__,
                                                          "Error in the computation of the local gradient\n" );
                         result->addNext( error );
                         return result;
@@ -9171,7 +9171,7 @@ namespace overlapCoupling{
                 auto microDomainVolumes = homogenizedVolumes.find( *macroCellID );
                 if ( microDomainVolumes == homogenizedVolumes.end( ) ){
     
-                    return new errorNode( "assembleCouplingForceVector",
+                    return new errorNode( __func__,
                                           "The macro cell " + std::to_string( *macroCellID ) +
                                           " is not found in the homogenized volumes map" );
     
@@ -9230,7 +9230,7 @@ namespace overlapCoupling{
         }
         else{
 
-            return new errorNode( "assembleCouplingForceVector",
+            return new errorNode( __func__,
                                   "The potential energy partitioning strategy: " + strategy + " is not recognized." );
 
         }
@@ -9308,7 +9308,7 @@ namespace overlapCoupling{
 
             if ( indexMap == microGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "solveFreeDisplacement",
+                return new errorNode( __func__,
                                       "Micro node " + std::to_string( *nodeId ) + " not found in global to local map" );
 
             }
@@ -9317,7 +9317,7 @@ namespace overlapCoupling{
 
             if ( previousMicroDisp == previousMicroDispDOFVector->end( ) ){
 
-                return new errorNode( "solveFreeDisplacement",
+                return new errorNode( __func__,
                                       "The micro node " + std::to_string( *nodeId ) +
                                       " is not found in the previous micro displacement dof vector" );
 
@@ -9327,7 +9327,7 @@ namespace overlapCoupling{
 
             if ( previousMicroVel == previousMicroVelocities->end( ) ){
 
-                return new errorNode( "solveFreeDisplacement",
+                return new errorNode( __func__,
                                       "The micro node " + std::to_string( *nodeId ) +
                                       " is not found in the previous micro velocities vector" );
 
@@ -9337,7 +9337,7 @@ namespace overlapCoupling{
 
             if ( previousMicroAccel == previousMicroAccelerations->end( ) ){
 
-                return new errorNode( "solveFreeDisplacement",
+                return new errorNode( __func__,
                                       "The micro node " + std::to_string( *nodeId ) +
                                       " is not found in the previous micro accelerations vector" );
 
@@ -9372,7 +9372,7 @@ namespace overlapCoupling{
 
             if ( indexMap == macroGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "solveFreeDisplacement",
+                return new errorNode( __func__,
                                       "Macro node " + std::to_string( *nodeId ) + " not found in global to local map" );
 
             }
@@ -9381,7 +9381,7 @@ namespace overlapCoupling{
 
             if ( previousMacroDisp == previousMacroDispDOFVector->end( ) ){
 
-                return new errorNode( "solveFreeDisplacement",
+                return new errorNode( __func__,
                                       "The macro node " + std::to_string( *nodeId ) +
                                       " is not found in the previous macro displacement dof vector" );
 
@@ -9391,7 +9391,7 @@ namespace overlapCoupling{
 
             if ( previousMacroVel == previousMacroVelocities->end( ) ){
 
-                return new errorNode( "solveFreeDisplacement",
+                return new errorNode( __func__,
                                       "The macro node " + std::to_string( *nodeId ) +
                                       " is not found in the previous macro velocities vector" );
 
@@ -9401,7 +9401,7 @@ namespace overlapCoupling{
 
             if ( previousMacroAccel == previousMacroAccelerations->end( ) ){
 
-                return new errorNode( "solveFreeDisplacement",
+                return new errorNode( __func__,
                                       "The macro node " + std::to_string( *nodeId ) +
                                       " is not found in the previous macro accelerations vector" );
 
@@ -9475,7 +9475,7 @@ namespace overlapCoupling{
             solver.compute( LHS );
             _DotDotDOF_tp1 = solver.solve( RHS );
 
-//            return new errorNode( "solveFreeDisplacement", "derp3" );
+//            return new errorNode( __func__, "derp3" );
 //
 //            std::cout << "_DotDof:\n";
 //            std::cout << "microscale\n";
@@ -9493,7 +9493,7 @@ namespace overlapCoupling{
 //                }
 //            }
 //
-//            return new errorNode( "solveFreeDisplacement", "derp" );
+//            return new errorNode( __func__, "derp" );
 //
 //            std::cout << "_DotDotDof_t:\n";
 //            std::cout << "microscale\n";
@@ -9527,12 +9527,12 @@ namespace overlapCoupling{
 //                }
 //            }
 //
-//            return new errorNode( "solveFreeDisplacement", "derp2" );
+//            return new errorNode( __func__, "derp2" );
 
         }
         else{
 
-            return new errorNode( "solveFreeDisplacement", "Projection type " + projection_type + " not recognized" );
+            return new errorNode( __func__, "Projection type " + projection_type + " not recognized" );
 
         }
 
@@ -9557,7 +9557,7 @@ namespace overlapCoupling{
 
             if ( error ){
     
-                errorOut result = new errorNode( "solveFreeDisplacement",
+                errorOut result = new errorNode( __func__,
                                                  "Error in the projection of the ghost degrees of freedom" );
                 result->addNext( error );
                 return result;
@@ -9611,7 +9611,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputReferenceInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error when writing out the interpolation matrix N" );
                 result->addNext( error );
                 return result;
@@ -9628,7 +9628,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "outputReferenceInformation",
+            errorOut result = new errorNode( __func__,
                                              "Error when writing out the center of mass projection matrix" );
             result->addNext( error );
             return result;
@@ -9639,7 +9639,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "outputReferenceInformation",
+            errorOut result = new errorNode( __func__,
                                              "Error when writing out the center of mass projection matrix" );
             result->addNext( error );
             return result;
@@ -9664,7 +9664,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputReferenceInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error when writing out BQhatQ" );
                 result->addNext( error );
                 return result;
@@ -9676,7 +9676,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputReferenceInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error when writing out BQhatD" );
                 result->addNext( error );
                 return result;
@@ -9688,7 +9688,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputReferenceInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error when writing out BDhatQ" );
                 result->addNext( error );
                 return result;
@@ -9700,7 +9700,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputReferenceInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error when writing out BDhatD" );
                 result->addNext( error );
                 return result;
@@ -9719,7 +9719,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputReferenceInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error when writing out BQhatD" );
                 result->addNext( error );
                 return result;
@@ -9731,7 +9731,7 @@ namespace overlapCoupling{
     
             if ( error ){
     
-                errorOut result = new errorNode( "outputReferenceInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error when writing out BDhatD" );
                 result->addNext( error );
                 return result;
@@ -9743,7 +9743,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputReferenceInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error when writing out BQhatQ" );
                 result->addNext( error );
                 return result;
@@ -9755,7 +9755,7 @@ namespace overlapCoupling{
     
             if ( error ){
     
-                errorOut result = new errorNode( "outputReferenceInformation",
+                errorOut result = new errorNode( __func__,
                                                  "Error when writing out BDhatQ" );
                 result->addNext( error );
                 return result;
@@ -9770,7 +9770,7 @@ namespace overlapCoupling{
         }
         else{
 
-            return new errorNode( "outputReferenceInformation",
+            return new errorNode( __func__,
                                   "The projection type " + projectionType + " is not recognized" );
 
         }
@@ -9895,7 +9895,7 @@ namespace overlapCoupling{
 
             std::string outstr = matrixName;
             outstr += " does not appear as an attribute in the provided grid\n";
-            return new errorNode( "readDenseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -9904,7 +9904,7 @@ namespace overlapCoupling{
         if ( !shapeInfo ){
 
             std::string outstr = "There is no information defined for the matrix " + matrixName;
-            return new errorNode( "readDenseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -9912,7 +9912,7 @@ namespace overlapCoupling{
 
             std::string outstr = matrixName;
             outstr += "_shape is not in the information key";
-            return new errorNode( "readDenseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -9951,7 +9951,7 @@ namespace overlapCoupling{
 
             std::string outstr = matrixName;
             outstr += " does not appear as an attribute in the provided grid\n";
-            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -9960,7 +9960,7 @@ namespace overlapCoupling{
         if ( !shapeInfo ){
 
             std::string outstr = "There is no information defined for the SparseMatrix " + matrixName;
-            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -9968,7 +9968,7 @@ namespace overlapCoupling{
 
             std::string outstr = matrixName;
             outstr += "_shape is not in the information key";
-            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -9985,7 +9985,7 @@ namespace overlapCoupling{
 
             std::string outstr = matrixName;
             outstr += "_rows attribute is not found";
-            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -9995,7 +9995,7 @@ namespace overlapCoupling{
 
             std::string outstr = matrixName;
             outstr += "_cols attribute is not found";
-            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -10005,7 +10005,7 @@ namespace overlapCoupling{
 
             std::string outstr = matrixName;
             outstr += "_values attribute is not found";
-            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -10013,7 +10013,7 @@ namespace overlapCoupling{
 
             std::string outstr = matrixName;
             outstr += " attributes rows, cols, and values don't have consistent sizes";
-            return new errorNode( "readSparseMatrixFromXDMF", outstr );
+            return new errorNode( __func__, outstr );
 
         }
 
@@ -10061,7 +10061,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "extractProjectionMatricesFromFile",
+            errorOut result = new errorNode( __func__,
                                              "Error in extracting the center of mass interpolation" );
             result->addNext( error );
             return result;
@@ -10072,7 +10072,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "extractProjectionMatricesFromFile",
+            errorOut result = new errorNode( __func__,
                                              "Error in extracting the center of mass projector" );
             result->addNext( error );
             return result;
@@ -10086,7 +10086,7 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result
-                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BQhatQ from the XDMF file" );
+                    = new errorNode( __func__, "Error when extracting BQhatQ from the XDMF file" );
                 result->addNext( error );
                 return result;
 
@@ -10097,7 +10097,7 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result
-                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BQhatD from the XDMF file" );
+                    = new errorNode( __func__, "Error when extracting BQhatD from the XDMF file" );
                 result->addNext( error );
                 return result;
 
@@ -10108,7 +10108,7 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result
-                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BDhatQ from the XDMF file" );
+                    = new errorNode( __func__, "Error when extracting BDhatQ from the XDMF file" );
                 result->addNext( error );
                 return result;
 
@@ -10119,7 +10119,7 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result
-                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BDhatD from the XDMF file" );
+                    = new errorNode( __func__, "Error when extracting BDhatD from the XDMF file" );
                 result->addNext( error );
                 return result;
 
@@ -10133,7 +10133,7 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result
-                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BQhatQ from the XDMF file" );
+                    = new errorNode( __func__, "Error when extracting BQhatQ from the XDMF file" );
                 result->addNext( error );
                 return result;
 
@@ -10144,7 +10144,7 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result
-                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BQhatD from the XDMF file" );
+                    = new errorNode( __func__, "Error when extracting BQhatD from the XDMF file" );
                 result->addNext( error );
                 return result;
 
@@ -10155,7 +10155,7 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result
-                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BDhatQ from the XDMF file" );
+                    = new errorNode( __func__, "Error when extracting BDhatQ from the XDMF file" );
                 result->addNext( error );
                 return result;
 
@@ -10166,7 +10166,7 @@ namespace overlapCoupling{
             if ( error ){
 
                 errorOut result
-                    = new errorNode( "extractProjectionMatricesFromFile", "Error when extracting BDhatD from the XDMF file" );
+                    = new errorNode( __func__, "Error when extracting BDhatD from the XDMF file" );
                 result->addNext( error );
                 return result;
 
@@ -10175,7 +10175,7 @@ namespace overlapCoupling{
         }
         else{
 
-            return new errorNode( "extractProjectionMatricesFromFile", "Not implemented" );
+            return new errorNode( __func__, "Not implemented" );
 
         }
 
@@ -10199,7 +10199,7 @@ namespace overlapCoupling{
 
         if ( writer->_error ){
 
-            errorOut result = new errorNode( "outputHomogenizedResponse",
+            errorOut result = new errorNode( __func__,
                                              "Error when initializing the writer" );
             result->addNext( writer->_error );
             return result;
@@ -10213,7 +10213,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "outputHomogenizedResponse",
+            errorOut result = new errorNode( __func__,
                                              "Error in the initialization of the increment for the homogenized output" );
             result->addNext( error );
             return result;
@@ -10225,7 +10225,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "outputHomogenizedResponse",
+            errorOut result = new errorNode( __func__,
                                              "Error in the initialization of the mesh data for the homogenized output" );
             result->addNext( error );
             return result;
@@ -10339,7 +10339,7 @@ namespace overlapCoupling{
         
                     if ( cellConnectivity == _inputProcessor.getMacroNodeReferenceConnectivity( )->end( ) ){
         
-                        return new errorNode( "outputHomogenizedResponse", "Macro cell " + std::to_string( *cellId ) + " not found in connectivity map" );
+                        return new errorNode( __func__, "Macro cell " + std::to_string( *cellId ) + " not found in connectivity map" );
         
                     }
     
@@ -10353,7 +10353,7 @@ namespace overlapCoupling{
     
                         if ( local_node == macroGlobalToLocalDOFMap->end( ) ){
     
-                            return new errorNode( "ouputHomogenizedResponse", "Micro node " + std::to_string( *node) + " not found in the global to local map" );
+                            return new errorNode( __func__, "Micro node " + std::to_string( *node) + " not found in the global to local map" );
     
                         }
     
@@ -10388,7 +10388,7 @@ namespace overlapCoupling{
 
                     if ( localNode == _inputProcessor.getMacroGlobalToLocalDOFMap( )->end( ) ){
 
-                        return new errorNode( "outputHomogenizedResponse",
+                        return new errorNode( __func__,
                                               "Error in finding the global node " + std::to_string( *node ) +
                                               " in the macro global to local DOF map" );
 
@@ -10404,7 +10404,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "outputHomogenizedResponse",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the interpolation of the DOF values" );
                     result->addNext( error );
                     return result;
@@ -10417,7 +10417,7 @@ namespace overlapCoupling{
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "outputHomogenizedResponse",
+                    errorOut result = new errorNode( __func__,
                                                      "Error in the interpolation of the DOF values" );
                     result->addNext( error );
                     return result;
@@ -10434,7 +10434,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the density" );
+                errorOut result = new errorNode( __func__, "Error in outputting the density" );
                 result->addNext( error );
                 return result;
 
@@ -10452,7 +10452,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the acceleration" );
+                errorOut result = new errorNode( __func__, "Error in outputting the acceleration" );
                 result->addNext( error );
                 return result;
 
@@ -10468,7 +10468,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the body force" );
+                errorOut result = new errorNode( __func__, "Error in outputting the body force" );
                 result->addNext( error );
                 return result;
 
@@ -10488,7 +10488,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the micro inertias" );
+                errorOut result = new errorNode( __func__, "Error in outputting the micro inertias" );
                 result->addNext( error );
                 return result;
 
@@ -10508,7 +10508,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the body couples" );
+                errorOut result = new errorNode( __func__, "Error in outputting the body couples" );
                 result->addNext( error );
                 return result;
 
@@ -10528,7 +10528,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the body couples" );
+                errorOut result = new errorNode( __func__, "Error in outputting the body couples" );
                 result->addNext( error );
                 return result;
 
@@ -10548,7 +10548,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the symmetric micro stress" );
+                errorOut result = new errorNode( __func__, "Error in outputting the symmetric micro stress" );
                 result->addNext( error );
                 return result;
 
@@ -10568,7 +10568,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the cauchy stress" );
+                errorOut result = new errorNode( __func__, "Error in outputting the cauchy stress" );
                 result->addNext( error );
                 return result;
 
@@ -10592,7 +10592,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the higher order stress" );
+                errorOut result = new errorNode( __func__, "Error in outputting the higher order stress" );
                 result->addNext( error );
                 return result;
 
@@ -10608,7 +10608,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the degree of freedom values" );
+                errorOut result = new errorNode( __func__, "Error in outputting the degree of freedom values" );
                 result->addNext( error );
                 return result;
 
@@ -10630,7 +10630,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "outputHomogenizedResponse", "Error in outputting the degree of freedom values" );
+                errorOut result = new errorNode( __func__, "Error in outputting the degree of freedom values" );
                 result->addNext( error );
                 return result;
 
@@ -10656,7 +10656,7 @@ namespace overlapCoupling{
 
         if ( writer->_error ){
 
-            errorOut result = new errorNode( "writeReferenceMeshDataToFile", "Error in construction of writer" );
+            errorOut result = new errorNode( __func__, "Error in construction of writer" );
             result->addNext( writer->_error );
             return result;
 
@@ -10698,7 +10698,7 @@ namespace overlapCoupling{
 
             if ( referencePosition == macroNodeReferencePositions->end( ) ){
 
-                return new errorNode( "writeReferenceMeshDataToFile", "The macro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "The macro node " + std::to_string( node->first ) +
                                       " was not found in the reference positions vector" );
 
             }
@@ -10707,7 +10707,7 @@ namespace overlapCoupling{
 
             if ( displacement == macroDisplacements->end( ) ){
 
-                return new errorNode( "writeReferenceMeshDataToFile", "The macro node " + std::to_string( node->first ) +
+                return new errorNode( __func__, "The macro node " + std::to_string( node->first ) +
                                       " was not found in the displacements vector" );
 
             }
@@ -10732,7 +10732,7 @@ namespace overlapCoupling{
 
             if ( localNode == macroGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "writeReferenceMeshDataToFile",
+                return new errorNode( __func__,
                                       "The free macro node " + std::to_string( *node ) + " was not found in the macro global to local DOF map" );
 
             }
@@ -10747,7 +10747,7 @@ namespace overlapCoupling{
 
             if ( localNode == macroGlobalToLocalDOFMap->end( ) ){
 
-                return new errorNode( "writeReferenceMeshDataToFile",
+                return new errorNode( __func__,
                                       "The ghost macro node " + std::to_string( *node ) + " was not found in the macro global to local DOF map" );
 
             }
@@ -10781,7 +10781,7 @@ namespace overlapCoupling{
 
             if ( error ){
 
-                errorOut result = new errorNode( "writeReferenceMeshDataToFile",
+                errorOut result = new errorNode( __func__,
                                                  "Error in construction of the micromorphic element" );
                 result->addNext( error );
                 return result;
@@ -10793,7 +10793,7 @@ namespace overlapCoupling{
 
             if ( elementConnectivity == macroNodeReferenceConnectivity->end( ) ){
 
-                return new errorNode( "writeReferenceMeshDataToFile",
+                return new errorNode( __func__,
                                       "Macro cell " + std::to_string( *cell ) + " was not found in the macro mesh connectivity" );
 
             }
@@ -10809,7 +10809,7 @@ namespace overlapCoupling{
 
                 if ( node == macroGlobalToLocalDOFMap->end( ) ){
 
-                    return new errorNode( "writeReferenceMeshDataToFile",
+                    return new errorNode( __func__,
                                           "The global macro node " + std::to_string( *gN ) +
                                           " can't be found in the global to local map" );
 
@@ -10832,7 +10832,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "writeReferenceMeshDataToFile",
+            errorOut result = new errorNode( __func__,
                                              "Error in initialization of the increment in the writer" );
             result->addNext( error );
             return result;
@@ -10845,7 +10845,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "writeReferenceMeshDataToFile",
+            errorOut result = new errorNode( __func__,
                                              "Error in writing the mesh data to a file" );
             result->addNext( error );
             return result;
@@ -10868,7 +10868,7 @@ namespace overlapCoupling{
 
         if ( !config ){
 
-            return new errorNode( "writeUpdatedDOFToFile",
+            return new errorNode( __func__,
                                   "'output_updated_dof' is not defined in the configuration file" );
 
         }
@@ -10896,7 +10896,7 @@ namespace overlapCoupling{
 
         if ( macro_writer->_error ){
 
-            errorOut result = new errorNode( "writeReferenceMeshDataToFile", "Error in construction of writer" );
+            errorOut result = new errorNode( __func__, "Error in construction of writer" );
             result->addNext( macro_writer->_error );
             return result;
 
@@ -10908,7 +10908,7 @@ namespace overlapCoupling{
 
         if ( micro_writer->_error ){
 
-            errorOut result = new errorNode( "writeReferenceMeshDataToFile", "Error in construction of writer" );
+            errorOut result = new errorNode( __func__, "Error in construction of writer" );
             result->addNext( micro_writer->_error );
             return result;
 
@@ -10930,7 +10930,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in initializating the increment of the macro output file" );
+            errorOut result = new errorNode( __func__, "Error in initializating the increment of the macro output file" );
             result->addNext( error );
             return result;
 
@@ -10940,7 +10940,7 @@ namespace overlapCoupling{
         
         if ( error ){
 
-            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in outputting the updated macro DOF to the output file" );
+            errorOut result = new errorNode( __func__, "Error in outputting the updated macro DOF to the output file" );
             result->addNext( error );
             return result;
 
@@ -10959,7 +10959,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in outputting the updated node ids to the micro output file" );
+            errorOut result = new errorNode( __func__, "Error in outputting the updated node ids to the micro output file" );
             result->addNext( error );
             return result;
 
@@ -10980,7 +10980,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in initializating the increment of the micro output file" );
+            errorOut result = new errorNode( __func__, "Error in initializating the increment of the micro output file" );
             result->addNext( error );
             return result;
 
@@ -10990,7 +10990,7 @@ namespace overlapCoupling{
         
         if ( error ){
 
-            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in outputting the updated micro DOF to the output file" );
+            errorOut result = new errorNode( __func__, "Error in outputting the updated micro DOF to the output file" );
             result->addNext( error );
             return result;
 
@@ -11009,7 +11009,7 @@ namespace overlapCoupling{
 
         if ( error ){
 
-            errorOut result = new errorNode( "writeUpdatedDOFToFile", "Error in outputting the updated node ids to the micro output file" );
+            errorOut result = new errorNode( __func__, "Error in outputting the updated node ids to the micro output file" );
             result->addNext( error );
             return result;
 
@@ -11091,7 +11091,7 @@ namespace overlapCoupling{
         if ( oc.getConstructorError( ) ){
 
             errorOut result
-                = new errorNode( "runOverlapCoupling", "Error in construction of overlapCoupling object" );
+                = new errorNode( __func__, "Error in construction of overlapCoupling object" );
 
             result->addNext( oc.getConstructorError( ) );
 
@@ -11106,7 +11106,7 @@ namespace overlapCoupling{
         if ( error ){
     
             errorOut result
-                = new errorNode( "runOverlapCoupling", "Error in the initialization of the overlapCoupling object" );
+                = new errorNode( __func__, "Error in the initialization of the overlapCoupling object" );
     
             result->addNext( error );
 
@@ -11121,7 +11121,7 @@ namespace overlapCoupling{
         if ( error ){
     
             errorOut result
-                = new errorNode( "runOverlapCoupling", "Error in processing the data" );
+                = new errorNode( __func__, "Error in processing the data" );
     
             result->addNext( error );
 
