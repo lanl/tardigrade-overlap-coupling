@@ -3150,7 +3150,18 @@ namespace overlapCoupling{
         std::unique_ptr< elib::Element > element;
         element.reset(NULL);
 
-        if ( _inputProcessor.useReconstructedVolumeForMassMatrix( ) ){
+        if ( _inputProcessor.isFiltering( ) && _inputProcessor.useReconstructedVolumeForMassMatrix( ) ){
+
+            std::cerr << "#########################################################\n"
+                      << "###                      Warning                      ###\n"
+                      << "#########################################################\n"
+                      << "# Using the reconstructed volume for the center of mass #\n"
+                      << "# can result in drastically inconsistent deformation    #\n"
+                      << "# when filtering. Overriding to use direct computation  #\n"
+                      << "#########################################################\n";
+
+        }
+        else if ( _inputProcessor.useReconstructedVolumeForMassMatrix( ) ){
 
             errorOut error = buildMacroDomainElement( cellID,
                                                       *_inputProcessor.getMacroNodeReferencePositions( ),
@@ -3166,9 +3177,6 @@ namespace overlapCoupling{
                 return result;
 
             }
-
-            std::cout << "domainName: " << domainName << "\n";
-            std::cerr << "    element.global_node_ids: "; vectorTools::print( element->global_node_ids );
 
         }
 
