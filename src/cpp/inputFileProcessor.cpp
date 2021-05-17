@@ -1161,6 +1161,15 @@ namespace inputFileProcessor{
             macroCellIds.push_back( ( *domain )[ "macro_cell" ].as< unsigned int >( ) );
             macroVolumeNodesets.push_back( ( *domain )[ "macro_nodeset" ].as< std::string >( ) );
 //            macroCellMicroDomainCounts.push_back( ( *domain )[ "micro_nodesets" ].size( ) );
+            
+            if ( macroCellToDomainMap.find( macroCellIds.back( ) ) != macroCellToDomainMap.end( ) ){
+
+                return new errorNode( __func__, "Macro cell " + std::to_string( macroCellIds.back( ) ) + " appears more than once in the coupling definition" );
+
+            }
+            else{
+                macroCellToDomainMap.emplace( macroCellIds.back( ), std::vector< std::string >( 0 ) );
+            }
 
             for ( auto nodeset = ( *domain )[ "micro_nodesets" ].begin( ); nodeset != ( *domain )[ "micro_nodesets" ].end( ); nodeset++ ){
 
@@ -1176,17 +1185,8 @@ namespace inputFileProcessor{
 
                 microVolumeNodesets.push_back( nodesetName );
                 microSurfaceDomainCount.emplace( nodesetName, numberOfSurfaceMicroDomains );
+                macroCellToDomainMap[ macroCellIds.back( ) ].push_back( nodesetName );
 
-            }
-
-            if ( macroCellToDomainMap.find( macroCellIds.back( ) ) == macroCellToDomainMap.end( ) ){
-    
-                macroCellToDomainMap.emplace( macroCellIds.back( ), microVolumeNodesets );
-    
-            }
-            else{
-                return new errorNode( "checkCommonDomainConfiguration",
-                                      "Macro cell " + std::to_string( macroCellIds.back( ) ) + " appears more than once in the coupling definition" );
             }
 
         }
