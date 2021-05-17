@@ -10286,6 +10286,9 @@ namespace overlapCoupling{
             floatVector dofValuesOut(           ( _dim + _dim * _dim ) * cellIds.size( ), 0 );
             floatVector dofGradientsOut( _dim * ( _dim + _dim * _dim ) * cellIds.size( ), 0 );
 
+            floatVector elementDofValuesOut(                      ( _dim + _dim * _dim ), 0 );
+            floatVector elementDofGradientsOut(            _dim * ( _dim + _dim * _dim ), 0 );
+
             //Loop over the cells
             for ( auto cellId = cellIds.begin( ); cellId != cellIds.end( ); cellId++ ){
 
@@ -10408,7 +10411,7 @@ namespace overlapCoupling{
 
                 }
 
-                error = element->interpolate( dofMatrix, element->qrule[ qp ].first, dofValuesOut );
+                error = element->interpolate( dofMatrix, element->qrule[ qp ].first, elementDofValuesOut );
 
                 if ( error ){
 
@@ -10416,6 +10419,13 @@ namespace overlapCoupling{
                                                      "Error in the interpolation of the DOF values" );
                     result->addNext( error );
                     return result;
+
+                }
+
+                // Load the Dof values
+                for ( unsigned int i = 0; i < elementDofValuesOut.size( ); i++ ){
+
+                    dofValuesOut[ elementDofValuesOut.size( ) * index + i ] = elementDofValuesOut[ i ];
 
                 }
 
@@ -10432,7 +10442,14 @@ namespace overlapCoupling{
 
                 }
 
-                dofGradientsOut = vectorTools::appendVectors( qptDOFGradient );
+                elementDofGradientsOut = vectorTools::appendVectors( qptDOFGradient );
+
+                // Load the gradients of the DOF values
+                for ( unsigned int i = 0; i < elementDofGradientsOut.size( ); i++ ){
+
+                    dofGradientsOut[ elementDofGradientsOut.size( ) * index + i ] = elementDofGradientsOut[ i ];
+
+                }
 
             }
 
