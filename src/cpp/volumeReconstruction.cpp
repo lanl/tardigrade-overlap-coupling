@@ -2671,6 +2671,8 @@ namespace volumeReconstruction{
                                   "The points vector and the function values at points vector are not of compatible sizes" );
         }
 
+        bool usePointwiseProjection = false;
+
         //Reserve memory for the function at the grid. This will be a worst case.
         functionAtGrid.clear( );
         functionAtGrid.reserve( 8 * functionDim * _internalCells.size( ) );
@@ -2740,51 +2742,88 @@ namespace volumeReconstruction{
                                          &upperBounds, &lowerBounds );
 
             //Loop over the points adding their contributions to the function at the current grid points
-            
+
+            std::vector< bool > isDuplicate( internalPoints.size( ), false );
+            floatVector meanFunctionValue( functionDim, 0 );
+            uIntType numPoints = 0;            
             for ( auto p = internalPoints.begin( ); p != internalPoints.end( ); p++ ){
 
+                unsigned int pindex = p - internalPoints.begin( );
+
+                if ( isDuplicate[ pindex ] ){
+                    continue;
+                }
+
+                unsigned int duplicate_count = 0;
+
                 //Get the function value at the current point
-                functionValue = floatVector( functionValuesAtPoints.begin( ) + ( *p / _dim  + 0 ) * functionDim,
-                                             functionValuesAtPoints.begin( ) + ( *p / _dim  + 1 ) * functionDim );
+                functionValue = floatVector( functionValuesAtPoints.begin( ) + ( *p / _dim + 0 ) * functionDim,
+                                             functionValuesAtPoints.begin( ) + ( *p / _dim + 1 ) * functionDim );
 
                 pointPosition = floatVector( _points->begin( ) + *p,
                                              _points->begin( ) + *p + _dim );
 
-                //Get the local coordinates of the point
-                error = element->compute_local_coordinates( pointPosition, localCoordinates );
+                // Check if any of the remaining points are duplicates
+                for ( auto q = internalPoints.begin( ) + pindex + 1; q != internalPoints.end( ); q++ ){
 
-                if ( error ){
+                    unsigned int qindex = q - internalPoints.begin( );
+
+                    floatVector q_pointPosition = floatVector( _points->begin( ) + *q,
+                                                               _points->begin( ) + *q + _dim );
+
+                    if ( vectorTools::l2norm( pointPosition - q_pointPosition ) < _absoluteTolerance ){
+
+                        isDuplicate[ qindex ] = true;
+
+                        functionValue += floatVector( functionValuesAtPoints.begin( ) + ( *q / _dim + 0 ) * functionDim,
+                                                      functionValuesAtPoints.begin( ) + ( *q / _dim + 1 ) * functionDim );
+
+                        duplicateCount++;
+
+                    }
+
+                }
+
+                functionValue /= ( duplicate_count + 1 );
+
+                if ( usePointwiseProjection ){
+
+                    error = element->compute_local_coordinates( pointPosition, localCoordinates );
+
+                    if ( error ){
+
+                        errorOut result = new errorNode( __func__,
+                                                         "Error in the computation of the local coordinates" );
+                        result->addNext( error );
+                        return result;
+
+                    }
+
+                    //Get the shape function values at the point
+                    error = element->get_shape_functions( localCoordinates, shapeFunctions );
+
+                    if ( error ){
                     
-                    errorOut result = new errorNode( "interpolateFunctionToBackgroundGrid",
-                                                     "Error in the computation of the local coordinates" );
-                    result->addNext( error );
-                    return result;
+                        errorOut result = new errorNode( __func__, "Error in the computation of the shape functions" );
+                        result->addNext( error );
+                        return result;
+                    }
 
                 }
 
-                //Get the shape function values at the point
-                error = element->get_shape_functions( localCoordinates, shapeFunctions );
+                //Compute the contribution of the nodes to the background grid
 
-                if ( error ){
-
-                    errorOut result = new errorNode( "interpolateFunctionToBackgroundGrid",
-                                                     "Error in the computation of the shape functions" );
-                    result->addNext( error );
-                    return result;
-
+                if ( usePointwiseProjection ){
+                    for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+                        functionAtGrid[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ] * functionValue;
+                        weights[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ];
+                    }
                 }
-
-                //Comptute the contribution of the nodes to the background grid
-                
-                for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
-
-                    functionAtGrid[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ] * functionValue;
-                    weights[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ];
-
+                else{
+                    meanFunctionValue += functionValue;
+                    numPoints++
                 }
-
             }
-
         }
 
         //Normalize the weights by the shape function values
@@ -3325,29 +3364,6 @@ namespace volumeReconstruction{
 
             //Process the nodes which are outside of the volume
 
-            //Compute the values of the function at the quadrature points
-            floatMatrix qptValue( element->qrule.size( ) );
-            floatVector shapeFunctionQpt;
-            floatVector shapeFunctionSum( element->global_node_ids.size( ), 0 );
-
-            for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
-
-                //Compute the value of the function at the quadrature points
-                error = element->interpolate( nodalFunctionValues, qpt->first, qptValue[ qpt - element->qrule.begin( ) ] );
-
-                if ( error ){
-
-                    errorOut result = new errorNode( "performSurfaceIntegration",
-                                                     "Error in the interpolation at the quadrature points" );
-                    result->addNext( error );
-                    return result;
-
-                }
-
-                //Compute the values of the shape functions at the quadrature point
-
-            }
-
             //Get whether the element's nodes are inside of the reconstructed volume
             floatVector nodalImplicitFunction( element->reference_nodes.size( ), 0 );
             for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
@@ -3357,61 +3373,17 @@ namespace volumeReconstruction{
 
             }
 
-            //Interpolate the influence of the function definition at the quadrature points and
-            //increase the magnitude of the quadrature point values accordingly
-
-            floatType qptInteriorInfluence;
-            for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
-
-                //Compute the influence of the exterior nodes at the quadrature point
-                error = element->interpolate( nodalImplicitFunction, qpt->first, qptInteriorInfluence );
-
-                if ( error ){
-
-                    errorOut result = new errorNode( "performSurfaceIntegration",
-                                                     "Error in the interpolation of the interior node influence points" );
-                    result->addNext( error );
-                    return result;
-
-                }
-
-                //Normalize the quadrature point value of the function by the interior point influence
-                qptValue[ qpt - element->qrule.begin( ) ] /= qptInteriorInfluence;
-
-                //Compute the shape-function values at the quadrature points
-                element->get_shape_functions( qpt->first, shapeFunctionQpt );
-
-                //Project the qpt function values back to the nodes
-                for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
-
-                    if ( _implicitFunctionValues[ *nID ] < 0 ){
-
-                        nodalFunctionValues[ nID - element->global_node_ids.begin( ) ]
-                            += shapeFunctionQpt[ nID - element->global_node_ids.begin( ) ]
-                             * qptValue[ qpt - element->qrule.begin( ) ];
-
-                    }
-
-                }
-
-                shapeFunctionSum += shapeFunctionQpt;
-
-            }
-
-            //Normalize the nodal function values by the sum of the shape function values
-            for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
-
-                if ( _implicitFunctionValues[ *nID ] < 0 ){
-
-                    nodalFunctionValues[ nID - element->global_node_ids.begin( ) ]
-                        /= shapeFunctionSum[ nID - element->global_node_ids.begin( ) ];
-
-                }
-
-            }
-
             //Interpolate the function to the boundary point
-            error = element->interpolate( nodalFunctionValues, localBoundaryPoint, valueAtBoundaryPoint );
+            floatVector boundaryPointShapeFunctions;
+            element->get_shape_functions( localBoundaryPoint, boundaryPointShapeFunctions );
+            floatType normalizationFactor = 0.;
+            valueAtBoundaryPoint = floatVector( nodalFunctionValues[ 0 ].size( ), 0 );
+            for ( auto N = boundaryPointShapeFunctions.begin( ); N != boundaryPointShapeFunctions.end( ); N++ ){
+                unsigned int eIndex = N - boundaryPointShapeFunctions.begin( );
+                valueAtBoundaryPoint += nodalFunctionValues[ eIndex ] * ( *N ) * nodalImplicitFunction[ eIndex ];
+                normalizationFactor += ( *N ) * nodalImplicitFunction[ eIndex ];
+            }
+            valueAtBoundaryPoint /= normalizationFactor;
 
             if ( error ){
 
