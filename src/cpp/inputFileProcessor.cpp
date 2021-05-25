@@ -3883,6 +3883,12 @@ namespace inputFileProcessor{
 
         }
 
+        if ( _config[ "coupling_initialization" ][ "assume_fully_defined_surfaces" ] ){
+        
+            _assumeVoidlessBody = _config[ "coupling_initialization" ][ "assume_voidless_body" ].as< bool >( );
+        
+        }
+
         return NULL;
 
     }
@@ -5148,6 +5154,16 @@ namespace inputFileProcessor{
          */
 
         return _isFiltering;
+    }
+
+    bool inputFileProcessor::assumeVoidlessBody( ){
+        /*!
+         * Flag to indicate if the body is assuemd be fully dense (i.e. no cracks / voids)
+         * unless those domains are defined using material points which have very small densities.
+         * This will cause the different integration methods to be normalized.
+         */
+        
+        return _assumeVoidlessBody;
     }
 
 }

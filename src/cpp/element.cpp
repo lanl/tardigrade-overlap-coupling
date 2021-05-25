@@ -761,6 +761,67 @@ namespace elib{
         return true;
     }
 
+    errorOut Quad4::get_shape_functions(const vec &local_coordinates, vec &result){
+        /*!
+         * Compute the shape functions for a Quad4 element.
+         *
+         * :param const vec &local_coordinates: The local coordinates (n local dim, )
+         * :param vec &result: The vector of shape function values
+         */
+        
+        result.resize(local_node_coordinates.size( ) );
+        
+        for ( uitype n = 0; n < local_node_coordinates.size( ); n++ ){
+        
+            result[ n ] = 0.25 * ( 1 + local_node_coordinates[ n ][ 0 ] * local_coordinates[ 0 ] ) *
+                                 ( 1 + local_node_coordinates[ n ][ 1 ] * local_coordinates[ 1 ] );
+        
+        }
+        
+        return NULL;
+    }
+
+    errorOut Quad4::get_local_grad_shape_functions( const vec &local_coordinates, vecOfvec &result ){
+        /*!
+         * Compute the local gradients of the shape functions for a Quad4 element.
+         *
+         * :param const vec &local_coordinates: The local coordinates (n local dim, )
+         * :param vecOfvec &result: The gradients of the shape functions w.r.t. the local coordinates (n nodes, n local dim)
+         */
+        
+        result.resize( local_node_coordinates.size( ) );
+        
+        for ( uitype n = 0; n < local_node_coordinates.size( ); n++ ){ 
+
+            result[ n ] = { 0.25 * local_node_coordinates[ n ][ 0 ] * ( 1 + local_node_coordinates[ n ][ 1 ] * local_coordinates[ 1 ] ),
+                            0.25 * local_node_coordinates[ n ][ 1 ] * ( 1 + local_node_coordinates[ n ][ 0 ] * local_coordinates[ 0 ] ) };
+        
+        }
+        
+        return NULL;
+    }
+
+    bool Quad4::local_point_inside( const vec &local_coordinates, const double tol ){
+        /*!
+         * Determine whether local coordinates are inside of the element or not
+         *
+         * :param const vec &local_coordinates: The local coordinates (n local dim, )
+         * :param double tol: The tolerance
+         */
+        
+        for ( uitype i = 0; i < local_coordinates.size( ); i++ ){
+        
+            if ( ( abs( local_coordinates[ i ] ) - 1 ) > tol ){
+            
+                return false;
+            
+            }
+        
+        }
+        
+        return true;
+    }
+
     //Functions
 
     errorOut invert(const vecOfvec &A, vecOfvec &Ainv){
@@ -926,8 +987,11 @@ namespace elib{
              */
 
 	    if (std::strcmp(eltype.c_str(), "Hex8")==0){
-                return std::unique_ptr<Element>(new Hex8(global_node_ids, nodes, qrule));
+            return std::unique_ptr<Element>(new Hex8(global_node_ids, nodes, qrule));
 	    }
+        if (std::strcmp(eltype.c_str(), "Quad4")==0){
+            return std::unique_ptr<Element>(new Quad4(global_node_ids, nodes, qrule));
+        }
 	    return NULL;
     }
 

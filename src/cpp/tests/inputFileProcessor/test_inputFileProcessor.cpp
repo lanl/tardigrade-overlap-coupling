@@ -2742,6 +2742,10 @@ int test_initializeIncrement( std::ofstream &results ){
 
     }
 
+    if ( !reader.assumeVoidlessBody( ) ){
+        results << "test_initializeIncrement (test 112a) & False\n";
+    }
+
     const std::unordered_map< uIntType, floatVector > macroLumpedMassMatrixAnswer =
         {
 //            {  7, { 24.1, 26.1, 28.1, 30.1, 32.1, 34.1, 36.1, 38.1, 40.1, 42.1, 44.1, 46.1 } },

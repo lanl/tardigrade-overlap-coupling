@@ -34,16 +34,19 @@ namespace elib{
     const std::map< std::string, std::pair< uitype, std::vector< uitype > > > elementRegistry =
         {
             { "Hex8", { 6, { 4, 4, 4, 4, 4, 4 } } },
+            { "Quad4", {4, { 2, 2, 2, 2} } }
         };
 
     const std::map< std::string, uitype > elementNameToXDMFType =
         {
             { "Hex8", 9 },
+            { "Quad4", 5 },
         };
 
     const std::map< uitype, std::string > XDMFTypeToElementName =
         {
             { 9, "Hex8" },
+            { 5, "Quad4" },
         };
 
     const std::map< uitype, uitype > XDMFTypeToNodeCount =
@@ -74,8 +77,12 @@ namespace elib{
             quadrature_rule qrule; //!The quadrature rule of the element
             vecOfvec local_node_coordinates; //!The local coordinates of the nodes
             vecOfvec bounding_box; //!The bounding box of the element
+            vecOfuivec local_surface_node_ids; //!The local ids of the local surface nodes
             vecOfvec local_surface_points; //!The local coordinates of points on the element surface
             vecOfvec local_surface_normals; //!The normal vectors of points on the element surface
+            std::vector< quadrature_rule > surface_quadrature_rules; //!The quadrature rules for the surfaces
+            uivec surface_fixed_dimension; //!The dimension fixed on each surface
+            std::vector< std::string > surface_element_names; //!The names of the elements that make up the surface
 
             Element(){}
             Element(const std::vector< uitype > &global_node_ids, const vecOfvec &nodes, const quadrature_rule &qrule);
@@ -162,6 +169,14 @@ namespace elib{
                                                  { {  1 / sqrt3,  1 / sqrt3,  1 / sqrt3 }, 1. },
                                                  { { -1 / sqrt3,  1 / sqrt3,  1 / sqrt3 }, 1. }  };
 
+    const quadrature_rule Quad4_default_qrule = { { { -1 / sqrt3, -1 / sqrt3 }, 1.},
+                                                  { {  1 / sqrt3, -1 / sqrt3 }, 1.},
+                                                  { {  1 / sqrt3,  1 / sqrt3 }, 1.},
+                                                  { { -1 / sqrt3,  1 / sqrt3 }, 1.} };
+
+    const quadrature_rule Bar2_default_qrule = { { { -1 / sqrt3 }, 1. },
+                                                 { {  1 / sqrt3 }, 1. } };
+
     class Hex8 : public Element{
         /*!
         An 8 noded hex element.
@@ -193,12 +208,93 @@ namespace elib{
                                           {  0,  1,  0 },
                                           {  0,  0, -1 },
                                           {  0,  0,  1 } };
+
+                local_surface_node_ids = { { 0, 4, 7, 3 },
+                                           { 1, 2, 6, 5 },
+                                           { 0, 1, 5, 4 },
+                                           { 2, 3, 7, 6 },
+                                           { 3, 2, 1, 0 },
+                                           { 4, 5, 6, 7 } };
+
+                surface_quadrature_rules = { { { { -1, -1 / sqrt3, -1 / sqrt3 }, 1.},
+                                             { { -1,  1 / sqrt3, -1 / sqrt3 }, 1.},
+                                             { { -1,  1 / sqrt3,  1 / sqrt3 }, 1.},
+                                             { { -1, -1 / sqrt3,  1 / sqrt3 }, 1.} },
+                                           { { {  1, -1 / sqrt3, -1 / sqrt3 }, 1.},
+                                             { {  1,  1 / sqrt3, -1 / sqrt3 }, 1.},
+                                             { {  1,  1 / sqrt3,  1 / sqrt3 }, 1.},
+                                             { {  1, -1 / sqrt3,  1 / sqrt3 }, 1.} },
+                                           { { { -1 / sqrt3, -1, -1 / sqrt3 }, 1.},
+                                             { {  1 / sqrt3, -1, -1 / sqrt3 }, 1.},
+                                             { {  1 / sqrt3, -1,  1 / sqrt3 }, 1.},
+                                             { { -1 / sqrt3, -1,  1 / sqrt3 }, 1.} },
+                                           { { { -1 / sqrt3,  1, -1 / sqrt3 }, 1.},
+                                             { {  1 / sqrt3,  1, -1 / sqrt3 }, 1.},
+                                             { {  1 / sqrt3,  1,  1 / sqrt3 }, 1.},
+                                             { { -1 / sqrt3,  1,  1 / sqrt3 }, 1.} },
+                                           { { { -1 / sqrt3, -1 / sqrt3, -1 }, 1.},
+                                             { {  1 / sqrt3, -1 / sqrt3, -1 }, 1.},
+                                             { {  1 / sqrt3,  1 / sqrt3, -1 }, 1.},
+                                             { { -1 / sqrt3,  1 / sqrt3, -1 }, 1.} },
+                                           { { { -1 / sqrt3, -1 / sqrt3,  1 }, 1.},
+                                             { {  1 / sqrt3, -1 / sqrt3,  1 }, 1.},
+                                             { {  1 / sqrt3,  1 / sqrt3,  1 }, 1.},
+                                             { { -1 / sqrt3,  1 / sqrt3,  1 }, 1.} } };
+
             }
 
             errorOut get_shape_functions(const vec &local_coordinates, vec &result);
             errorOut get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
             bool local_point_inside(const vec &local_coordinates, const double tol=1e-8);
 
+    };
+
+class Quad4 : public Element{
+    /*!
+     * A 4 noded quad element
+     */
+    
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    
+        Quad4(const std::vector< uitype > &global_node_ids,
+              const vecOfvec &nodes, const quadrature_rule &qrule) : Element(global_node_ids, nodes, qrule){
+            name = "Quad4";
+            local_node_coordinates = { { -1, -1 },
+                                       {  1, -1 },
+                                       {  1,  1 },
+                                       { -1,  1 } };
+
+            local_surface_points = { { -1,  0 },
+                                     {  1,  0 },
+                                     {  0, -1 },
+                                     {  0,  1 } };
+
+            local_surface_normals = { { -1,  0 },
+                                      {  1,  0 },
+                                      {  0, -1 },
+                                      {  0,  1 } };
+            
+            local_surface_node_ids = { { 4, 0 },
+                                       { 1, 2 },
+                                       { 0, 1 },
+                                       { 2, 3 } };
+            
+            surface_quadrature_rules = { { { { -1, -1 / sqrt3 }, 1 },
+                                           { { -1,  1 / sqrt3 }, 1 } },
+                                         { { {  1, -1 / sqrt3 }, 1 },
+                                           { {  1,  1 / sqrt3 }, 1 } },
+                                         { { { -1 / sqrt3, -1 }, 1 },
+                                           { {  1 / sqrt3, -1 }, 1 } },
+                                         { { { -1 / sqrt3,  1 }, 1 },
+                                           { {  1 / sqrt3,  1 }, 1 } } };
+
+        }
+        
+        errorOut get_shape_functions(const vec &local_coordinates, vec &result);
+        errorOut get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
+        bool local_point_inside(const vec &local_coordinates, const double tol=1e-8);
+    
     };
 
     //Functions

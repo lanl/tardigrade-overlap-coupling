@@ -6265,6 +6265,41 @@ namespace overlapCoupling{
 
         }
 
+        //Compute element nodal surface areas
+        floatMatrix elementNodalSurfaceAreas( element->nodes.size( ), floatVector( element->local_surface_points.size( ), 0 ) );
+        uIntType surfaceNum = 0;
+        for ( auto element_surface = element->surface_quadrature_rules.begin( ); element_surface != element->surface_quadrature_rules.end( ); element_surface++, surfaceNum++ ){
+
+            for ( auto s_qpt = element_surface->begin( ); s_qpt != element_surface->end( ); s_qpt++ ){
+
+                floatMatrix surface_jacobian;
+                error = element->get_local_gradient( element->nodes, s_qpt->first, surface_jacobian );
+
+                if ( error ){
+
+                    std::string message = "Error in computing the local gradient of the shape functions for quadrature point " + std::to_string( ( unsigned int )( s_qpt - element_surface->begin( ) ) )
+                                        + " on surface " + std::to_string( surfaceNum ) + " for element " + std::to_string( macroCellID );
+                    return new errorNode( __func__, message );
+
+                }
+
+                floatVector inv_jacobian = vectorTools::inverse( vectorTools::appendVectors( surface_jacobian ), _dim, _dim );
+                floatType Jxw = vectorTools::determinant( vectorTools::appendVectors( surface_jacobian ), _dim, _dim ) * s_qpt->second;
+                floatType surfaceAreaContribution = vectorTools::l2norm( vectorTools::Tdot( vectorTools::inflate( inv_jacobian, _dim, _dim ), element->local_surface_normals[ surfaceNum ] ) * Jxw );
+						
+                floatVector shapeFunctions;
+                element->get_shape_functions( s_qpt->first, shapeFunctions );
+                
+                for ( uIntType n = 0; n < shapeFunctions.size( ); n++ ){
+                
+                    elementNodalSurfaceAreas[ n ][ surfaceNum ] += shapeFunctions[ n ] * surfaceAreaContribution;
+                
+                }
+                
+            }
+
+        }
+
 #ifdef TESTACCESS
 
         _test_elementNodalVolumes.emplace( macroCellID, elementNodalVolumes );
@@ -6285,6 +6320,10 @@ namespace overlapCoupling{
         floatMatrix bodyCoupleAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
         floatMatrix microSpinInertiaAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
         floatMatrix symmetricMicroStressAtNodes( nMacroCellNodes, floatVector( _dim * _dim, 0 ) );
+
+        std::vector< floatVector > areaAtNodes( nMacroCellNodes, floatVector( element->local_surface_normals.size( ), 0 ) );
+        std::vector< floatMatrix > tractionAtNodes( nMacroCellNodes, floatMatrix( element->local_surface_normals.size( ), floatVector( _dim, 0 ) ) );
+        std::vector< floatMatrix > coupleAtNodes( nMacroCellNodes, floatMatrix( element->local_surface_normals.size( ), floatVector( _dim * _dim, 0 ) ) );
 
         //TODO: Consider doing a least-squares projection rather than a nodal averaging
 
@@ -6328,10 +6367,159 @@ namespace overlapCoupling{
                 //Get the shapefunction value for the node
                 floatType N = shapefunctionsAtCentersOfMass[ *microDomainName ][ j ];
 
-                //Compute the contribution to the node
-                floatVector nLinearMomentumRHS = N * density * ( bodyForce - acceleration ) * volume;
+                //Project values to the nodes
+                volumeAtNodes[ j ]               += N * volume;
+                densityAtNodes[ j ]              += N * density * volume;
+                bodyForceAtNodes[ j ]            += N * density * bodyForce * volume;
+                accelerationAtNodes[ j ]         += N * density * acceleration * volume;
+                microInertiaAtNodes[ j ]         += N * density * microInertia * volume;
+                bodyCoupleAtNodes[ j ]           += N * density * bodyCouple * volume;
+                microSpinInertiaAtNodes[ j ]     += N * density * microSpinInertia * volume;
+                symmetricMicroStressAtNodes[ j ] += N * symmetricMicroStress * volume;
 
-                floatVector nFirstMomentRHS = N * ( density * ( bodyCouple - microSpinInertia ) - symmetricMicroStress_T ) * volume;
+            }
+
+            // Project the traction and couples
+            uIntVector domainMacroSurfaces = cellDomainMacroSurfaces[ macroCellID ][ *microDomainName ];
+            for ( auto face = domainMacroSurfaces.begin( ); face != domainMacroSurfaces.end( ); face++ ){
+
+                floatVector lcom( homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ][ *microDomainName ].begin( ) +
+                                                                                                                _dim * ( *face ),
+                                  homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ][ *microDomainName ].begin( ) +
+                                                                                                                _dim * ( ( *face ) + 1 ) );
+                floatVector sfs;
+
+                error = element->get_shape_functions( lcom, sfs );
+
+                if ( error ){
+
+                    errorOut result = new errorNode( __func__,
+                                                     "Error in the computation of the shapefunctions at the micro-domain surface center of mass for macro cell " + std::to_string( macroCellID ) + " on face " + std::to_string( *face ) );
+                    result->addNext( error );
+                    return result;
+
+                }
+
+                floatType area = homogenizedSurfaceRegionAreas[ macroCellID ][ *microDomainName ][ ( *face ) ];
+
+                floatVector traction( homogenizedSurfaceRegionTractions[ macroCellID ][ *microDomainName ].begin( ) + _dim * ( *face ),
+                                      homogenizedSurfaceRegionTractions[ macroCellID ][ *microDomainName ].begin( ) + _dim * ( ( *face ) + 1 ) );
+
+                floatVector couple( homogenizedSurfaceRegionCouples[ macroCellID ][ *microDomainName ].begin( ) + _dim * _dim * ( *face ),
+                                    homogenizedSurfaceRegionCouples[ macroCellID ][ *microDomainName ].begin( ) + _dim * _dim * ( ( *face ) + 1 ) );
+
+                for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
+
+                    areaAtNodes[ j ][ *face ] += sfs[ j ] * area;
+                    tractionAtNodes[ j ][ *face ] += sfs[ j ] * traction * area;
+                    coupleAtNodes[ j ][ *face ] += sfs[ j ] * couple * area;
+
+                }
+
+            }
+
+        }
+
+        //Save the contributions of the body forces and couples to the external force at the nodes
+        externalForcesAtNodes.emplace( macroCellID, vectorTools::appendVectors( bodyForceAtNodes ) );
+        externalCouplesAtNodes.emplace( macroCellID, vectorTools::appendVectors( bodyCoupleAtNodes ) );
+
+        //De-weight the projected values at the nodes
+        for ( unsigned int n = 0; n < nMacroCellNodes; n++ ){
+
+            floatType volume;
+            if ( _inputProcessor.assumeVoidlessBody( ) ){
+                volume = std::fmax( _absoluteTolerance, volumeAtNodes[ n ] );
+            }
+            else{
+                volume = std::fmax( elementNodalVolumes[ n ], volumeAtNodes[ n ] );
+            }
+
+            densityAtNodes[ n ]              /= volume;
+            bodyForceAtNodes[ n ]            /= ( densityAtNodes[ n ] * volume );
+            accelerationAtNodes[ n ]         /= ( densityAtNodes[ n ] * volume );
+            microInertiaAtNodes[ n ]         /= ( densityAtNodes[ n ] * volume );
+            bodyCoupleAtNodes[ n ]           /= ( densityAtNodes[ n ] * volume );
+            microSpinInertiaAtNodes[ n ]     /= ( densityAtNodes[ n ] * volume );
+            symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
+
+            for ( unsigned int face = 0; face < element->local_surface_normals.size( ); face++ ){
+
+                floatType area;
+                if ( _inputProcessor.assumeVoidlessBody( ) ){
+                    area = std::fmax( _absoluteTolerance, areaAtNodes[ n ][ face ] );
+                }
+                else{
+                    area = std::fmax( elementNodalSurfaceAreas[ n ][ face ], areaAtNodes[ n ][ face ] );
+                }
+
+                tractionAtNodes[ n ][ face ] /= area;
+                coupleAtNodes[ n ][ face ]   /= area;
+
+            }
+
+        }
+
+#ifdef TESTACCESS
+
+        _test_volumeAtNodes.emplace( macroCellID, volumeAtNodes );
+        _test_densityAtNodes.emplace( macroCellID, densityAtNodes );
+        _test_bodyForceAtNodes.emplace( macroCellID, bodyForceAtNodes );
+        _test_accelerationAtNodes.emplace( macroCellID, accelerationAtNodes );
+        _test_microInertiaAtNodes.emplace( macroCellID, microInertiaAtNodes );
+        _test_bodyCoupleAtNodes.emplace( macroCellID, bodyCoupleAtNodes );
+        _test_microSpinInertiaAtNodes.emplace( macroCellID, microSpinInertiaAtNodes );
+        _test_symmetricMicroStressAtNodes.emplace( macroCellID, symmetricMicroStressAtNodes );
+
+#endif
+
+        //Add the volume integral components of the right hand side vectors
+        for ( auto qpt = element->qrule.begin( ); qpt != element->qrule.end( ); qpt++ ){
+
+            // Compute the shapefunction values
+            floatVector shapefunctions;
+            element->get_shape_functions( qpt->first, shapefunctions );
+
+            // Compute the weighting factor
+            floatMatrix jacobian;
+            error = element->get_local_gradient( element->nodes, qpt->first, jacobian );
+
+            if ( error ){
+
+                std::string message = "Error in the computation of the local gradient of the shape functions for volume quadrature point " + std::to_string( qpt - element->qrule.begin( ) );
+                return new errorNode( __func__, message );
+
+            }
+
+            floatVector inv_jacobian = vectorTools::inverse( vectorTools::appendVectors( jacobian ), _dim, _dim );
+            floatType Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
+
+            // Interpolate the nodal values
+            floatType   density;
+            floatVector bodyForce;
+            floatVector acceleration;
+
+            floatVector bodyCouple;
+            floatVector microSpinInertia;
+            floatVector symmetricMicroStress;
+
+            element->interpolate( densityAtNodes,      qpt->first, density );
+            element->interpolate( bodyForceAtNodes,    qpt->first, bodyForce );
+            element->interpolate( accelerationAtNodes, qpt->first, acceleration );
+
+            element->interpolate( bodyCoupleAtNodes,           qpt->first, bodyCouple );
+            element->interpolate( microSpinInertiaAtNodes,     qpt->first, microSpinInertia );
+            element->interpolate( symmetricMicroStressAtNodes, qpt->first, symmetricMicroStress );
+
+            for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
+
+                //Get the shapefunction value for the node
+                floatType N = shapefunctions[ j ];
+
+                //Compute the contribution to the node
+                floatVector nLinearMomentumRHS = N * density * ( bodyForce - acceleration ) * Jxw;
+
+                floatVector nFirstMomentRHS = N * ( density * ( bodyCouple - microSpinInertia ) - symmetricMicroStress ) * Jxw;
 
                 //Add the contribution to the overall RHS vectors
                 for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
@@ -6350,106 +6538,70 @@ namespace overlapCoupling{
 
                 }
 
-                //Project values to the nodes
-                volumeAtNodes[ j ]               += N * volume;
-                densityAtNodes[ j ]              += N * density * volume;
-                bodyForceAtNodes[ j ]            += N * density * bodyForce * volume;
-                accelerationAtNodes[ j ]         += N * density * acceleration * volume;
-                microInertiaAtNodes[ j ]         += N * density * microInertia * volume;
-                bodyCoupleAtNodes[ j ]           += N * density * bodyCouple * volume;
-                microSpinInertiaAtNodes[ j ]     += N * density * microSpinInertia * volume;
-                symmetricMicroStressAtNodes[ j ] += N * symmetricMicroStress * volume;
-
             }
 
         }
 
-        //Save the contributions of the body forces and couples to the external force at the nodes
-        externalForcesAtNodes.emplace( macroCellID, vectorTools::appendVectors( bodyForceAtNodes ) );
-        externalCouplesAtNodes.emplace( macroCellID, vectorTools::appendVectors( bodyCoupleAtNodes ) );
-
-        //De-weight the projected values at the nodes
-        for ( unsigned int n = 0; n < nMacroCellNodes; n++ ){
-
-            floatType volume = std::fmax( elementNodalVolumes[ n ], volumeAtNodes[ n ] );
-
-            densityAtNodes[ n ]              /= volume;
-            bodyForceAtNodes[ n ]            /= ( densityAtNodes[ n ] * volume );
-            accelerationAtNodes[ n ]         /= ( densityAtNodes[ n ] * volume );
-            microInertiaAtNodes[ n ]         /= ( densityAtNodes[ n ] * volume );
-            bodyCoupleAtNodes[ n ]           /= ( densityAtNodes[ n ] * volume );
-            microSpinInertiaAtNodes[ n ]     /= ( densityAtNodes[ n ] * volume );
-            symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
-
-        }
-
-#ifdef TESTACCESS
-
-        _test_volumeAtNodes.emplace( macroCellID, volumeAtNodes );
-        _test_densityAtNodes.emplace( macroCellID, densityAtNodes );
-        _test_bodyForceAtNodes.emplace( macroCellID, bodyForceAtNodes );
-        _test_accelerationAtNodes.emplace( macroCellID, accelerationAtNodes );
-        _test_microInertiaAtNodes.emplace( macroCellID, microInertiaAtNodes );
-        _test_bodyCoupleAtNodes.emplace( macroCellID, bodyCoupleAtNodes );
-        _test_microSpinInertiaAtNodes.emplace( macroCellID, microSpinInertiaAtNodes );
-        _test_symmetricMicroStressAtNodes.emplace( macroCellID, symmetricMicroStressAtNodes );
-
-#endif
-
         //Add the surface integral components of the right hand side vectors
-        
-        for ( auto domain = domainNames.begin( ); domain != domainNames.end( ); domain++ ){
+        uIntType surface_index = 0;
+        for ( auto face_nodes = element->local_surface_node_ids.begin( ); face_nodes != element->local_surface_node_ids.end( ); face_nodes++, surface_index++ ){
+            
+            floatMatrix tractions( element->nodes.size( ), floatVector( _dim, 0 ) );
+            floatMatrix couples( element->nodes.size( ), floatVector( _dim * _dim, 0 ) );
 
-            uIntVector domainMacroSurfaces = cellDomainMacroSurfaces[ macroCellID ][ *domain ];
+            // Initialize the nodes
+            for ( auto fn = face_nodes->begin( ); fn != face_nodes->end( ); fn++ ){
 
-            //Compute the shape functions at the micro surface region area centers of mass
+                tractions[ *fn ] = tractionAtNodes[ *fn ][ surface_index ];
+                couples[ *fn ] = coupleAtNodes[ *fn ][ surface_index ];
 
-            std::unordered_map< uIntType, floatVector > shapefunctionsAtSurfaceRegionCentersOfMass;
-            for ( auto face = domainMacroSurfaces.begin( ); face != domainMacroSurfaces.end( ); face++ ){
+            }
 
-                floatVector lcom( homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ][ *domain ].begin( ) +
-                                                                                                                _dim * ( *face ),
-                                  homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ][ *domain ].begin( ) +
-                                                                                                                _dim * ( ( *face ) + 1 ) );
-                floatVector sfs;
+            std::cerr << "surface: " << surface_index << "\n";
+            // Begin the surface integration
+            for ( auto s_qpt = element->surface_quadrature_rules[ surface_index ].begin( ); s_qpt != element->surface_quadrature_rules[ surface_index ].end( ); s_qpt++ ){
 
-                error = element->get_shape_functions( lcom, sfs );
+                // Interpolate the traction and couple
+                floatVector traction;
+                floatVector couple;
+
+                element->interpolate( tractions, s_qpt->first, traction );
+                element->interpolate( couples, s_qpt->first, couple );
+
+                std::cerr << "    traction: "; vectorTools::print( traction );
+                std::cerr << "    couple:   "; vectorTools::print( couple );
+
+                // Compute the shapefunction values
+                floatVector shapefunctions;
+                element->get_shape_functions( s_qpt->first, shapefunctions );
+
+                // Compute the weighting factor
+                floatMatrix surface_jacobian;
+                error = element->get_local_gradient( element->nodes, s_qpt->first, surface_jacobian );
+                std::cerr << "    surface_jacobian: "; vectorTools::print( vectorTools::appendVectors( surface_jacobian ) );
 
                 if ( error ){
 
-                    errorOut result = new errorNode( __func__,
-                                                     "Error in the computation of the shapefunctions at the micro-domain surface center of mass for macro cell " + std::to_string( macroCellID ) + " on face " + std::to_string( *face ) );
-                    result->addNext( error );
-                    return result;
+                    std::string message = "Error in computing the local gradient of the shape functions for quadrature point "
+                                        + std::to_string( ( unsigned int )( s_qpt - element->surface_quadrature_rules[ surface_index ].begin( ) ) )
+                                        + " on surface " + std::to_string( surfaceNum ) + " for element " + std::to_string( macroCellID );
+                    return new errorNode( __func__, message );
 
                 }
 
-                shapefunctionsAtSurfaceRegionCentersOfMass.emplace( *face, sfs );
+                floatVector inv_jacobian = vectorTools::inverse( vectorTools::appendVectors( surface_jacobian ), _dim, _dim );
+                std::cerr << "    inv_jacobian: "; vectorTools::print( inv_jacobian ); 
+                floatType Jxw = vectorTools::determinant( vectorTools::appendVectors( surface_jacobian ), _dim, _dim ) * s_qpt->second;
+                std::cerr << "    Jxw: " << Jxw << "\n";
+                floatType da = vectorTools::l2norm( vectorTools::Tdot( vectorTools::inflate( inv_jacobian, _dim, _dim ), element->local_surface_normals[ surface_index ] ) * Jxw );
+                std::cerr << "    da:  " << da << "\n";
 
-            }
+                for ( unsigned int j = 0; j < element->nodes.size( ); j++ ){
 
-            //Add the surface integral components to the right hand side vectors
-            for ( auto face = domainMacroSurfaces.begin( ); face != domainMacroSurfaces.end( ); face++ ){
+                    // Compute the contribution to the node
+                    floatVector nLinearMomentumRHS = shapefunctions[ j ] * traction * da;
 
-                floatType area = homogenizedSurfaceRegionAreas[ macroCellID ][ *domain ][ ( *face ) ];
-
-                floatVector traction( homogenizedSurfaceRegionTractions[ macroCellID ][ *domain ].begin( ) + _dim * ( *face ),
-                                      homogenizedSurfaceRegionTractions[ macroCellID ][ *domain ].begin( ) + _dim * ( ( *face ) + 1 ) );
-
-                floatVector couple( homogenizedSurfaceRegionCouples[ macroCellID ][ *domain ].begin( ) + _dim * _dim * ( *face ),
-                                    homogenizedSurfaceRegionCouples[ macroCellID ][ *domain ].begin( ) + _dim * _dim * ( ( *face ) + 1 ) );
-
-                floatVector shapefunctions = shapefunctionsAtSurfaceRegionCentersOfMass[ *face ];
-
-                for ( unsigned int j = 0; j < nMacroCellNodes; j++ ){
-
-                    //Get the shapefunction value for the surface region
-                    floatType N = shapefunctions[ j ];
-
-                    //Compute the contribution to the node
-                    floatVector nLinearMomentumRHS = N * traction * area;
-
-                    floatVector nFirstMomentRHS = N * couple * area;
+                    floatVector nFirstMomentRHS = shapefunctions[ j ] * couple * da;
 
                     //Add the contribution to the overall RHS vectors
                     for ( auto it = nLinearMomentumRHS.begin( ); it != nLinearMomentumRHS.end( ); it++ ){
@@ -10276,6 +10428,7 @@ namespace overlapCoupling{
 
             floatVector densityOut(                                      cellIds.size( ), 0 );
             floatVector bodyForceOut(                             _dim * cellIds.size( ), 0 );
+            floatVector positionOut(                              _dim * cellIds.size( ), 0 );
             floatVector accelerationsOut(                         _dim * cellIds.size( ), 0 );
             floatVector microInertiasOut(                  _dim * _dim * cellIds.size( ), 0 );
             floatVector bodyCouplesOut(                    _dim * _dim * cellIds.size( ), 0 );
@@ -10390,6 +10543,25 @@ namespace overlapCoupling{
 
                 }
 
+                //Compute the quadrature point position
+                floatVector qpPosition;
+                error = element->interpolate( element->nodes, element->qrule[ qp ].first, qpPosition );
+                
+                if ( error ){
+                
+                    errorOut result = new errorNode( __func__,
+                				                     "Error in the computation of the gauss point location" );
+                    result->addNext( error );
+                    return result;
+                
+                }
+                
+                for ( unsigned int i = 0; i < _dim; i++ ){
+                
+                    positionOut[ _dim * index + i ] = qpPosition[ i ];
+                
+                }
+
                 //Build the DOF vector
                 floatMatrix dofMatrix( element->qrule.size( ), floatVector( _dim + _dim * _dim, 0 ) );
 
@@ -10497,6 +10669,22 @@ namespace overlapCoupling{
                 result->addNext( error );
                 return result;
 
+            }
+
+            outputNames = stringVector( _dim );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+            
+                outputNames[ i ] = "position_" + std::to_string( i + 1 ) + "_" + std::to_string( qp );
+            
+            }
+            error = writer->writeSolutionData( increment, collectionNumber, outputNames, "Cell", positionOut );
+            
+            if ( error ){
+            
+                errorOut result = new errorNode( __func__, "Error in outputting the gauss point position" );
+                result->addNext( error );
+                return result;
+            
             }
 
             outputNames = stringVector( _dim * _dim );

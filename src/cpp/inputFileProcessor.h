@@ -187,6 +187,7 @@ namespace inputFileProcessor{
             bool outputUpdatedDOF( );
             bool solveCouplingODEsAtMicroDomains( );
             bool useArlequinCoupling( );
+            bool assumeVoidlessBody( );
 
             const DOFMap *getMacroNodeIDOutputIndex( );
             const DOFMap *getMicroNodeIDOutputIndex( );
@@ -437,6 +438,7 @@ namespace inputFileProcessor{
             std::unordered_map< std::string, uIntType > _microDomainSurfaceCount;
 
             bool _isFiltering = false;
+            bool _assumeVoidlessBody = true;
 
     };
 
