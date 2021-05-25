@@ -217,29 +217,29 @@ namespace elib{
                                            { 4, 5, 6, 7 } };
 
                 surface_quadrature_rules = { { { { -1, -1 / sqrt3, -1 / sqrt3 }, 1.},
-                                             { { -1,  1 / sqrt3, -1 / sqrt3 }, 1.},
-                                             { { -1,  1 / sqrt3,  1 / sqrt3 }, 1.},
-                                             { { -1, -1 / sqrt3,  1 / sqrt3 }, 1.} },
-                                           { { {  1, -1 / sqrt3, -1 / sqrt3 }, 1.},
-                                             { {  1,  1 / sqrt3, -1 / sqrt3 }, 1.},
-                                             { {  1,  1 / sqrt3,  1 / sqrt3 }, 1.},
-                                             { {  1, -1 / sqrt3,  1 / sqrt3 }, 1.} },
-                                           { { { -1 / sqrt3, -1, -1 / sqrt3 }, 1.},
-                                             { {  1 / sqrt3, -1, -1 / sqrt3 }, 1.},
-                                             { {  1 / sqrt3, -1,  1 / sqrt3 }, 1.},
-                                             { { -1 / sqrt3, -1,  1 / sqrt3 }, 1.} },
-                                           { { { -1 / sqrt3,  1, -1 / sqrt3 }, 1.},
-                                             { {  1 / sqrt3,  1, -1 / sqrt3 }, 1.},
-                                             { {  1 / sqrt3,  1,  1 / sqrt3 }, 1.},
-                                             { { -1 / sqrt3,  1,  1 / sqrt3 }, 1.} },
-                                           { { { -1 / sqrt3, -1 / sqrt3, -1 }, 1.},
-                                             { {  1 / sqrt3, -1 / sqrt3, -1 }, 1.},
-                                             { {  1 / sqrt3,  1 / sqrt3, -1 }, 1.},
-                                             { { -1 / sqrt3,  1 / sqrt3, -1 }, 1.} },
-                                           { { { -1 / sqrt3, -1 / sqrt3,  1 }, 1.},
-                                             { {  1 / sqrt3, -1 / sqrt3,  1 }, 1.},
-                                             { {  1 / sqrt3,  1 / sqrt3,  1 }, 1.},
-                                             { { -1 / sqrt3,  1 / sqrt3,  1 }, 1.} } };
+                                               { { -1,  1 / sqrt3, -1 / sqrt3 }, 1.},
+                                               { { -1,  1 / sqrt3,  1 / sqrt3 }, 1.},
+                                               { { -1, -1 / sqrt3,  1 / sqrt3 }, 1.} },
+                                             { { {  1, -1 / sqrt3, -1 / sqrt3 }, 1.},
+                                               { {  1,  1 / sqrt3, -1 / sqrt3 }, 1.},
+                                               { {  1,  1 / sqrt3,  1 / sqrt3 }, 1.},
+                                               { {  1, -1 / sqrt3,  1 / sqrt3 }, 1.} },
+                                             { { { -1 / sqrt3, -1, -1 / sqrt3 }, 1.},
+                                               { {  1 / sqrt3, -1, -1 / sqrt3 }, 1.},
+                                               { {  1 / sqrt3, -1,  1 / sqrt3 }, 1.},
+                                               { { -1 / sqrt3, -1,  1 / sqrt3 }, 1.} },
+                                             { { { -1 / sqrt3,  1, -1 / sqrt3 }, 1.},
+                                               { {  1 / sqrt3,  1, -1 / sqrt3 }, 1.},
+                                               { {  1 / sqrt3,  1,  1 / sqrt3 }, 1.},
+                                               { { -1 / sqrt3,  1,  1 / sqrt3 }, 1.} },
+                                             { { { -1 / sqrt3, -1 / sqrt3, -1 }, 1.},
+                                               { {  1 / sqrt3, -1 / sqrt3, -1 }, 1.},
+                                               { {  1 / sqrt3,  1 / sqrt3, -1 }, 1.},
+                                               { { -1 / sqrt3,  1 / sqrt3, -1 }, 1.} },
+                                             { { { -1 / sqrt3, -1 / sqrt3,  1 }, 1.},
+                                               { {  1 / sqrt3, -1 / sqrt3,  1 }, 1.},
+                                               { {  1 / sqrt3,  1 / sqrt3,  1 }, 1.},
+                                               { { -1 / sqrt3,  1 / sqrt3,  1 }, 1.} } };
 
             }
 
@@ -249,53 +249,53 @@ namespace elib{
 
     };
 
-class Quad4 : public Element{
-    /*!
-     * A 4 noded quad element
-     */
-    
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    
-        Quad4(const std::vector< uitype > &global_node_ids,
-              const vecOfvec &nodes, const quadrature_rule &qrule) : Element(global_node_ids, nodes, qrule){
-            name = "Quad4";
-            local_node_coordinates = { { -1, -1 },
-                                       {  1, -1 },
-                                       {  1,  1 },
-                                       { -1,  1 } };
-
-            local_surface_points = { { -1,  0 },
-                                     {  1,  0 },
-                                     {  0, -1 },
-                                     {  0,  1 } };
-
-            local_surface_normals = { { -1,  0 },
-                                      {  1,  0 },
-                                      {  0, -1 },
-                                      {  0,  1 } };
-            
-            local_surface_node_ids = { { 4, 0 },
-                                       { 1, 2 },
-                                       { 0, 1 },
-                                       { 2, 3 } };
-            
-            surface_quadrature_rules = { { { { -1, -1 / sqrt3 }, 1 },
-                                           { { -1,  1 / sqrt3 }, 1 } },
-                                         { { {  1, -1 / sqrt3 }, 1 },
-                                           { {  1,  1 / sqrt3 }, 1 } },
-                                         { { { -1 / sqrt3, -1 }, 1 },
-                                           { {  1 / sqrt3, -1 }, 1 } },
-                                         { { { -1 / sqrt3,  1 }, 1 },
-                                           { {  1 / sqrt3,  1 }, 1 } } };
-
-        }
+    class Quad4 : public Element{
+        /*!
+         * A 4 noded quad element
+         */
         
-        errorOut get_shape_functions(const vec &local_coordinates, vec &result);
-        errorOut get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
-        bool local_point_inside(const vec &local_coordinates, const double tol=1e-8);
+        public:
+            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        
+            Quad4(const std::vector< uitype > &global_node_ids,
+                  const vecOfvec &nodes, const quadrature_rule &qrule) : Element(global_node_ids, nodes, qrule){
+                name = "Quad4";
+                local_node_coordinates = { { -1, -1 },
+                                           {  1, -1 },
+                                           {  1,  1 },
+                                           { -1,  1 } };
     
-    };
+                local_surface_points = { { -1,  0 },
+                                         {  1,  0 },
+                                         {  0, -1 },
+                                         {  0,  1 } };
+    
+                local_surface_normals = { { -1,  0 },
+                                          {  1,  0 },
+                                          {  0, -1 },
+                                          {  0,  1 } };
+                
+                local_surface_node_ids = { { 4, 0 },
+                                           { 1, 2 },
+                                           { 0, 1 },
+                                           { 2, 3 } };
+                
+                surface_quadrature_rules = { { { { -1, -1 / sqrt3 }, 1 },
+                                               { { -1,  1 / sqrt3 }, 1 } },
+                                             { { {  1, -1 / sqrt3 }, 1 },
+                                               { {  1,  1 / sqrt3 }, 1 } },
+                                             { { { -1 / sqrt3, -1 }, 1 },
+                                               { {  1 / sqrt3, -1 }, 1 } },
+                                             { { { -1 / sqrt3,  1 }, 1 },
+                                               { {  1 / sqrt3,  1 }, 1 } } };
+    
+            }
+            
+            errorOut get_shape_functions(const vec &local_coordinates, vec &result);
+            errorOut get_local_grad_shape_functions(const vec &local_coordinates, vecOfvec &result);
+            bool local_point_inside(const vec &local_coordinates, const double tol=1e-8);
+        
+        };
 
     //Functions
 
