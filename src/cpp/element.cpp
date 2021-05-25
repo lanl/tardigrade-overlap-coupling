@@ -788,16 +788,16 @@ namespace elib{
          * :param const vec &local_coordinates: The local coordinates (n local dim, )
          * :param vecOfvec &result: The gradients of the shape functions w.r.t. the local coordinates (n nodes, n local dim)
          */
-        
+
         result.resize( local_node_coordinates.size( ) );
- 
+
         for ( uitype n = 0; n < local_node_coordinates.size( ); n++ ){ 
 
             result[ n ] = { 0.25 * local_node_coordinates[ n ][ 0 ] * ( 1 + local_node_coordinates[ n ][ 1 ] * local_coordinates[ 1 ] ),
                             0.25 * local_node_coordinates[ n ][ 1 ] * ( 1 + local_node_coordinates[ n ][ 0 ] * local_coordinates[ 0 ] ) };
-        
+
         }
-        
+
         return NULL;
     }
 
@@ -814,11 +814,11 @@ namespace elib{
             if ( ( abs( local_coordinates[ i ] ) - 1 ) > tol ){
             
                 return false;
-            
+
             }
-        
+
         }
-        
+
         return true;
     }
 
