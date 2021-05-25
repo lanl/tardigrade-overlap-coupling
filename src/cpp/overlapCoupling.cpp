@@ -3207,9 +3207,6 @@ namespace overlapCoupling{
 
         _referenceCellDomainCenterOfMassShapefunctions[ cellID ].emplace( domainName, domainCenterOfMassShapeFunctionValues );
 
-        std::cerr << "    domainCenterOfMassShapeFunctionValues:\n        "; vectorTools::print( _referenceCellDomainCenterOfMassShapefunctions[ cellID ][ domainName ] );
-        std::cerr << "    domainMicroPositionShapeFunctionValues:\n";
-
 #ifdef TESTACCESS
         if ( _inputProcessor.getCouplingInitialization( )[ "projection_type" ].as< std::string >( ).compare( "direct_projection" ) == 0 ){
             _test_domainMUP[ cellID ].emplace( domainName, domainMicroPositionShapeFunctionValues );
@@ -3235,7 +3232,6 @@ namespace overlapCoupling{
         }
 
         //Add the domain's contribution to the shape function matrix
-        std::cout << "    macroNodes: "; vectorTools::print( macroNodes );
         error = addDomainContributionToInterpolationMatrix( domainNodes, macroNodes, domainReferenceXiVectors,
                                                             domainCenterOfMassShapeFunctionValues );
 
@@ -6045,7 +6041,7 @@ namespace overlapCoupling{
                     homogenizedSurfaceRegionTractions[ macroCellID ][ microDomainName ][ _dim * index + i ]
                         = integratedValue[ i ] / homogenizedSurfaceRegionAreas[ macroCellID ][ microDomainName ][ index ];
                 }
-    
+
                 //Compute the couples
                 floatVector regionCenterOfMass( homogenizedSurfaceRegionCentersOfMass[ macroCellID ][ microDomainName ].begin( ) + _dim * index,
                                                 homogenizedSurfaceRegionCentersOfMass[ macroCellID ][ microDomainName ].begin( ) + _dim * ( index + 1 ) );
@@ -6286,10 +6282,10 @@ namespace overlapCoupling{
                 floatVector inv_jacobian = vectorTools::inverse( vectorTools::appendVectors( surface_jacobian ), _dim, _dim );
                 floatType Jxw = vectorTools::determinant( vectorTools::appendVectors( surface_jacobian ), _dim, _dim ) * s_qpt->second;
                 floatType surfaceAreaContribution = vectorTools::l2norm( vectorTools::Tdot( vectorTools::inflate( inv_jacobian, _dim, _dim ), element->local_surface_normals[ surfaceNum ] ) * Jxw );
-						
+
                 floatVector shapeFunctions;
                 element->get_shape_functions( s_qpt->first, shapeFunctions );
-                
+
                 for ( uIntType n = 0; n < shapeFunctions.size( ); n++ ){
                 
                     elementNodalSurfaceAreas[ n ][ surfaceNum ] += shapeFunctions[ n ] * surfaceAreaContribution;
@@ -10549,8 +10545,7 @@ namespace overlapCoupling{
                 
                 if ( error ){
                 
-                    errorOut result = new errorNode( __func__,
-                				                     "Error in the computation of the gauss point location" );
+                    errorOut result = new errorNode( __func__, "Error in the computation of the gauss point location" );
                     result->addNext( error );
                     return result;
                 
