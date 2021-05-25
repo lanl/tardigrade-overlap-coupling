@@ -2786,6 +2786,7 @@ namespace volumeReconstruction{
 
                 functionValue /= ( duplicate_count + 1 );
 
+                //Get the local coordinates of the point
                 if ( usePointwiseProjection ){
 
                     error = element->compute_local_coordinates( pointPosition, localCoordinates );
@@ -2822,6 +2823,13 @@ namespace volumeReconstruction{
                 else{
                     meanFunctionValue += functionValue;
                     numPoints++;
+                }
+
+            }
+            if ( !usePointwiseProjection ){
+                for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+                    functionAtGrid[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ] * functionValue;
+                    weights[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ];
                 }
             }
         }
