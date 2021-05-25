@@ -2828,8 +2828,8 @@ namespace volumeReconstruction{
             }
             if ( !usePointwiseProjection ){
                 for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
-                    functionAtGrid[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ] * functionValue;
-                    weights[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ];
+                    functionAtGrid[ *nID ] += meanFunctionValue / std::fmax( ( floatType )numPoints + 1 );
+                    weights[ *nID ] += 1;
                 }
             }
         }
