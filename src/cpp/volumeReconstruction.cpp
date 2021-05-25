@@ -2778,7 +2778,7 @@ namespace volumeReconstruction{
                         functionValue += floatVector( functionValuesAtPoints.begin( ) + ( *q / _dim + 0 ) * functionDim,
                                                       functionValuesAtPoints.begin( ) + ( *q / _dim + 1 ) * functionDim );
 
-                        duplicateCount++;
+                        duplicate_count++;
 
                     }
 
@@ -2821,7 +2821,7 @@ namespace volumeReconstruction{
                 }
                 else{
                     meanFunctionValue += functionValue;
-                    numPoints++
+                    numPoints++;
                 }
             }
         }

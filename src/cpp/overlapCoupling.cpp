@@ -6543,38 +6543,6 @@ namespace overlapCoupling{
         }
 
         //Add the surface integral components of the right hand side vectors
-        
-        for ( auto domain = domainNames.begin( ); domain != domainNames.end( ); domain++ ){
-
-            uIntVector domainMacroSurfaces = cellDomainMacroSurfaces[ macroCellID ][ *domain ];
-
-            //Compute the shape functions at the micro surface region area centers of mass
-
-            std::unordered_map< uIntType, floatVector > shapefunctionsAtSurfaceRegionCentersOfMass;
-            for ( auto face = domainMacroSurfaces.begin( ); face != domainMacroSurfaces.end( ); face++ ){
-
-                floatVector lcom( homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ][ *domain ].begin( ) +
-                                                                                                                _dim * ( *face ),
-                                  homogenizedSurfaceRegionProjectedLocalCentersOfMass[ macroCellID ][ *domain ].begin( ) +
-                                                                                                                _dim * ( ( *face ) + 1 ) );
-                floatVector sfs;
-
-                error = element->get_shape_functions( lcom, sfs );
-
-                if ( error ){
-
-                    errorOut result = new errorNode( __func__,
-                                                     "Error in the computation of the shapefunctions at the micro-domain surface center of mass for macro cell " + std::to_string( macroCellID ) + " on face " + std::to_string( *face ) );
-                    result->addNext( error );
-                    return result;
-
-                }
-
-                shapefunctionsAtSurfaceRegionCentersOfMass.emplace( *face, sfs );
-
-            }
-
-        //Add the surface integral components of the right hand side vectors
         uIntType surface_index = 0;
         for ( auto face_nodes = element->local_surface_node_ids.begin( ); face_nodes != element->local_surface_node_ids.end( ); face_nodes++, surface_index++ ){
             
