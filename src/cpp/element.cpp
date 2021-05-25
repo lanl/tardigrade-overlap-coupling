@@ -790,7 +790,7 @@ namespace elib{
          */
         
         result.resize( local_node_coordinates.size( ) );
-        
+ 
         for ( uitype n = 0; n < local_node_coordinates.size( ); n++ ){ 
 
             result[ n ] = { 0.25 * local_node_coordinates[ n ][ 0 ] * ( 1 + local_node_coordinates[ n ][ 1 ] * local_coordinates[ 1 ] ),
@@ -975,24 +975,24 @@ namespace elib{
 
     std::unique_ptr<Element> build_element_from_string(const std::string &eltype, const std::vector< uitype > &global_node_ids, 
                                                        const vecOfvec &nodes, const quadrature_rule &qrule){
-	    /*
-	     * Build an element from the element name, the nodes, and the quadrature rule
-	     *
-	     * TODO: Make the list of elements automatically populate.
-	     *
-	     * :param std::string &eltype: The name of the element
-             * :param std::vector< uitype > &global_node_ids: The id numbers of the global nodes
-	     * :param const vecOfvec &nodes: The element's nodes
-	     * :param const quadrature_rule &qrule: The quadrature rule of the element
-             */
+        /*
+         * Build an element from the element name, the nodes, and the quadrature rule
+         *
+         * TODO: Make the list of elements automatically populate.
+         *
+         * :param std::string &eltype: The name of the element
+         * :param std::vector< uitype > &global_node_ids: The id numbers of the global nodes
+         * :param const vecOfvec &nodes: The element's nodes
+         * :param const quadrature_rule &qrule: The quadrature rule of the element
+         */
 
-	    if (std::strcmp(eltype.c_str(), "Hex8")==0){
+        if (std::strcmp(eltype.c_str(), "Hex8")==0){
             return std::unique_ptr<Element>(new Hex8(global_node_ids, nodes, qrule));
-	    }
+        }
         if (std::strcmp(eltype.c_str(), "Quad4")==0){
             return std::unique_ptr<Element>(new Quad4(global_node_ids, nodes, qrule));
         }
-	    return NULL;
+        return NULL;
     }
 
     void determinant_3x3(const vecOfvec &A, double &d){
