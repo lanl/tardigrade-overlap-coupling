@@ -1319,9 +1319,9 @@ int test_dualContouring_performRelativePositionVolumeIntegration( std::ofstream 
     }
 
     floatVector integratedVolumeResult;
-    floatVector integratedVolumeAnswer = { 0.330929, -0.241469, -0.108765,
-                                           0.661858, -0.482938, -0.21753 ,
-                                           0.992786, -0.724406, -0.326296 };
+    floatVector integratedVolumeAnswer = { 0.133381, -0.073798,  0.456491,
+                                           0.266761, -0.147596,  0.91298 ,
+                                           0.400142, -0.221394,  1.369474 };
 
     floatVector origin = { 0., 0., 0. };
 
