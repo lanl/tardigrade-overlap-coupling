@@ -2745,7 +2745,7 @@ namespace volumeReconstruction{
 
             std::vector< bool > isDuplicate( internalPoints.size( ), false );
             floatVector meanFunctionValue( functionDim, 0 );
-            uIntType numPoints = 0;            
+            uIntType numPoints = 0;
             for ( auto p = internalPoints.begin( ); p != internalPoints.end( ); p++ ){
 
                 unsigned int pindex = p - internalPoints.begin( );
@@ -2826,7 +2826,7 @@ namespace volumeReconstruction{
                 }
 
             }
-            if ( !usePointwiseProjection ){
+            if ( ( !usePointwiseProjection ) && ( internalPoints.size( ) > 0 ) ){
                 for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
                     functionAtGrid[ *nID ] += meanFunctionValue / std::fmax( ( floatType )numPoints, 1 );
                     weights[ *nID ] += 1;
