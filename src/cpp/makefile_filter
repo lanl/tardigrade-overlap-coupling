@@ -1,4 +1,4 @@
-include environment.sh
+include filter_environment.sh
 
 EXECUTABLE=filter
 INC=-I$(VECTOR_TOOLS) -I$(ERROR_TOOLS) -I$(OVERLAP_COUPLING) -I$(MICROMORPHIC_TOOLS) -I$(SOLVER_TOOLS) -I$(OVERLAP_COUPLING) -I$(YAML)/include -I$(XDMF) -I$(XDMF)/build
