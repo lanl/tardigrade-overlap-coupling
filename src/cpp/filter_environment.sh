@@ -1,0 +1,13 @@
+ROOT_DIR=$(MROOTDIR)/../../..
+CPP_LIBS=/src/cpp
+export EIGEN=$(ROOT_DIR)/eigen
+export VECTOR_TOOLS=$(ROOT_DIR)/vector_tools$(CPP_LIBS)
+export ERROR_TOOLS=$(ROOT_DIR)/error_tools$(CPP_LIBS)
+export CONSTITUTIVE_TOOLS=$(ROOT_DIR)/constitutive_tools$(CPP_LIBS)
+export MICROMORPHIC_TOOLS=$(ROOT_DIR)/micromorphic_tools$(CPP_LIBS)
+export SOLVER_TOOLS=$(ROOT_DIR)/solver_tools$(CPP_LIBS)
+export OVERLAP_COUPLING=$(ROOT_DIR)/overlap_coupling$(CPP_LIBS)
+export YAML=$(ROOT_DIR)/yaml-cpp
+export XDMF=$(ROOT_DIR)/xdmf
+export BOOST_ROOT=$(ROOT_DIR)/boost_1_76_0
+export PYTHON_INCLUDE=$(CONDA_PREFIX)/include
