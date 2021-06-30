@@ -10419,6 +10419,25 @@ namespace overlapCoupling{
 
         }
 
+        //Loop over the macro displacement degrees of freedom
+        stringVector node_dof_names( _dim + _dim * _dim );
+        for ( unsigned int dof_i = 0; dof_i < ( _dim + _dim * _dim ); dof_i++ ){
+
+            node_dof_names[ dof_i ] = "NODE_DOF_" + std::to_string( dof_i + 1 );
+
+        }
+
+        
+        error = writer->writeSolutionData( increment, collectionNumber, node_dof_names, "Node", projectedMacroDisplacement );
+
+        if ( error ){
+
+            errorOut result = new errorNode( __func__, "Error in writing the nodal DOF solution data" );
+            result->addNext( error );
+            return result;
+
+        }
+
         //Loop over the quadrature points
         for ( unsigned int qp = 0; qp < maxQP; qp++ ){
 
