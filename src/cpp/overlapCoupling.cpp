@@ -292,7 +292,8 @@ namespace overlapCoupling{
 
                         }
 
-                        domainAMatrix += vectorTools::appendVectors( vectorTools::dyadic( microDisplacement->second, microReferencePosition->second - domain->second ) )
+                        domainAMatrix += vectorTools::appendVectors( vectorTools::dyadic( microDisplacement->second - centerOfMassDisplacements[domain->first],
+                                                                                          microReferencePosition->second - domain->second ) )
                                        * microVolume->second * microDensity->second * microWeight->second / domainMass->second;
 
                     }
