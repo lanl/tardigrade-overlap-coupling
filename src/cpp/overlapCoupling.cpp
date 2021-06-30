@@ -10428,12 +10428,11 @@ namespace overlapCoupling{
         }
 
         
-        error = writer->writeSolutionData( increment, collectionNumber, node_dof_names, "Node",
-                                           vectorTools::inflate( densityOut, _inputProcessor.getMacroGlobalToLocalDOFMap->size( ), _dim + _dim * _dim ) );
+        error = writer->writeSolutionData( increment, collectionNumber, node_dof_names, "Node", projectedMacroDisplacement );
 
         if ( error ){
 
-            new errorNode result( __func__, "Error in writing the nodal DOF solution data" );
+            errorOut result = new errorNode( __func__, "Error in writing the nodal DOF solution data" );
             result->addNext( error );
             return result;
 
