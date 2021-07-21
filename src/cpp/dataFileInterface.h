@@ -158,6 +158,9 @@ namespace dataFileInterface{
             XDMFDataFile( );
             XDMFDataFile( const YAML::Node &configuration );
 
+            //Destructor
+            ~XDMFDataFile( );
+
             //Overloads
             errorOut getIncrementTime( const uIntType &increment, floatType &time );
             errorOut getNumIncrements( uIntType &numIncrements );
