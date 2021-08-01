@@ -1621,6 +1621,35 @@ namespace volumeReconstruction{
 
     }
 
+    errorOut dualContouring::rbf( const floatVector &x, const floatVector &x0, const floatType &ls, floatType &val ){
+        /*!
+         * Compute the radial basis function around the provided point. The form of the function is:
+         * 
+         * v = exp(-(r / (2 * ls) )**2 )
+         * 
+         * where
+         * 
+         * r = ||x - x0||
+         * 
+         * :param const floatVector &x: The point at which to compute the radial basis function
+         * :param const floatVector &x0: The reference point for the radial basis function
+         * :param const floatType &ls: The lengthscale
+         * :param floatType &val: The value of the radial basis function
+         */
+
+        if (x.size( ) != x0.size){
+
+            return new errorNode( __func__, "The size of x (" + std::to_string(x.size()) + ") and x0 ( " + std::to_string(x0) + ") are not the same" );
+
+        }
+
+        r = vectorTools::l2norm(x - x0);
+        val = std::expf( -std::powf( r / ( 2 * ls ), 2 ) );
+
+        return NULL;
+
+    }
+
     errorOut dualContouring::processBackgroundGridElementImplicitFunction( const uIntVector &indices,
                                                                            floatVector &implicitFunctionNodalValues,
                                                                            uIntVector  &globalNodeIDs,

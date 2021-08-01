@@ -260,6 +260,7 @@ namespace volumeReconstruction{
                                                     const floatVector *subdomainWeights = NULL, const floatVector *macroNormal = NULL,
                                                     const bool useMacroNormal = false );
 
+            errorOut rbf( const floatVector &x, const floatVector &x0, const floatType &ls );
 
         private:
 
