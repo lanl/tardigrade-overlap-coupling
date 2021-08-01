@@ -181,6 +181,8 @@ namespace volumeReconstruction{
             const floatVector *_functionValues = NULL;
             uIntType _nPoints;
             uIntType _nNeighborhoodPoints;
+            floatType _length_scale = 1;
+            floatType _critical_radius = 1;
 
             
 
