@@ -623,7 +623,7 @@ namespace volumeReconstruction{
 
         uIntVector ownedIndices;
         ownedIndices.reserve( _nPoints );
-        for ( uIntType i = 0; i < _dim * _nPoints; i+=3 ){
+        for ( uIntType i = 0; i < _dim * _nPoints; i+=_dim ){
             ownedIndices.push_back( i );
         }
 
@@ -631,6 +631,58 @@ namespace volumeReconstruction{
         _pointTree = KDNode( _points, ownedIndices, 0, _dim );
 
         return NULL;
+    }
+
+    errorOut volumeReconstructionBase::computeMedianNeighborhoodDistance( ){
+        /*!
+         * Compute the median neighborhood distance i.e. the median distance
+         * of the closest n points for each incoming point
+         */
+
+        floatVector distances( 0, 0 );
+
+        for ( uIntType i = 0; i < _dim * _nPoints; i += _dim ){
+
+            // Compute the n closest distances from the point
+            floatVector x0( _points->begin( ) + i, _points->begin( ) + i + _dim );
+
+            floatVector closestDistances( _nNeighborhoodPoints + 1, 0 );
+
+            floatVector xi( _dim, 0 );
+
+            for ( uIntType j = 0; j < _dim * ( _nNeighborhoodPoints + 1 ); j += _dim ){
+
+                xi = floatVector( _points->begin( ) + j, _points->begin( ) + j + _dim );
+
+                closestDistances[ j / _dim ] = vectorTools::l2norm( xi - x0 );
+
+            }
+
+            std::sort( closestDistances.begin( ), closestDistances.end( ) );
+
+            for ( uIntType j = _dim * ( _nNeighborhoodPoints + 1 ); j < _dim * _nPoints; j += _dim ){
+
+                xi = floatVector( _points->begin( ) + j, _points->begin( ) + j + _dim );
+
+                floatType d = vectorTools::l2norm( xi - x0 );
+
+                if ( d < closestDistances[ _nNeighborhoodPoints ] ){
+
+                    closestDistances[ _nNeighborhoodPoints ] = d;
+                    std::sort( closestDistances.begin( ), closestDistances.end( ) );
+
+                }
+
+            }
+
+            distances.insert( distances.end(), closestDistances.begin() + 1, closestDistances.end( ) );
+
+        }
+
+        _medianNeighborhoodDistance = vectorTools::median( distances );
+
+        return NULL;
+
     }
 
     errorOut volumeReconstructionBase::loadFunction( const floatVector *function ){
@@ -993,12 +1045,16 @@ namespace volumeReconstruction{
         if ( !_config[ "interpolation" ] ){
             _config[ "interpolation" ][ "type" ] = "constant";
             _config[ "interpolation" ][ "constant_value" ] = 1;
+            _config[ "interpolation" ][ "nNeighborhoodPoints" ] = 5;
+            _nNeighborhoodPoints = 5;
             _functionValue = 1;
         }
 
         if ( !_config[ "interpolation" ][ "type" ] ){
             _config[ "interpolation" ][ "type" ] = "constant";
             _config[ "interpolation" ][ "constant_value" ] = 1;
+            _config[ "interpolation" ][ "nNeighborhoodPoints" ] = 5;
+            _nNeighborhoodPoints = 5;
             _functionValue = 1;
         }
 
@@ -1006,6 +1062,8 @@ namespace volumeReconstruction{
              ( !_config[ "interpolation" ][ "constant_value" ] ) ){
 
             _config[ "interpolation" ][ "constant_value" ] = 1;
+            _config[ "interpolation" ][ "nNeighborhoodPoints" ] = 5;
+            _nNeighborhoodPoints = 5;
             _functionValue = 1;
             
         }
@@ -1014,6 +1072,7 @@ namespace volumeReconstruction{
              ( _config[ "interpolation" ][ "constant_value" ] ) ){
 
             _functionValue = _config[ "interpolation" ][ "constant_value" ].as< floatType >( );
+            _nNeighborhoodPoints = _config[ "interpolation" ][ "nNeighborhoodPoints" ].as< uIntType >( );
             
         }
 
@@ -1042,6 +1101,19 @@ namespace volumeReconstruction{
 
             _upperBounds[ i ] = _pointTree.getMaximumValueDimension( i );
             _lowerBounds[ i ] = _pointTree.getMinimumValueDimension( i );
+
+        }
+
+        std::cerr << "computeMedianNeighborhoodDistance:\n";
+        errorOut error = computeMedianNeighborhoodDistance( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( __func__, "Error in computing the median neighborhood distance" );
+
+            result->addNext( error );
+
+            return result;
 
         }
         
@@ -1109,6 +1181,14 @@ namespace volumeReconstruction{
          */
 
         return &_upperBounds;
+    }
+
+    const floatType *volumeReconstructionBase::getMedianNeighborhoodDistance( ){
+        /*!
+         * Get the median distance between points and their neighborhood
+         */
+
+        return &_medianNeighborhoodDistance;
     }
 
     bool volumeReconstructionBase::getEvaluated( ){
@@ -1258,6 +1338,14 @@ namespace volumeReconstruction{
          */
 
         if ( !_config[ "interpolation" ][ "discretization_count" ] ){
+
+            floatVector delta = *getUpperBounds( ) - *getLowerBounds( );
+            floatVector _discretization_count = ( delta / *getMedianNeighborhoodDistance( ) );
+
+            uIntVector discretization_count( _dim, 0 );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+                discretization_count[ i ] = ( uIntType )( _discretization_count[ i ] );
+            }
 
             _config[ "interpolation" ][ "discretization_count" ]
                 = std::max( ( uIntType )( std::pow( ( floatType )_nPoints, 1. / 3. ) / _minPointsPerCell ), ( uIntType )1 );
@@ -1637,14 +1725,14 @@ namespace volumeReconstruction{
          * :param floatType &val: The value of the radial basis function
          */
 
-        if (x.size( ) != x0.size){
+        if ( x.size( ) != x0.size( ) ){
 
-            return new errorNode( __func__, "The size of x (" + std::to_string(x.size()) + ") and x0 ( " + std::to_string(x0) + ") are not the same" );
+            return new errorNode( __func__, "The size of x (" + std::to_string( x.size( ) ) + ") and x0 ( " + std::to_string( x0.size( ) ) + ") are not the same" );
 
         }
 
-        r = vectorTools::l2norm(x - x0);
-        val = std::expf( -std::powf( r / ( 2 * ls ), 2 ) );
+        floatType r = vectorTools::l2norm(x - x0);
+        val = std::exp( -std::pow( r / ( 2 * ls ), 2 ) );
 
         return NULL;
 

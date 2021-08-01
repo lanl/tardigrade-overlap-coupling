@@ -957,9 +957,11 @@ int test_dualContouring_evaluate( std::ofstream &results ){
 
     const floatVector lowerBoundsAnswer = { -0.95963138, -0.98616276, -0.99593042 };
 
+    const floatType medianNeighborhoodDistanceAnswer = 0.398116;
 
     const floatVector* upperBoundsResult = dc.getUpperBounds( );
     const floatVector* lowerBoundsResult = dc.getLowerBounds( );
+    const floatType*   medianNeighborhoodDistanceResult = dc.getMedianNeighborhoodDistance( );
 
     if ( !vectorTools::fuzzyEquals( *upperBoundsResult, upperBoundsAnswer ) ){
         vectorTools::print( *upperBoundsResult );
@@ -970,6 +972,12 @@ int test_dualContouring_evaluate( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( *lowerBoundsResult, lowerBoundsAnswer ) ){
         vectorTools::print( *lowerBoundsResult );
         results << "test_dualContouring_evaluate (test 2) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( *medianNeighborhoodDistanceResult, medianNeighborhoodDistanceAnswer ) ){
+        std::cout << *medianNeighborhoodDistanceResult << "\n";
+        results << "test__dualContouring_evaluate (test 3) & False\n";
         return 1;
     }
 
