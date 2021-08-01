@@ -623,7 +623,7 @@ namespace volumeReconstruction{
 
         uIntVector ownedIndices;
         ownedIndices.reserve( _nPoints );
-        for ( uIntType i = 0; i < _dim * _nPoints; i+=3 ){
+        for ( uIntType i = 0; i < _dim * _nPoints; i+=_dim ){
             ownedIndices.push_back( i );
         }
 
@@ -631,6 +631,58 @@ namespace volumeReconstruction{
         _pointTree = KDNode( _points, ownedIndices, 0, _dim );
 
         return NULL;
+    }
+
+    errorOut volumeReconstructionBase::computeMedianNeighborhoodDistance( ){
+        /*!
+         * Compute the median neighborhood distance i.e. the median distance
+         * of the closest n points for each incoming point
+         */
+
+        floatVector distances( 0, 0 );
+
+        for ( uIntType i = 0; i < _dim * _nPoints; i += _dim ){
+
+            // Compute the n closest distances from the point
+            floatVector x0( _points->begin( ) + i, _points->begin( ) + i + _dim );
+
+            floatVector closestDistances( _nNeighborhoodPoints + 1, 0 );
+
+            floatVector xi( _dim, 0 );
+
+            for ( uIntType j = 0; j < _dim * ( _nNeighborhoodPoints + 1 ); j += _dim ){
+
+                xi = floatVector( _points->begin( ) + j, _points->begin( ) + j + _dim );
+
+                closestDistances[ j / _dim ] = vectorTools::l2norm( xi - x0 );
+
+            }
+
+            std::sort( closestDistances.begin( ), closestDistances.end( ) );
+
+            for ( uIntType j = _dim * ( _nNeighborhoodPoints + 1 ); j < _dim * _nPoints; j += _dim ){
+
+                xi = floatVector( _points->begin( ) + j, _points->begin( ) + j + _dim );
+
+                floatType d = vectorTools::l2norm( xi - x0 );
+
+                if ( d < closestDistances[ _nNeighborhoodPoints ] ){
+
+                    closestDistances[ _nNeighborhoodPoints ] = d;
+                    std::sort( closestDistances.begin( ), closestDistances.end( ) );
+
+                }
+
+            }
+
+            distances.insert( distances.end(), closestDistances.begin() + 1, closestDistances.end( ) );
+
+        }
+
+        _medianNeighborhoodDistance = vectorTools::median( distances );
+
+        return NULL;
+
     }
 
     errorOut volumeReconstructionBase::loadFunction( const floatVector *function ){
@@ -993,12 +1045,16 @@ namespace volumeReconstruction{
         if ( !_config[ "interpolation" ] ){
             _config[ "interpolation" ][ "type" ] = "constant";
             _config[ "interpolation" ][ "constant_value" ] = 1;
+            _config[ "interpolation" ][ "nNeighborhoodPoints" ] = 5;
+            _nNeighborhoodPoints = 5;
             _functionValue = 1;
         }
 
         if ( !_config[ "interpolation" ][ "type" ] ){
             _config[ "interpolation" ][ "type" ] = "constant";
             _config[ "interpolation" ][ "constant_value" ] = 1;
+            _config[ "interpolation" ][ "nNeighborhoodPoints" ] = 5;
+            _nNeighborhoodPoints = 5;
             _functionValue = 1;
         }
 
@@ -1006,6 +1062,8 @@ namespace volumeReconstruction{
              ( !_config[ "interpolation" ][ "constant_value" ] ) ){
 
             _config[ "interpolation" ][ "constant_value" ] = 1;
+            _config[ "interpolation" ][ "nNeighborhoodPoints" ] = 5;
+            _nNeighborhoodPoints = 5;
             _functionValue = 1;
             
         }
@@ -1014,6 +1072,7 @@ namespace volumeReconstruction{
              ( _config[ "interpolation" ][ "constant_value" ] ) ){
 
             _functionValue = _config[ "interpolation" ][ "constant_value" ].as< floatType >( );
+            _nNeighborhoodPoints = _config[ "interpolation" ][ "nNeighborhoodPoints" ].as< uIntType >( );
             
         }
 
@@ -1042,6 +1101,18 @@ namespace volumeReconstruction{
 
             _upperBounds[ i ] = _pointTree.getMaximumValueDimension( i );
             _lowerBounds[ i ] = _pointTree.getMinimumValueDimension( i );
+
+        }
+
+        errorOut error = computeMedianNeighborhoodDistance( );
+
+        if ( error ){
+
+            errorOut result = new errorNode( __func__, "Error in computing the median neighborhood distance" );
+
+            result->addNext( error );
+
+            return result;
 
         }
         
@@ -1109,6 +1180,14 @@ namespace volumeReconstruction{
          */
 
         return &_upperBounds;
+    }
+
+    const floatType *volumeReconstructionBase::getMedianNeighborhoodDistance( ){
+        /*!
+         * Get the median distance between points and their neighborhood
+         */
+
+        return &_medianNeighborhoodDistance;
     }
 
     bool volumeReconstructionBase::getEvaluated( ){
@@ -1258,6 +1337,14 @@ namespace volumeReconstruction{
          */
 
         if ( !_config[ "interpolation" ][ "discretization_count" ] ){
+
+            floatVector delta = *getUpperBounds( ) - *getLowerBounds( );
+            floatVector _discretization_count = ( delta / *getMedianNeighborhoodDistance( ) );
+
+            uIntVector discretization_count( _dim, 0 );
+            for ( unsigned int i = 0; i < _dim; i++ ){
+                discretization_count[ i ] = ( uIntType )( _discretization_count[ i ] );
+            }
 
             _config[ "interpolation" ][ "discretization_count" ]
                 = std::max( ( uIntType )( std::pow( ( floatType )_nPoints, 1. / 3. ) / _minPointsPerCell ), ( uIntType )1 );
@@ -1457,13 +1544,16 @@ namespace volumeReconstruction{
         }
 
         //Resize the implicit function values
-        _implicitFunctionValues.resize( _gridLocations[ 0 ].size( ) *
-                                        _gridLocations[ 1 ].size( ) *
-                                        _gridLocations[ 2 ].size( ) );
+        _implicitFunctionValues = floatVector( _gridLocations[ 0 ].size( ) *
+                                               _gridLocations[ 1 ].size( ) *
+                                               _gridLocations[ 2 ].size( ), 0 );
 
         uIntVector gridPointCounts( _gridLocations[ 0 ].size( ) *
                                     _gridLocations[ 1 ].size( ) *
                                     _gridLocations[ 2 ].size( ) );
+
+        _length_scale = *getMedianNeighborhoodDistance( ) / ( 2 * std::sqrt( -std::log( 0.5 ) ) );
+        _critical_radius = std::sqrt( -std::log( 1e-3 ) ) * 2 * _length_scale;
 
         //Loop over the elements
 
@@ -1476,46 +1566,10 @@ namespace volumeReconstruction{
         uIntType ngx = _gridLocations[ 0 ].size( );
         uIntType ngy = _gridLocations[ 1 ].size( );
         uIntType ngz = _gridLocations[ 2 ].size( );
+        uIntType nodeID;
+        uIntVector pointIndices;
 
-        for ( uIntType i = 1; i < ngx - 2; i++ ){
-
-            for ( uIntType j = 1; j < ngy - 2; j++ ){
-
-                for ( uIntType k = 1; k < ngz - 2; k++ ){
-
-                    //Get the element contribution to the nodal values of the implicit function
-                    elementIndices = { i, j, k };
-                    error = processBackgroundGridElementImplicitFunction( elementIndices, elementNodalContributions,
-                                                                          globalNodeIds, pointCounts );
-
-                    if ( error ){
-
-                        errorOut result = new errorNode( "projectImplicitFunctionToBackgroundGrid",
-                                                         "Error in processing the projection of the implicit function to the nodes for the element with the lower cornrer of indices i, j, k: "
-                                                       + std::to_string( i ) + ", "
-                                                       + std::to_string( j ) + ", "
-                                                       + std::to_string( k ) );
-
-                        result->addNext( error );
-                        return result;
-
-                    }
-
-                    for ( uIntType i = 0; i < globalNodeIds.size( ); i++ ){
-
-                        //Add those values to the grid
-                        _implicitFunctionValues[ globalNodeIds[ i ] ] += elementNodalContributions[ i ];
-    
-                        //Add the point counts
-                        gridPointCounts[ globalNodeIds[ i ] ] += pointCounts[ i ];
-
-                    }
-
-                }
-
-            }
-
-        }
+        floatVector node_x( _dim, 0 );
 
         for ( uIntType i = 1; i < ngx - 1; i++ ){
 
@@ -1523,18 +1577,97 @@ namespace volumeReconstruction{
 
                 for ( uIntType k = 1; k < ngz - 1; k++ ){
 
-                    if ( gridPointCounts[ ngy * ngz * i + ngz * j + k ] > 0 ){
+                    // Get the node ID
+                    nodeID = ngy * ngz * i + ngz * j + k;
 
-                        _implicitFunctionValues[ ngy * ngz * i + ngz * j + k ] /=
-                            ( floatType )gridPointCounts[ ngy * ngz * i + ngz * j + k ];
+                    node_x = { _gridLocations[ 0 ][ i ], _gridLocations[ 1 ][ j ], _gridLocations[ 2 ][ k ] };
+
+                    // Find the points within the critical radius
+                    pointIndices.clear( );
+                    _pointTree.getPointsWithinRadiusOfOrigin( node_x, _critical_radius, pointIndices );
+
+                    for ( auto pI = pointIndices.begin( ); pI != pointIndices.end( ); pI++ ){
+
+                        floatType value;
+
+                        floatVector xi( getPoints( )->begin( ) + *pI, getPoints( )->begin( ) + *pI + _dim );
+
+                        error = rbf( xi, node_x, _length_scale, value );
+
+                        if ( error ){
+
+                            errorOut result = new errorNode( __func__, "Error in the computation of the radial basis function" );
+
+                            result->addNext( error );
+
+                            return result;
+
+                        }
+
+//                        std::cerr << value << " ";
+
+                        _implicitFunctionValues[ nodeID ] += value;
+
+//                        std::cout << "value: " << value << "\n";
 
                     }
+
+//                    std::cerr << "if: " << _implicitFunctionValues[ nodeID ] << "\n";
+//
+//                    return new errorNode( __func__, "derp" );
+// 
+//                    //Get the element contribution to the nodal values of the implicit function
+//                    elementIndices = { i, j, k };
+//                    error = processBackgroundGridElementImplicitFunction( elementIndices, elementNodalContributions,
+//                                                                          globalNodeIds, pointCounts );
+//
+//                    if ( error ){
+//
+//                        errorOut result = new errorNode( "projectImplicitFunctionToBackgroundGrid",
+//                                                         "Error in processing the projection of the implicit function to the nodes for the element with the lower cornrer of indices i, j, k: "
+//                                                       + std::to_string( i ) + ", "
+//                                                       + std::to_string( j ) + ", "
+//                                                       + std::to_string( k ) );
+//
+//                        result->addNext( error );
+//                        return result;
+//
+//                    }
+//
+//                    for ( uIntType i = 0; i < globalNodeIds.size( ); i++ ){
+//
+//                        //Add those values to the grid
+//                        _implicitFunctionValues[ globalNodeIds[ i ] ] += elementNodalContributions[ i ];
+//    
+//                        //Add the point counts
+//                        gridPointCounts[ globalNodeIds[ i ] ] += pointCounts[ i ];
+//
+//                    }
 
                 }
 
             }
 
         }
+
+//        for ( uIntType i = 1; i < ngx - 1; i++ ){
+//
+//            for ( uIntType j = 1; j < ngy - 1; j++ ){
+//
+//                for ( uIntType k = 1; k < ngz - 1; k++ ){
+//
+//                    if ( gridPointCounts[ ngy * ngz * i + ngz * j + k ] > 0 ){
+//
+//                        _implicitFunctionValues[ ngy * ngz * i + ngz * j + k ] /=
+//                            ( floatType )gridPointCounts[ ngy * ngz * i + ngz * j + k ];
+//
+//                    }
+//
+//                }
+//
+//            }
+//
+//        }
 
         _implicitFunctionValues -= _isosurfaceCutoff;
 
@@ -1621,6 +1754,35 @@ namespace volumeReconstruction{
 
     }
 
+    errorOut dualContouring::rbf( const floatVector &x, const floatVector &x0, const floatType &ls, floatType &val ){
+        /*!
+         * Compute the radial basis function around the provided point. The form of the function is:
+         * 
+         * v = exp(-(r / (2 * ls) )**2 )
+         * 
+         * where
+         * 
+         * r = ||x - x0||
+         * 
+         * :param const floatVector &x: The point at which to compute the radial basis function
+         * :param const floatVector &x0: The reference point for the radial basis function
+         * :param const floatType &ls: The lengthscale
+         * :param floatType &val: The value of the radial basis function
+         */
+
+        if ( x.size( ) != x0.size( ) ){
+
+            return new errorNode( __func__, "The size of x (" + std::to_string( x.size( ) ) + ") and x0 ( " + std::to_string( x0.size( ) ) + ") are not the same" );
+
+        }
+
+        floatType r = vectorTools::l2norm(x - x0);
+        val = std::exp( -std::pow( r / ( 2 * ls ), 2 ) );
+
+        return NULL;
+
+    }
+
     errorOut dualContouring::processBackgroundGridElementImplicitFunction( const uIntVector &indices,
                                                                            floatVector &implicitFunctionNodalValues,
                                                                            uIntVector  &globalNodeIDs,
@@ -1677,6 +1839,8 @@ namespace volumeReconstruction{
         floatVector distances( element->nodes.size( ) );
         floatVector p;
 
+        uIntType ngy = _gridLocations[ 1 ].size( );
+        uIntType ngz = _gridLocations[ 2 ].size( );
         floatType minDistance;
 
         for ( auto pI = pointIndices.begin( ); pI != pointIndices.end( ); pI++ ){
@@ -1809,7 +1973,7 @@ namespace volumeReconstruction{
                         if ( std::any_of( cellValues.begin( ), cellValues.end( ),
                                           []( floatType v ){ return v <= 0; } ) ){
 
-                            //The cell is on the surface of the body
+                            //The cell is on a surface of the body
                             _boundaryCells.push_back( ngy * ngz * i + ngz * j + k );
 
                         }
@@ -2733,105 +2897,133 @@ namespace volumeReconstruction{
 
             }
 
-            upperBounds = *getUpperBounds( );
-            lowerBounds = *getLowerBounds( );
+            for ( auto node = element->nodes.begin( ); node != element->nodes.end( ); node++ ){
 
-            //Find the points inside of this element
-            internalPoints.clear( );
-            _pointTree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], internalPoints,
-                                         &upperBounds, &lowerBounds );
+                uIntType   globalNodeID = element->global_node_ids[ node - element->nodes.begin( ) ];
+                uIntVector internalNodes;
+                _pointTree.getPointsWithinRadiusOfOrigin( *node, _critical_radius, internalNodes );
 
-            //Loop over the points adding their contributions to the function at the current grid points
+                for ( auto iN = internalNodes.begin( ); iN != internalNodes.end( ); iN++ ){
 
-            std::vector< bool > isDuplicate( internalPoints.size( ), false );
-            floatVector meanFunctionValue( functionDim, 0 );
-            uIntType numPoints = 0;
-            for ( auto p = internalPoints.begin( ); p != internalPoints.end( ); p++ ){
+                    functionValue = floatVector( functionValuesAtPoints.begin( ) + ( *iN / _dim + 0 ) * functionDim,
+                                                 functionValuesAtPoints.begin( ) + ( *iN / _dim + 1 ) * functionDim );
 
-                unsigned int pindex = p - internalPoints.begin( );
+                    pointPosition = floatVector( _points->begin( ) + *iN,
+                                                 _points->begin( ) + *iN + _dim );
 
-                if ( isDuplicate[ pindex ] ){
-                    continue;
-                }
+                    floatType value;
+                    rbf( *node, pointPosition, _length_scale, value );
 
-                unsigned int duplicate_count = 0;
+                    functionAtGrid[ globalNodeID ] += value * functionValue;
 
-                //Get the function value at the current point
-                functionValue = floatVector( functionValuesAtPoints.begin( ) + ( *p / _dim + 0 ) * functionDim,
-                                             functionValuesAtPoints.begin( ) + ( *p / _dim + 1 ) * functionDim );
+                    weights[ globalNodeID ] += value;
 
-                pointPosition = floatVector( _points->begin( ) + *p,
-                                             _points->begin( ) + *p + _dim );
-
-                // Check if any of the remaining points are duplicates
-                for ( auto q = internalPoints.begin( ) + pindex + 1; q != internalPoints.end( ); q++ ){
-
-                    unsigned int qindex = q - internalPoints.begin( );
-
-                    floatVector q_pointPosition = floatVector( _points->begin( ) + *q,
-                                                               _points->begin( ) + *q + _dim );
-
-                    if ( vectorTools::l2norm( pointPosition - q_pointPosition ) < _absoluteTolerance ){
-
-                        isDuplicate[ qindex ] = true;
-
-                        functionValue += floatVector( functionValuesAtPoints.begin( ) + ( *q / _dim + 0 ) * functionDim,
-                                                      functionValuesAtPoints.begin( ) + ( *q / _dim + 1 ) * functionDim );
-
-                        duplicate_count++;
-
-                    }
-
-                }
-
-                functionValue /= ( duplicate_count + 1 );
-
-                //Get the local coordinates of the point
-                if ( usePointwiseProjection ){
-
-                    error = element->compute_local_coordinates( pointPosition, localCoordinates );
-
-                    if ( error ){
-
-                        errorOut result = new errorNode( __func__,
-                                                         "Error in the computation of the local coordinates" );
-                        result->addNext( error );
-                        return result;
-
-                    }
-
-                    //Get the shape function values at the point
-                    error = element->get_shape_functions( localCoordinates, shapeFunctions );
-
-                    if ( error ){
-                    
-                        errorOut result = new errorNode( __func__, "Error in the computation of the shape functions" );
-                        result->addNext( error );
-                        return result;
-                    }
-
-                }
-
-                //Compute the contribution of the nodes to the background grid
-
-                if ( usePointwiseProjection ){
-                    for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
-                        functionAtGrid[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ] * functionValue;
-                        weights[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ];
-                    }
-                }
-                else{
-                    meanFunctionValue += functionValue;
-                    numPoints++;
                 }
 
             }
-            if ( ( !usePointwiseProjection ) && ( internalPoints.size( ) > 0 ) ){
-                for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
-                    functionAtGrid[ *nID ] += meanFunctionValue / std::fmax( ( floatType )numPoints, 1 );
-                    weights[ *nID ] += 1;
-                }
-            }
+
+//            getPointsWithinRadiusOfOrigin( currentSeedPoint, minDistance, internalNodes )
+//
+//
+//            upperBounds = *getUpperBounds( );
+//            lowerBounds = *getLowerBounds( );
+//
+//            //Find the points inside of this element
+//            internalPoints.clear( );
+//            _pointTree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], internalPoints,
+//                                         &upperBounds, &lowerBounds );
+//
+//            //Loop over the points adding their contributions to the function at the current grid points
+//
+//            std::vector< bool > isDuplicate( internalPoints.size( ), false );
+//            floatVector meanFunctionValue( functionDim, 0 );
+//            uIntType numPoints = 0;
+//            for ( auto p = internalPoints.begin( ); p != internalPoints.end( ); p++ ){
+//
+//                unsigned int pindex = p - internalPoints.begin( );
+//
+//                if ( isDuplicate[ pindex ] ){
+//                    continue;
+//                }
+//
+//                unsigned int duplicate_count = 0;
+//
+//                //Get the function value at the current point
+//                functionValue = floatVector( functionValuesAtPoints.begin( ) + ( *p / _dim + 0 ) * functionDim,
+//                                             functionValuesAtPoints.begin( ) + ( *p / _dim + 1 ) * functionDim );
+//
+//                pointPosition = floatVector( _points->begin( ) + *p,
+//                                             _points->begin( ) + *p + _dim );
+//
+//                // Check if any of the remaining points are duplicates
+//                for ( auto q = internalPoints.begin( ) + pindex + 1; q != internalPoints.end( ); q++ ){
+//
+//                    unsigned int qindex = q - internalPoints.begin( );
+//
+//                    floatVector q_pointPosition = floatVector( _points->begin( ) + *q,
+//                                                               _points->begin( ) + *q + _dim );
+//
+//                    if ( vectorTools::l2norm( pointPosition - q_pointPosition ) < _absoluteTolerance ){
+//
+//                        isDuplicate[ qindex ] = true;
+//
+//                        functionValue += floatVector( functionValuesAtPoints.begin( ) + ( *q / _dim + 0 ) * functionDim,
+//                                                      functionValuesAtPoints.begin( ) + ( *q / _dim + 1 ) * functionDim );
+//
+//                        duplicate_count++;
+//
+//                    }
+//
+//                }
+//
+//                functionValue /= ( duplicate_count + 1 );
+//
+//                //Get the local coordinates of the point
+//                if ( usePointwiseProjection ){
+//
+//                    error = element->compute_local_coordinates( pointPosition, localCoordinates );
+//
+//                    if ( error ){
+//
+//                        errorOut result = new errorNode( __func__,
+//                                                         "Error in the computation of the local coordinates" );
+//                        result->addNext( error );
+//                        return result;
+//
+//                    }
+//
+//                    //Get the shape function values at the point
+//                    error = element->get_shape_functions( localCoordinates, shapeFunctions );
+//
+//                    if ( error ){
+//                    
+//                        errorOut result = new errorNode( __func__, "Error in the computation of the shape functions" );
+//                        result->addNext( error );
+//                        return result;
+//                    }
+//
+//                }
+//
+//                //Compute the contribution of the nodes to the background grid
+//
+//                if ( usePointwiseProjection ){
+//                    for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+//                        functionAtGrid[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ] * functionValue;
+//                        weights[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ];
+//                    }
+//                }
+//                else{
+//                    meanFunctionValue += functionValue;
+//                    numPoints++;
+//                }
+//
+//            }
+//            if ( ( !usePointwiseProjection ) && ( internalPoints.size( ) > 0 ) ){
+//                for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
+//                    functionAtGrid[ *nID ] += meanFunctionValue / std::fmax( ( floatType )numPoints, 1 );
+//                    weights[ *nID ] += 1;
+//                }
+//            }
         }
 
         //Normalize the weights by the shape function values

@@ -112,6 +112,7 @@ namespace volumeReconstruction{
 
             const floatVector *getLowerBounds( );
             const floatVector *getUpperBounds( );
+            const floatType   *getMedianNeighborhoodDistance( );
 
             //Required overloads
             virtual errorOut evaluate( );
@@ -179,6 +180,9 @@ namespace volumeReconstruction{
             floatType _functionValue = 1;
             const floatVector *_functionValues = NULL;
             uIntType _nPoints;
+            uIntType _nNeighborhoodPoints;
+            floatType _length_scale = 1;
+            floatType _critical_radius = 1;
 
             
 
@@ -189,9 +193,11 @@ namespace volumeReconstruction{
             std::shared_ptr< volumeReconstructionBase > create( const std::string &type );
             floatVector _upperBounds;
             floatVector _lowerBounds;
+            floatType _medianNeighborhoodDistance;
 
             errorOut setInterpolationConfiguration( );
             errorOut computeGeometryInformation( );
+            errorOut computeMedianNeighborhoodDistance( );
     };
 
     //Dual contouring class
@@ -260,6 +266,7 @@ namespace volumeReconstruction{
                                                     const floatVector *subdomainWeights = NULL, const floatVector *macroNormal = NULL,
                                                     const bool useMacroNormal = false );
 
+            errorOut rbf( const floatVector &x, const floatVector &x0, const floatType &ls, floatType &val );
 
         private:
 

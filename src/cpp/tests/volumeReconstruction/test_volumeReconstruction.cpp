@@ -957,9 +957,11 @@ int test_dualContouring_evaluate( std::ofstream &results ){
 
     const floatVector lowerBoundsAnswer = { -0.95963138, -0.98616276, -0.99593042 };
 
+    const floatType medianNeighborhoodDistanceAnswer = 0.398116;
 
     const floatVector* upperBoundsResult = dc.getUpperBounds( );
     const floatVector* lowerBoundsResult = dc.getLowerBounds( );
+    const floatType*   medianNeighborhoodDistanceResult = dc.getMedianNeighborhoodDistance( );
 
     if ( !vectorTools::fuzzyEquals( *upperBoundsResult, upperBoundsAnswer ) ){
         vectorTools::print( *upperBoundsResult );
@@ -970,6 +972,12 @@ int test_dualContouring_evaluate( std::ofstream &results ){
     if ( !vectorTools::fuzzyEquals( *lowerBoundsResult, lowerBoundsAnswer ) ){
         vectorTools::print( *lowerBoundsResult );
         results << "test_dualContouring_evaluate (test 2) & False\n";
+        return 1;
+    }
+
+    if ( !vectorTools::fuzzyEquals( *medianNeighborhoodDistanceResult, medianNeighborhoodDistanceAnswer ) ){
+        std::cout << *medianNeighborhoodDistanceResult << "\n";
+        results << "test__dualContouring_evaluate (test 3) & False\n";
         return 1;
     }
 
@@ -1195,7 +1203,7 @@ int test_dualContouring_performVolumeIntegration( std::ofstream &results ){
     }
 
     floatVector integratedVolumeResult;
-    floatVector integratedVolumeAnswer = { 7.4237149, 14.8474298, 22.2711447 };
+    floatVector integratedVolumeAnswer = { 7.3038, 14.6076, 21.9114 };
 
     error = dc.performVolumeIntegration( functionValues, 3, integratedVolumeResult );
 
@@ -1319,9 +1327,9 @@ int test_dualContouring_performRelativePositionVolumeIntegration( std::ofstream 
     }
 
     floatVector integratedVolumeResult;
-    floatVector integratedVolumeAnswer = { 0.133381, -0.073798,  0.456491,
-                                           0.266761, -0.147596,  0.91298 ,
-                                           0.400142, -0.221394,  1.369474 };
+    floatVector integratedVolumeAnswer = { 0.40829463, -0.16025805, -0.1692656 ,
+                                           0.81658925, -0.3205161 , -0.33853119,
+                                           1.22488388, -0.48077415, -0.50779679 };
 
     floatVector origin = { 0., 0., 0. };
 
@@ -1446,7 +1454,7 @@ int test_dualContouring_performSurfaceIntegration( std::ofstream &results ){
     }
 
     floatVector integratedSurfaceResult;
-    floatVector integratedSurfaceAnswer = { 23.4326, 46.8652, 70.2978 };
+    floatVector integratedSurfaceAnswer = { 23.0831349 , 46.16626979, 69.24940469 };
 
     error = dc.performSurfaceIntegration( functionValues, 3, integratedSurfaceResult );
 
@@ -1567,7 +1575,7 @@ int test_dualContouring_performPositionWeightedSurfaceIntegration( std::ofstream
     }
 
     floatVector integratedSurfaceResult;
-    floatVector integratedSurfaceAnswer = { 0.257597, 0.0470696, -0.109122 };
+    floatVector integratedSurfaceAnswer = { 0.457868, 0.186391, 0.0244093 };
 
     error = dc.performPositionWeightedSurfaceIntegration( functionValues, 1, integratedSurfaceResult );
 
@@ -1580,7 +1588,7 @@ int test_dualContouring_performPositionWeightedSurfaceIntegration( std::ofstream
     if ( !vectorTools::fuzzyEquals( integratedSurfaceResult, integratedSurfaceAnswer ) ){
         vectorTools::print( integratedSurfaceResult );
         vectorTools::print( integratedSurfaceResult - integratedSurfaceAnswer );
-        assert( 1 == 0 );
+//        assert( 1 == 0 );
         results << "test_dualContouring_performPositionWeightedSurfaceIntegration (test 1) & False\n";
         return 1;
     }
@@ -1821,7 +1829,7 @@ int test_dualContouring_performRelativePositionSurfaceFluxIntegration( std::ofst
     }
 
     floatVector integratedSurfaceResult;
-    floatVector integratedSurfaceAnswer = { 7.48955819, 22.47199508, 37.44446021, 14.97911639, 29.96155038, 44.93402134 };
+    floatVector integratedSurfaceAnswer = { 7.46626269, 22.40360861, 37.32637637, 14.93251827, 29.87040583, 44.79207794 };
     floatVector origin = { 0., 0., 0. };
 
     error = dc.performRelativePositionSurfaceFluxIntegration( functionValues, 6, origin, integratedSurfaceResult );
@@ -1974,20 +1982,20 @@ int test_dualContouring_getSurfaceSubdomains( std::ofstream &results ){
         return 1;
     }
 
-    uIntVector subdomainNodeCountAnswer = { 7, 7, 7, 8, 7, 7, 8, 7 };
+    uIntVector subdomainNodeCountAnswer = { 7, 7, 7, 8, 7, 7, 7, 8 };
 
-    uIntVector subdomainNodesAnswer = { 0,  1,  5,  6, 25,
-                                       26, 30, 60, 65, 66,
+    uIntVector subdomainNodesAnswer = { 1,  5,  6, 25, 26,
+                                       30, 31, 60, 65, 66,
                                        85, 86, 90, 91, 50,
                                        51, 55, 75, 76, 80,
                                        81, 62, 63, 67, 68,
-                                       87, 88, 92, 93, 10,
-                                       11, 15, 16, 35, 40,
-                                       41,  2,  3,  7,  8,
-                                       27, 28, 33, 12, 13,
-                                       17, 18, 37, 38, 42,
-                                       43, 52, 53, 58, 77,
-                                       78, 82, 83 };
+                                       87, 88, 92, 93, 52,
+                                       53, 58, 77, 78, 82,
+                                       83, 2, 3, 7, 8, 27,
+                                       28, 33, 10, 11, 15,
+                                       16, 35, 40, 41, 12,
+                                       13, 17, 18, 37, 38,
+                                       42, 43 };
 
     uIntVector subdomainNodeCountResult;
     uIntVector subdomainNodesResult;
@@ -2123,8 +2131,8 @@ int test_dualContouring_getBoundaryInformation( std::ofstream &results ){
     const uIntVector boundaryCellsAnswer
         =
         {
-             0,  1,  2,  3,  5,  6,  7,  8, 10, 11, 12, 13, 15, 16, 17, 18, 25,
-            26, 27, 28, 30, 33, 35, 37, 38, 40, 41, 42, 43, 50, 51, 52, 53, 55,
+             1,  2,  3,  5,  6,  7,  8, 10, 11, 12, 13, 15, 16, 17, 18, 25, 26,
+            27, 28, 30, 31, 33, 35, 37, 38, 40, 41, 42, 43, 50, 51, 52, 53, 55,
             58, 60, 62, 63, 65, 66, 67, 68, 75, 76, 77, 78, 80, 81, 82, 83, 85,
             86, 87, 88, 90, 91, 92, 93
         };
@@ -2132,35 +2140,35 @@ int test_dualContouring_getBoundaryInformation( std::ofstream &results ){
     const floatVector boundaryPointsAnswer
         =
         {
-            -0.960002, -0.986542, -0.996311, -0.96004 , -0.98658 , -0.49883 ,
-            -0.96004 , -0.98658 ,  0.495371, -0.960002, -0.986542,  0.992852,
-            -0.96004 , -0.490606, -0.996349, -0.960117, -0.490606, -0.49883 ,
-            -0.960117, -0.490606,  0.495371, -0.96004 , -0.490606,  0.99289 ,
-            -0.96004 ,  0.500508, -0.996349, -0.960117,  0.500508, -0.49883 ,
-            -0.960117,  0.500508,  0.495371, -0.96004 ,  0.500508,  0.99289 ,
-            -0.960002,  0.996444, -0.996311, -0.96004 ,  0.996482, -0.49883 ,
-            -0.96004 ,  0.996482,  0.495371, -0.960002,  0.996444,  0.992852,
-            -0.47429 , -0.98658 , -0.996349, -0.47429 , -0.986658, -0.49883 ,
-            -0.47429 , -0.986658,  0.495371, -0.47429 , -0.98658 ,  0.99289 ,
-            -0.47429 , -0.490606, -0.996428, -0.47429 , -0.490606,  0.992969,
-            -0.47429 ,  0.500508, -0.996428, -0.359348,  0.616812,  0.61188 ,
-            -0.474518,  0.50028 ,  0.992869, -0.47429 ,  0.996482, -0.996349,
-            -0.47429 ,  0.996561, -0.49883 , -0.474517,  0.996461,  0.495143,
-            -0.474541,  0.996424,  0.992832,  0.496394, -0.98658 , -0.996349,
-             0.496394, -0.986658, -0.49883 ,  0.496394, -0.986658,  0.495371,
-             0.496394, -0.98658 ,  0.99289 ,  0.496394, -0.490606, -0.996428,
-             0.496394, -0.490606,  0.992969,  0.496394,  0.500508, -0.996428,
-             0.381452,  0.616812,  0.61188 ,  0.496622,  0.50028 ,  0.992869,
-             0.496394,  0.996482, -0.996349,  0.496394,  0.996561, -0.49883 ,
-             0.496621,  0.996461,  0.495143,  0.496645,  0.996424,  0.992832,
-             0.982106, -0.986542, -0.996311,  0.982144, -0.98658 , -0.49883 ,
-             0.982144, -0.98658 ,  0.495371,  0.982106, -0.986542,  0.992852,
-             0.982144, -0.490606, -0.996349,  0.982221, -0.490606, -0.49883 ,
-             0.982221, -0.490606,  0.495371,  0.982144, -0.490606,  0.99289 ,
-             0.982144,  0.500508, -0.996349,  0.982221,  0.500508, -0.49883 ,
-             0.982221,  0.500508,  0.495371,  0.982144,  0.500508,  0.99289 ,
-             0.982106,  0.996444, -0.996311,  0.982144,  0.996482, -0.49883 ,
-             0.982144,  0.996482,  0.495371,  0.982106,  0.996444,  0.992852
+           -0.960043, -0.986584, -0.498505, -0.960087, -0.986627,  0.495344,
+           -0.959999, -0.986539,  0.992849, -0.960042, -0.490286, -0.996352,
+           -0.960101, -0.490187, -0.498404, -0.960222, -0.490615,  0.495382,
+           -0.960096, -0.490566,  0.992947, -0.960093,  0.50049 , -0.996402,
+           -0.960221,  0.500524, -0.498846, -0.960212,  0.500493,  0.495361,
+           -0.960075,  0.500415,  0.992926, -0.96001 ,  0.996452, -0.996319,
+           -0.960095,  0.996538, -0.49881 , -0.960068,  0.99651 ,  0.4953  ,
+           -0.959965,  0.996408,  0.992816, -0.474175, -0.986514, -0.996283,
+           -0.47415 , -0.986614, -0.498403, -0.47429 , -0.986764,  0.495373,
+           -0.474238, -0.986642,  0.992953, -0.474138, -0.490196, -0.996373,
+           -0.574728, -0.762734, -0.776071, -0.474284, -0.490601,  0.993077,
+           -0.474296,  0.500503, -0.996486, -0.427896,  0.774178,  0.710724,
+           -0.474471,  0.499601,  0.992919, -0.474295,  0.996481, -0.996348,
+           -0.474299,  0.996626, -0.498818, -0.474466,  0.996504,  0.494676,
+           -0.474429,  0.996396,  0.992804,  0.496426, -0.986623, -0.996392,
+            0.496411, -0.986766, -0.498792,  0.496403, -0.986799,  0.495384,
+            0.496396, -0.986689,  0.992999,  0.496397, -0.490601, -0.996524,
+            0.496396, -0.490618,  0.993112,  0.496436,  0.500485, -0.996544,
+            0.437257,  0.774694,  0.722587,  0.496609,  0.499489,  0.992935,
+            0.496551,  0.99656 , -0.996427,  0.496438,  0.996688, -0.498803,
+            0.496616,  0.996525,  0.49451 ,  0.496548,  0.996411,  0.992819,
+            0.982202, -0.986638, -0.996407,  0.982268, -0.986705, -0.498835,
+            0.982259, -0.986696,  0.495374,  0.982185, -0.986621,  0.992931,
+            0.982271, -0.490612, -0.996478,  0.982375, -0.490623, -0.498845,
+            0.982374, -0.490623,  0.495383,  0.982268, -0.490606,  0.993016,
+            0.982311,  0.500502, -0.996518,  0.982401,  0.500509, -0.49884 ,
+            0.982354,  0.500454,  0.495303,  0.982212,  0.500354,  0.99296 ,
+            0.982283,  0.996623, -0.99649 ,  0.982323,  0.996664, -0.498832,
+            0.982217,  0.996556,  0.495166,  0.982088,  0.996427,  0.992835
         };
 
     const uIntVector *boundaryCellsResult = dc.getBoundaryIDs( );
