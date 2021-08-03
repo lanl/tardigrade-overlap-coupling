@@ -1094,25 +1094,53 @@ namespace volumeReconstruction{
          */
 
         //Get the domain bounding box
+
         _upperBounds.resize( _dim );
         _lowerBounds.resize( _dim );
+    
+        if ( _localDomain ){
 
-        for ( uIntType i = 0; i < _dim; i++ ){
+            if ( ( *_localDomain )->local_node_coordinates[ 0 ].size( ) != _dim ){
 
-            _upperBounds[ i ] = _pointTree.getMaximumValueDimension( i );
-            _lowerBounds[ i ] = _pointTree.getMinimumValueDimension( i );
+                return new errorNode( __func__, "The local coordinates of the domain must have the same dimension at the global coordinates" );
+
+            }
+
+            for ( uIntType i = 0; i < _dim; i++ ){
+
+                _upperBounds[ i ] = ( *_localDomain )->local_node_coordinates[ 0 ][ i ];
+                _lowerBounds[ i ] = ( *_localDomain )->local_node_coordinates[ 0 ][ i ];
+
+                for ( uIntType n = 1; n < ( *_localDomain )->local_node_coordinates.size( ); n++ ){
+
+                    _upperBounds[ i ] = std::fmax( ( *_localDomain )->local_node_coordinates[ n ][ i ], _upperBounds[ i ] );
+                    _lowerBounds[ i ] = std::fmin( ( *_localDomain )->local_node_coordinates[ n ][ i ], _lowerBounds[ i ] );
+
+                }
+
+            }
 
         }
+        else{
 
-        errorOut error = computeMedianNeighborhoodDistance( );
-
-        if ( error ){
-
-            errorOut result = new errorNode( __func__, "Error in computing the median neighborhood distance" );
-
-            result->addNext( error );
-
-            return result;
+            for ( uIntType i = 0; i < _dim; i++ ){
+    
+                _upperBounds[ i ] = _pointTree.getMaximumValueDimension( i );
+                _lowerBounds[ i ] = _pointTree.getMinimumValueDimension( i );
+    
+            }
+    
+            errorOut error = computeMedianNeighborhoodDistance( );
+    
+            if ( error ){
+    
+                errorOut result = new errorNode( __func__, "Error in computing the median neighborhood distance" );
+    
+                result->addNext( error );
+    
+                return result;
+    
+            }
 
         }
         
