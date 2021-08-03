@@ -5259,6 +5259,25 @@ namespace overlapCoupling{
  
         }
 
+        //Compute the macro-domain's surface planes in the current configuration
+        floatMatrix surfacePoints( element->local_surface_points.size( ), floatVector( _dim, 0 ) );
+
+        floatMatrix surfaceNormals( element->local_surface_normals.size( ), floatVector( _dim, 0 ) );
+
+        for ( unsigned int i = 0; i < element->local_surface_normals.size( ), floatVector( _dim, 0 ) ){
+
+            floatVector lN = element->local_surface_normals[ i ];
+
+            floatVector lP = element->local_surface_points[ i ];
+
+            element->transform_local_vector( lP, lN, surfaceNormals[ i ], true );
+
+            surfaceNormals[ i ] /= vectorTools::l2norm( surfaceNormals[ i ] );
+
+            element->interpolate( element->nodes, lP, surfacePoints[ i ] );
+
+        }
+
         //Reset micro domain nodes
         microDomainNodes = interiorNodes;
 
@@ -5287,6 +5306,20 @@ namespace overlapCoupling{
             errorOut result = new errorNode( __func__,
                                              "Error in loading the micro-scale points for " + microDomainName );
             result->addNext( error );
+            return result;
+
+        }
+
+        //Add the element's bounding planes
+        error = reconstructedVolume->addBoundingPlanes( surfacePoints, surfaceNormals );
+
+        if ( error ){
+
+            errorOut result = new errorNode( __func__,
+                                             "Error in loading the boundary planes for " + microDomainName );
+
+            result->addNext( error );
+
             return result;
 
         }
