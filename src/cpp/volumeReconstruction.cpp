@@ -1212,6 +1212,55 @@ namespace volumeReconstruction{
         return;
     }
 
+    errorOut volumeReconstructionBase::addBoundingPlanes( const floatMatrix &boundingPoints, const floatMatrix &boundingNormals ){
+        /*!
+         * Add planes which bound the domain. These planes MUST NOT form a concave surface!
+         * 
+         * :param const floatMatrix &boundingPoints: The points on the surfaces of the bounding planes
+         * :param const floatMatrix &boundingNormals: The normals which define the bounding planes
+         */
+
+        if ( boundingPoints.size( ) != boundingNormals.size( ) ){
+
+            return new errorNode( __func__, "The bounding points and bounding normals have different sizes" );
+
+        }
+
+        _boundingPlanes.clear( );
+        _boundingPlanes.reserve( boundingPoints.size( ) );
+
+        for ( uIntType i = 0; i < boundingPoints.size( ); i++ ){
+
+            if ( boundingPoints[ i ].size( ) != _dim ){
+
+                std::string message = "The point on bounding plane " + std::to_string( i ) + " has a dimension of "
+                                    + std::to_string( boundingPoints[ i ].size( ) ) + " which is not equal to the dimension ( "
+                                    + std::to_string( _dim ) + ")";
+
+                return new errorNode( __func__, message );
+
+            }
+
+            if ( boundingNormals[ i ].size( ) != _dim ){
+
+                std::string message = "The normal on bounding plane " + std::to_string( i ) + " has a dimension of "
+                                    + std::to_string( boundingNormals[ i ].size( ) ) + " which is not equal to the dimension ( "
+                                    + std::to_string( _dim ) + ")";
+
+                return new errorNode( __func__, message );
+
+            }
+
+            _boundingPlanes.push_back( std::pair< floatVector, floatVector >( boundingPoints[ i ], boundingNormals[ i ] / vectorTools::l2norm( boundingNormals[ i ] ) ) );
+
+        }
+
+        _boundingSurfaces = true;
+
+        return NULL;
+
+    }
+
     const uIntVector *volumeReconstructionBase::getBoundaryIDs( ){
         /*!
          * Get a constant reference to the collection of boundary point ids
@@ -1338,22 +1387,47 @@ namespace volumeReconstruction{
 
         if ( !_config[ "interpolation" ][ "discretization_count" ] ){
 
-            floatVector delta = *getUpperBounds( ) - *getLowerBounds( );
-            floatVector _discretization_count = ( delta / *getMedianNeighborhoodDistance( ) );
+            if ( !_config[ "interpolation" ][ "grid_factor" ] ){
 
-            uIntVector discretization_count( _dim, 0 );
-            for ( unsigned int i = 0; i < _dim; i++ ){
-                discretization_count[ i ] = ( uIntType )( _discretization_count[ i ] );
+                _config[ "interpolation" ][ "grid_factor" ] = 1;
+
             }
 
-            _config[ "interpolation" ][ "discretization_count" ]
-                = std::max( ( uIntType )( std::pow( ( floatType )_nPoints, 1. / 3. ) / _minPointsPerCell ), ( uIntType )1 );
+            floatType grid_factor;
+            if ( !_config[ "interpolation" ][ "grid_factor" ].IsScalar( ) ){
+
+                return new errorNode( __func__, "The interpolation's 'grid_factor' must be a scalar" );
+
+            }
+
+            grid_factor = _config[ "interpolation" ][ "grid_factor" ].as< floatType >( );
+
+            if ( grid_factor < 0 ){
+
+                return new errorNode( __func__, "interpolation's 'grid_factor' must be positive!" );
+
+            }
+
+            floatVector delta = *getUpperBounds( ) - *getLowerBounds( );
+
+            floatVector _discretization_count = ( grid_factor * delta / *getMedianNeighborhoodDistance( ) );
+
+            uIntVector discretization_count( _dim, 0 );
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                discretization_count[ i ] = ( uIntType )( _discretization_count[ i ] );
+
+            }
+
+            _config[ "interpolation" ][ "discretization_count" ] = discretization_count;
 
         }
 
         if ( _config[ "interpolation" ][ "discretization_count" ].IsScalar( ) ){
 
             uIntType v = _config[ "interpolation" ][ "discretization_count" ].as< uIntType >( );
+
             _domainDiscretization = { v, v, v };
 
         }
@@ -1592,7 +1666,7 @@ namespace volumeReconstruction{
 
                         floatVector xi( getPoints( )->begin( ) + *pI, getPoints( )->begin( ) + *pI + _dim );
 
-                        error = rbf( xi, node_x, _length_scale, value );
+                        error = rbf( node_x, xi, _length_scale, value );
 
                         if ( error ){
 
@@ -1776,8 +1850,107 @@ namespace volumeReconstruction{
 
         }
 
-        floatType r = vectorTools::l2norm(x - x0);
+        floatType r = vectorTools::l2norm( x - x0 );
         val = std::exp( -std::pow( r / ( 2 * ls ), 2 ) );
+
+        if ( _boundingSurfaces ){
+
+            for ( auto plane = _boundingPlanes.begin( ); plane != _boundingPlanes.end( ); plane++ ){
+
+                floatType d = vectorTools::dot( plane->second, x - plane->first );
+
+                if ( d >= 0 ){
+
+                    val = 0;
+
+                    return NULL;
+
+                }
+
+            }
+
+        }
+
+        return NULL;
+
+    }
+
+    errorOut dualContouring::grad_rbf( const floatVector &x, const floatVector &x0, const floatType &ls, floatVector &grad ){
+        /*!
+         * Compute the gradient of the radial basis function around the provided point. The form of the function is:
+         * 
+         * v = exp( -( r / ( 2 * ls ) )**2 )
+         * 
+         * where
+         * 
+         * r = ||x - x0||
+         * 
+         * Meaning the gradient is
+         * 
+         * dvdx = -( r / ( 2 * ls**2 ) ) * rbf( x ) * drdx
+         * 
+         * where
+         * 
+         * drdx = ( x - x0 ) / r
+         * 
+         * :param const floatVector &x: The point at which to compute the radial basis function
+         * :param const floatVector &x0: The reference point for the radial basis function
+         * :param const floatType &ls: The length scale
+         * :param floatVector &grad: The gradient of the radial basis function w.r.t. x
+         */
+
+        floatType r = vectorTools::l2norm( x - x0 );
+
+        if ( r < _absoluteTolerance ){
+
+            grad = floatVector( x.size( ), 0 );
+
+        }
+
+        floatType val;
+
+        errorOut error = rbf( x, x0, ls, val );
+
+        if ( error ){
+
+            errorOut result = new errorNode( __func__, "An error was encountered when evaluating the radial basis function for the gradient" );
+
+            result->addNext( error );
+
+            return result;
+
+        }
+
+        grad = -( r / ( 2 * std::pow( ls, 2 ) ) ) * val * ( x - x0 ) / r;
+
+        if ( _boundingSurfaces ){
+
+            bool isOutside = false;
+
+            for ( auto plane = _boundingPlanes.begin( ); plane != _boundingPlanes.end( ); plane++ ){
+
+                floatType d = vectorTools::dot( plane->second, x - plane->first );
+
+                if ( d >= 0 ){
+
+                    if ( isOutside ){
+
+                        grad -= plane->second;
+
+                    }
+                    else{
+
+                        grad = -plane->second;
+
+                        isOutside = true;
+
+                    }
+
+                }
+
+            }
+
+        }
 
         return NULL;
 
@@ -1806,7 +1979,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "processBackgroundGridElementImplicitFunction",
+            errorOut result = new errorNode( __func__,
                                              "Error in getting the element of the current grid indices" );
             result->addNext( error );
             return result;
@@ -1874,7 +2047,7 @@ namespace volumeReconstruction{
 
             if ( error ){
 
-                errorOut result = new errorNode( "processBackgroundGridElementImplicitFunction",
+                errorOut result = new errorNode( __func__,
                                                  "Error in getting the function value" );
                 result->addNext( error );
                 return result;
@@ -1902,7 +2075,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "initializeInternalAndBoundaryCells",
+            errorOut result = new errorNode( __func__,
                                              "Error when finding the internal and boundary cells" );
             result->addNext( error );
             return result;
@@ -1913,7 +2086,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeBoundaryPoints",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the boundary points" );
             result->addNext( error );
             return result;
@@ -1931,7 +2104,7 @@ namespace volumeReconstruction{
 
         if ( _dim != 3 ){
             
-            return new errorNode( "findInternalAndBoundaryCells", "This function requires that the dimension is 3D" );
+            return new errorNode( __func__, "This function requires that the dimension is 3D" );
 
         }
 
@@ -1996,7 +2169,7 @@ namespace volumeReconstruction{
 
         if ( _dim != 3 ){
 
-            return new errorNode( "computeBoundaryPoints", "This function requires that the dimension is 3D" );
+            return new errorNode( __func__, "This function requires that the dimension is 3D" );
 
         }
 
@@ -2038,7 +2211,7 @@ namespace volumeReconstruction{
         _boundaryEdges_z.clear( );        
         _boundaryEdges_z.reserve( 8 * _boundaryCells.size( ) ); //This is a worst case scenario
 
-        floatMatrix points, normals;
+        floatMatrix points, normals, localNormals;
         floatType m, b;
 
         floatVector rootNode;
@@ -2083,7 +2256,7 @@ namespace volumeReconstruction{
 
             if ( error ){
 
-                errorOut result = new errorNode( "computeBoundaryPoints",
+                errorOut result = new errorNode( __func__,
                                                  "Error in construction of the grid element" );
                 result->addNext( error );
                 return result;
@@ -2127,6 +2300,8 @@ namespace volumeReconstruction{
             points.reserve( _dim * edgeTransition.size( ) );
             normals.clear( );
             normals.reserve( _dim * edgeTransition.size( ) );
+            localNormals.clear( );
+            localNormals.reserve( _dim * edgeTransition.size( ) );
 
             for ( auto eT = edgeTransition.begin( ); eT != edgeTransition.end( ); eT++ ){
 
@@ -2140,31 +2315,30 @@ namespace volumeReconstruction{
                 uIntType i2 = edgeNodes[ 2 * ( eT - edgeTransition.begin( ) ) + 1 ];
                 uIntType i1 = edgeNodes[ 2 * ( eT - edgeTransition.begin( ) ) + 0 ];
 
-                for ( uIntType i = 0; i < _dim; i++ ){
+                floatType s = 0;
 
-                    if ( ( element->reference_nodes[ i2 ][ i ] - element->reference_nodes[ i1 ][ i ] ) < _absoluteTolerance ){
+                if ( std::fabs( cellValues[ i2 ] - cellValues[ i1 ] ) < _absoluteTolerance ){
 
-                        intersectionPoint[ i ] = element->reference_nodes[ i2 ][ i ];
-
-                    }
-                    else{
-
-                        m = ( cellValues[ i2 ] - cellValues[ i1 ] ) / ( element->reference_nodes[ i2 ][ i ] - element->reference_nodes[ i1 ][ i ] );
-                        b = cellValues[ i1 ] - m * element->reference_nodes[ i1 ][ i ];
-
-                        intersectionPoint[ i ] = -b / m;
-
-                    }
+                    s = 0.5;
 
                 }
+                else{
+
+                    s = -cellValues[ i1 ] / ( cellValues[ i2 ] - cellValues[ i1 ] );
+
+                }
+
+                intersectionPoint = ( element->reference_nodes[ i2 ] - element->reference_nodes[ i1 ] ) * s + element->reference_nodes[ i1 ];
 
                 //Compute the local coordinates of the intersection point
                 error = element->compute_local_coordinates( intersectionPoint, localIntersectionPoint );
 
                 if ( error ){
 
-                    errorOut result = new errorNode( "computeBoundaryPoints", "Error in computation of the local coordinates of the intersection point" );
+                    errorOut result = new errorNode( __func__, "Error in computation of the local coordinates of the intersection point" );
+
                     result->addNext( error );
+
                     return result;
 
                 }
@@ -2181,72 +2355,96 @@ namespace volumeReconstruction{
                 rj2 = ( element->global_node_ids[ i2 ] - ( ngy * ngz * ri2 ) ) / ngz;
                 rk2 = element->global_node_ids[ i2 ] - ngy * ngz * ri2 - ngz * rj2;
 
-                //Approximate the normal at the transition point
-                if ( cellValues[ i2 ] > cellValues[ i1 ] ){
+                //Compute the normal at the transition point
+                uIntVector supportingPoints;
 
-                    rootNode = element->reference_nodes[ i2 ];
-                    ri = ri2;
-                    rj = rj2;
-                    rk = rk2;
+                floatVector origin = intersectionPoint;
+
+                _pointTree.getPointsWithinRadiusOfOrigin( origin, _critical_radius, supportingPoints );
+
+                if ( supportingPoints.size( ) == 0 ){
+
+                    if ( cellValues[ i2 ] > cellValues[ i1 ] ){
+
+                        origin = element->reference_nodes[ i2 ];
+
+                    }
+                    else{
+
+                        origin = element->reference_nodes[ i1 ];
+
+                    }
+
+                    supportingPoints.clear( );
+
+                    _pointTree.getPointsWithinRadiusOfOrigin( origin, _critical_radius, supportingPoints );
+
+                }
+
+                floatVector gradient( _dim, 0 );
+
+                for ( auto sP = supportingPoints.begin( ); sP != supportingPoints.end( ); sP++ ){
+
+                    floatVector _grad;
+
+                    floatVector pi( getPoints( )->begin( ) + *sP, getPoints( )->begin( ) + *sP + _dim );
+
+                    error = grad_rbf( intersectionPoint, pi, _length_scale, _grad );
+
+                    if ( error ){
+
+                        errorOut result = new errorNode( __func__, "Error in computation of RBF gradient" );
+
+                        result->addNext( error );
+
+                        return result;
+
+                    }
+
+                    gradient += _grad;
+
+                }
+
+                normals.push_back( -gradient / vectorTools::l2norm( gradient ) );
+
+                // Put the normal into the local coordinate system
+
+                floatMatrix jacobian;
+
+                error = element->get_local_gradient( element->reference_nodes, localIntersectionPoint, jacobian );
+
+                if ( error ){
+
+                    std::string message = "Error in the computation of the local gradient of the shape functions for the intersection point";
+
+                    errorOut result = new errorNode( __func__, message );
+
+                    result->addNext( error );
+
+                    return result;
+
+                }
+
+                floatVector lN = ( vectorTools::Tdot( jacobian, normals.back( ) ) / vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) );
+
+                lN = lN / vectorTools::l2norm( lN );
+
+                localNormals.push_back( lN );
+
+                //Store the transition edge
+                uIntType edgeIndex = eT - edgeTransition.begin( );
+                edgeID = ngy * ngz * ri1 + ngz * rj1 + rk1;
+
+                if ( cellValues[ i2 ] > cellValues[ i1 ] ){
 
                     flipDirection = false;
 
                 }
                 else{
 
-                    rootNode = element->reference_nodes[ i1 ];
-                    ri = ri1;
-                    rj = rj1;
-                    rk = rk1;
-
                     flipDirection = true;
 
                 }
-
-                //Find the points which contribute to the root node
-                floatVector upperBounds =
-                    {
-                        0.5 * ( _gridLocations[ 0 ][ ri + 1 ] - rootNode[ 0 ] ) + rootNode[ 0 ],
-                        0.5 * ( _gridLocations[ 1 ][ rj + 1 ] - rootNode[ 1 ] ) + rootNode[ 1 ],
-                        0.5 * ( _gridLocations[ 2 ][ rk + 1 ] - rootNode[ 2 ] ) + rootNode[ 2 ]
-                    };
-
-                floatVector lowerBounds =
-                    {
-                        0.5 * ( _gridLocations[ 0 ][ ri - 1 ] - rootNode[ 0 ] ) + rootNode[ 0 ],
-                        0.5 * ( _gridLocations[ 1 ][ rj - 1 ] - rootNode[ 1 ] ) + rootNode[ 1 ],
-                        0.5 * ( _gridLocations[ 2 ][ rk - 1 ] - rootNode[ 2 ] ) + rootNode[ 2 ]
-                    };
-
-                //Find the points that contribute to this root node
-                floatVector domainUpperBounds = *getUpperBounds( );
-                floatVector domainLowerBounds = *getLowerBounds( );
-                supportingPoints.clear( );
-                _pointTree.getPointsInRange( upperBounds, lowerBounds, supportingPoints, &domainUpperBounds, &domainLowerBounds );
-
-                //Determine the normal at the intersection point
-                if ( ( supportingPoints.size( ) >= _minNormalApproximationCount ) && ( _useMaterialPointsForNormals ) ){
-
-                    return new errorNode( "computeBoundaryPoints", "Using the material points for normals has not been implemented yet" );
-
-                }
-                else{
-
-                    //Use the gradient of the shape function to compute the normal
-                   
-                    //Compute the global gradient
-                    error = element->get_global_gradient( cellValues, localIntersectionPoint, gradient );
-
-                    //Compute the normal vector
-                    gradient /= vectorTools::l2norm( gradient );
-
-                    normals.push_back( gradient );
-
-                }
-
-                //Store the transition edge
-                uIntType edgeIndex = eT - edgeTransition.begin( );
-                edgeID = ngy * ngz * ri1 + ngz * rj1 + rk1;
 
                 if ( edgeIndex < 4 ){ //x edge
 
@@ -2319,62 +2517,49 @@ namespace volumeReconstruction{
 
             }
 
-            //Solve for the boundary point
-            bool converged;
-            bool fatalError;
+            floatMatrix I = vectorTools::eye< floatType >( localNormals[ 0 ].size( ) );
 
-            //Assemble the floating point argments matrix
-            floatArgs.resize( 2 + 2 * points.size( ), floatVector( _dim, 0 ) );
-            floatArgs[ 0 ] = {  1,  1,  1 };//element->bounding_box[ 1 ];
-            floatArgs[ 1 ] = { -1, -1, -1 };//element->bounding_box[ 0 ];
+            floatMatrix A = vectorTools::Tdot( localNormals, localNormals ) + I;
 
-            for ( uIntType i = 0; i < points.size( ); i++ ){
+            floatVector nb( localNormals.size( ), 0 );
 
-                floatArgs[ 2 + i ] = points[ i ];
-                floatArgs[ 2 + points.size( ) + i ] = normals[ i ];
+            for ( unsigned int i = 0; i < nb.size( ); i++ ){
+
+                nb[ i ] = vectorTools::dot( localNormals[ i ], points[ i ] );
 
             }
 
-            //Assemble the integer arguments matrix
-            intArgs = { { ( int )_dim, ( int )points.size( ) } }; 
+            floatVector b( _dim, 0 );
 
-            //Assemble the initial iterate
-            X0.resize( 5 * _dim );
-            X.resize( 5 * _dim );
-            for ( uIntType i = 0; i < _dim; i++ ){
+            for ( unsigned int i = 0; i < localNormals.size( ); i++ ){
 
-//                X0[            i ] = 0.5 * ( element->bounding_box[ 0 ][ i ] + element->bounding_box[ 1 ][ i ] ); //x
-                X0[            i ] = 0.0;
-                X0[     _dim + i ] = floatArgs[ 0 ][ i ] - X0[ i ]; //s
-                X0[ 2 * _dim + i ] = X0[ i ] - floatArgs[ 1 ][ i ]; //t
-                X0[ 3 * _dim + i ] = 0.5;
-                X0[ 4 * _dim + i ] = 0.5;
+                for ( unsigned int j = 0; j < localNormals[ 0 ].size( ); j++ ){
+
+                    b[ j ] += localNormals[ i ][ j ] * nb[ i ];
+
+                }
 
             }
 
-            error = solverTools::newtonRaphson(func, X0, X, converged, fatalError, floatOuts, intOuts, floatArgs, intArgs );
+            uIntType rank;
 
-            if ( fatalError ){
+            localBoundaryPoint = vectorTools::solveLinearSystem( A, b, rank );
 
-                errorOut result = new errorNode( "computeBoundaryPoints",
-                                                 "Fatal error in Newton-Raphson solve" );
-                result->addNext( error );
-                return result;
+            if ( !element->local_point_inside( localBoundaryPoint ) ){
 
-            
-            }
-            if ( !converged ){
+                localBoundaryPoint = floatVector( _dim, 0 );
 
-                localBoundaryPoint = floatVector( X0.begin( ), X0.begin( ) + _dim );
-                element->interpolate( element->reference_nodes, localBoundaryPoint, boundaryPoint );
+                for ( auto lp = points.begin( ); lp != points.end( ); lp++ ){
 
-            }
-            else{
-                
-                localBoundaryPoint = floatVector( X.begin( ), X.begin( ) + _dim );
-                element->interpolate( element->reference_nodes, localBoundaryPoint, boundaryPoint );
+                    localBoundaryPoint += *lp;
+
+                }
+
+                localBoundaryPoint /= points.size( );
 
             }
+
+            element->interpolate( element->reference_nodes, localBoundaryPoint, boundaryPoint );
 
             for ( uIntType i = 0; i < _dim; i++ ){
 
@@ -2654,6 +2839,19 @@ namespace volumeReconstruction{
 
         _boundaryPointGrid->insert( _boundaryPointNormalsPtr );
 
+        // Write out the implicit function's value
+        shared_ptr< XdmfAttribute > _implicitFunctionPtr = XdmfAttribute::New( );
+
+        _implicitFunctionPtr->setType( XdmfAttributeType::Scalar( ) );
+
+        _implicitFunctionPtr->setCenter( XdmfAttributeCenter::Node( ) );
+
+        _implicitFunctionPtr->setName( "Implicit function at background grid" );
+
+        _implicitFunctionPtr->insert( 0, _implicitFunctionValues.data( ), _implicitFunctionValues.size( ), 1, 1 );
+
+        _boundaryPointGrid->insert( _implicitFunctionPtr );
+
         _gridCollection->insert( _boundaryPointGrid );
 
         //Write the output file
@@ -2737,7 +2935,7 @@ namespace volumeReconstruction{
             auto index = _boundaryPointIDToIndex.find( edge->second[ 0 ] );
             if ( index == _boundaryPointIDToIndex.end( ) ){
 
-                return new errorNode( "processBoundaryEdges", "Edge boundary point ID " + std::to_string( edge->second[ 0 ] )
+                return new errorNode( __func__, "Edge boundary point ID " + std::to_string( edge->second[ 0 ] )
                                       + " not found in boundary point ID to index map." );
 
             }
@@ -2747,7 +2945,7 @@ namespace volumeReconstruction{
             index = _boundaryPointIDToIndex.find( edge->second[ 1 ] );
             if ( index == _boundaryPointIDToIndex.end( ) ){
 
-                return new errorNode( "processBoundaryEdges", "Edge boundary point ID " + std::to_string( edge->second[ 1 ] )
+                return new errorNode( __func__, "Edge boundary point ID " + std::to_string( edge->second[ 1 ] )
                                       + " not found in boundary point ID to index map." );
 
             }
@@ -2757,7 +2955,7 @@ namespace volumeReconstruction{
             index = _boundaryPointIDToIndex.find( edge->second[ 2 ] );
             if ( index == _boundaryPointIDToIndex.end( ) ){
 
-                return new errorNode( "processBoundaryEdges", "Edge boundary point ID " + std::to_string( edge->second[ 2 ] )
+                return new errorNode( __func__, "Edge boundary point ID " + std::to_string( edge->second[ 2 ] )
                                       + " not found in boundary point ID to index map." );
 
             }
@@ -2767,7 +2965,7 @@ namespace volumeReconstruction{
             index = _boundaryPointIDToIndex.find( edge->second[ 3 ] );
             if ( index == _boundaryPointIDToIndex.end( ) ){
 
-                return new errorNode( "processBoundaryEdges", "Edge boundary point ID " + std::to_string( edge->second[ 3 ] )
+                return new errorNode( __func__, "Edge boundary point ID " + std::to_string( edge->second[ 3 ] )
                                       + " not found in boundary point ID to index map." );
 
             }
