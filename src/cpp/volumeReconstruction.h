@@ -186,7 +186,7 @@ namespace volumeReconstruction{
             floatType _length_scale = 1;
             floatType _critical_radius = 1;
 
-            std::vector< std::pair< floatVector, floatector > > _boundingPlanes;
+            std::vector< std::pair< floatVector, floatVector > > _boundingPlanes;
             bool _boundingSurfaces = false;
             
 
