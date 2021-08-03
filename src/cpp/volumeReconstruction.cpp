@@ -1214,7 +1214,7 @@ namespace volumeReconstruction{
 
     errorOut volumeReconstructionBase::addBoundingPlanes( const floatMatrix &boundingPoints, const floatMatrix &boundingNormals ){
         /*!
-         * Add planes which bound the domain. These planes MUST NOT form a convex surface!
+         * Add planes which bound the domain. These planes MUST NOT form a concave surface!
          * 
          * :param const floatMatrix &boundingPoints: The points on the surfaces of the bounding planes
          * :param const floatMatrix &boundingNormals: The normals which define the bounding planes
@@ -1427,6 +1427,7 @@ namespace volumeReconstruction{
         if ( _config[ "interpolation" ][ "discretization_count" ].IsScalar( ) ){
 
             uIntType v = _config[ "interpolation" ][ "discretization_count" ].as< uIntType >( );
+
             _domainDiscretization = { v, v, v };
 
         }
@@ -1878,7 +1879,7 @@ namespace volumeReconstruction{
         /*!
          * Compute the gradient of the radial basis function around the provided point. The form of the function is:
          * 
-         * v = exp(-(r / ( 2 * ls ) )**2 )
+         * v = exp( -( r / ( 2 * ls ) )**2 )
          * 
          * where
          * 
@@ -2376,7 +2377,7 @@ namespace volumeReconstruction{
 
                     supportingPoints.clear( );
 
-                    _pointTree.getPointsWithinRadiusOfOrigin( origin, _critical_radius, supportingPoints ); 
+                    _pointTree.getPointsWithinRadiusOfOrigin( origin, _critical_radius, supportingPoints );
 
                 }
 
@@ -2838,7 +2839,7 @@ namespace volumeReconstruction{
 
         _boundaryPointGrid->insert( _boundaryPointNormalsPtr );
 
-        // Write out the implicit functions value
+        // Write out the implicit function's value
         shared_ptr< XdmfAttribute > _implicitFunctionPtr = XdmfAttribute::New( );
 
         _implicitFunctionPtr->setType( XdmfAttributeType::Scalar( ) );
