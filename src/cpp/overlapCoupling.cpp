@@ -5294,6 +5294,7 @@ namespace overlapCoupling{
                                              "Error in creating the volume reconstruction object for " + microDomainName );
 
             result->addNext( reconstructedVolume->getError( ) );
+
             return result;
 
         }
@@ -5306,6 +5307,7 @@ namespace overlapCoupling{
             errorOut result = new errorNode( __func__,
                                              "Error in loading the micro-scale points for " + microDomainName );
             result->addNext( error );
+
             return result;
 
         }
