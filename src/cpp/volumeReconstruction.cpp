@@ -1261,6 +1261,19 @@ namespace volumeReconstruction{
 
     }
 
+    errorOut volumeReconstructionBase::reconstructInLocalDomain( std::unique_ptr< elib::Element > &element ){
+        /*!
+         * Perform the reconstruction in the local domain rather than in global space
+         * 
+         * :param std::unique_ptr< elib::Element > &element: The element type which defines the local space
+         */
+
+        _localDomain = &element;
+
+        return NULL;
+
+    }
+
     const uIntVector *volumeReconstructionBase::getBoundaryIDs( ){
         /*!
          * Get a constant reference to the collection of boundary point ids

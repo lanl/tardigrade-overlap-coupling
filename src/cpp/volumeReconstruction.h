@@ -107,6 +107,8 @@ namespace volumeReconstruction{
 
             errorOut addBoundingPlanes( const floatMatrix &planePoints, const floatMatrix &planeNormals );
 
+            errorOut reconstructInLocalDomain( std::unique_ptr< elib::Element > &element );
+
             //Interface functions
             const floatVector *getPoints( );
             const floatVector *getFunction( );
@@ -188,7 +190,7 @@ namespace volumeReconstruction{
 
             std::vector< std::pair< floatVector, floatVector > > _boundingPlanes;
             bool _boundingSurfaces = false;
-            
+            std::unique_ptr< elib::Element > *_localDomain = NULL;
 
         private:
 
