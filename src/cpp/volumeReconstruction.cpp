@@ -1825,8 +1825,26 @@ namespace volumeReconstruction{
 
         }
 
-        floatType r = vectorTools::l2norm(x - x0);
+        floatType r = vectorTools::l2norm( x - x0 );
         val = std::exp( -std::pow( r / ( 2 * ls ), 2 ) );
+
+        if ( _boundingSurfaces ){
+
+            for ( auto plane = _boundingPlanes.begin( ); plane != _boundingPlanes.end( ); plane++ ){
+
+                floatType d = vectorTools::dot( plane->second, x - plane->first );
+
+                if ( d >= 0 ){
+
+                    val = 0;
+
+                    return NULL;
+
+                }
+
+            }
+
+        }
 
         return NULL;
 
