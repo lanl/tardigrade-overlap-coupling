@@ -272,6 +272,8 @@ namespace volumeReconstruction{
 
             errorOut rbf( const floatVector &x, const floatVector &x0, const floatType &ls, floatType &val );
 
+            errorOut grad_rbf( const floatVector &x, const floatVector &x0, const floatType &ls, floatVector &grad );
+
         private:
 
             uIntVector _domainDiscretization;
