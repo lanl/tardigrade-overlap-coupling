@@ -1212,6 +1212,55 @@ namespace volumeReconstruction{
         return;
     }
 
+    errorOut volumeReconstructionBase::addBoundingPlanes( const floatMatrix &boundingPoints, const floatMatrix &boundingNormals ){
+        /*!
+         * Add planes which bound the domain. These planes MUST NOT form a convex surface!
+         * 
+         * :param const floatMatrix &boundingPoints: The points on the surfaces of the bounding planes
+         * :param const floatMatrix &boundingNormals: The normals which define the bounding planes
+         */
+
+        if ( boundingPoints.size( ) != boundingNormals.size( ) ){
+
+            return new errorNode( __func__, "The bounding points and bounding normals have different sizes" );
+
+        }
+
+        _boundingPlanes.clear( );
+        _boundingPlanes.reserve( boundingPoints.size( ) );
+
+        for ( uIntType i = 0; i < boundingPoints.size( ); i++ ){
+
+            if ( boundingPoints[ i ].size( ) != _dim ){
+
+                std::string message = "The point on bounding plane " + std::to_string( i ) + " has a dimension of "
+                                    + std::to_string( boundingPoints[ i ].size( ) ) + " which is not equal to the dimension ( "
+                                    + std::to_string( _dim ) + ")";
+
+                return new errorNode( __func__, message );
+
+            }
+
+            if ( boundingNormals[ i ].size( ) != _dim ){
+
+                std::string message = "The normal on bounding plane " + std::to_string( i ) + " has a dimension of "
+                                    + std::to_string( boundingNormals[ i ].size( ) ) + " which is not equal to the dimension ( "
+                                    + std::to_string( _dim ) + ")";
+
+                return new errorNode( __func__, message );
+
+            }
+
+            _boundingPlanes.push_back( std::pair< floatVector, floatVector >( boundingPoints[ i ], boundingNormals[ i ] / vectorTools::l2norm( boundingNormals[ i ] ) ) );
+
+        }
+
+        _boundingSurfaces = true;
+
+        return NULL;
+
+    }
+
     const uIntVector *volumeReconstructionBase::getBoundaryIDs( ){
         /*!
          * Get a constant reference to the collection of boundary point ids

@@ -105,6 +105,8 @@ namespace volumeReconstruction{
             errorOut loadPoints( const floatVector *points );
             errorOut loadFunction( const floatVector *function );
 
+            errorOut addBoundingPlanes( const floatMatrix &planePoints, const floatMatrix &planeNormals );
+
             //Interface functions
             const floatVector *getPoints( );
             const floatVector *getFunction( );
@@ -184,6 +186,8 @@ namespace volumeReconstruction{
             floatType _length_scale = 1;
             floatType _critical_radius = 1;
 
+            std::vector< std::pair< floatVector, floatector > > _boundingPlanes;
+            bool _boundingSurfaces = false;
             
 
         private:
