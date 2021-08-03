@@ -1387,16 +1387,40 @@ namespace volumeReconstruction{
 
         if ( !_config[ "interpolation" ][ "discretization_count" ] ){
 
-            floatVector delta = *getUpperBounds( ) - *getLowerBounds( );
-            floatVector _discretization_count = ( delta / *getMedianNeighborhoodDistance( ) );
+            if ( !_config[ "interpolation" ][ "grid_factor" ] ){
 
-            uIntVector discretization_count( _dim, 0 );
-            for ( unsigned int i = 0; i < _dim; i++ ){
-                discretization_count[ i ] = ( uIntType )( _discretization_count[ i ] );
+                _config[ "interpolation" ][ "grid_factor" ] = 1;
+
             }
 
-            _config[ "interpolation" ][ "discretization_count" ]
-                = std::max( ( uIntType )( std::pow( ( floatType )_nPoints, 1. / 3. ) / _minPointsPerCell ), ( uIntType )1 );
+            floatType grid_factor;
+            if ( !_config[ "interpolation" ][ "grid_factor" ].IsScalar( ) ){
+
+                return new errorNode( __func__, "The interpolation's 'grid_factor' must be a scalar" );
+
+            }
+
+            grid_factor = _config[ "interpolation" ][ "grid_factor" ].as< floatType >( );
+
+            if ( grid_factor < 0 ){
+
+                return new errorNode( __func__, "interpolation's 'grid_factor' must be positive!" );
+
+            }
+
+            floatVector delta = *getUpperBounds( ) - *getLowerBounds( );
+
+            floatVector _discretization_count = ( grid_factor * delta / *getMedianNeighborhoodDistance( ) );
+
+            uIntVector discretization_count( _dim, 0 );
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                discretization_count[ i ] = ( uIntType )( _discretization_count[ i ] );
+
+            }
+
+            _config[ "interpolation" ][ "discretization_count" ] = discretization_count;
 
         }
 
