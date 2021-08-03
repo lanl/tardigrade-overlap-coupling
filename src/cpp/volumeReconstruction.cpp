@@ -2168,7 +2168,7 @@ namespace volumeReconstruction{
 
         if ( _dim != 3 ){
 
-            return new errorNode( "computeBoundaryPoints", "This function requires that the dimension is 3D" );
+            return new errorNode( __func__, "This function requires that the dimension is 3D" );
 
         }
 
@@ -2557,6 +2557,8 @@ namespace volumeReconstruction{
                 localBoundaryPoint /= points.size( );
 
             }
+
+            element->interpolate( element->reference_nodes, localBoundaryPoint, boundaryPoint );
 
             for ( uIntType i = 0; i < _dim; i++ ){
 
