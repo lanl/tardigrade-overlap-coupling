@@ -1641,7 +1641,7 @@ namespace volumeReconstruction{
 
                         floatVector xi( getPoints( )->begin( ) + *pI, getPoints( )->begin( ) + *pI + _dim );
 
-                        error = rbf( xi, node_x, _length_scale, value );
+                        error = rbf( node_x, xi, _length_scale, value );
 
                         if ( error ){
 
