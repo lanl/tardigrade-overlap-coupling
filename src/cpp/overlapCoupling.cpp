@@ -5264,7 +5264,7 @@ namespace overlapCoupling{
 
         floatMatrix surfaceNormals( element->local_surface_normals.size( ), floatVector( _dim, 0 ) );
 
-        for ( unsigned int i = 0; i < element->local_surface_normals.size( ), floatVector( _dim, 0 ) ){
+        for ( unsigned int i = 0; i < element->local_surface_normals.size( ); i++ ){
 
             floatVector lN = element->local_surface_normals[ i ];
 
@@ -5318,7 +5318,7 @@ namespace overlapCoupling{
         if ( error ){
 
             errorOut result = new errorNode( __func__,
-                                             "Error in loading the boundary planes for " + microDomainName );
+                                             "Error in loading the bounding planes for " + microDomainName );
 
             result->addNext( error );
 
