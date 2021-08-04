@@ -2438,6 +2438,184 @@ int test_dualContouring_planes( std::ofstream &results ){
 
 }
 
+int test_dualContouring_localBoundary( std::ofstream &results ){
+    /*!
+     * Test of adding the local boundary to the dual-contouring reconstruction
+     * 
+     * :param std::ofstream &results: The output file
+     */
+
+    floatVector points = {  3.2       , -0.5       ,  2.        ,  3.2817976 , -0.53832241,
+                            1.98088073,  3.36359519, -0.57664481,  1.96176147,  3.1731361 ,
+                           -0.50652963,  2.06029672,  3.2549337 , -0.54485204,  2.04117746,
+                            3.3367313 , -0.58317445,  2.02205819,  3.14627221, -0.51305926,
+                            2.12059345,  3.2280698 , -0.55138167,  2.10147418,  3.3098674 ,
+                           -0.58970408,  2.08235492,  3.27069372, -0.36755489,  2.13373739,
+                            3.35249132, -0.40587729,  2.11461812,  3.43428891, -0.4441997 ,
+                            2.09549886,  3.24382982, -0.37408452,  2.19403412,  3.32562742,
+                           -0.41240692,  2.17491485,  3.40742502, -0.45072933,  2.15579558,
+                            3.21696593, -0.38061415,  2.25433084,  3.29876352, -0.41893656,
+                            2.23521157,  3.38056112, -0.45725896,  2.21609231,  3.34138744,
+                           -0.23510977,  2.26747478,  3.42318504, -0.27343218,  2.24835551,
+                            3.50498263, -0.31175459,  2.22923625,  3.31452354, -0.2416394 ,
+                            2.32777151,  3.39632114, -0.27996181,  2.30865224,  3.47811874,
+                           -0.31828422,  2.28953297,  3.28765965, -0.24816904,  2.38806823,
+                            3.36945724, -0.28649144,  2.36894896,  3.45125484, -0.32481385,
+                            2.3498297};
+
+    uIntVector global_node_ids = { 0, 1, 2, 3, 4, 5, 6, 7 };
+
+    floatMatrix reference_nodes = { { 0, 0, 0 },
+                                    { 1, 0, 0 },
+                                    { 1, 1, 0 },
+                                    { 0, 1, 0 },
+                                    { 0, 0, 1 },
+                                    { 1, 0, 1 },
+                                    { 1, 1, 1 },
+                                    { 0, 1, 1 } };
+
+    floatMatrix current_nodes = { { 3.2       , -0.5       ,  2.        },
+                                  { 3.9069372 ,  0.82445115,  3.3373739 },
+                                  { 3.63829824,  0.75915482,  3.94034115},
+                                  { 2.93136104, -0.56529632,  2.60296725},
+                                  { 4.01797596, -0.88322407,  1.80880734},
+                                  { 4.72491316,  0.44122707,  3.14618124},
+                                  { 4.45627421,  0.37593075,  3.74914849},
+                                  { 3.74933701, -0.94852039,  2.41177459} };
+
+    std::string element_name = "Hex8";
+
+    auto qrule = elib::default_qrules.find( element_name );
+
+    std::unique_ptr< elib::Element > element = elib::build_element_from_string( element_name, global_node_ids, current_nodes, qrule->second );
+
+    element->reference_nodes = reference_nodes;
+
+    // Set the filename
+    std::string filename = "dualContouring.yaml";
+
+    YAML::Node yf = YAML::LoadFile( filename );
+
+    volumeReconstruction::dualContouring dc( yf );
+
+    if ( dc.getError ( ) ){
+
+        dc.getError( )->print( );
+
+        return 1;
+
+    }
+
+    errorOut error = dc.loadPoints( &points );
+
+    if ( error ){
+
+        error->print( );
+
+        results << "test_dualContouring_localBoundary & False\n";
+
+        return 1;
+    }
+
+    error = dc.reconstructInLocalDomain( element );
+
+    if ( error ){
+
+        error->print( );
+
+        results << "test_dualContouring_localBoundary & False\n";
+
+    }
+
+    error = dc.evaluate( );
+
+    if ( error ){
+
+        error->print( );
+
+        results << "test_dualContouring_localBoundary & False\n";
+
+        return 1;
+    }
+
+    floatVector boundaryPointAnswer = { 3.14624245, -0.58973865,  1.96173039,
+                                        3.14621245, -0.58976315,  1.9912409 ,
+                                        3.1462123 , -0.55710646,  1.96170811,
+                                        3.14621234, -0.54642226,  1.97394173,
+                                        3.20609047, -0.58976303,  1.96170838,
+                                        3.14758837, -0.58976332,  2.02434053,
+                                        3.21264493, -0.58976307,  2.10260218,
+                                        3.15088781, -0.51528436,  1.96170808,
+                                        3.15637448, -0.52816972,  2.01724568,
+                                        3.15293863, -0.53259985,  2.14554033,
+                                        3.19954193, -0.51989308,  2.22231445,
+                                        3.20389118, -0.43909901,  1.9617082 ,
+                                        3.21344689, -0.41880961,  2.01710172,
+                                        3.18321885, -0.42620054,  2.14074451,
+                                        3.17979211, -0.42695534,  2.25749191,
+                                        3.20070033, -0.40092358,  2.32778356,
+                                        3.196445  , -0.33607496,  2.25098662,
+                                        3.19838641, -0.31266659,  2.35286294,
+                                        3.32564102, -0.58976348,  1.96170783,
+                                        3.35990643, -0.58976352,  2.00945377,
+                                        3.34251756, -0.58976311,  2.1340786 ,
+                                        3.3661107 , -0.53328505,  1.96170798,
+                                        3.31699003, -0.57061446,  2.15746817,
+                                        3.32683025, -0.52503339,  2.22321196,
+                                        3.30389987, -0.40144022,  1.96170817,
+                                        3.31156868, -0.36387611,  1.97545033,
+                                        3.2861402 , -0.37643852,  2.11020685,
+                                        3.30208444, -0.41851237,  2.23439705,
+                                        3.32692949, -0.40637556,  2.32937681,
+                                        3.33938063, -0.30007008,  2.01188586,
+                                        3.33409423, -0.28720245,  2.10159078,
+                                        3.33521977, -0.24908168,  2.24286836,
+                                        3.28876121, -0.27880342,  2.3828105 ,
+                                        3.33292532, -0.2350507 ,  2.14939876,
+                                        3.33650357, -0.2350505 ,  2.2099354 ,
+                                        3.42772558, -0.58976316,  1.96170822,
+                                        3.45933537, -0.58976317,  2.01006961,
+                                        3.43424256, -0.58976321,  2.13356247,
+                                        3.46508223, -0.52127788,  1.96170819,
+                                        3.49810503, -0.53920553,  2.00947126,
+                                        3.47666936, -0.58159057,  2.14942075,
+                                        3.44757519, -0.51959154,  2.21833698,
+                                        3.43921879, -0.42414819,  1.96170817,
+                                        3.47242729, -0.3906117 ,  1.98096535,
+                                        3.43707985, -0.45000911,  2.26188838,
+                                        3.46046976, -0.39238664,  2.35406438,
+                                        3.44405469, -0.30300132,  2.02083616,
+                                        3.45079483, -0.26260223,  2.11663748,
+                                        3.46232655, -0.26384303,  2.23693969,
+                                        3.45210295, -0.30382994,  2.37392987,
+                                        3.43051796, -0.23505056,  2.15112966,
+                                        3.440795  , -0.23505066,  2.20031471,
+                                        3.50504241, -0.53202963,  2.02564324,
+                                        3.50504238, -0.54614217,  2.12083118,
+                                        3.50504233, -0.49606366,  2.22013826,
+                                        3.5050424 , -0.39995012,  2.01278625,
+                                        3.50504262, -0.43290066,  2.10702498,
+                                        3.50504243, -0.43105794,  2.23243772,
+                                        3.50504238, -0.37597857,  2.35189499,
+                                        3.50504237, -0.3247448 ,  2.04779941,
+                                        3.50504239, -0.26327344,  2.13714537,
+                                        3.50504262, -0.29382428,  2.21316026,
+                                        3.50504249, -0.3064408 ,  2.35365778 };
+
+    if ( !vectorTools::fuzzyEquals( *dc.getBoundaryPoints( ), boundaryPointAnswer ) ){
+
+        results << "test_dualContouring_localBoundary (test 1) & False\n";
+
+        return 1;
+
+    }
+
+    results << "test_dualContouring_localBoundary & True\n";
+
+    return 0;
+
+}
+
 int main(){
     /*!
     The main loop which runs the tests defined in the 
@@ -2450,29 +2628,30 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-    test_dualContouring_constructor( results );
-    test_dualContouring_loadPoints( results );
-    test_dualContouring_loadFunction( results );
-    test_dualContouring_getFunctionValue( results );
-    test_dualContouring_evaluate( results );
-    test_dualContouringInternalPointResidual( results );
-    test_dualContouring_performVolumeIntegration( results );
-    test_dualContouring_performRelativePositionVolumeIntegration( results );
-    test_dualContouring_performSurfaceIntegration( results );
-    test_dualContouring_performPositionWeightedSurfaceIntegration( results );
-    test_dualContouring_performSurfaceFluxIntegration( results );
-    test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
-    test_dualContouring_getSurfaceSubdomains( results );
-    test_dualContouring_exportConfiguration( results );
-    test_dualContouring_getBoundaryInformation( results );
-    test_dualContouring_planes( results );
+//    test_dualContouring_constructor( results );
+//    test_dualContouring_loadPoints( results );
+//    test_dualContouring_loadFunction( results );
+//    test_dualContouring_getFunctionValue( results );
+//    test_dualContouring_evaluate( results );
+//    test_dualContouringInternalPointResidual( results );
+//    test_dualContouring_performVolumeIntegration( results );
+//    test_dualContouring_performRelativePositionVolumeIntegration( results );
+//    test_dualContouring_performSurfaceIntegration( results );
+//    test_dualContouring_performPositionWeightedSurfaceIntegration( results );
+//    test_dualContouring_performSurfaceFluxIntegration( results );
+//    test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
+//    test_dualContouring_getSurfaceSubdomains( results );
+//    test_dualContouring_exportConfiguration( results );
+//    test_dualContouring_getBoundaryInformation( results );
+//    test_dualContouring_planes( results );
+    test_dualContouring_localBoundary( results );
 
-    test_KDNode_constructor( results );
-    test_KDNode_getIndex( results );
-    test_KDNode_getMinimumValueDimension( results );
-    test_KDNode_getMaximumValueDimension( results );
-    test_KDNode_getPointsInRange( results );
-    test_KDNode_getPointsWithinRadiusOfOrigin( results );
+//    test_KDNode_constructor( results );
+//    test_KDNode_getIndex( results );
+//    test_KDNode_getMinimumValueDimension( results );
+//    test_KDNode_getMaximumValueDimension( results );
+//    test_KDNode_getPointsInRange( results );
+//    test_KDNode_getPointsWithinRadiusOfOrigin( results );
 
     //Close the results file
     results.close();

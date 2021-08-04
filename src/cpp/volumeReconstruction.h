@@ -190,7 +190,7 @@ namespace volumeReconstruction{
 
             std::vector< std::pair< floatVector, floatVector > > _boundingPlanes;
             bool _boundingSurfaces = false;
-            std::unique_ptr< elib::Element > *_localDomain = NULL;
+            elib::Element *_localDomain = NULL;
 
         private:
 

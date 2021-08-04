@@ -1100,7 +1100,7 @@ namespace volumeReconstruction{
     
         if ( _localDomain ){
 
-            if ( ( *_localDomain )->local_node_coordinates[ 0 ].size( ) != _dim ){
+            if ( _localDomain->local_node_coordinates[ 0 ].size( ) != _dim ){
 
                 return new errorNode( __func__, "The local coordinates of the domain must have the same dimension at the global coordinates" );
 
@@ -1108,13 +1108,13 @@ namespace volumeReconstruction{
 
             for ( uIntType i = 0; i < _dim; i++ ){
 
-                _upperBounds[ i ] = ( *_localDomain )->local_node_coordinates[ 0 ][ i ];
-                _lowerBounds[ i ] = ( *_localDomain )->local_node_coordinates[ 0 ][ i ];
+                _upperBounds[ i ] = _localDomain->local_node_coordinates[ 0 ][ i ];
+                _lowerBounds[ i ] = _localDomain->local_node_coordinates[ 0 ][ i ];
 
-                for ( uIntType n = 1; n < ( *_localDomain )->local_node_coordinates.size( ); n++ ){
+                for ( uIntType n = 1; n < _localDomain->local_node_coordinates.size( ); n++ ){
 
-                    _upperBounds[ i ] = std::fmax( ( *_localDomain )->local_node_coordinates[ n ][ i ], _upperBounds[ i ] );
-                    _lowerBounds[ i ] = std::fmin( ( *_localDomain )->local_node_coordinates[ n ][ i ], _lowerBounds[ i ] );
+                    _upperBounds[ i ] = std::fmax( _localDomain->local_node_coordinates[ n ][ i ], _upperBounds[ i ] );
+                    _lowerBounds[ i ] = std::fmin( _localDomain->local_node_coordinates[ n ][ i ], _lowerBounds[ i ] );
 
                 }
 
@@ -1129,22 +1129,23 @@ namespace volumeReconstruction{
                 _lowerBounds[ i ] = _pointTree.getMinimumValueDimension( i );
     
             }
-    
-            errorOut error = computeMedianNeighborhoodDistance( );
-    
-            if ( error ){
-    
-                errorOut result = new errorNode( __func__, "Error in computing the median neighborhood distance" );
-    
-                result->addNext( error );
-    
-                return result;
-    
-            }
 
+        }
+    
+        errorOut error = computeMedianNeighborhoodDistance( );
+    
+        if ( error ){
+    
+            errorOut result = new errorNode( __func__, "Error in computing the median neighborhood distance" );
+    
+            result->addNext( error );
+    
+            return result;
+    
         }
         
         return NULL;
+
     }
 
     const floatVector *volumeReconstructionBase::getPoints( ){
@@ -1296,7 +1297,7 @@ namespace volumeReconstruction{
          * :param std::unique_ptr< elib::Element > &element: The element type which defines the local space
          */
 
-        _localDomain = &element;
+        _localDomain = element.get( );
 
         return NULL;
 
@@ -1362,8 +1363,10 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "initialize", "Error in base initialization" );
+            errorOut result = new errorNode( __func__, "Error in base initialization" );
+
             result->addNext( error );
+
             return result;
 
         }
@@ -1372,8 +1375,10 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "initialize", "Error in processing the configuraiton file" );
+            errorOut result = new errorNode( __func__, "Error in processing the configuraiton file" );
+
             result->addNext( error );
+
             return result;
 
         }
@@ -1382,8 +1387,10 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "initialize", "Error in setting the grid spacing" );
+            errorOut result = new errorNode( __func__, "Error in setting the grid spacing" );
+
             result->addNext( error );
+
             return result;
 
         }
@@ -1392,8 +1399,10 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "initialize", "Error in the projection of the implicit function to the background grid" );
+            errorOut result = new errorNode( __func__, "Error in the projection of the implicit function to the background grid" );
+
             result->addNext( error );
+
             return result;
 
         }
@@ -1402,8 +1411,10 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "initialize", "Error when initializing the interior and boundary cells of the background grid" );
+            errorOut result = new errorNode( __func__, "Error when initializing the interior and boundary cells of the background grid" );
+
             result->addNext( error );
+
             return result;
 
         }
@@ -1412,8 +1423,10 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "initialize", "Error when computing the boundary point normals and areas" );
+            errorOut result = new errorNode( __func__, "Error when computing the boundary point normals and areas" );
+
             result->addNext( error );
+
             return result;
 
         }
@@ -1449,16 +1462,41 @@ namespace volumeReconstruction{
 
             }
 
+            uIntVector discretization_count( _dim, 1 );
+
             floatVector delta = *getUpperBounds( ) - *getLowerBounds( );
 
-            floatVector _discretization_count = ( grid_factor * delta / *getMedianNeighborhoodDistance( ) );
+            if ( _localDomain ){
 
-            uIntVector discretization_count( _dim, 0 );
+                for ( auto qpt = _localDomain->qrule.begin( ); qpt != _localDomain->qrule.end( ); qpt++ ){
 
-            for ( unsigned int i = 0; i < _dim; i++ ){
+                    floatMatrix dxdxi;
 
-                discretization_count[ i ] = ( uIntType )( _discretization_count[ i ] );
+                    _localDomain->get_local_gradient( _localDomain->nodes, qpt->first, dxdxi );
 
+                    floatMatrix A = vectorTools::Tdot( dxdxi, dxdxi );
+
+                    _length_scale = *getMedianNeighborhoodDistance( ) / ( 2 * std::sqrt( -std::log( 0.5 ) ) );
+
+                    for ( unsigned int i = 0; i < _dim; i++ ){
+
+                        discretization_count[ i ] = std::max( ( uIntType )(delta[ i ] / std::sqrt( std::pow( _length_scale, 2 ) / A[ i ][ i ] ) + 0.5 ), discretization_count[ i ] );
+
+                    }
+
+                }
+
+            }
+            else{
+    
+                floatVector _discretization_count = ( grid_factor * delta / *getMedianNeighborhoodDistance( ) );
+    
+                for ( unsigned int i = 0; i < _dim; i++ ){
+    
+                    discretization_count[ i ] = ( uIntType )( _discretization_count[ i ] );
+    
+                }
+            
             }
 
             _config[ "interpolation" ][ "discretization_count" ] = discretization_count;
@@ -1591,13 +1629,19 @@ namespace volumeReconstruction{
         errorOut error = volumeReconstructionBase::evaluate( );
 
         if ( error ){
-            errorOut result = new errorNode( "evaluate", "Error in base class evaluate" );
+
+            errorOut result = new errorNode( __func__, "Error in base class evaluate" );
+
             result->addNext( error );
+
             return result;
+
         }
 
         setEvaluated( true );
+
         return NULL;
+
     }
 
     errorOut dualContouring::setGridSpacing( ){
@@ -2614,6 +2658,13 @@ namespace volumeReconstruction{
         }
 
         //Form the KD tree of the boundary points
+
+        if ( _boundaryPoints.size( ) == 0 ){
+
+            return new errorNode( __func__, "No boundary points were found" );
+
+        }
+
         _boundaryPointTree = KDNode( &_boundaryPoints, ownedIndices, 0, _dim );
 
         return NULL;
