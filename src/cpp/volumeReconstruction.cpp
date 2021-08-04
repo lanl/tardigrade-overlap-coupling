@@ -852,6 +852,7 @@ namespace volumeReconstruction{
         }
 
         return NULL;
+
     }
 
     errorOut volumeReconstructionBase::performSurfaceIntegration( const floatVector &valuesAtPoints, const uIntType valueSize,
@@ -1635,6 +1636,22 @@ namespace volumeReconstruction{
             result->addNext( error );
 
             return result;
+
+        }
+
+        if ( _localDomain ){
+
+            error = updateLocalBoundaryPoints( );
+
+            if ( error ){
+
+                errorOut result = new errorNode( __func__, "Error in the return of the boundary points to the global coordinate system" );
+
+                result->addNext( error );
+
+                return result;
+
+            }
 
         }
 
@@ -3122,7 +3139,7 @@ namespace volumeReconstruction{
 
         //Error handling
         if ( _points->size( ) / _dim != functionValuesAtPoints.size( ) / functionDim ){
-            return new errorNode( "interpolateFunctionToBackgroundGrid",
+            return new errorNode( __func__,
                                   "The points vector and the function values at points vector are not of compatible sizes" );
         }
 
@@ -3169,7 +3186,7 @@ namespace volumeReconstruction{
 
             if ( error ){
 
-                errorOut result = new errorNode( "interpolateFunctionToBackgroundGrid",
+                errorOut result = new errorNode( __func__,
                                                  "Error in getting the grid element" );
                 result->addNext( error );
                 return result;
@@ -3192,7 +3209,21 @@ namespace volumeReconstruction{
 
                 uIntType   globalNodeID = element->global_node_ids[ node - element->nodes.begin( ) ];
                 uIntVector internalNodes;
-                _pointTree.getPointsWithinRadiusOfOrigin( *node, _critical_radius, internalNodes );
+
+                floatVector xn;
+
+                if ( _localDomain ){
+
+                    _localDomain->interpolate( _localDomain->nodes, *node, xn );
+
+                }
+                else{
+
+                    xn = *node;
+
+                }
+
+                _pointTree.getPointsWithinRadiusOfOrigin( xn, _critical_radius, internalNodes );
 
                 for ( auto iN = internalNodes.begin( ); iN != internalNodes.end( ); iN++ ){
 
@@ -3203,7 +3234,7 @@ namespace volumeReconstruction{
                                                  _points->begin( ) + *iN + _dim );
 
                     floatType value;
-                    rbf( *node, pointPosition, _length_scale, value );
+                    rbf( xn, pointPosition, _length_scale, value );
 
                     functionAtGrid[ globalNodeID ] += value * functionValue;
 
@@ -3213,108 +3244,6 @@ namespace volumeReconstruction{
 
             }
 
-//            getPointsWithinRadiusOfOrigin( currentSeedPoint, minDistance, internalNodes )
-//
-//
-//            upperBounds = *getUpperBounds( );
-//            lowerBounds = *getLowerBounds( );
-//
-//            //Find the points inside of this element
-//            internalPoints.clear( );
-//            _pointTree.getPointsInRange( element->bounding_box[ 1 ], element->bounding_box[ 0 ], internalPoints,
-//                                         &upperBounds, &lowerBounds );
-//
-//            //Loop over the points adding their contributions to the function at the current grid points
-//
-//            std::vector< bool > isDuplicate( internalPoints.size( ), false );
-//            floatVector meanFunctionValue( functionDim, 0 );
-//            uIntType numPoints = 0;
-//            for ( auto p = internalPoints.begin( ); p != internalPoints.end( ); p++ ){
-//
-//                unsigned int pindex = p - internalPoints.begin( );
-//
-//                if ( isDuplicate[ pindex ] ){
-//                    continue;
-//                }
-//
-//                unsigned int duplicate_count = 0;
-//
-//                //Get the function value at the current point
-//                functionValue = floatVector( functionValuesAtPoints.begin( ) + ( *p / _dim + 0 ) * functionDim,
-//                                             functionValuesAtPoints.begin( ) + ( *p / _dim + 1 ) * functionDim );
-//
-//                pointPosition = floatVector( _points->begin( ) + *p,
-//                                             _points->begin( ) + *p + _dim );
-//
-//                // Check if any of the remaining points are duplicates
-//                for ( auto q = internalPoints.begin( ) + pindex + 1; q != internalPoints.end( ); q++ ){
-//
-//                    unsigned int qindex = q - internalPoints.begin( );
-//
-//                    floatVector q_pointPosition = floatVector( _points->begin( ) + *q,
-//                                                               _points->begin( ) + *q + _dim );
-//
-//                    if ( vectorTools::l2norm( pointPosition - q_pointPosition ) < _absoluteTolerance ){
-//
-//                        isDuplicate[ qindex ] = true;
-//
-//                        functionValue += floatVector( functionValuesAtPoints.begin( ) + ( *q / _dim + 0 ) * functionDim,
-//                                                      functionValuesAtPoints.begin( ) + ( *q / _dim + 1 ) * functionDim );
-//
-//                        duplicate_count++;
-//
-//                    }
-//
-//                }
-//
-//                functionValue /= ( duplicate_count + 1 );
-//
-//                //Get the local coordinates of the point
-//                if ( usePointwiseProjection ){
-//
-//                    error = element->compute_local_coordinates( pointPosition, localCoordinates );
-//
-//                    if ( error ){
-//
-//                        errorOut result = new errorNode( __func__,
-//                                                         "Error in the computation of the local coordinates" );
-//                        result->addNext( error );
-//                        return result;
-//
-//                    }
-//
-//                    //Get the shape function values at the point
-//                    error = element->get_shape_functions( localCoordinates, shapeFunctions );
-//
-//                    if ( error ){
-//                    
-//                        errorOut result = new errorNode( __func__, "Error in the computation of the shape functions" );
-//                        result->addNext( error );
-//                        return result;
-//                    }
-//
-//                }
-//
-//                //Compute the contribution of the nodes to the background grid
-//
-//                if ( usePointwiseProjection ){
-//                    for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
-//                        functionAtGrid[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ] * functionValue;
-//                        weights[ *nID ] += shapeFunctions[ nID - element->global_node_ids.begin( ) ];
-//                    }
-//                }
-//                else{
-//                    meanFunctionValue += functionValue;
-//                    numPoints++;
-//                }
-//
-//            }
-//            if ( ( !usePointwiseProjection ) && ( internalPoints.size( ) > 0 ) ){
-//                for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
-//                    functionAtGrid[ *nID ] += meanFunctionValue / std::fmax( ( floatType )numPoints, 1 );
-//                    weights[ *nID ] += 1;
-//                }
-//            }
         }
 
         //Normalize the weights by the shape function values
@@ -3411,6 +3340,21 @@ namespace volumeReconstruction{
                                                  "Error in getting the grid element" );
                 result->addNext( error );
                 return result;
+
+            }
+
+            if ( _localDomain ){
+
+                // Map the local nodes to the current configuration
+
+                for ( unsigned int i = 0; i < element->nodes.size( ); i++ ){
+
+                    floatVector gN;
+                    _localDomain->interpolate( _localDomain->nodes, element->nodes[ i ], gN );
+                    element->nodes[ i ] = gN;
+                    element->reference_nodes[ i ] = gN;
+
+                }
 
             }
             
@@ -4154,6 +4098,42 @@ namespace volumeReconstruction{
          */
 
         return YAML::Clone( _config );
+
+    }
+
+    errorOut dualContouring::updateLocalBoundaryPoints( ){
+        /*!
+         * Update the local boundary point values once things have been computed in the local coordinates
+         */
+
+        for ( auto bP = _boundaryPointIDToIndex.begin( ); bP != _boundaryPointIDToIndex.end( ); bP++ ){
+
+            // Map the area and normal to the global space
+
+            floatVector boundaryPoint( _boundaryPoints.begin( ) + _dim * bP->second, _boundaryPoints.begin( ) + _dim * ( bP->second + 1 ) );
+
+            floatVector dadn;
+
+            _localDomain->transform_local_vector( boundaryPoint, _boundaryPointNormals[ bP->first ] * _boundaryPointAreas[ bP->first ], dadn, true );
+
+            _boundaryPointNormals[ bP->first ] = dadn / vectorTools::l2norm( dadn );
+
+            _boundaryPointAreas[ bP->first ] = vectorTools::l2norm( dadn );
+
+            // Interpolate the boundary point to the global space
+
+            floatVector gBP;
+            _localDomain->interpolate( _localDomain->nodes, boundaryPoint, gBP );
+
+            for ( unsigned int i = 0; i < _dim; i++ ){
+
+                _boundaryPoints[ _dim * bP->second + i ] = gBP[ i ];
+
+            }
+
+        }
+
+        return NULL;
 
     }
 

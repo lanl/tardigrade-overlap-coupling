@@ -333,6 +333,8 @@ namespace volumeReconstruction{
 
             errorOut writeToXDMF( );
 
+            errorOut updateLocalBoundaryPoints( );
+
     };
 
     errorOut dualContouringInternalPointResidual( const floatVector &X, const floatMatrix &floatArgs, const intMatrix &intArgs,
