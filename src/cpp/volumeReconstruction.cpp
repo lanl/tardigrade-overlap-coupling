@@ -2959,7 +2959,7 @@ namespace volumeReconstruction{
          */
 
         if ( _dim != 3 ){
-            return new errorNode( "computeBoundaryPointNormals", "This function requires the dimension is 3" );
+            return new errorNode( __func__, "This function requires the dimension is 3" );
         }
 
         _boundaryPointAreas.reserve( _boundaryPoints.size( ) / 3 );
@@ -2971,7 +2971,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeBoundaryPointNormalsAndAreas",
+            errorOut result = new errorNode( __func__,
                                              "Error in processing the x boundary edges" );
             result->addNext( error );
             return result;
@@ -2982,7 +2982,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeBoundaryPointNormalsAndAreas",
+            errorOut result = new errorNode( __func__,
                                              "Error in processing the y boundary edges" );
             result->addNext( error );
             return result;
@@ -2993,7 +2993,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "computeBoundaryPointNormalsAndAreas",
+            errorOut result = new errorNode( __func__,
                                              "Error in processing the z boundary edges" );
             result->addNext( error );
             return result;
