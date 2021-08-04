@@ -1728,6 +1728,7 @@ namespace volumeReconstruction{
         uIntType nodeID;
         uIntVector pointIndices;
 
+        floatVector node_xi( _dim, 0 );
         floatVector node_x( _dim, 0 );
 
         for ( uIntType i = 1; i < ngx - 1; i++ ){
@@ -1739,7 +1740,18 @@ namespace volumeReconstruction{
                     // Get the node ID
                     nodeID = ngy * ngz * i + ngz * j + k;
 
-                    node_x = { _gridLocations[ 0 ][ i ], _gridLocations[ 1 ][ j ], _gridLocations[ 2 ][ k ] };
+                    if ( _localDomain ){
+
+                        node_xi = { _gridLocations[ 0 ][ i ], _gridLocations[ 1 ][ j ], _gridLocations[ 2 ][ k ] };
+
+                        _localDomain->interpolate( _localDomain->nodes, node_xi, node_x );
+
+                    }
+                    else{
+
+                        node_x = { _gridLocations[ 0 ][ i ], _gridLocations[ 1 ][ j ], _gridLocations[ 2 ][ k ] };
+
+                    }
 
                     // Find the points within the critical radius
                     pointIndices.clear( );
@@ -1763,45 +1775,9 @@ namespace volumeReconstruction{
 
                         }
 
-//                        std::cerr << value << " ";
-
                         _implicitFunctionValues[ nodeID ] += value;
 
-//                        std::cout << "value: " << value << "\n";
-
                     }
-
-//                    std::cerr << "if: " << _implicitFunctionValues[ nodeID ] << "\n";
-//
-//                    return new errorNode( __func__, "derp" );
-// 
-//                    //Get the element contribution to the nodal values of the implicit function
-//                    elementIndices = { i, j, k };
-//                    error = processBackgroundGridElementImplicitFunction( elementIndices, elementNodalContributions,
-//                                                                          globalNodeIds, pointCounts );
-//
-//                    if ( error ){
-//
-//                        errorOut result = new errorNode( "projectImplicitFunctionToBackgroundGrid",
-//                                                         "Error in processing the projection of the implicit function to the nodes for the element with the lower cornrer of indices i, j, k: "
-//                                                       + std::to_string( i ) + ", "
-//                                                       + std::to_string( j ) + ", "
-//                                                       + std::to_string( k ) );
-//
-//                        result->addNext( error );
-//                        return result;
-//
-//                    }
-//
-//                    for ( uIntType i = 0; i < globalNodeIds.size( ); i++ ){
-//
-//                        //Add those values to the grid
-//                        _implicitFunctionValues[ globalNodeIds[ i ] ] += elementNodalContributions[ i ];
-//    
-//                        //Add the point counts
-//                        gridPointCounts[ globalNodeIds[ i ] ] += pointCounts[ i ];
-//
-//                    }
 
                 }
 
@@ -1809,28 +1785,10 @@ namespace volumeReconstruction{
 
         }
 
-//        for ( uIntType i = 1; i < ngx - 1; i++ ){
-//
-//            for ( uIntType j = 1; j < ngy - 1; j++ ){
-//
-//                for ( uIntType k = 1; k < ngz - 1; k++ ){
-//
-//                    if ( gridPointCounts[ ngy * ngz * i + ngz * j + k ] > 0 ){
-//
-//                        _implicitFunctionValues[ ngy * ngz * i + ngz * j + k ] /=
-//                            ( floatType )gridPointCounts[ ngy * ngz * i + ngz * j + k ];
-//
-//                    }
-//
-//                }
-//
-//            }
-//
-//        }
-
         _implicitFunctionValues -= _isosurfaceCutoff;
 
         return NULL;
+
     }
 
     errorOut dualContouring::getGridElement( const uIntVector &indices, std::unique_ptr< elib::Element > &element ){
@@ -2443,7 +2401,22 @@ namespace volumeReconstruction{
                 //Compute the normal at the transition point
                 uIntVector supportingPoints;
 
-                floatVector origin = intersectionPoint;
+                floatVector _lD_intersectionPoint;
+
+                floatVector origin;
+
+                if ( _localDomain ){
+
+                    _localDomain->interpolate( _localDomain->nodes, intersectionPoint, _lD_intersectionPoint );
+
+                    origin = _lD_intersectionPoint;
+
+                }
+                else{
+
+                    origin = intersectionPoint;
+
+                }
 
                 _pointTree.getPointsWithinRadiusOfOrigin( origin, _critical_radius, supportingPoints );
 
@@ -2451,12 +2424,30 @@ namespace volumeReconstruction{
 
                     if ( cellValues[ i2 ] > cellValues[ i1 ] ){
 
-                        origin = element->reference_nodes[ i2 ];
+                        if ( _localDomain ){
+
+                            _localDomain->interpolate( _localDomain->nodes, element->reference_nodes[ i2 ], origin );
+
+                        }
+                        else{
+
+                            origin = element->reference_nodes[ i2 ];
+
+                        }
 
                     }
                     else{
 
-                        origin = element->reference_nodes[ i1 ];
+                        if ( _localDomain ){
+
+                            _localDomain->interpolate( _localDomain->nodes, element->reference_nodes[ i1 ], origin );
+
+                        }
+                        else{
+
+                            origin = element->reference_nodes[ i1 ];
+
+                        }
 
                     }
 
@@ -2474,7 +2465,16 @@ namespace volumeReconstruction{
 
                     floatVector pi( getPoints( )->begin( ) + *sP, getPoints( )->begin( ) + *sP + _dim );
 
-                    error = grad_rbf( intersectionPoint, pi, _length_scale, _grad );
+                    if ( _localDomain ){
+
+                        error = grad_rbf( _lD_intersectionPoint, pi, _length_scale, _grad );
+
+                    }
+                    else{
+
+                        error = grad_rbf( intersectionPoint, pi, _length_scale, _grad );
+
+                    }
 
                     if ( error ){
 
@@ -2653,6 +2653,7 @@ namespace volumeReconstruction{
             }
 
             _boundaryPointIDToIndex.emplace( *bc, bc - _boundaryCells.begin( ) );
+
             ownedIndices[ bc - _boundaryCells.begin( ) ] = _dim * ( bc - _boundaryCells.begin( ) );
 
         }
