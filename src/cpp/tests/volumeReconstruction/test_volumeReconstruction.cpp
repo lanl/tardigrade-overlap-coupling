@@ -1575,7 +1575,7 @@ int test_dualContouring_performPositionWeightedSurfaceIntegration( std::ofstream
     }
 
     floatVector integratedSurfaceResult;
-    floatVector integratedSurfaceAnswer = { 0.299547 ,  0.1394404, -0.0635677 };
+    floatVector integratedSurfaceAnswer = { 0.903828 , -0.3204276, -0.3170567 };
 
     error = dc.performPositionWeightedSurfaceIntegration( functionValues, 1, integratedSurfaceResult );
 
@@ -1829,7 +1829,7 @@ int test_dualContouring_performRelativePositionSurfaceFluxIntegration( std::ofst
     }
 
     floatVector integratedSurfaceResult;
-    floatVector integratedSurfaceAnswer = { 7.62628569, 22.89438861, 38.18400637, 15.26491627, 30.52543183, 45.81876794 };
+    floatVector integratedSurfaceAnswer = { 6.81813769, 20.45440861, 34.09068637, 13.63627627, 27.27255183, 40.90882794 };
     floatVector origin = { 0., 0., 0. };
 
     error = dc.performRelativePositionSurfaceFluxIntegration( functionValues, 6, origin, integratedSurfaceResult );
@@ -1982,20 +1982,37 @@ int test_dualContouring_getSurfaceSubdomains( std::ofstream &results ){
         return 1;
     }
 
-    uIntVector subdomainNodeCountAnswer = { 19, 12, 17, 19, 21, 10, 13, 17, 16, 10 };
+    uIntVector subdomainNodeCountAnswer = { 31, 50, 26, 31, 33, 37, 22, 42, 24, 32 };
 
-    uIntVector subdomainNodesAnswer = {   1,   2,   3,   7,   8,   9,  10,  14,  15,  49,  50,  51,  52,
-                                         56,  57,  63,  98,  99, 100, 215, 222, 256, 257, 261, 262, 263,
-                                        264, 268, 269, 270, 271, 134, 175, 182, 183, 184, 224, 231, 232,
-                                        233, 266, 267, 273, 274, 275, 280, 281, 282, 147, 148, 149, 196,
-                                        197, 198, 199, 203, 210, 245, 246, 247, 248, 252, 253, 254, 255,
-                                        259, 260, 130, 131, 136, 137, 138, 173, 179, 180, 185, 186, 187,
-                                        229, 234, 235, 236, 276, 277, 278, 283, 284, 285,  70, 105, 112,
-                                        119, 126, 133, 154, 161, 168, 217,   4,   5,  11,  12,  17,  18,
-                                         19,  25,  26,  61,  68,  75, 124,  53,  54, 101, 102, 103, 110,
-                                        117, 150, 151, 152, 159, 166, 200, 201, 208, 249, 250,  16,  21,
-                                         22,  23,  24,  28,  29,  30,  35,  36,  37,  77,  84,  85,  86,
-                                        135,  31,  32,  33,  38,  39,  40,  82,  87,  88,  89 };
+    uIntVector subdomainNodesAnswer = { 244, 241, 240, 225, 224, 221, 220,  13,  12,  11,   3,   2,   0,
+                                          1,   8,   9,  10,  44,  45, 112, 113, 114, 115, 120, 121, 140,
+                                        141, 146, 147, 148, 149,
+                                        315, 314, 307, 306, 305, 304, 291, 290, 287, 286, 275, 271, 270,
+                                        267, 266, 211, 210, 207, 206, 205, 204,  87,  86,  79,  78,  77,
+                                         76,  75,  74,  73,  72,  66,  65,  64,  63,  62,  61,  60,  57,
+                                         56,  98,  99, 168, 169, 184, 185, 186, 187, 190, 191,
+                                        327, 326, 325, 324, 319, 318, 299, 298, 295, 294, 279, 219, 218,
+                                        215, 214, 199,  81,  80,  67, 106, 107, 110, 111, 171, 197, 198,
+                                        311, 310, 303, 302, 301, 300, 283, 282, 281, 280, 261, 260, 203,
+                                        202, 201, 200,  91,  90,  89,  88,  85,  84,  83,  82,  71,  70,
+                                        161, 180, 181, 182, 183,
+                                        263, 262, 247, 246, 243, 242, 227, 226, 223, 222,  55,  54,  51,
+                                         50,  17,  16,  15,  14,   4,   5,   6,   7, 116, 117, 118, 119,
+                                        142, 143, 144, 145, 160, 162, 163,
+                                        272, 257, 256, 253, 252, 249, 248, 245, 237, 236, 233, 232, 229,
+                                        228,  47,  22,  21,  20,  19,  18,  28,  29,  30,  34,  35,  36,
+                                         37,  46, 122, 123, 126, 127, 130, 131, 132, 150, 151,
+                                        312, 309, 308, 289, 288, 285, 284, 269, 268, 265, 264, 209, 208,
+                                         92,  53,  52, 164, 165, 166, 167, 188, 189,
+                                        274, 259, 258, 255, 254, 251, 250, 239, 238, 235, 234, 231, 230,
+                                         59,  58,  49,  48,  23,  24,  25,  26,  27,  31,  32,  33,  39,
+                                         40,  41,  42,  43, 124, 125, 128, 129, 136, 137, 138, 139, 157,
+                                        158, 159, 170,
+                                        278, 277, 276, 273,  69,  38, 133, 134, 135, 152, 153, 154, 155,
+                                        156, 172, 173, 174, 175, 176, 177, 178, 179, 194, 196,
+                                        323, 322, 321, 320, 317, 316, 313, 297, 296, 293, 292, 217, 216,
+                                        213, 212,  96,  95,  94,  93,  68,  97, 100, 101, 102, 103, 104,
+                                        105, 108, 109, 192, 193, 195 };
 
     uIntVector subdomainNodeCountResult;
     uIntVector subdomainNodesResult;
@@ -2778,11 +2795,11 @@ int main(){
     test_dualContouring_performVolumeIntegration( results );
     test_dualContouring_performRelativePositionVolumeIntegration( results );
     test_dualContouring_performSurfaceIntegration( results );
-//    test_dualContouring_performPositionWeightedSurfaceIntegration( results );
-//    test_dualContouring_performSurfaceFluxIntegration( results );
-//    test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
-//    test_dualContouring_getSurfaceSubdomains( results );
-//    test_dualContouring_exportConfiguration( results );
+    test_dualContouring_performPositionWeightedSurfaceIntegration( results );
+    test_dualContouring_performSurfaceFluxIntegration( results );
+    test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
+    test_dualContouring_getSurfaceSubdomains( results );
+    test_dualContouring_exportConfiguration( results );
 //    test_dualContouring_getBoundaryInformation( results );
 //    test_dualContouring_planes( results );
 //    test_dualContouring_localBoundary( results );
