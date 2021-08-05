@@ -3981,7 +3981,7 @@ namespace volumeReconstruction{
         /*=====================================================================
         |   Associate the boundary points in the domain with the seed nodes   |
         =====================================================================*/
-        
+
         uIntMatrix seedNodePoints( seedNodeIDs.size( ) );
 
         for ( auto sNP = seedNodePoints.begin( ); sNP != seedNodePoints.end( ); sNP++ ){
@@ -3998,8 +3998,8 @@ namespace volumeReconstruction{
                                               _boundaryPoints.begin( ) + _dim * ( bC->first + 1 ) );
 
             //Get the current seed point
-            floatVector currentSeedPoint( _boundaryPoints.begin( ) + _dim * bC->first,
-                                          _boundaryPoints.begin( ) + _dim * ( bC->first + 1 ) );
+            floatVector currentSeedPoint( _boundaryPoints.begin( ) + _dim * ( *seedNodeIDs.begin( ) ),
+                                          _boundaryPoints.begin( ) + _dim * ( *seedNodeIDs.begin( ) + 1 ) );
 
             //Compute the distance
             floatType bestDistance = vectorTools::l2norm( currentBoundaryPoint - currentSeedPoint );
@@ -4009,7 +4009,7 @@ namespace volumeReconstruction{
 
                 //Get the coordinates of the current seed node
                 floatVector currentSeedPoint( _boundaryPoints.begin( ) + _dim * ( *sNP ),
-                                              _boundaryPoints.begin( ) + _dim * ( *sNP ) +1 );
+                                              _boundaryPoints.begin( ) + _dim * ( *sNP  + 1 ) );
 
                 //Compute the distance
                 floatType currentDistance = vectorTools::l2norm( currentBoundaryPoint - currentSeedPoint );
