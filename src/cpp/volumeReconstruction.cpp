@@ -2995,6 +2995,28 @@ namespace volumeReconstruction{
 
         _boundaryPointGrid->insert( _boundaryNormalsPtr );
 
+        // Write out the surface areas on the boundary
+
+        shared_ptr< XdmfAttribute > _boundaryAreasPtr = XdmfAttribute::New( );
+
+        _boundaryAreasPtr->setType( XdmfAttributeType::Scalar( ) );
+
+        _boundaryAreasPtr->setCenter( XdmfAttributeCenter::Node( ) );
+
+        _boundaryAreasPtr->setName( "Surface areas of the boundary points" );
+
+        floatVector boundaryAreasVector( _boundaryPointAreas.size( ), 0 );
+
+        for ( unsigned int i = 0; i < _boundaryPointAreas.size( ); i++ ){
+
+            boundaryAreasVector[ i ] = _boundaryPointAreas[ i ];
+
+        }
+
+        _boundaryAreasPtr->insert( 0, boundaryAreasVector.data( ), boundaryAreasVector.size( ), 1, 1 );
+
+        _boundaryPointGrid->insert( _boundaryAreasPtr );
+
         _gridCollection->insert( _boundaryPointGrid );
 
         //Write the output file
@@ -3137,9 +3159,9 @@ namespace volumeReconstruction{
 
             }
 
-            _boundaryPointAreas[ _bptCurrentIndex ] = vectorTools::l2norm( n );
+            _boundaryPointAreas[ _bptCurrentIndex ] = 0.5 * vectorTools::l2norm( n );
 
-            _boundaryPointNormals[ _bptCurrentIndex ] = n / _boundaryPointAreas[ _bptCurrentIndex ];
+            _boundaryPointNormals[ _bptCurrentIndex ] = n / ( 2 * _boundaryPointAreas[ _bptCurrentIndex ] );
 
             //Compute the second triangle's normal and area
             n = vectorTools::cross( p4 - p3, p2 - p3 );
@@ -3152,9 +3174,9 @@ namespace volumeReconstruction{
 
             }
 
-            _boundaryPointAreas[ _bptCurrentIndex + 1 ] = vectorTools::l2norm( n );
+            _boundaryPointAreas[ _bptCurrentIndex + 1 ] = 0.5 * vectorTools::l2norm( n );
 
-            _boundaryPointNormals[ _bptCurrentIndex + 1 ] = n / _boundaryPointAreas[ _bptCurrentIndex + 1 ];
+            _boundaryPointNormals[ _bptCurrentIndex + 1 ] = n / ( 2 * _boundaryPointAreas[ _bptCurrentIndex + 1 ] );
 
             _bptCurrentIndex += 2;
 
