@@ -324,6 +324,9 @@ namespace volumeReconstruction{
             floatVector _meshPoints;
             DOFMap _meshPointIDToIndex;
 
+            floatVector _boundaryPoints;
+
+            uIntType _bptCurrentIndex;
             std::unordered_map< uIntType, floatType > _boundaryPointAreas; 
             std::unordered_map< uIntType, floatVector > _boundaryPointNormals;
             errorOut computeBoundaryPointNormalsAndAreas( );
