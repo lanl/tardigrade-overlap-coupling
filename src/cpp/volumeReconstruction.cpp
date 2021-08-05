@@ -3766,12 +3766,6 @@ namespace volumeReconstruction{
 
         }
 
-        if ( positionWeightedIntegral ){
-
-            integratedValue = floatVector( integratedValue.size( ) * _dim, 0 );
-
-        }
-
         uIntVector subdomainIndices;
 
         if ( subdomainIDs ){
@@ -3781,7 +3775,7 @@ namespace volumeReconstruction{
         }
         else{
 
-            subdomainIndices = uIntVector( 0, _boundaryPointAreas.size( ) );
+            subdomainIndices = uIntVector( _boundaryPointAreas.size( ), 0 );
 
             for ( uIntType i = 0; i < _boundaryPointAreas.size( ); i++ ){
 
@@ -3810,7 +3804,7 @@ namespace volumeReconstruction{
 
                 floatVector pi( getPoints( )->begin( ) + *nP, getPoints( )->begin( ) + *nP + _dim );
 
-                floatVector fi( valuesAtPoints.begin( ) + valueSize * ( *nP ) / _dim, valuesAtPoints.begin( ) + valueSize * ( *nP + 1 ) / _dim );
+                floatVector fi( valuesAtPoints.begin( ) + valueSize * ( *nP ) / _dim, valuesAtPoints.begin( ) + valueSize * ( ( *nP ) / _dim + 1 ) );
 
                 floatType v;
 
@@ -3824,7 +3818,7 @@ namespace volumeReconstruction{
 
             functionValueAtBoundaryPoint /= ( totalValue + _absoluteTolerance );
 
-            floatVector integrand( integratedValue.size( ), 0 );
+            floatVector integrand = functionValueAtBoundaryPoint;
 
             if ( computeFlux ){
 
