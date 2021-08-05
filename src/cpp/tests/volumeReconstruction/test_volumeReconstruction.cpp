@@ -1327,9 +1327,9 @@ int test_dualContouring_performRelativePositionVolumeIntegration( std::ofstream 
     }
 
     floatVector integratedVolumeResult;
-    floatVector integratedVolumeAnswer = { 0.30387163, -0.08293585,  0.0150474 ,
-                                           0.60774325, -0.1658721 ,  0.03009381,
-                                           0.91161588, -0.24880715,  0.04514121 };
+    floatVector integratedVolumeAnswer = { 0.48573563, -0.32615985,  0.0715282 ,
+                                           0.97147225, -0.6523191 ,  0.14305681,
+                                           1.45720788, -0.97847915,  0.21458421 };
 
     floatVector origin = { 0., 0., 0. };
 
@@ -1454,7 +1454,7 @@ int test_dualContouring_performSurfaceIntegration( std::ofstream &results ){
     }
 
     floatVector integratedSurfaceResult;
-    floatVector integratedSurfaceAnswer = { 23.2374559 , 46.47491179, 69.71236769 };
+    floatVector integratedSurfaceAnswer = { 22.3709189 , 44.74184179, 67.11275769 };
 
     error = dc.performSurfaceIntegration( functionValues, 3, integratedSurfaceResult );
 
@@ -2776,8 +2776,8 @@ int main(){
     test_dualContouring_evaluate( results );
     test_dualContouringInternalPointResidual( results );
     test_dualContouring_performVolumeIntegration( results );
-//    test_dualContouring_performRelativePositionVolumeIntegration( results );
-//    test_dualContouring_performSurfaceIntegration( results );
+    test_dualContouring_performRelativePositionVolumeIntegration( results );
+    test_dualContouring_performSurfaceIntegration( results );
 //    test_dualContouring_performPositionWeightedSurfaceIntegration( results );
 //    test_dualContouring_performSurfaceFluxIntegration( results );
 //    test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
