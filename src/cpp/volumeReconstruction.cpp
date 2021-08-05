@@ -965,7 +965,7 @@ namespace volumeReconstruction{
         ( void ) macroNormal;
         ( void ) useMacroNormal;
 
-        return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
+        return new errorNode( __func__, "Surface flux integration not implemented" );
     }
 
     errorOut volumeReconstructionBase::performRelativePositionSurfaceFluxIntegration( const floatVector &valuesAtPoints,
@@ -1009,7 +1009,7 @@ namespace volumeReconstruction{
         ( void ) macroNormal;
         ( void ) useMacroNormal;
 
-        return new errorNode( "performSurfaceFluxIntegration", "Surface flux integration not implemented" );
+        return new errorNode( __func__, "Surface flux integration not implemented" );
     }
 
     errorOut volumeReconstructionBase::getSurfaceSubdomains( const floatType &minDistance, uIntVector &subdomainNodeCounts,
@@ -3544,7 +3544,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "performPositionWeightedSurfaceIntegration",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the surface integral" );
             result->addNext( error );
             return result;
@@ -3585,7 +3585,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "performSurfaceIntegration",
+            errorOut result = new errorNode( __func__,
                                              "Error in the computation of the surface integral" );
             result->addNext( error );
             return result;
@@ -3632,7 +3632,7 @@ namespace volumeReconstruction{
 
         if ( error ){
 
-            errorOut result = new errorNode( "performRelativePositionSurfaceFluxIntegration",
+            errorOut result = new errorNode( __func__,
                                              "Error in computation of the integral of the dyadic product between a flux and the relative position vector" );
             result->addNext( error );
             return result;
@@ -3680,7 +3680,7 @@ namespace volumeReconstruction{
 
             if ( subdomainIDs->size( ) != subdomainWeights->size( ) ){
 
-                return new errorNode( "performSurfaceIntegration",
+                return new errorNode( __func__,
                                       "The size of the subdomain ids and subdomain weights are not consistent" );
 
             }
@@ -3689,13 +3689,13 @@ namespace volumeReconstruction{
 
         if ( ( !subdomainIDs ) && ( subdomainWeights ) ){
 
-            return new errorNode( "performSurfaceIntegration",
+            return new errorNode( __func__,
                                   "The subdomain weights are defined but not the subdomain" );
 
         }
 
         if ( ( macroNormal ) && ( subdomainWeights ) ){
-            return new errorNode( "performSurfaceIntegration",
+            return new errorNode( __func__,
                                   "Both the macro normal and subdomain weights can't be provided." );
         }
 
@@ -3704,7 +3704,7 @@ namespace volumeReconstruction{
             if ( ( macroNormal->size( ) != ( subdomainIDs->size( ) * _dim ) ) &&
                  ( macroNormal->size( ) != _dim ) ){
     
-                return new errorNode( "performSurfaceIntegration",
+                return new errorNode( __func__,
                                       "The macro normal and subdomainIDs vector are not of consistent sizes. It must\n either be of length " +
                                       std::to_string( _dim ) + " or " + std::to_string( _dim ) +
                                       " times the number of subdomain IDs" );
@@ -3715,15 +3715,34 @@ namespace volumeReconstruction{
 
         if ( ( macroNormal ) && ( !subdomainIDs ) ){
             
-            return new errorNode( "performSurfaceIntegration",
+            return new errorNode( __func__,
                                   "The macro normal and subdomainIDs vector must both be defined together" );
 
         }
 
         if ( ( !macroNormal ) && ( useMacroNormal ) ){
 
-            return new errorNode( "performSurfaceIntegration",
+            return new errorNode( __func__,
                                   "The macro normal is requested to be used for flux calculations but it is not defined" );
+
+        }
+
+        if ( subdomainIDs ){
+
+            // Check that the subdomain ids are within range
+
+            for ( auto sID = subdomainIDs->begin( ); sID != subdomainIDs->end( ); sID++ ){
+
+                if ( *sID >= _boundaryPointAreas.size( ) ){
+
+                    return new errorNode( __func__,
+                                          "The subdomain ID " + std::to_string( *sID )
+                                          + " is out of range ( max id = "
+                                          + std::to_string( _boundaryPointAreas.size( ) - 1 ) ) + " )";
+
+                }
+
+            }
 
         }
 
@@ -3733,7 +3752,7 @@ namespace volumeReconstruction{
 
             if ( error ){
 
-                errorOut result = new errorNode( "performSurfaceIntegration",
+                errorOut result = new errorNode( __func__,
                                                  "Error encountered during the reconstruction of the volume" );
                 result->addNext( error );
                 return result;
@@ -3757,7 +3776,7 @@ namespace volumeReconstruction{
 
             if ( origin.size( ) != _dim ){
 
-                return new errorNode( "performSurfaceIntegration",
+                return new errorNode( __func__,
                                       "The origin must be of dimension: " + std::to_string( _dim ) );
 
             }
@@ -3784,6 +3803,12 @@ namespace volumeReconstruction{
             }
 
         }
+
+        std::cerr << "subdomainIndices: "; vectorTools::print( subdomainIndices );
+
+        std::cerr << "_boundaryPoints.size( ): " << _boundaryPoints.size( ) / _dim << "\n";
+
+        std::cerr << "looping though subdomain\n";
 
         for ( auto index = subdomainIndices.begin( ); index != subdomainIndices.end( ); index++ ){
 
@@ -3818,20 +3843,30 @@ namespace volumeReconstruction{
 
             functionValueAtBoundaryPoint /= ( totalValue + _absoluteTolerance );
 
+            std::cerr << "  function interpolated\n";
+
             floatVector integrand = functionValueAtBoundaryPoint;
 
             if ( computeFlux ){
 
+                std::cerr << "    computing the flux\n";
+
                 floatVector normal = _boundaryPointNormals[ *index ];
+
+                std::cerr << "        reconstructed normal: "; vectorTools::print( normal );
 
                 if ( useMacroNormal ){
 
                     normal = floatVector( macroNormal->begin( ) + _dim * ( index - subdomainIndices.begin( ) ),
                                           macroNormal->begin( ) + _dim * ( index - subdomainIndices.begin( ) + 1 ) );
 
+                    std::cerr << "        macro normal: "; vectorTools::print( normal );
+
                 }
 
                 integrand = vectorTools::matrixMultiply( normal, functionValueAtBoundaryPoint, 1, _dim, _dim, valueSize / _dim );
+
+                std::cerr << "        integrand: "; vectorTools::print( integrand );
 
             }
 
@@ -3857,6 +3892,10 @@ namespace volumeReconstruction{
                 floatVector normal( macroNormal->begin( ) + _dim * ( index - subdomainIndices.begin( ) ),
                                     macroNormal->begin( ) + _dim * ( index - subdomainIndices.begin( ) + 1 ) );
 
+                std::cerr << "  macro normal: "; vectorTools::print( normal );
+
+                std::cerr << "  local normal: "; vectorTools::print( _boundaryPointNormals[ *index ] );
+
                 floatType d = vectorTools::dot( normal, _boundaryPointNormals[ *index ] );
 
                 w *= 0.5 * ( d + std::fabs( d ) );
@@ -3868,6 +3907,8 @@ namespace volumeReconstruction{
                 w *= *( subdomainWeights->begin( ) + ( index - subdomainIndices.begin( ) ) );
 
             }
+
+            std::cerr << "  adding contribution\n";
 
             integratedValue += integrand * da * w;
 
