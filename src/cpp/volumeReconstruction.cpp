@@ -1291,7 +1291,7 @@ namespace volumeReconstruction{
 
     }
 
-    errorOut volumeReconstructionBase::reconstructInLocalDomain( std::unique_ptr< elib::Element > &element ){
+    errorOut volumeReconstructionBase::reconstructInLocalDomain( const std::unique_ptr< elib::Element > &element ){
         /*!
          * Perform the reconstruction in the local domain rather than in global space
          * 
@@ -3804,12 +3804,6 @@ namespace volumeReconstruction{
 
         }
 
-        std::cerr << "subdomainIndices: "; vectorTools::print( subdomainIndices );
-
-        std::cerr << "_boundaryPoints.size( ): " << _boundaryPoints.size( ) / _dim << "\n";
-
-        std::cerr << "looping though subdomain\n";
-
         for ( auto index = subdomainIndices.begin( ); index != subdomainIndices.end( ); index++ ){
 
             // Get the boundary point
@@ -3843,30 +3837,20 @@ namespace volumeReconstruction{
 
             functionValueAtBoundaryPoint /= ( totalValue + _absoluteTolerance );
 
-            std::cerr << "  function interpolated\n";
-
             floatVector integrand = functionValueAtBoundaryPoint;
 
             if ( computeFlux ){
 
-                std::cerr << "    computing the flux\n";
-
                 floatVector normal = _boundaryPointNormals[ *index ];
-
-                std::cerr << "        reconstructed normal: "; vectorTools::print( normal );
 
                 if ( useMacroNormal ){
 
                     normal = floatVector( macroNormal->begin( ) + _dim * ( index - subdomainIndices.begin( ) ),
                                           macroNormal->begin( ) + _dim * ( index - subdomainIndices.begin( ) + 1 ) );
 
-                    std::cerr << "        macro normal: "; vectorTools::print( normal );
-
                 }
 
                 integrand = vectorTools::matrixMultiply( normal, functionValueAtBoundaryPoint, 1, _dim, _dim, valueSize / _dim );
-
-                std::cerr << "        integrand: "; vectorTools::print( integrand );
 
             }
 
@@ -3892,10 +3876,6 @@ namespace volumeReconstruction{
                 floatVector normal( macroNormal->begin( ) + _dim * ( index - subdomainIndices.begin( ) ),
                                     macroNormal->begin( ) + _dim * ( index - subdomainIndices.begin( ) + 1 ) );
 
-                std::cerr << "  macro normal: "; vectorTools::print( normal );
-
-                std::cerr << "  local normal: "; vectorTools::print( _boundaryPointNormals[ *index ] );
-
                 floatType d = vectorTools::dot( normal, _boundaryPointNormals[ *index ] );
 
                 w *= 0.5 * ( d + std::fabs( d ) );
@@ -3907,8 +3887,6 @@ namespace volumeReconstruction{
                 w *= *( subdomainWeights->begin( ) + ( index - subdomainIndices.begin( ) ) );
 
             }
-
-            std::cerr << "  adding contribution\n";
 
             integratedValue += integrand * da * w;
 

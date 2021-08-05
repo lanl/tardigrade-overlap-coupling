@@ -107,7 +107,7 @@ namespace volumeReconstruction{
 
             errorOut addBoundingPlanes( const floatMatrix &planePoints, const floatMatrix &planeNormals );
 
-            errorOut reconstructInLocalDomain( std::unique_ptr< elib::Element > &element );
+            errorOut reconstructInLocalDomain( const std::unique_ptr< elib::Element > &element );
 
             //Interface functions
             const floatVector *getPoints( );
