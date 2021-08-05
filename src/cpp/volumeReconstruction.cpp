@@ -1477,7 +1477,7 @@ namespace volumeReconstruction{
 
                     floatMatrix A = vectorTools::Tdot( dxdxi, dxdxi );
 
-                    _length_scale = *getMedianNeighborhoodDistance( ) / ( 2 * std::sqrt( -std::log( 0.5 ) ) );
+                    _length_scale = *getMedianNeighborhoodDistance( ) / ( 2 * std::sqrt( -std::log( 1. / _nNeighborhoodPoints ) ) );
 
                     for ( unsigned int i = 0; i < _dim; i++ ){
 
@@ -1728,7 +1728,7 @@ namespace volumeReconstruction{
                                     _gridLocations[ 1 ].size( ) *
                                     _gridLocations[ 2 ].size( ) );
 
-        _length_scale = *getMedianNeighborhoodDistance( ) / ( 2 * std::sqrt( -std::log( 0.5 ) ) );
+        _length_scale = *getMedianNeighborhoodDistance( ) / ( 2 * std::sqrt( -std::log( 1. / _nNeighborhoodPoints ) ) );
         _critical_radius = std::sqrt( -std::log( 1e-3 ) ) * 2 * _length_scale;
 
         //Loop over the elements
@@ -3359,7 +3359,7 @@ namespace volumeReconstruction{
             }
             
             //Extract the function at the nodes
-            nodalFunctionValues = floatMatrix( element->global_node_ids.size( ), floatVector( valueSize ) );
+            nodalFunctionValues = floatMatrix( element->global_node_ids.size( ), floatVector( valueSize, 0 ) );
             for ( auto nID = element->global_node_ids.begin( ); nID != element->global_node_ids.end( ); nID++ ){
 
                 if ( functionAtGrid.find( *nID ) == functionAtGrid.end( ) ){
@@ -3396,6 +3396,9 @@ namespace volumeReconstruction{
                 element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
 
                 Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
+
+                if ( Jxw < 0 ){ return new errorNode( __func__, "The jacobian can never be negative!\n" ); }
+
                 integratedValue += qptValue * Jxw;
 
             }
