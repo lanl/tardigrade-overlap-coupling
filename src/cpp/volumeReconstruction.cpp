@@ -3738,7 +3738,7 @@ namespace volumeReconstruction{
                     return new errorNode( __func__,
                                           "The subdomain ID " + std::to_string( *sID )
                                           + " is out of range ( max id = "
-                                          + std::to_string( _boundaryPointAreas.size( ) - 1 ) ) + " )";
+                                          + std::to_string( _boundaryPointAreas.size( ) - 1 ) + " )" );
 
                 }
 
