@@ -4066,9 +4066,20 @@ namespace volumeReconstruction{
 
             floatVector boundaryPoint( _boundaryPoints.begin( ) + _dim * index, _boundaryPoints.begin( ) + _dim * ( index + 1 ) );
 
-            floatVector dadn;
+            floatMatrix dxdxi;
+            floatVector _dxdxi;
 
-            _localDomain->transform_local_vector( boundaryPoint, _boundaryPointNormals[ index ] * _boundaryPointAreas[ index ], dadn, true );
+            _localDomain->get_local_gradient( _localDomain->nodes, boundaryPoint, dxdxi );
+
+            _dxdxi = vectorTools::appendVectors( dxdxi );
+
+            floatVector dxidx;
+
+            dxidx = vectorTools::inverse( _dxdxi, _dim, _dim );
+
+            floatType J = vectorTools::determinant( _dxdxi, _dim, _dim );
+
+            floatVector dadn = vectorTools::matrixMultiply( dxidx, _boundaryPointNormals[ index ] * _boundaryPointAreas[ index ]  * J, _dim, _dim, _dim, 1, true, false );
 
             _boundaryPointNormals[ index ] = dadn / vectorTools::l2norm( dadn );
 
