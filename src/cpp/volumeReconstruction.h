@@ -306,7 +306,7 @@ namespace volumeReconstruction{
 
             errorOut findInternalAndBoundaryCells( );
 
-            errorOut computeBoundaryPoints( );
+            errorOut computeMeshPoints( );
 
             errorOut solveBoundLeastSquares( );
 
@@ -321,15 +321,15 @@ namespace volumeReconstruction{
             std::unordered_map< uIntType, uIntVector > _boundaryEdges_y;
             std::unordered_map< uIntType, uIntVector > _boundaryEdges_z;
 
-            floatVector _boundaryPoints;
-            DOFMap _boundaryPointIDToIndex;
+            floatVector _meshPoints;
+            DOFMap _meshPointIDToIndex;
 
             std::unordered_map< uIntType, floatType > _boundaryPointAreas; 
             std::unordered_map< uIntType, floatVector > _boundaryPointNormals;
             errorOut computeBoundaryPointNormalsAndAreas( );
             errorOut processBoundaryEdges( const std::unordered_map< uIntType, uIntVector > &boundaryEdges );
 
-            KDNode _boundaryPointTree;
+            KDNode _meshPointTree;
 
             errorOut writeToXDMF( );
 

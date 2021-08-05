@@ -2142,12 +2142,12 @@ namespace volumeReconstruction{
 
         }
 
-        error = computeBoundaryPoints( );
+        error = computeMeshPoints( );
 
         if ( error ){
 
             errorOut result = new errorNode( __func__,
-                                             "Error in the computation of the boundary points" );
+                                             "Error in the computation of the bounding mesh points" );
             result->addNext( error );
             return result;
 
@@ -2222,9 +2222,9 @@ namespace volumeReconstruction{
         return NULL;
     }
 
-    errorOut dualContouring::computeBoundaryPoints( ){
+    errorOut dualContouring::computeMeshPoints( ){
         /*!
-         * Compute the points which define the boundary
+         * Compute the points which define the nodes of the boundary mesh
          */
 
         if ( _dim != 3 ){
@@ -2237,10 +2237,10 @@ namespace volumeReconstruction{
         uIntType ngz = _gridLocations[ 2 ].size( );
 
         //Resize the boundary point vector
-        _boundaryPoints.clear( );
+        _meshPoints.clear( );
 
-        _boundaryPoints.reserve( _dim * _boundaryCells.size( ) );
-        _boundaryPointIDToIndex.reserve( _boundaryCells.size( ) );
+        _meshPoints.reserve( _dim * _boundaryCells.size( ) );
+        _meshPointIDToIndex.reserve( _boundaryCells.size( ) );
 
         //Loop over the boundary cells
         uIntType i, j, k;
@@ -2293,8 +2293,8 @@ namespace volumeReconstruction{
 
         floatVector X0, X;
 
-        floatVector localBoundaryPoint;
-        floatVector boundaryPoint;
+        floatVector localMeshPoint;
+        floatVector meshPoint;
 
         uIntType edgeID;
         uIntVector edgeCells;
@@ -2645,45 +2645,45 @@ namespace volumeReconstruction{
 
             uIntType rank;
 
-            localBoundaryPoint = vectorTools::solveLinearSystem( A, b, rank );
+            localMeshPoint = vectorTools::solveLinearSystem( A, b, rank );
 
-            if ( !element->local_point_inside( localBoundaryPoint ) ){
+            if ( !element->local_point_inside( localMeshPoint ) ){
 
-                localBoundaryPoint = floatVector( _dim, 0 );
+                localMeshPoint = floatVector( _dim, 0 );
 
                 for ( auto lp = points.begin( ); lp != points.end( ); lp++ ){
 
-                    localBoundaryPoint += *lp;
+                    localMeshPoint += *lp;
 
                 }
 
-                localBoundaryPoint /= points.size( );
+                localMeshPoint /= points.size( );
 
             }
 
-            element->interpolate( element->reference_nodes, localBoundaryPoint, boundaryPoint );
+            element->interpolate( element->reference_nodes, localMeshPoint, meshPoint );
 
             for ( uIntType i = 0; i < _dim; i++ ){
 
-                _boundaryPoints.push_back( boundaryPoint[ i ] );
+                _meshPoints.push_back( meshPoint[ i ] );
 
             }
 
-            _boundaryPointIDToIndex.emplace( *bc, bc - _boundaryCells.begin( ) );
+            _meshPointIDToIndex.emplace( *bc, bc - _boundaryCells.begin( ) );
 
             ownedIndices[ bc - _boundaryCells.begin( ) ] = _dim * ( bc - _boundaryCells.begin( ) );
 
         }
 
-        //Form the KD tree of the boundary points
+        //Form the KD tree of the mesh points
 
-        if ( _boundaryPoints.size( ) == 0 ){
+        if ( _meshPoints.size( ) == 0 ){
 
-            return new errorNode( __func__, "No boundary points were found" );
+            return new errorNode( __func__, "No mesh points were found" );
 
         }
 
-        _boundaryPointTree = KDNode( &_boundaryPoints, ownedIndices, 0, _dim );
+        _meshPointTree = KDNode( &_meshPoints, ownedIndices, 0, _dim );
 
         return NULL;
     }
@@ -2871,31 +2871,31 @@ namespace volumeReconstruction{
 
         //Write the boundary points out
 
-        shared_ptr< XdmfUnstructuredGrid > _boundaryPointGrid = XdmfUnstructuredGrid::New ( );
-        _boundaryPointGrid->setName( "Boundary Point Grid" );
+        shared_ptr< XdmfUnstructuredGrid > _meshPointGrid = XdmfUnstructuredGrid::New ( );
+        _meshPointGrid->setName( "Mesh Point Grid" );
 
         //Set the boundary surface geometry
-        shared_ptr< XdmfGeometry > _boundaryPointGeometry = XdmfGeometry::New( );
-        _boundaryPointGeometry->setType( XdmfGeometryType::XYZ( ) );
-        _boundaryPointGeometry->setName( "Boundary Surface Coordinates" );
-        _boundaryPointGeometry->insert( 0, _boundaryPoints.data( ), _boundaryPoints.size( ), 1, 1 );
-        shared_ptr< XdmfInformation > _boundaryPointsInfo = XdmfInformation::New( "Boundary Surface Coordinates", "The coordinates of the boundary points ( i.e. the points which are joined together to form the mesh ) in x1, y1, z1, x2, ... format" );
-        _boundaryPointGeometry->insert( _boundaryPointsInfo );
-        _boundaryPointGrid->setGeometry( _boundaryPointGeometry );
+        shared_ptr< XdmfGeometry > _meshPointGeometry = XdmfGeometry::New( );
+        _meshPointGeometry->setType( XdmfGeometryType::XYZ( ) );
+        _meshPointGeometry->setName( "Boundary mesh node coordinates" );
+        _meshPointGeometry->insert( 0, _meshPoints.data( ), _meshPoints.size( ), 1, 1 );
+        shared_ptr< XdmfInformation > _meshPointsInfo = XdmfInformation::New( "Surface Mesh Coordinates", "The coordinates of the mesh points points ( i.e. the points which are joined together to form the surface mesh ) in x1, y1, z1, x2, ... format" );
+        _meshPointGeometry->insert( _meshPointsInfo );
+        _meshPointGrid->setGeometry( _meshPointGeometry );
 
         //Set the map from the boundary ID to the XDMF ID
 
         //Set the boundary surface topology
-        shared_ptr< XdmfTopology > _boundaryPointTopology = XdmfTopology::New( );
-        _boundaryPointTopology->setType( XdmfTopologyType::Quadrilateral( ) );
+        shared_ptr< XdmfTopology > _meshPointTopology = XdmfTopology::New( );
+        _meshPointTopology->setType( XdmfTopologyType::Quadrilateral( ) );
 
-        uIntVector _boundaryPointConnectivity;
-        _boundaryPointConnectivity.reserve( 4 * ( _boundaryEdges_x.size( ) + _boundaryEdges_y.size( ) + _boundaryEdges_z.size( ) ) );
+        uIntVector _meshPointConnectivity;
+        _meshPointConnectivity.reserve( 4 * ( _boundaryEdges_x.size( ) + _boundaryEdges_y.size( ) + _boundaryEdges_z.size( ) ) );
 
         for ( auto it = _boundaryEdges_x.begin( ); it != _boundaryEdges_x.end( ); it++ ){
 
             for ( uIntType i = 0; i < it->second.size( ); i++ ){
-                _boundaryPointConnectivity.push_back( _boundaryPointIDToIndex[ it->second[ i ] ] );
+                _meshPointConnectivity.push_back( _meshPointIDToIndex[ it->second[ i ] ] );
             }
 
         }
@@ -2903,7 +2903,7 @@ namespace volumeReconstruction{
         for ( auto it = _boundaryEdges_y.begin( ); it != _boundaryEdges_y.end( ); it++ ){
 
             for ( uIntType i = 0; i < it->second.size( ); i++ ){
-                _boundaryPointConnectivity.push_back( _boundaryPointIDToIndex[ it->second[ i ] ] );
+                _meshPointConnectivity.push_back( _meshPointIDToIndex[ it->second[ i ] ] );
             }
 
         }
@@ -2911,43 +2911,15 @@ namespace volumeReconstruction{
         for ( auto it = _boundaryEdges_z.begin( ); it != _boundaryEdges_z.end( ); it++ ){
 
             for ( uIntType i = 0; i < it->second.size( ); i++ ){
-                _boundaryPointConnectivity.push_back( _boundaryPointIDToIndex[ it->second[ i ] ] );
+                _meshPointConnectivity.push_back( _meshPointIDToIndex[ it->second[ i ] ] );
             }
 
         }
 
-        _boundaryPointTopology->insert( 0, _boundaryPointConnectivity.data( ), _boundaryPointConnectivity.size( ), 1, 1 );
-        shared_ptr< XdmfInformation > _boundaryPointTopologyInfo = XdmfInformation::New( "Boundary Surface Connectivity", "The connectivity of the boundary points" );
-        _boundaryPointTopology->insert( _boundaryPointTopologyInfo );
-        _boundaryPointGrid->setTopology( _boundaryPointTopology );
-
-        //Export the normals of the boundary cells
-        shared_ptr< XdmfAttribute > _boundaryPointNormalsPtr = XdmfAttribute::New( );
-        _boundaryPointNormalsPtr->setType( XdmfAttributeType::Vector( ) );
-        _boundaryPointNormalsPtr->setCenter( XdmfAttributeCenter::Node( ) );
-        _boundaryPointNormalsPtr->setName( "Boundary Point Normal" );
-
-        floatVector _boundaryPointNormalVector;
-        _boundaryPointNormalVector.reserve( _dim * _boundaryPointNormals.size( ) );
-
-        for ( auto it = _boundaryPointNormals.begin( ); it != _boundaryPointNormals.end( ); it++ ){
-
-            for ( uIntType i = 0; i < it->second.size( ); i++ ){
-
-                _boundaryPointNormalVector.push_back( it->second[ i ] );
-
-            }
-
-        }
-
-        _boundaryPointNormalsPtr->insert( 0, _boundaryPointNormalVector.data( ), _boundaryPointNormalVector.size( ), 1, 1 );
-
-        shared_ptr< XdmfInformation > _boundaryPointNormalInformation
-            = XdmfInformation::New( "Boundary Point Normal", "The average normals at the boundary points" );
-
-        _boundaryPointNormalsPtr->insert( _boundaryPointNormalInformation );
-
-        _boundaryPointGrid->insert( _boundaryPointNormalsPtr );
+        _meshPointTopology->insert( 0, _meshPointConnectivity.data( ), _meshPointConnectivity.size( ), 1, 1 );
+        shared_ptr< XdmfInformation > _meshPointTopologyInfo = XdmfInformation::New( "Surface Mesh Connectivity", "The connectivity of the surface mesh" );
+        _meshPointTopology->insert( _meshPointTopologyInfo );
+        _meshPointGrid->setTopology( _meshPointTopology );
 
         // Write out the implicit function's value
         shared_ptr< XdmfAttribute > _implicitFunctionPtr = XdmfAttribute::New( );
@@ -2960,9 +2932,9 @@ namespace volumeReconstruction{
 
         _implicitFunctionPtr->insert( 0, _implicitFunctionValues.data( ), _implicitFunctionValues.size( ), 1, 1 );
 
-        _boundaryPointGrid->insert( _implicitFunctionPtr );
+        _meshPointGrid->insert( _implicitFunctionPtr );
 
-        _gridCollection->insert( _boundaryPointGrid );
+        _gridCollection->insert( _meshPointGrid );
 
         //Write the output file
         _domain->accept( writer );
@@ -2979,6 +2951,8 @@ namespace volumeReconstruction{
             return new errorNode( __func__, "This function requires the dimension is 3" );
         }
 
+        _boundaryPoints.clear( );
+        _boundaryPoints.reserve( _boundaryEdges_x.size( ) * _boundaryEdges_y.size( ) * _boundaryEdges_z.size( ) * _dim * 2 );
         _boundaryPointAreas.reserve( _boundaryPoints.size( ) / 3 );
         _boundaryPointNormals.reserve( _boundaryPoints.size( ) );
 
@@ -3017,13 +2991,6 @@ namespace volumeReconstruction{
 
         }
 
-        //Normalize the vectors
-        for ( auto it = _boundaryPointAreas.begin( ); it != _boundaryPointAreas.end( ); it++ ){
-
-            _boundaryPointNormals[ it->first ] /= it->second;
-
-        }
-
         return NULL;
     }
 
@@ -3042,50 +3009,51 @@ namespace volumeReconstruction{
         for ( auto edge = boundaryEdges.begin( ); edge != boundaryEdges.end( ); edge++ ){
 
             //Get the points
-            auto index = _boundaryPointIDToIndex.find( edge->second[ 0 ] );
-            if ( index == _boundaryPointIDToIndex.end( ) ){
+            auto index = _meshPointIDToIndex.find( edge->second[ 0 ] );
+            if ( index == _meshPointIDToIndex.end( ) ){
 
                 return new errorNode( __func__, "Edge boundary point ID " + std::to_string( edge->second[ 0 ] )
                                       + " not found in boundary point ID to index map." );
 
             }
-            p1 = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
-                              _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
+            p1 = floatVector( _meshPoints.begin( ) + _dim * ( index->second ),
+                              _meshPoints.begin( ) + _dim * ( index->second + 1 ) );
 
-            index = _boundaryPointIDToIndex.find( edge->second[ 1 ] );
-            if ( index == _boundaryPointIDToIndex.end( ) ){
+            index = _meshPointIDToIndex.find( edge->second[ 1 ] );
+            if ( index == _meshPointIDToIndex.end( ) ){
 
                 return new errorNode( __func__, "Edge boundary point ID " + std::to_string( edge->second[ 1 ] )
                                       + " not found in boundary point ID to index map." );
 
             }
-            p2 = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
-                              _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
+            p2 = floatVector( _meshPoints.begin( ) + _dim * ( index->second ),
+                              _meshPoints.begin( ) + _dim * ( index->second + 1 ) );
 
-            index = _boundaryPointIDToIndex.find( edge->second[ 2 ] );
-            if ( index == _boundaryPointIDToIndex.end( ) ){
+            index = _meshPointIDToIndex.find( edge->second[ 2 ] );
+            if ( index == _meshPointIDToIndex.end( ) ){
 
                 return new errorNode( __func__, "Edge boundary point ID " + std::to_string( edge->second[ 2 ] )
                                       + " not found in boundary point ID to index map." );
 
             }
-            p3 = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
-                              _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
+            p3 = floatVector( _meshPoints.begin( ) + _dim * ( index->second ),
+                              _meshPoints.begin( ) + _dim * ( index->second + 1 ) );
 
-            index = _boundaryPointIDToIndex.find( edge->second[ 3 ] );
-            if ( index == _boundaryPointIDToIndex.end( ) ){
+            index = _meshPointIDToIndex.find( edge->second[ 3 ] );
+            if ( index == _meshPointIDToIndex.end( ) ){
 
                 return new errorNode( __func__, "Edge boundary point ID " + std::to_string( edge->second[ 3 ] )
                                       + " not found in boundary point ID to index map." );
 
             }
-            p4 = floatVector( _boundaryPoints.begin( ) + _dim * ( index->second ),
-                              _boundaryPoints.begin( ) + _dim * ( index->second + 1 ) );
+            p4 = floatVector( _meshPoints.begin( ) + _dim * ( index->second ),
+                              _meshPoints.begin( ) + _dim * ( index->second + 1 ) );
 
             //Add the points to the area and normal vectors if required
+            return new errorNode( __func__, "This hasn't been corrected yet" );
             for ( uIntType i = 0; i < edge->second.size( ); i++ ){
 
-                if ( _boundaryPointAreas.find( edge->second[ i ] ) == _boundaryPointAreas.end( ) ){
+                if ( _meshPointAreas.find( edge->second[ i ] ) == _meshPointAreas.end( ) ){
     
                     _boundaryPointAreas.emplace( edge->second[ i ], 0. );
                     _boundaryPointNormals.emplace( edge->second[ i ], floatVector( _dim, 0. ) );
