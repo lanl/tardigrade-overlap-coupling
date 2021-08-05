@@ -4990,6 +4990,7 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
+            std::cerr << "COMPUTING THE HOMOGENIZED STRESSES\n";
             error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
@@ -5144,6 +5145,7 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
+            std::cerr << "COMPUTING THE HOMOGENIZED STRESSES\n";
             error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
@@ -5259,25 +5261,6 @@ namespace overlapCoupling{
  
         }
 
-        //Compute the macro-domain's surface planes in the current configuration
-        floatMatrix surfacePoints( element->local_surface_points.size( ), floatVector( _dim, 0 ) );
-
-        floatMatrix surfaceNormals( element->local_surface_normals.size( ), floatVector( _dim, 0 ) );
-
-        for ( unsigned int i = 0; i < element->local_surface_normals.size( ); i++ ){
-
-            floatVector lN = element->local_surface_normals[ i ];
-
-            floatVector lP = element->local_surface_points[ i ];
-
-            element->transform_local_vector( lP, lN, surfaceNormals[ i ], true );
-
-            surfaceNormals[ i ] /= vectorTools::l2norm( surfaceNormals[ i ] );
-
-            element->interpolate( element->nodes, lP, surfacePoints[ i ] );
-
-        }
-
         //Reset micro domain nodes
         microDomainNodes = interiorNodes;
 
@@ -5312,19 +5295,8 @@ namespace overlapCoupling{
 
         }
 
-        //Add the element's bounding planes
-        error = reconstructedVolume->addBoundingPlanes( surfacePoints, surfaceNormals );
-
-        if ( error ){
-
-            errorOut result = new errorNode( __func__,
-                                             "Error in loading the bounding planes for " + microDomainName );
-
-            result->addNext( error );
-
-            return result;
-
-        }
+        //Add the filter's domain
+        error = reconstructedVolume->reconstructInLocalDomain( element );
 
         //Reconstruct the volume
         error = reconstructedVolume->evaluate( );
@@ -5799,11 +5771,9 @@ namespace overlapCoupling{
         =====================================================================*/
 
         //Get the boundary points from the reconstructed domain
-        const uIntVector *boundaryIDs = reconstructedVolume->getBoundaryIDs( );
         const floatVector *boundaryPoints = reconstructedVolume->getBoundaryPoints( );
 
         //Determine which element surface each point belongs to ( if any )
-        uIntType bpIndex = 0;
         floatType tol = volumeReconstructionConfig[ "element_contain_tolerance" ].as< floatType >( );
         bool useMacroNormals = volumeReconstructionConfig[ "use_macro_normals" ].as< bool >( );
 
@@ -5816,12 +5786,12 @@ namespace overlapCoupling{
         auto sIndex = 0;
         for ( auto s = subdomainNodeIDs.begin( ); s != subdomainNodeIDs.end( ); s++, sIndex++ ){
 
-            ( *s ).reserve( boundaryIDs->size( ) / subdomainNodeIDs.size( ) );
-            subdomainNodeNormals[ sIndex ].reserve( _dim * boundaryIDs->size( ) / subdomainNodeIDs.size( ) );
+            ( *s ).reserve( boundaryPoints->size( ) / ( _dim * subdomainNodeIDs.size( ) ) );
+            subdomainNodeNormals[ sIndex ].reserve( boundaryPoints->size( ) / subdomainNodeIDs.size( ) );
 
         }
 
-        for ( auto id = boundaryIDs->begin( ); id != boundaryIDs->end( ); id++, bpIndex++ ){
+        for ( uIntType bpIndex = 0; bpIndex != ( boundaryPoints->size( ) / _dim ); bpIndex++ ){
 
             floatVector p( boundaryPoints->begin( ) + _dim * bpIndex,
                            boundaryPoints->begin( ) + _dim * ( bpIndex + 1 ) );
@@ -5843,7 +5813,7 @@ namespace overlapCoupling{
 
                 for ( auto s = surf.begin( ); s != surf.end( ); s++ ){
 
-                    subdomainNodeIDs[ *s ].push_back( *id );
+                    subdomainNodeIDs[ *s ].push_back( bpIndex );
 
                     floatVector n;
                     element->transform_local_vector( xi, element->local_surface_normals[ *s ], n );
@@ -6058,6 +6028,7 @@ namespace overlapCoupling{
 
                 //Compute the tractions
                 uIntVector *nodesOnSurface = &( *sN );
+
                 error = reconstructedVolume->performSurfaceFluxIntegration( dataAtMicroPoints, dataCountAtPoint,
                                                                             integratedValue, nodesOnSurface,
                                                                             NULL,

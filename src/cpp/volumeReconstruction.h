@@ -107,6 +107,8 @@ namespace volumeReconstruction{
 
             errorOut addBoundingPlanes( const floatMatrix &planePoints, const floatMatrix &planeNormals );
 
+            errorOut reconstructInLocalDomain( const std::unique_ptr< elib::Element > &element );
+
             //Interface functions
             const floatVector *getPoints( );
             const floatVector *getFunction( );
@@ -188,7 +190,7 @@ namespace volumeReconstruction{
 
             std::vector< std::pair< floatVector, floatVector > > _boundingPlanes;
             bool _boundingSurfaces = false;
-            
+            elib::Element *_localDomain = NULL;
 
         private:
 
@@ -304,7 +306,7 @@ namespace volumeReconstruction{
 
             errorOut findInternalAndBoundaryCells( );
 
-            errorOut computeBoundaryPoints( );
+            errorOut computeMeshPoints( );
 
             errorOut solveBoundLeastSquares( );
 
@@ -319,17 +321,22 @@ namespace volumeReconstruction{
             std::unordered_map< uIntType, uIntVector > _boundaryEdges_y;
             std::unordered_map< uIntType, uIntVector > _boundaryEdges_z;
 
-            floatVector _boundaryPoints;
-            DOFMap _boundaryPointIDToIndex;
+            floatVector _meshPoints;
+            DOFMap _meshPointIDToIndex;
 
+            floatVector _boundaryPoints;
+
+            uIntType _bptCurrentIndex;
             std::unordered_map< uIntType, floatType > _boundaryPointAreas; 
             std::unordered_map< uIntType, floatVector > _boundaryPointNormals;
             errorOut computeBoundaryPointNormalsAndAreas( );
             errorOut processBoundaryEdges( const std::unordered_map< uIntType, uIntVector > &boundaryEdges );
 
-            KDNode _boundaryPointTree;
+            KDNode _meshPointTree;
 
             errorOut writeToXDMF( );
+
+            errorOut updateLocalBoundaryPoints( );
 
     };
 
