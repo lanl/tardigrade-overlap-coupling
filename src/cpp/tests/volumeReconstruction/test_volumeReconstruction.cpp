@@ -3351,30 +3351,30 @@ int main(){
     std::ofstream results;
     results.open("results.tex");
 
-//    test_dualContouring_constructor( results );
-//    test_dualContouring_loadPoints( results );
-//    test_dualContouring_loadFunction( results );
-//    test_dualContouring_getFunctionValue( results );
-//    test_dualContouring_evaluate( results );
-//    test_dualContouringInternalPointResidual( results );
-//    test_dualContouring_performVolumeIntegration( results );
-//    test_dualContouring_performRelativePositionVolumeIntegration( results );
-//    test_dualContouring_performSurfaceIntegration( results );
-//    test_dualContouring_performPositionWeightedSurfaceIntegration( results );
-//    test_dualContouring_performSurfaceFluxIntegration( results );
-//    test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
-//    test_dualContouring_getSurfaceSubdomains( results );
-//    test_dualContouring_exportConfiguration( results );
-//    test_dualContouring_getBoundaryInformation( results );
-//    test_dualContouring_planes( results );
+    test_dualContouring_constructor( results );
+    test_dualContouring_loadPoints( results );
+    test_dualContouring_loadFunction( results );
+    test_dualContouring_getFunctionValue( results );
+    test_dualContouring_evaluate( results );
+    test_dualContouringInternalPointResidual( results );
+    test_dualContouring_performVolumeIntegration( results );
+    test_dualContouring_performRelativePositionVolumeIntegration( results );
+    test_dualContouring_performSurfaceIntegration( results );
+    test_dualContouring_performPositionWeightedSurfaceIntegration( results );
+    test_dualContouring_performSurfaceFluxIntegration( results );
+    test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
+    test_dualContouring_getSurfaceSubdomains( results );
+    test_dualContouring_exportConfiguration( results );
+    test_dualContouring_getBoundaryInformation( results );
+    test_dualContouring_planes( results );
     test_dualContouring_localBoundary( results );
 
-//    test_KDNode_constructor( results );
-//    test_KDNode_getIndex( results );
-//    test_KDNode_getMinimumValueDimension( results );
-//    test_KDNode_getMaximumValueDimension( results );
-//    test_KDNode_getPointsInRange( results );
-//    test_KDNode_getPointsWithinRadiusOfOrigin( results );
+    test_KDNode_constructor( results );
+    test_KDNode_getIndex( results );
+    test_KDNode_getMinimumValueDimension( results );
+    test_KDNode_getMaximumValueDimension( results );
+    test_KDNode_getPointsInRange( results );
+    test_KDNode_getPointsWithinRadiusOfOrigin( results );
 
     //Close the results file
     results.close();
