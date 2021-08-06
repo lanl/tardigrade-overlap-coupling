@@ -1481,7 +1481,7 @@ namespace volumeReconstruction{
 
                     for ( unsigned int i = 0; i < _dim; i++ ){
 
-                        discretization_count[ i ] = std::max( ( uIntType )(delta[ i ] / std::sqrt( std::pow( _length_scale, 2 ) / A[ i ][ i ] ) + 0.5 ), discretization_count[ i ] );
+                        discretization_count[ i ] = std::max( ( uIntType )(delta[ i ] / std::sqrt( std::pow( *getMedianNeighborhoodDistance( ), 2 ) / A[ i ][ i ] ) + 0.5 ), discretization_count[ i ] );
 
                     }
 
@@ -1500,11 +1500,10 @@ namespace volumeReconstruction{
             
             }
 
-            _config[ "interpolation" ][ "discretization_count" ] = discretization_count;
+            _domainDiscretization = discretization_count;
 
         }
-
-        if ( _config[ "interpolation" ][ "discretization_count" ].IsScalar( ) ){
+        else if ( _config[ "interpolation" ][ "discretization_count" ].IsScalar( ) ){
 
             uIntType v = _config[ "interpolation" ][ "discretization_count" ].as< uIntType >( );
 
@@ -1536,7 +1535,7 @@ namespace volumeReconstruction{
         }
         else{
             
-            return new errorNode( "processConfigFile", "The type of 'discretization_count' must be a scalar or sequence" );
+            return new errorNode( "processConfigFile", "The type of 'discretization_count' must be undefined, a scalar, or a sequence" );
 
         }
 
@@ -3036,9 +3035,9 @@ namespace volumeReconstruction{
 
         _boundaryPoints.clear( );
         _bptCurrentIndex = 0;
-        _boundaryPoints.reserve( _boundaryEdges_x.size( ) * _boundaryEdges_y.size( ) * _boundaryEdges_z.size( ) * _dim * 2 );
-        _boundaryPointAreas.reserve( _boundaryPoints.size( ) / 3 );
-        _boundaryPointNormals.reserve( _boundaryPoints.size( ) );
+        _boundaryPoints.reserve( ( _boundaryEdges_x.size( ) + _boundaryEdges_y.size( ) + _boundaryEdges_z.size( ) ) * _dim * 2 );
+        _boundaryPointAreas.reserve( ( _boundaryEdges_x.size( ) + _boundaryEdges_y.size( ) + _boundaryEdges_z.size( ) ) * 2 );
+        _boundaryPointNormals.reserve( ( _boundaryEdges_x.size( ) + _boundaryEdges_y.size( ) + _boundaryEdges_z.size( ) ) * _dim * 2 );
 
         //Loop through the edges
 
@@ -3371,7 +3370,7 @@ namespace volumeReconstruction{
         //Perform the volume integration
         integratedValue = floatVector( valueSize, 0. );
         floatMatrix jacobian;
-        floatType Jxw;
+        floatType J;
         floatVector qptValue;
 
         //Get the number of values in the different directions
@@ -3458,11 +3457,11 @@ namespace volumeReconstruction{
                 element->interpolate( nodalFunctionValues, qpt->first, qptValue );
                 element->get_local_gradient( element->reference_nodes, qpt->first, jacobian );
 
-                Jxw = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim ) * qpt->second;
+                J = vectorTools::determinant( vectorTools::appendVectors( jacobian ), _dim, _dim );
 
-                if ( Jxw < 0 ){ return new errorNode( __func__, "The jacobian can never be negative!\n" ); }
+                if ( J < 0 ){ return new errorNode( __func__, "The jacobian can never be negative!\n" ); }
 
-                integratedValue += qptValue * Jxw;
+                integratedValue += qptValue * J * qpt->second;
 
             }
 
