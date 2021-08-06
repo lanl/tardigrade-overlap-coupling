@@ -3036,7 +3036,7 @@ namespace volumeReconstruction{
 
         _boundaryPoints.clear( );
         _bptCurrentIndex = 0;
-        _boundaryPoints.reserve( _boundaryEdges_x.size( ) * _boundaryEdges_y.size( ) * _boundaryEdges_z.size( ) * _dim * 2 );
+        _boundaryPoints.reserve( ( _boundaryEdges_x.size( ) + _boundaryEdges_y.size( ) + _boundaryEdges_z.size( ) ) * _dim * 2 );
         _boundaryPointAreas.reserve( _boundaryPoints.size( ) / 3 );
         _boundaryPointNormals.reserve( _boundaryPoints.size( ) );
 
