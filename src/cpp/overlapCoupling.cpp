@@ -5816,7 +5816,16 @@ namespace overlapCoupling{
                     subdomainNodeIDs[ *s ].push_back( bpIndex );
 
                     floatVector n;
-                    element->transform_local_vector( xi, element->local_surface_normals[ *s ], n );
+
+                    floatMatrix dxdxi;
+
+                    floatVector dxidx;
+
+                    element->get_local_gradient( element->nodes, xi, dxdxi );
+
+                    dxidx = vectorTools::inverse( vectorTools::appendVectors( dxdxi ), _dim, _dim );
+
+                    n = vectorTools::matrixMultiply( dxidx, element->local_surface_normals[ *s ], _dim, _dim, _dim, 1, true, false );
 
                     n /= vectorTools::l2norm( n );
 
@@ -5908,7 +5917,8 @@ namespace overlapCoupling{
                 error = reconstructedVolume->performSurfaceIntegration( dataAtMicroPoints, dataCountAtPoint,
                                                                         integratedValue, nodesOnSurface,
                                                                         NULL,
-                                                                        &subdomainNodeNormals[ index ] );
+                                                                        &subdomainNodeNormals[ index ],
+                                                                        useMacroNormals );
     
                 if ( error ){
     
@@ -5928,7 +5938,8 @@ namespace overlapCoupling{
                 error = reconstructedVolume->performPositionWeightedSurfaceIntegration( dataAtMicroPoints, dataCountAtPoint,
                                                                                         integratedValue, nodesOnSurface,
                                                                                         NULL,
-                                                                                        &subdomainNodeNormals[ index ] );
+                                                                                        &subdomainNodeNormals[ index ],
+                                                                                        useMacroNormals );
 
                 if ( error ){
     
