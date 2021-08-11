@@ -10380,7 +10380,18 @@ namespace overlapCoupling{
 
         }
 
-        const floatType *time = _inputProcessor.getMacroTime( );
+        const floatType *time;
+
+        if ( _inputProcessor.isFiltering( ) ){
+
+            time = _inputProcessor.getMicroTime( );
+
+        }
+        else{
+
+            time = _inputProcessor.getMacroTime( );
+
+        }
 
         uIntType increment;
         errorOut error = writer->initializeIncrement( *time, _currentReferenceOutputIncrement, collectionNumber, increment );
