@@ -154,6 +154,17 @@ def parse_xdmf_output(filename):
                             topology[name].append(value)
                         else:
                             topology.update({name:[value]})
+
+                    if ("Time" == child.tag):
+ 
+                        name = "time"
+
+                        value = float(child.attrib['Value'])
+
+                        if name in data.keys():
+                            data[name].append(value)
+                        else:
+                            data.update({name:[value]})
     
     return dict([(name, np.vstack(data[name])) for name in data.keys()]), geometry, topology
 
