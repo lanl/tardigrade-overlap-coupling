@@ -382,3 +382,51 @@ def compute_3order_J2yield(F, A):
                 G[k] += devA[i,j,k] * devA[i,j,k]
 
     return np.sqrt(G)
+
+def compute_strains(data, dim=3):
+    """
+    Compute the strain metrics
+
+    :param dict data: The output dictionary produced by parse_xdmf_output
+    :param int dim: The spatial dimension of the filter
+    """
+
+    position, grad_u, phi, grad_phi = construct_degrees_of_freedom(data, dim=dim)
+
+    GreenLagrangeStrain = {}
+
+    MicroGreenLagrangeStrain = {}
+
+    Gamma = {}
+
+    ninc = data['density_0'].shape[0]
+
+    nel = data['density_0'].shape[1]
+
+    nqp = len([key for key in data.keys() if 'density' in key])
+
+    for qp in range(nqp):
+
+        GreenLagrangeStrain.update({qp:np.zeros((ninc,nel,dim,dim))})
+
+        MicroGreenLagrangeStrain.update({qp:np.zeros((ninc,nel,dim,dim))})
+
+        Gamma.update({qp:np.zeros((ninc,nel,dim,dim,dim))})
+
+        for inc in range(ninc):
+
+            for e in range(nel):
+
+                F = grad_u[qp][inc,e,:,:] + np.eye(3)
+
+                chi = phi[qp][inc,e,:,:] + np.eye(3)
+
+                grad_chi = grad_phi[qp][inc,e,:,:,:]
+
+                GreenLagrangeStrain[qp][inc,e,:,:] = 0.5 * (np.dot(F.T, F) - np.eye(3))
+
+                MicroGreenLagrangeStrain[qp][inc,e,:,:] = np.dot(F.T, chi) - np.eye(3)
+
+                Gamma[qp][inc,e,:,:,:] = np.einsum('iI,iJK->IJK', F, grad_chi)
+
+    return GreenLagrangeStrain, MicroGreenLagrangeStrain, Gamma
