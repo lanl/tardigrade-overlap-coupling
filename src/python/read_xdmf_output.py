@@ -466,12 +466,12 @@ def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, m
     nqp = len([key for key in data.keys() if 'density' in key])
 
     position, grad_u, phi, grad_phi = construct_degrees_of_freedom(data, dim = dim)
-    
+
     PK2_sim   = dict([(qp,np.zeros((ninc,nel,dim * dim))) for qp in range(nqp)])
     SIGMA_sim = dict([(qp,np.zeros((ninc,nel,dim * dim))) for qp in range(nqp)])
     M_sim     = dict([(qp,np.zeros((ninc,nel,dim * dim * dim))) for qp in range(nqp)])
     SDVS_sim  = dict([(qp,np.zeros((ninc,nel,nsdvs))) for qp in range(nqp)])
-    
+
     keys = ['errorCode', 'PK2', 'SIGMA', 'M', 'SDVS',\
             'DPK2Dgrad_u', 'DPK2Dphi', 'DPK2Dgrad_phi',\
             'DSIGMADgrad_u', 'DSIGMADphi', 'DSIGMADgrad_phi',\
@@ -490,14 +490,17 @@ def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, m
         for qp in range(nqp):
         
             for i in range(maxinc):
-            
+
                 # Map the parameters vector to the function parameters
                 fparams = parameters_to_fparams(parameters)
             
                 sp = 0
                 ds = 1.
                 
-                previous_SDVS_s = np.copy(SDVS)
+                if (i == 0):
+                    previous_SDVS_s = np.zeros(nsdvs)
+                else:
+                    previous_SDVS_s = np.copy(SDVS_sim[qp][i-1,e,:])
             
                 while (sp < 1.0):
                 
@@ -518,7 +521,7 @@ def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, m
                         time_0     = time[i-1]
                         grad_u_0   = grad_u[qp][i-1, e, :, :]
                         phi_0      = phi[qp][i-1, e, :, :]
-                        grad_phi_0 = grad_phi[gp][i-1, e, :, :]
+                        grad_phi_0 = grad_phi[qp][i-1, e, :, :]
                         
                     t                = (time_1 - time_0) * s + time_0
                     current_grad_u   = (grad_u_1 - grad_u_0) * s + grad_u_0
@@ -529,7 +532,7 @@ def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, m
                     previous_grad_u   = (grad_u_1 - grad_u_0) * sp + grad_u_0
                     previous_phi      = (phi_1 - phi_0) * sp + phi_0
                     previous_grad_phi = (grad_phi_1 - grad_phi_0) * sp + grad_phi_0
-                    
+
                     current_phi = current_phi.flatten()
                     previous_phi = previous_phi.flatten()
                     
