@@ -6455,7 +6455,7 @@ namespace overlapCoupling{
             microInertiaAtNodes[ n ]         /= ( densityAtNodes[ n ] * volume );
             bodyCoupleAtNodes[ n ]           /= ( densityAtNodes[ n ] * volume );
             microSpinInertiaAtNodes[ n ]     /= ( densityAtNodes[ n ] * volume );
-            symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
+            symmetricMicroStressAtNodes[ n ] /= volume;
 
             for ( unsigned int face = 0; face < element->local_surface_normals.size( ); face++ ){
 
