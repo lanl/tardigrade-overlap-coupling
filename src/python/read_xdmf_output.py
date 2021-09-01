@@ -445,7 +445,7 @@ def compute_strains(data, dim=3):
 
     return GreenLagrangeStrain, MicroGreenLagrangeStrain, Gamma
 
-def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, maxinc=None, dim=3):
+def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, maxinc=None, dim=3, maxsubiter=5):
     """
     Evaluate the model given the parameters
     
@@ -457,6 +457,7 @@ def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, m
     :param int nsdvs: The number of solution dependant state variables
     :param int maxinc: The maximum increment to evaluate
     :param int dim: The spatial dimension of the problem
+    :param int maxsubiter: The maximum number of sub iterations
     """
     
     ninc = data['density_0'].shape[0]
@@ -467,10 +468,13 @@ def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, m
 
     position, grad_u, phi, grad_phi = construct_degrees_of_freedom(data, dim = dim)
 
-    PK2_sim   = dict([(qp,np.zeros((ninc,nel,dim * dim))) for qp in range(nqp)])
-    SIGMA_sim = dict([(qp,np.zeros((ninc,nel,dim * dim))) for qp in range(nqp)])
-    M_sim     = dict([(qp,np.zeros((ninc,nel,dim * dim * dim))) for qp in range(nqp)])
-    SDVS_sim  = dict([(qp,np.zeros((ninc,nel,nsdvs))) for qp in range(nqp)])
+    if maxinc is None:
+        maxinc = ninc-1
+
+    PK2_sim   = dict([(qp,np.zeros((maxinc+1,nel,dim * dim))) for qp in range(nqp)])
+    SIGMA_sim = dict([(qp,np.zeros((maxinc+1,nel,dim * dim))) for qp in range(nqp)])
+    M_sim     = dict([(qp,np.zeros((maxinc+1,nel,dim * dim * dim))) for qp in range(nqp)])
+    SDVS_sim  = dict([(qp,np.zeros((maxinc+1,nel,nsdvs))) for qp in range(nqp)])
 
     keys = ['errorCode', 'PK2', 'SIGMA', 'M', 'SDVS',\
             'DPK2Dgrad_u', 'DPK2Dphi', 'DPK2Dgrad_phi',\
@@ -479,17 +483,18 @@ def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, m
             'ADD_TERMS', 'ADD_JACOBIANS', 'output_message']
     
     time = data['time'][1:]
-    
-    if maxinc is None:
-        maxinc = ninc
 
     tp = 0
+
+    nsubiter = 0
         
     for e in range(nel):
     
         for qp in range(nqp):
         
-            for i in range(maxinc):
+            for i in range(maxinc+1):
+
+                #print("increment: ", i)
 
                 # Map the parameters vector to the function parameters
                 fparams = parameters_to_fparams(parameters)
@@ -555,9 +560,13 @@ def evaluate_model(data, parameters, model_name, parameters_to_fparams, nsdvs, m
                                                          previous_ADD_DOF, previous_ADD_grad_DOF)
                     
                     results = dict(zip(keys, values))
+
+#                    print(results['output_message'].decode("utf-8"))
+
+                    #print("    nsubiter, ds: ", nsubiter, ds)
                     
                     if (results['errorCode'] == 1):
-                        print("error")
+                        #print("error")
                         ds = 0.5 * ds
                         nsubiter += 1
                         
