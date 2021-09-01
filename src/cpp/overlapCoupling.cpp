@@ -6455,7 +6455,7 @@ namespace overlapCoupling{
             microInertiaAtNodes[ n ]         /= ( densityAtNodes[ n ] * volume );
             bodyCoupleAtNodes[ n ]           /= ( densityAtNodes[ n ] * volume );
             microSpinInertiaAtNodes[ n ]     /= ( densityAtNodes[ n ] * volume );
-            symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
+            symmetricMicroStressAtNodes[ n ] /= volume;
 
             for ( unsigned int face = 0; face < element->local_surface_normals.size( ); face++ ){
 
@@ -10380,7 +10380,18 @@ namespace overlapCoupling{
 
         }
 
-        const floatType *time = _inputProcessor.getMacroTime( );
+        const floatType *time;
+
+        if ( _inputProcessor.isFiltering( ) ){
+
+            time = _inputProcessor.getMicroTime( );
+
+        }
+        else{
+
+            time = _inputProcessor.getMacroTime( );
+
+        }
 
         uIntType increment;
         errorOut error = writer->initializeIncrement( *time, _currentReferenceOutputIncrement, collectionNumber, increment );
