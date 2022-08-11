@@ -1,6 +1,7 @@
 #===================================================================================================== PROJECT SETUP ===
 cmake_minimum_required(VERSION 3.14)
-project(micromorphic_element)
+project(overlap_coupling)
+set(PROJECT_LIBRARY_NAME "overlap")
 
 # Set common project paths relative to project root directory
 set(CPP_SRC_PATH "src/cpp")
@@ -10,6 +11,12 @@ set(DOXYGEN_SRC_PATH "docs/doxygen")
 set(SPHINX_SRC_PATH "docs/sphinx")
 
 # Add the cmake folder to locate project CMake module(s)
+set(YAML-CPP_INSTALL_DIR "/path/to/yaml-cpp-config.cmake" CACHE PATH "The location of the yaml-cpp-config.cmake file")
+set(XDMF_INSTALL_DIR "/path/to/Xdmf-config.cmake" CACHE PATH "The location of the Xdmf-config.cmake file")
+
+set(ADDITIONAL_INSTALL_DIRECTORIES ${YAML-CPP_INSTALL_DIR} ${XDMF_INSTALL_DIR})
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${ADDITIONAL_INSTALL_DIRECTORIES})
+
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/${CMAKE_SRC_PATH}" ${CMAKE_MODULE_PATH})
 
 # Get version number from Git
@@ -40,6 +47,21 @@ if(EIGEN3_FOUND)
     message(STATUS "Found Eigen3: ${EIGEN3_INCLUDE_DIR}")
 endif()
 
+# Find yaml-cpp
+find_package(YAML-CPP REQUIRED NO_MODULE)
+include_directories(${YAML-CPP_INCLUDE_DIR})
+if(YAML-CPP_FOUND)
+    message(STATUS "Found yaml-cpp: ${YAML-CPP_INCLUDE_DIR}")
+endif()
+
+# Find Xdmf
+find_package(xdmf REQUIRED NO_MODULE
+                  NAMES "Xdmf" "xdmf")
+include_directories(${XDMF_INCLUDE_DIR})
+if(YAML-CPP_FOUND)
+    message(STATUS "Found Xdmf: ${XDMF_INCLUDE_DIR}")
+endif()
+
 # Set build type checks
 string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_lower)
 set(upstream_required "")
@@ -47,22 +69,9 @@ if(cmake_build_type_lower STREQUAL "release")
     set(upstream_required "REQUIRED")
 endif()
 
-# Set the additional subroutines to be incorporated
-set(BALANCE_EQUATION_LIBRARY "microbalance")
-set(BALANCE_EQUATION_LIBRARY_FILENAME "balance_equations")
-
-set(MATERIAL_MODEL_LIBRARY "micromat")
-set(MATERIAL_MODEL_LIBRARY_FILENAME "micromorphic_material_library")
-set(USER_SUBROUTINES "micromorphic_linear_elasticity" "micromorphic_elasto_plasticity")
-
-set(USER_INTERFACES "")
-foreach(user_subroutine ${USER_SUBROUTINES})
-    set(USER_INTERFACES ${USER_INTERFACES} "${user_subroutine}_interface")
-endforeach(user_subroutine)
-
 # Find related, but external, projects in installed environment
 include(FetchContent)
-set(upstream_packages "error_tools" "vector_tools" "solver_tools" "micromorphic_tools" ${USER_SUBROUTINES})
+set(upstream_packages "error_tools" "vector_tools")
 foreach(package ${upstream_packages})
     string(TOUPPER "${package}" package_upper)
     find_package(${package} ${upstream_required} CONFIG)
@@ -81,6 +90,43 @@ foreach(package ${upstream_packages})
     endif()
 endforeach(package)
 
+#set(YAML_CPP yaml_cpp)
+#find_package(${YAML_CPP} ${upstream_required} CONFIG)
+#if(${YAML_CPP}_FOUND)
+#    message(STATUS "Found ${YAML_CPP}: ${${YAML_CPP}_DIR}")
+#else()
+#    # Find related, but external, projects using FetchContent and building locally
+#    message(WARNING "Did not find an installed ${YAML_CPP} package. Attempting local build with FetchContent.")
+#    # TODO: Decide how to handle main/dev build differences. bash env variables for GIT TAG?
+#    set(YAML_BUILD_SHARED_LIBS ON CACHE INTERNAL "Build YAML SHARED libraries")
+#    set(YAML_CPP_BUILD_TESTS ON CACHE INTERNAL "BUILD YAML tests")
+#    FetchContent_Declare(
+#        ${YAML_CPP}
+#        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp
+#        GIT_TAG        origin/master
+#    )
+#    FetchContent_MakeAvailable(${YAML_CPP})
+#endif()
+
+#set(XDMF xdmf)
+#find_package(${XDMF} ${upstream_required} CONFIG)
+#if(${XDMF}_FOUND)
+#    message(STATUS "Found ${XDMF}: ${${XDMF}_DIR}")
+#else()
+#    # Find related, but external, projects using FetchContent and building locally
+#    message(WARNING "Did not find an installed ${XDMF} package. Attempting local build with FetchContent.")
+#    # TODO: Decide how to handle main/dev build differences. bash env variables for GIT TAG?
+#    set(BUILD_SHARED_LIBS ON CACHE INTERNAL "BUILD XDMF SHARED libraries")
+#    set(XDMF_BUILD_UTILS ON CACHE INTERNAL "BUILD XDMF utilities")
+#    FetchContent_Declare(
+#        ${XDMF}
+#        GIT_REPOSITORY https://gitlab.kitware.com/Xdmf/Xdmf.git
+#        GIT_TAG        origin/master
+#    )
+#    FetchContent_MakeAvailable(${XDMF})
+#    unset(BUILD_SHARED_LIBS)
+#endif()
+
 #=============================================================================================== ADD PROJECT TARGETS ===
 # MUST COME AFTER DEPENDENCY LOCATING
 # Add project source directories
@@ -98,7 +144,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 
 #==================================================================================== SETUP INSTALLATION CMAKE FILES ===
-foreach(package ${BALANCE_EQUATION_LIBRARY} ${MATERIAL_MODEL_LIBRARY} ${USER_INTERFACES})
+foreach(package ${PROJECT_LIBRARY_NAME})
     include(CMakePackageConfigHelpers)
     write_basic_package_version_file("${package}ConfigVersion.cmake"
                                      VERSION ${PROJECT_VERSION}
