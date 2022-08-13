@@ -55,15 +55,16 @@ if(YAML-CPP_FOUND)
 endif()
 
 # Find Xdmf
-find_package(xdmf REQUIRED NO_MODULE
+find_package(xdmf REQUIRED
                   NAMES "Xdmf" "xdmf")
-include_directories(${XDMF_INCLUDE_DIR})
-if(YAML-CPP_FOUND)
-    message(STATUS "Found Xdmf: ${XDMF_INCLUDE_DIR}")
+include_directories(${XDMF_INCLUDE_DIRS})
+link_directories(${XDMF_CMAKE_INSTALL_FULL_LIBDIR})
+link_directories("${XDMF_CMAKE_INSTALL_FULL_LIBDIR}/../lib") #XDMF seems to be installing files into lib and lib64
+if(xdmf_FOUND)
+    message(STATUS "Found Xdmf: ${XDMF_INCLUDE_DIRS}")
 endif()
 
 find_package(LibXml2 REQUIRED)
-message("LIBXML2_INCLUDE_DIR: ${LIBXML2_INCLUDE_DIR}")
 include_directories(${LIBXML2_INCLUDE_DIR})
 if(LIBXML2_FOUND)
     message(STATUS "Found LibXml2: ${LIBXML2_INCLUDE_DIR}")
