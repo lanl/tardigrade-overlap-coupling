@@ -9,6 +9,9 @@
 
 #include<generateXDMFData.h>
 
+#define BOOST_TEST_MODULE test_dataFileInterface
+#include <boost/test/included/unit_test.hpp>
+
 typedef dataFileInterface::errorNode errorNode; //!Redefinition for the error node
 typedef dataFileInterface::errorOut errorOut; //!Redefinition for a pointer to the error node
 typedef dataFileInterface::floatType floatType; //!Define the float values type.
@@ -56,11 +59,10 @@ bool compareFiles( const std::string &fn1, const std::string &fn2 ){
 
 }
 
-int test_fileGenerator_constructor( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testfileGenerator_constructor ){
     /*!
      * Test the generateXDMFData constructor
      *
-     * :param std::ofstream &results: The output file
      */
 
     remove( "xdmf_out.xdmf" );
@@ -68,44 +70,27 @@ int test_fileGenerator_constructor( std::ofstream &results ){
     //Make sure the default constructor runs
     fileGenerator::fileGenerator fG;
 
-    if ( fG.getError( ) ){
-
-        fG.getError( )->print( );
-        results << "test_fileGenerator_constructor (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !fG.getError( ) );
 
     fG = fileGenerator::fileGenerator( "bad_file" );
 
-    if ( !fG.getError( ) ){
-        results << "test_fileGenerator_constructor (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fG.getError( ) );
 
-    fG = fileGenerator::fileGenerator( "testYAML.yaml" );
+    fG = fileGenerator::fileGenerator( "generateXDMFData_testYAML.yaml" );
 
-    if ( fG.getError( ) ){
-        fG.getError( )->print( );
-        results << "test_fileGenerator_constructor (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !fG.getError( ) );
 
     std::ifstream output_file;
     output_file.open( "xdmf_out.xdmf" );
 
-    if ( !output_file.good( ) ){
-        results << "test_fileGenerator_constructor (test 4) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( output_file.good( ) );
 
     remove( "xdmf_out.xdmf" );
+    remove( "xdmf_out.h5" );
 
-    results << "test_fileGenerator_constructor & True\n";
-    return 0;
 }
 
-int test_fileGenerator_build( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testfileGenerator_build ){
     /*!
      * Test the function which builds the XDMF file
      *
@@ -115,79 +100,27 @@ int test_fileGenerator_build( std::ofstream &results ){
     remove( "xdmf_out.xdmf" );
     remove( "xdmf_out.h5" );
 
-    fileGenerator::fileGenerator fG( "testYAML.yaml" );
+    fileGenerator::fileGenerator fG( "generateXDMFData_testYAML.yaml" );
 
-    if ( fG.getError( ) ){
-        fG.getError( )->print( );
-        results << "test_fileGenerator_build & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !fG.getError( ) );
 
-    if ( fG.build( ) ){
+    BOOST_CHECK( !fG.build( ) );
 
-        fG.getError( )->print( );
-        results << "test_fileGenerator_build & False\n";
-        return 1;
+    BOOST_CHECK( *fG.getCurrentIncrement( ) == 1 );
 
-    }
-
-    if ( *fG.getCurrentIncrement( ) != 1 ){
-
-        results << "test_fileGenerator_build (test 1) & False\n";
-        return 1;
-
-    }
-
-    if ( !compareFiles( "xdmf_out.xdmf", "xdmf_answer.xdmf" ) ){
-
-        results << "test_fileGenerator_build (test 2) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( compareFiles( "xdmf_out.xdmf", "generateXDMFData_xdmf_answer.xdmf" ) );
 
     remove( "xdmf_out.xdmf" );
     remove( "xdmf_out.h5" );
 
     //Tests for errors
-    fG = fileGenerator::fileGenerator( "badYAML.yaml" );
+    fG = fileGenerator::fileGenerator( "generateXDMFData_badYAML.yaml" );
 
-    if ( fG.getError( ) ){
+    BOOST_CHECK( !fG.getError( ) );
 
-        fG.getError( )->print( );
-        results << "test_fileGenerator_build & False\n";
-        return 1;
-
-    }
-
-    if ( !fG.build( ) ){
-
-        results << "test_fileGenerator_build (test 3) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( fG.build( ) );
 
     remove( "xdmf_out.xdmf" );
     remove( "xdmf_out.h5" );
 
-    results << "test_fileGenerator_build & True\n";
-    return 0;
-}
-
-int main(){
-    /*!
-    The main loop which runs the tests defined in the 
-    accompanying functions. Each function should output
-    the function name followed by & followed by True or False 
-    if the test passes or fails respectively.
-    */
-
-    //Open the results file
-    std::ofstream results;
-    results.open("results.tex");
-
-    test_fileGenerator_constructor( results );
-    test_fileGenerator_build( results );
-
-    //Close the results file
-    results.close();
 }
