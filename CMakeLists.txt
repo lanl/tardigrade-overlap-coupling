@@ -62,6 +62,13 @@ if(YAML-CPP_FOUND)
     message(STATUS "Found Xdmf: ${XDMF_INCLUDE_DIR}")
 endif()
 
+find_package(LibXml2 REQUIRED)
+message("LIBXML2_INCLUDE_DIR: ${LIBXML2_INCLUDE_DIR}")
+include_directories(${LIBXML2_INCLUDE_DIR})
+if(LIBXML2_FOUND)
+    message(STATUS "Found LibXml2: ${LIBXML2_INCLUDE_DIR}")
+endif()
+
 # Set build type checks
 string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_lower)
 set(upstream_required "")
@@ -69,9 +76,12 @@ if(cmake_build_type_lower STREQUAL "release")
     set(upstream_required "REQUIRED")
 endif()
 
+# Set the related projects for the compile
+set(LOCAL_SUPPORT_MODULES "dataFileInterface")
+
 # Find related, but external, projects in installed environment
 include(FetchContent)
-set(upstream_packages "error_tools" "vector_tools")
+set(upstream_packages "error_tools" "vector_tools" "micromorphic_tools")
 foreach(package ${upstream_packages})
     string(TOUPPER "${package}" package_upper)
     find_package(${package} ${upstream_required} CONFIG)
@@ -89,43 +99,6 @@ foreach(package ${upstream_packages})
         FetchContent_MakeAvailable(${package})
     endif()
 endforeach(package)
-
-#set(YAML_CPP yaml_cpp)
-#find_package(${YAML_CPP} ${upstream_required} CONFIG)
-#if(${YAML_CPP}_FOUND)
-#    message(STATUS "Found ${YAML_CPP}: ${${YAML_CPP}_DIR}")
-#else()
-#    # Find related, but external, projects using FetchContent and building locally
-#    message(WARNING "Did not find an installed ${YAML_CPP} package. Attempting local build with FetchContent.")
-#    # TODO: Decide how to handle main/dev build differences. bash env variables for GIT TAG?
-#    set(YAML_BUILD_SHARED_LIBS ON CACHE INTERNAL "Build YAML SHARED libraries")
-#    set(YAML_CPP_BUILD_TESTS ON CACHE INTERNAL "BUILD YAML tests")
-#    FetchContent_Declare(
-#        ${YAML_CPP}
-#        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp
-#        GIT_TAG        origin/master
-#    )
-#    FetchContent_MakeAvailable(${YAML_CPP})
-#endif()
-
-#set(XDMF xdmf)
-#find_package(${XDMF} ${upstream_required} CONFIG)
-#if(${XDMF}_FOUND)
-#    message(STATUS "Found ${XDMF}: ${${XDMF}_DIR}")
-#else()
-#    # Find related, but external, projects using FetchContent and building locally
-#    message(WARNING "Did not find an installed ${XDMF} package. Attempting local build with FetchContent.")
-#    # TODO: Decide how to handle main/dev build differences. bash env variables for GIT TAG?
-#    set(BUILD_SHARED_LIBS ON CACHE INTERNAL "BUILD XDMF SHARED libraries")
-#    set(XDMF_BUILD_UTILS ON CACHE INTERNAL "BUILD XDMF utilities")
-#    FetchContent_Declare(
-#        ${XDMF}
-#        GIT_REPOSITORY https://gitlab.kitware.com/Xdmf/Xdmf.git
-#        GIT_TAG        origin/master
-#    )
-#    FetchContent_MakeAvailable(${XDMF})
-#    unset(BUILD_SHARED_LIBS)
-#endif()
 
 #=============================================================================================== ADD PROJECT TARGETS ===
 # MUST COME AFTER DEPENDENCY LOCATING
