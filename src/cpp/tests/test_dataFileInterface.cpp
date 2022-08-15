@@ -9,6 +9,9 @@
 
 #include<dataFileInterface.h>
 
+#define BOOST_TEST_MODULE test_dataFileInterface
+#include <boost/test/included/unit_test.hpp>
+
 typedef dataFileInterface::errorNode errorNode; //!Redefinition for the error node
 typedef dataFileInterface::errorOut errorOut; //!Redefinition for a pointer to the error node
 typedef dataFileInterface::floatType floatType; //!Define the float values type.
@@ -18,114 +21,66 @@ typedef dataFileInterface::uIntType uIntType; //!Define the unsigned int type
 typedef dataFileInterface::uIntVector uIntVector; //!Define a vector of unsigned ints
 typedef dataFileInterface::stringVector stringVector; //!Define a vector of strings
 
-int test_XDMFDataFile_constructor( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_constructor ){
     /*!
      * Test the interface with the XDMF file format
      * constructor
      *
-     * :param std::ofstream &results: The output file
      */
 
     std::shared_ptr<dataFileInterface::dataFileBase> df;
     df = dataFileInterface::dataFileBase().create( "XDMF" );
 
-    if ( !df->_error ){
-        df->_error->print();
-        results << "test_XDMFDataFile_constructor & False\n";
-        return 1;
-    }
+    BOOST_CHECK( df->_error );
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     df = dataFileInterface::dataFileBase( yf["filetest1"] ).create( "XDMF" );
 
-    if ( df->_error ){
-        df->_error->print();
-        results << "test_XDMFDataFile_constructor & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !df->_error );
 
-    if ( df->_filename.compare( "../testFiles/macroscale_xdmf.xdmf" ) != 0 ){
-        results << "test_XDMFDataFile_constructor (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( df->_filename.compare( "testFiles/macroscale_xdmf.xdmf" ) == 0 );
 
-    if ( df->_mode.compare( "read" ) != 0 ){
-        results << "test_XDMFDataFile_constructor (test 4) & False\n";
-        return 1;
-    }
-
-    if ( df->_mode.compare( "read" ) != 0 ){
-        results << "test_XDMFDataFile_constructor (test 4) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( df->_mode.compare( "read" ) == 0 );
 
     df = dataFileInterface::dataFileBase( yf["filetest1"] ).create( );
 
-    if ( !df ){
-        results << "test_XDMFDataFile_constructor (NULL) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( df );
 
-    if ( df->_error ){
-        df->_error->print();
-        results << "test_XDMFDataFile_constructor & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !df->_error );
 
-    if ( df->_filename.compare( "../testFiles/macroscale_xdmf.xdmf" ) != 0 ){
-        results << "test_XDMFDataFile_constructor (test 5) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( df->_filename.compare( "testFiles/macroscale_xdmf.xdmf" ) == 0 );
 
-    if ( df->_mode.compare( "read" ) != 0 ){
-        results << "test_XDMFDataFile_constructor (test 6) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( df->_mode.compare( "read" ) == 0 );
 
     df = dataFileInterface::dataFileBase( yf[ "filetest2" ] ).create( "XDMF" );
 
-    if ( !df->_error ){
-        results << "test_XDMFDataFile_constructor & False\n";
-        return 1;
-    }
+    BOOST_CHECK( df->_error );
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
     df = dataFileInterface::dataFileBase( yf[ "filetest3" ] ).create( "XDMF" );
 
-    if ( df->_error ){
-        results << "test_XDMFDataFile_constructor & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !df->_error );
 
     std::ifstream infile( "test_output.xdmf" );
-    if ( !infile.good( ) ){
-        results << "test_XDMFDataFile_constructor (test 7) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( infile.good( ) );
 
     infile = std::ifstream( "test_output.h5" );
-    if ( !infile.good( ) ){
-        results << "test_XDMFDataFile_constructor (test 8) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( infile.good( ) );
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    results << "test_XDMFDataFile_constructor & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_readMesh( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_readMesh ){
     /*!
      * Test the interface with the mesh for the XDMF file format.
      *
-     * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector nodePositionsAnswer = { 1, 0, 1,
@@ -149,30 +104,20 @@ int test_XDMFDataFile_readMesh( std::ofstream &results ){
 
     errorOut error = xdmf.readMesh( 1, nodePositionsResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_readMesh & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( nodePositionsAnswer, nodePositionsResult ) ){
-        results << "test_XDMFDataFile_readMesh (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( nodePositionsAnswer, nodePositionsResult ) );
 
-    results << "test_XDMFDataFile_readMesh & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_getNumIncrements( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getNumIncrements ){
     /*!
      * Test the interface with the XDMF file to get the number of
      * temporal increments.
      *
-     * :param std::ofstream &results: The output file.
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     unsigned int numIncrementsAnswer = 2;
@@ -180,29 +125,19 @@ int test_XDMFDataFile_getNumIncrements( std::ofstream &results ){
 
     errorOut error = xdmf.getNumIncrements( numIncrementsResult );
     
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_getNumIncrements (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( numIncrementsResult, numIncrementsAnswer ) ){
-        results << "test_XDMFDataFile_getNumIncrements (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( numIncrementsResult, numIncrementsAnswer ) );
 
-    results << "test_XDMFDataFile_getNumIncrements & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_getSubDomainNodes( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getSubDomainNodes ){
     /*!
      * Get the nodes from a domain.
      *
-     * :param std::ofstream &results The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     uIntVector domainNodesAnswer = { 2, 3, 6, 7, 8, 10, 12, 13 };
@@ -212,37 +147,24 @@ int test_XDMFDataFile_getSubDomainNodes( std::ofstream &results ){
     std::unique_ptr< errorNode > error;
     error.reset( xdmf.getSubDomainNodes( 0, domainName, domainNodesResult ) );
 
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_getSubDomainNodes & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainNodesResult, domainNodesAnswer ) ){
-        results << "test_XDMFDataFile_getSubDomainNodes (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainNodesResult, domainNodesAnswer ) );
 
     domainName = "free";
     error.reset( xdmf.getSubDomainNodes( 0, domainName, domainNodesResult ) );
 
-    if ( !error ){
-        results << "test_XDMFDataFile_getSubDomainNodes (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( error );
 
-    results << "test_XDMFDataFile_getSubDomainNodes & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_getNumNodes( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getNumNodes ){
     /*!
      * Test the function to extract the number of nodes in the domain
      *
-     * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     unsigned int answer = 16;
@@ -251,29 +173,19 @@ int test_XDMFDataFile_getNumNodes( std::ofstream &results ){
     std::unique_ptr< errorNode > error;
     error.reset( xdmf.getNumNodes( 0, result ) );
 
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_getNumNodes & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        results << "test_XDMFDataFile_getNumNodes (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
-    results << "test_XDMFDataFile_getNumNodes & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_getSetNames( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getSetNames ){
     /*!
      * Test the function to extract the names of the sets
      *
-     * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     std::vector< std::string > answer = { "free_nodes", "ghost_nodes",
@@ -284,40 +196,25 @@ int test_XDMFDataFile_getSetNames( std::ofstream &results ){
 
     errorOut error = xdmf.getSetNames( 1, result );
 
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_getSetNames & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( answer.size() != result.size() ){
-        results << "test_XDMFDataFile_getSetNames (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( answer.size() == result.size() );
 
     for ( unsigned int i = 0; i < result.size( ); i++ ){
 
-        if ( answer[ i ].compare( result[ i ] ) != 0 ){
-
-            results << "test_XDMFDataFile_getSetNames (test 2) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( answer[ i ].compare( result[ i ] ) == 0 );
 
     }
 
-    results << "test_XDMFDataFile_getSetNames & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_getSolutionData( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getSolutionData ){
     /*!
      * Test the function to extract the solution data
      *
-     * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector answer = { -0.001, -0.001, -0.001,
@@ -330,19 +227,10 @@ int test_XDMFDataFile_getSolutionData( std::ofstream &results ){
     floatVector result;
     errorOut error = xdmf.getSolutionData( 1, "disp_z", "Node", result );
 
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_getSolutionData & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        results << "test_XDMFDataFile_getSolutionData (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
-    results << "test_XDMFDataFile_getSolutionData & True\n";
-    return 0;
 
 }
 
@@ -350,14 +238,13 @@ int test_XDMFDataFile_getSolutionData( std::ofstream &results ){
 //       of the macro-scale anymore. If we did make a mesh that didn't have
 //       an explicit type in XDMF or if we hadn't put it in yet, then this
 //       would be the function to test with
-//int test_XDMFDataFile_getMeshData_polyhedron( std::ofstream &results ){
+//BOOST_AUTO_TEST_CASE( testXDMFDataFile_getMeshData_polyhedron ){
 //    /*!
 //     * Test the function to get the mesh data
 //     *
-//     * :param std::ofstream &results: The output file
 //     */
 //
-//    YAML::Node yf = YAML::LoadFile( "testConfig_polyhedron.yaml" );
+//    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig_polyhedron.yaml" );
 //    dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 //
 //    floatVector nodePositionAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
@@ -381,44 +268,25 @@ int test_XDMFDataFile_getSolutionData( std::ofstream &results ){
 //
 //    errorOut error = xdmf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
 //
-//    if ( error ){
-//        error->print( );
-//        results << "test_XDMFDataFile_getMeshData_polyhedron & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( !error );
 //
-//    if ( !vectorTools::fuzzyEquals( nodePositionAnswer, nodePositionResult ) ){
-//        results << "test_XDMFDataFile_getMeshData_polyhedron (test 1) & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( vectorTools::fuzzyEquals( nodePositionAnswer, nodePositionResult ) );
 //
-//    if ( !vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) ){
-//        results << "test_XDMFDataFile_getMeshData_polyhedron (test 2) & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) );
 //
-//    if ( !vectorTools::fuzzyEquals( cellCountAnswer, cellCountResult ) ){
-//        results << "test_XDMFDataFile_getMeshData_polyhedron (test 3) & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( vectorTools::fuzzyEquals( cellCountAnswer, cellCountResult ) );
 //
-//    if ( !vectorTools::fuzzyEquals( connectivityCellIndicesAnswer, connectivityCellIndicesResult ) ){
-//        results << "test_XDMFDataFile_getMeshData_polyhedron (test 4) & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( vectorTools::fuzzyEquals( connectivityCellIndicesAnswer, connectivityCellIndicesResult ) );
 //
-//    results << "test_XDMFDataFile_getMeshData_polyhedron & True\n";
-//    return 0;
 //}
 
-int test_XDMFDataFile_getMeshData( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getMeshData ){
     /*!
      * Test the function to get the mesh data
      *
-     * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector nodePositionAnswer = { 1, 0, 1, 1, 0, 0, 0, 0, 0,
@@ -442,44 +310,25 @@ int test_XDMFDataFile_getMeshData( std::ofstream &results ){
 
     errorOut error = xdmf.getMeshData( 1, nodePositionResult, connectivityResult, connectivityCellIndicesResult, cellCountResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_getMeshData & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( nodePositionAnswer, nodePositionResult ) ){
-        results << "test_XDMFDataFile_getMeshData (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( nodePositionAnswer, nodePositionResult ) );
 
-    if ( !vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) ){
-        results << "test_XDMFDataFile_getMeshData (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) );
 
-    if ( !vectorTools::fuzzyEquals( cellCountAnswer, cellCountResult ) ){
-        results << "test_XDMFDataFile_getMeshData (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( cellCountAnswer, cellCountResult ) );
 
-    if ( !vectorTools::fuzzyEquals( connectivityCellIndicesAnswer, connectivityCellIndicesResult ) ){
-        results << "test_XDMFDataFile_getMeshData (test 4) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( connectivityCellIndicesAnswer, connectivityCellIndicesResult ) );
 
-    results << "test_XDMFDataFile_getMeshData & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_getNumSubDomainNodes( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getNumSubDomainNodes ){
     /*!
      * Test the determination of the number of nodes are in a given domain
      *
-     * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     unsigned int numSubDomainNodesAnswer = 8;
@@ -489,38 +338,25 @@ int test_XDMFDataFile_getNumSubDomainNodes( std::ofstream &results ){
     std::unique_ptr< errorNode > error;
     error.reset( xdmf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult ) );
 
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_getNumSubDomainNodes & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( numSubDomainNodesResult, numSubDomainNodesAnswer ) ){
-        results << "test_XDMFDataFile_getNumSubDomainNodes (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( numSubDomainNodesResult, numSubDomainNodesAnswer ) );
 
     domainName = "free";
     error.reset( xdmf.getNumSubDomainNodes( 0, domainName, numSubDomainNodesResult ) );
 
-    if ( !error ){
-        results << "test_XDMFDataFile_getNumSubDomainNodes (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( error );
 
-    results << "test_XDMFDataFile_getNumSubDomainNodes & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_getSolutionVectorDataFromComponents( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getSolutionVectorDataFromComponents ){
     /*!
      * Test the extraction of vector solution data from a file where the 
      * components are separated.
      *
-     * :param std::ofstream &results: The output file.
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatVector answer = { 0., 0., -0.001,
@@ -544,119 +380,69 @@ int test_XDMFDataFile_getSolutionVectorDataFromComponents( std::ofstream &result
     stringVector componentNames = { "disp_x", "disp_y", "disp_z" };
     errorOut error = xdmf.getSolutionVectorDataFromComponents( 1, componentNames, "Node", result );
 
-    if ( error ){
-        error->print( );
-        results << "test_XDMFDataFile_getSolutionVectorDataFromComponents & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        results << "test_XDMFDataFile_getSolutionVectorDataFromComponents (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
-
-    results << "test_XDMFDataFile_getSolutionVectorDataFromComponents & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_getIncrementTime( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getIncrementTime ){
     /*!
      * Test the extraction of the timestamp for a given increment
      *
-     * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
     floatType answer1 = 0.;
     floatType result;
     errorOut error = xdmf.getIncrementTime( 0, result );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_XDMFDataFile_getIncrementTime & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( result, answer1 ) ){
-
-        results << "test_XDMFDataFile_getIncrementTime (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer1 ) );
 
     floatType answer2 = 1;
     error = xdmf.getIncrementTime( 1, result );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_XDMFDataFile_getIncrementTime & False\n";
-        return 1;
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer2 ) );
 
-    }
-
-    if ( !vectorTools::fuzzyEquals( result, answer2 ) ){
-
-        results << "test_XDMFDataFile_getIncrementTime (test 1) & False\n";
-        return 1;
-
-    }
-
-    results << "test_XDMFDataFile_getIncrementTime & True\n";
-    return 0;
 }
 
 int writeIncrementMeshData( const floatType &timeAnswer, const uIntType &reference_increment,
                             const uIntType &collectionNumber, uIntType &increment,
                             const uIntVector &nodeIdsAnswer, const floatVector &nodePositionsAnswer,
-                            const uIntVector &elementIdsAnswer, const uIntVector &connectivityAnswer,
-                            std::ofstream &results ){
+                            const uIntVector &elementIdsAnswer, const uIntVector &connectivityAnswer ){
     /*!
      * Write the increment's mesh data for use in the tests
      * 
-     * :param std::ofstream &results: The output file
      */
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
 
     errorOut error = xdmf.initializeIncrement( timeAnswer, reference_increment, collectionNumber, increment );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_writeIncrementMeshData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     error = xdmf.writeIncrementMeshData( increment, collectionNumber, nodeIdsAnswer, { { } }, { { } }, nodePositionsAnswer,
                                         elementIdsAnswer, { { } }, { { } }, connectivityAnswer );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_writeIncrementMeshData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     return 0;
 }
 
-int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_writeIncrementMeshData ){
     /*!
      * Write the increment mesh data
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatType timeAnswer = 0.0;
@@ -703,59 +489,31 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
     uIntType collectionNumber = 0;
 
     int result_int = writeIncrementMeshData( timeAnswer, reference_increment, collectionNumber, increment,
-                                             nodeIdsAnswer, nodePositionsAnswer, elementIdsAnswer, connectivityAnswer,
-                                             results );
+                                             nodeIdsAnswer, nodePositionsAnswer, elementIdsAnswer, connectivityAnswer );
 
-    if (result_int > 0){
-
-        return result_int;
-
-    }
+    BOOST_CHECK(result_int == 0);
 
     //Read in the mesh data to determine if things have been stored correctly
     YAML::Node af = YAML::Load( "mode: read\nfilename: test_output.xdmf\ncell_id_variable_name: ELEMID\n" );
     dataFileInterface::XDMFDataFile xdmf_result( af );
 
-    if ( xdmf_result._error ){
-
-        xdmf_result._error->print( );
-        results << "test_writeIncrementMeshData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !xdmf_result._error );
 
     //Check if the timestep was stored correctly
     floatType scalarResult;
     errorOut error = xdmf_result.getIncrementTime( increment, scalarResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_writeIncrementMeshData & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( scalarResult, 0.0 ) ){
-        results << "test_writeIncrementMeshData (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( scalarResult, 0.0 ) );
 
     //Check if the mesh information is stored correctly
     uIntVector nodeIdsResult;
     error = xdmf_result.getNodeIds( increment, "NODEID", nodeIdsResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_writeIncrementMeshData & False\n";
-        return 1;
-    }
-
-    if ( !vectorTools::fuzzyEquals( nodeIdsResult, nodeIdsAnswer ) ){
-
-        results << "test_writeIncrementMeshData (test 2) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( nodeIdsResult, nodeIdsAnswer ) );
 
     floatVector nodePositionsResult;
     uIntVector connectivityResult;
@@ -764,254 +522,132 @@ int test_XDMFDataFile_writeIncrementMeshData( std::ofstream &results ){
 
     error = xdmf_result.getMeshData( increment, nodePositionsResult, connectivityResult, cellIndicesResult, cellCountsResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_writeIncrementMeshData & False\n";
-        return 1;
+    BOOST_CHECK( vectorTools::fuzzyEquals( nodePositionsAnswer, nodePositionsResult ) );
 
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) );
 
-    if ( !vectorTools::fuzzyEquals( nodePositionsAnswer, nodePositionsResult ) ){
+    BOOST_CHECK( vectorTools::fuzzyEquals( cellIndicesAnswer, cellIndicesResult ) );
 
-        results << "test_writeIncrementMeshData (test 3) & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( connectivityAnswer, connectivityResult ) ){
-
-        results << "test_writeIncrementMeshData (test 4) & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( cellIndicesAnswer, cellIndicesResult ) ){
-
-        vectorTools::print( cellIndicesAnswer );
-        vectorTools::print( cellIndicesResult );
-        results << "test_writeIncrementMeshData (test 5) & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( cellCountsAnswer, cellCountsResult ) ){
-
-        results << "test_writeIncrementMeshData (test 6) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( cellCountsAnswer, cellCountsResult ) );
 
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    results << "test_writeIncrementMeshData & True\n";
-    return 0;
 
 }
 
-int test_XDMFDataFile_getNodeIds( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getNodeIds ){
     /*!
      * Extract the node ids from the domain
      */
 
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
-    if ( xdmf._error ){
-
-        xdmf._error->print( );
-        results << "test_XDMFDataFile_getNodeIds & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !xdmf._error );
 
     uIntVector nodeIdAnswer = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 
     uIntVector nodeIdResult;
     errorOut error = xdmf.getNodeIds( 0, "NODEID", nodeIdResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_XDMFDataFile_getNodeIds & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( nodeIdResult, nodeIdAnswer ) ){
-
-        vectorTools::print( nodeIdResult );
-        vectorTools::print( nodeIdAnswer );
-        results << "test_XDMFDataFile_getNodeIds (test 1) & False\n";
-        return 1;
-
-    }
-
-    results << "test_XDMFDataFile_getNodeIds & True\n";
-    return 0;
+    BOOST_CHECK( vectorTools::fuzzyEquals( nodeIdResult, nodeIdAnswer ) );
 
 }
 
-int test_XDMFDataFile_getCellIds( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_getCellIds ){
     /*!
      * Extract the cell ids from the domain
      */
 
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest1" ] );
 
-    if ( xdmf._error ){
-
-        xdmf._error->print( );
-        results << "test_XDMFDataFile_getCellIds & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !xdmf._error );
 
     uIntVector cellIdAnswer = { 0, 1, 2 };
 
     uIntVector cellIdResult;
     errorOut error = xdmf.getCellIds( 0, "ELEMID", cellIdResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_XDMFDataFile_getCellIds & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( cellIdResult, cellIdAnswer ) ){
-
-        vectorTools::print( cellIdResult );
-        vectorTools::print( cellIdAnswer );
-        results << "test_XDMFDataFile_getCellIds (test 1) & False\n";
-        return 1;
-
-    }
-
-    results << "test_XDMFDataFile_getCellIds & True\n";
-    return 0;
+    BOOST_CHECK( vectorTools::fuzzyEquals( cellIdResult, cellIdAnswer ) );
 
 }
 
-int test_XDMFDataFile_initializeIncrement( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_initializeIncrement ){
     /*!
      * Initialize an increment in an output XDMF data file
      *
-     * :param std::ofstream &results: The output file
      */
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
 
-    if ( xdmf._error ){
-
-        xdmf._error->print( );
-        results << "test_XDMFDataFile_initializeIncrement & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !xdmf._error );
 
     uIntType incrementAnswer1 = 0;
     uIntType incrementResult;
 
     errorOut error = xdmf.initializeIncrement( 0.0, 0, 0, incrementResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_XDMFDataFile_initializeIncrement & False\n";
-        return 1;
-
-    }
-
-    if ( incrementResult != incrementAnswer1 ){
-
-        results << "test_XDMFDataFile_initializeIncrement (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( incrementResult == incrementAnswer1 );
 
     uIntType incrementAnswer2 = 1;
 
     error = xdmf.initializeIncrement( 0.1, 0, 0, incrementResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_XDMFDataFile_initializeIncrement & False\n";
-        return 1;
-
-    }
-
-    if ( incrementResult != incrementAnswer2 ){
-
-        results << "test_XDMFDataFile_initializeIncrement (test 2) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( incrementResult == incrementAnswer2 );
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    results << "test_XDMFDataFile_initializeIncrement & True\n";
-    return 0;
 }
 
-int test_XDMFDataFile_addRootCollection( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_addRootCollection ){
     /*!
      * Test adding a root collection to the datafile
      *
-     * :param std::ofstream &results: The output file
      */
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
 
-    if ( xdmf._error ){
-
-        xdmf._error->print( );
-        results << "test_XDMFDataFile_addRootCollection & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !xdmf._error );
 
     uIntType collectionNumberResult;
     errorOut error = xdmf.addRootCollection( "TEST", "Test collection info", collectionNumberResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_XDMFDataFile_addRootCollection & False\n";
-        return 1;
-
-    }
-
-    if ( collectionNumberResult != 1 ){
-
-        results << "test_XDMFDataFile_addRootCollection (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( collectionNumberResult == 1 );
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    results << "test_XDMFDataFile_addRootCollection & True\n";
-    return 0;
 }
 
 int writeScalarSolutionData( const uIntType &collectionNumber, uIntType &increment, const uIntVector &nodeIds,
                              const floatVector &nodePositions, const uIntVector &elementIds, const uIntVector &connectivity,
-                             const floatVector &nodeDataAnswer, const floatVector &bigNodeDataAnswer, const floatVector &elementDataAnswer,
-                             std::ofstream &results ){
+                             const floatVector &nodeDataAnswer, const floatVector &bigNodeDataAnswer, const floatVector &elementDataAnswer ){
     /*!
      * Write the scalar solution data to the datafile for the test
      * 
@@ -1024,81 +660,44 @@ int writeScalarSolutionData( const uIntType &collectionNumber, uIntType &increme
      * :param const floatVector &nodeDataAnswer: The nodal data vector
      * :param const floatVector &bigNodeDataAnswer: The large nodal data vector
      * :param const floatVector &elementDataAnswer: The element data answer vector
-     * :param std::ofstream &results: The output file
      */
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
 
-    if ( xdmf._error ){
-
-        xdmf._error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !xdmf._error );
 
     errorOut error = xdmf.initializeIncrement( 0.0, collectionNumber, collectionNumber, increment );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     error = xdmf.writeIncrementMeshData( increment, collectionNumber, nodeIds, { { } }, { { } }, nodePositions,
                                          elementIds, { { } }, { { } }, connectivity );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     error = xdmf.writeScalarSolutionData( increment, 0, "TEST_DATA", "NODE", nodeDataAnswer );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     error = xdmf.writeScalarSolutionData( increment, 0, "BIG_TEST_DATA", "NODE", bigNodeDataAnswer );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     error = xdmf.writeScalarSolutionData( increment, 0, "TEST_DATA_", "CeLl", elementDataAnswer );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     return 0;
 }
 
-int test_XDMFDataFile_writeScalarSolutionData( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_writeScalarSolutionData ){
     /*!
      * Test writing a scalar solution data to the output file
      *
-     * :param std::ofstream &results: The output file
      */
 
     uIntType increment;
@@ -1144,84 +743,43 @@ int test_XDMFDataFile_writeScalarSolutionData( std::ofstream &results ){
     floatVector elementDataAnswer = { -1, -2, -3 };
 
     int return_int = writeScalarSolutionData( collectionNumber, increment, nodeIds, nodePositions, elementIds,
-                                              connectivity, nodeDataAnswer, bigNodeDataAnswer, elementDataAnswer,
-                                              results );
+                                              connectivity, nodeDataAnswer, bigNodeDataAnswer, elementDataAnswer );
 
-    if ( return_int != 0 ){
-
-        return return_int;
-
-    }
+    BOOST_CHECK( return_int == 0 );
 
     //Read in the mesh data to determine if things have been stored correctly
     YAML::Node af = YAML::Load( "mode: read\nfilename: test_output.xdmf\ncell_id_variable_name: ELEMID\n" );
     dataFileInterface::XDMFDataFile xdmf_result( af );
 
-    if ( xdmf_result._error ){
-
-        xdmf_result._error->print( );
-        results << "test_writeSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !xdmf_result._error );
 
     floatVector nodeDataResult;
     errorOut error = xdmf_result.getSolutionData( increment, "TEST_DATA", "Node", nodeDataResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( nodeDataResult, nodeDataAnswer ) ){
-
-        results << "test_XDMFDataFile_writeScalarSolutionData (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( nodeDataResult, nodeDataAnswer ) );
 
     floatVector elementDataResult;
     error = xdmf_result.getSolutionData( increment, "TEST_DATA_", "Cell", elementDataResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( elementDataResult, elementDataAnswer ) ){
-
-        results << "test_XDMFDataFile_writeScalarSolutionData (test 2) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( elementDataResult, elementDataAnswer ) );
 
     floatVector bigNodeDataResult;
     error = xdmf_result.getSolutionData( increment, "BIG_TEST_DATA", "Node", bigNodeDataResult );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData (test 3) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    results << "test_XDMFDataFile_writeScalarSolutionData & True\n";
-    return 0;
 }
 
 int writeSolutionData( uIntType &increment, const uIntType &collectionNumber, const uIntVector &nodeIds, const floatVector &nodePositions,
                        const uIntVector &elementIds, const uIntVector &connectivity, const floatVector &nodeDataAnswer,
-                       const floatVector &elementDataAnswer, std::ofstream &results ){
+                       const floatVector &elementDataAnswer ){
     /*!
      * Write the solution data to an output file
      * 
@@ -1233,65 +791,39 @@ int writeSolutionData( uIntType &increment, const uIntType &collectionNumber, co
      * :param const uIntVector &connectivity: The connectivity vector
      * :param const floatVector &nodeDataAnswer: The node data to be written to the file
      * :param const floatVector &elementDataAnswer: The element data to be written to the file
-     * :param std::ofstream &results: The output file
      */
 
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    YAML::Node yf = YAML::LoadFile( "testConfig.yaml" );
+    YAML::Node yf = YAML::LoadFile( "dataFileInterface_testConfig.yaml" );
     dataFileInterface::XDMFDataFile xdmf( yf[ "filetest3" ] );
 
     errorOut error = xdmf.initializeIncrement( 0.0, 0, collectionNumber, increment );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeScalarSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     error = xdmf.writeIncrementMeshData( increment, collectionNumber, nodeIds, { { } }, { { } }, nodePositions,
                                          elementIds, { { } }, { { } }, connectivity );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     error = xdmf.writeSolutionData( increment, 0, { "TEST_DATA_1", "TEST_DATA_2", "TEST_DATA_3" }, "NODE", nodeDataAnswer );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     error = xdmf.writeSolutionData( increment, 0, { "TEST_DATA_1_", "TEST_DATA_2_" }, "CeLl", elementDataAnswer );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_XDMFDataFile_writeSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     return 0;
 
 }
 
-int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testXDMFDataFile_writeSolutionData ){
     /*!
      * Test writing the solution data to the XDMF output file.
      *
-     * :param std::ofstream &results: The output file
      */
 
     uIntType increment;
@@ -1353,25 +885,15 @@ int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
                                       -4, -5, -6 };
 
     int return_value = writeSolutionData( increment, collectionNumber, nodeIds, nodePositions, elementIds,
-                                          connectivity, nodeDataAnswer, elementDataAnswer, results );
+                                          connectivity, nodeDataAnswer, elementDataAnswer );
 
-    if ( return_value != 0 ){
-
-        return return_value;
-
-    }
+    BOOST_CHECK( return_value == 0 );
 
     //Read in the mesh data to determine if things have been stored correctly
     YAML::Node af = YAML::Load( "mode: read\nfilename: test_output.xdmf\ncell_id_variable_name: ELEMID\n" );
     dataFileInterface::XDMFDataFile xdmf_result( af );
 
-    if ( xdmf_result._error ){
-
-        xdmf_result._error->print( );
-        results << "test_writeSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !xdmf_result._error );
 
     errorOut error;
 
@@ -1381,23 +903,12 @@ int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
         std::string name = "TEST_DATA_" + std::to_string( i + 1 );
         error = xdmf_result.getSolutionData( increment, name, "Node", nodeDataResult );
     
-        if ( error ){
-    
-            error->print( );
-            results << "test_XDMFDataFile_writeSolutionData & False\n";
-            return 1;
-    
-        }
+        BOOST_CHECK( !error );
     
         uIntType indx = 0;
         for ( unsigned int j = i; j < nodeDataAnswer.size( ); j += 3, indx++ ){
 
-            if ( !vectorTools::fuzzyEquals( nodeDataResult[ indx ], nodeDataAnswer[ j ] ) ){
-    
-                results << "test_XDMFDataFile_writeSolutionData (test 1) & False\n";
-                return 1;
-    
-            }
+            BOOST_CHECK( vectorTools::fuzzyEquals( nodeDataResult[ indx ], nodeDataAnswer[ j ] ) );
 
         }
 
@@ -1409,23 +920,12 @@ int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
         std::string name = "TEST_DATA_" + std::to_string( i + 1 ) + "_";
         error = xdmf_result.getSolutionData( increment, name, "Cell", elementDataResult );
     
-        if ( error ){
-    
-            error->print( );
-            results << "test_XDMFDataFile_writeSolutionData & False\n";
-            return 1;
-    
-        }
+        BOOST_CHECK( !error );
 
         uIntType indx = 0;
         for ( unsigned int j = i; j < elementDataAnswer.size( ); j += 2, indx++ ){
     
-            if ( !vectorTools::fuzzyEquals( elementDataResult[ indx ], elementDataAnswer[ j ] ) ){
-      
-                results << "test_XDMFDataFile_writeSolutionData (test 2) & False\n";
-                return 1;
-        
-            }
+            BOOST_CHECK( vectorTools::fuzzyEquals( elementDataResult[ indx ], elementDataAnswer[ j ] ) );
 
         }
 
@@ -1436,23 +936,13 @@ int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
     floatVector elementDataAnswer2 = elementDataAnswer - 2.;
 
     return_value = writeSolutionData( increment, collectionNumber, { }, { }, { }, { }, nodeDataAnswer2,
-                                      elementDataAnswer2, results );
+                                      elementDataAnswer2 );
 
-    if ( return_value > 0 ){
-
-        return return_value;
-
-    }
+    BOOST_CHECK( return_value <= 0 );
 
     dataFileInterface::XDMFDataFile xdmf_result2( af );
     
-    if ( xdmf_result2._error ){
-
-        xdmf_result2._error->print( );
-        results << "test_writeSolutionData & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !xdmf_result2._error );
 
     for ( uIntType i = 0; i < 3; i++ ){
 
@@ -1460,23 +950,12 @@ int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
         std::string name = "TEST_DATA_" + std::to_string( i + 1 );
         error = xdmf_result2.getSolutionData( increment, name, "Node", nodeDataResult );
     
-        if ( error ){
-    
-            error->print( );
-            results << "test_XDMFDataFile_writeSolutionData & False\n";
-            return 1;
-    
-        }
+        BOOST_CHECK( !error );
     
         uIntType indx = 0;
         for ( unsigned int j = i; j < nodeDataAnswer.size( ); j += 3, indx++ ){
 
-            if ( !vectorTools::fuzzyEquals( nodeDataResult[ indx ], nodeDataAnswer2[ j ] ) ){
-    
-                results << "test_XDMFDataFile_writeSolutionData (test 4) & False\n";
-                return 1;
-    
-            }
+            BOOST_CHECK( vectorTools::fuzzyEquals( nodeDataResult[ indx ], nodeDataAnswer2[ j ] ) );
 
         }
 
@@ -1488,23 +967,12 @@ int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
         std::string name = "TEST_DATA_" + std::to_string( i + 1 ) + "_";
         error = xdmf_result2.getSolutionData( increment, name, "Cell", elementDataResult );
     
-        if ( error ){
-    
-            error->print( );
-            results << "test_XDMFDataFile_writeSolutionData & False\n";
-            return 1;
-    
-        }
+        BOOST_CHECK( !error );
 
         uIntType indx = 0;
         for ( unsigned int j = i; j < elementDataAnswer.size( ); j += 2, indx++ ){
     
-            if ( !vectorTools::fuzzyEquals( elementDataResult[ indx ], elementDataAnswer2[ j ] ) ){
-      
-                results << "test_XDMFDataFile_writeSolutionData (test 5) & False\n";
-                return 1;
-        
-            }
+            BOOST_CHECK( vectorTools::fuzzyEquals( elementDataResult[ indx ], elementDataAnswer2[ j ] ) );
 
         }
 
@@ -1513,48 +981,4 @@ int test_XDMFDataFile_writeSolutionData( std::ofstream &results ){
     std::remove( "test_output.xdmf" );
     std::remove( "test_output.h5" );
 
-    results << "test_XDMFDataFile_writeSolutionData & True\n";
-    return 0;
-
-}
-
-int main(){
-    /*!
-    The main loop which runs the tests defined in the 
-    accompanying functions. Each function should output
-    the function name followed by & followed by True or False 
-    if the test passes or fails respectively.
-    */
-
-    //TODO: Some of these tests require that ./testFiles/macrcoscale.i be
-    //      run with Tardigrade prior evaluation. I need to make this more
-    //      robust.
-
-    //Open the results file
-    std::ofstream results;
-    results.open("results.tex");
-
-    test_XDMFDataFile_constructor( results );
-    test_XDMFDataFile_getNumIncrements( results );
-    test_XDMFDataFile_readMesh( results );
-    test_XDMFDataFile_getNumSubDomainNodes( results );
-    test_XDMFDataFile_getNodeIds( results );
-    test_XDMFDataFile_getCellIds( results );
-    test_XDMFDataFile_getSubDomainNodes( results );
-    test_XDMFDataFile_getNumNodes( results );
-    test_XDMFDataFile_getSetNames( results );
-    test_XDMFDataFile_getSolutionData( results );
-    test_XDMFDataFile_getSolutionVectorDataFromComponents( results );
-//    test_XDMFDataFile_getMeshData_polyhedron( results );
-    test_XDMFDataFile_getMeshData( results );
-    test_XDMFDataFile_getIncrementTime( results );
-
-    test_XDMFDataFile_initializeIncrement( results );
-    test_XDMFDataFile_addRootCollection( results );
-    test_XDMFDataFile_writeIncrementMeshData( results );
-//    test_XDMFDataFile_writeScalarSolutionData( results );
-    test_XDMFDataFile_writeSolutionData( results );
-
-    //Close the results file
-    results.close();
 }
