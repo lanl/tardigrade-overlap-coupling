@@ -9,6 +9,9 @@
 
 #include<volumeReconstruction.h>
 
+#define BOOST_TEST_MODULE test_element
+#include <boost/test/included/unit_test.hpp>
+
 typedef volumeReconstruction::errorNode errorNode; //!Redefinition for the error node
 typedef volumeReconstruction::errorOut errorOut; //!Redefinition for a pointer to the error node
 typedef volumeReconstruction::floatType floatType; //!Define the float values type.
@@ -18,271 +21,137 @@ typedef volumeReconstruction::intMatrix intMatrix; //!Define a matrix of ints
 typedef volumeReconstruction::uIntType uIntType; //!Define the unsigned int type
 typedef volumeReconstruction::uIntVector uIntVector; //!Define a vector of unsigned ints
 
-int test_dualContouring_constructor( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_constructor ){
     /*!
      * Tests for the constructors of dualContouring
      *
-     * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError( ) ){
-        
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_constructor (test 1) & False\n";
-        return 1;
-    
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     std::shared_ptr< volumeReconstruction::volumeReconstructionBase > yR
         = volumeReconstruction::volumeReconstructionBase( yf ).create( );
 
-    if ( yR->getError( ) ){
+    BOOST_CHECK( !yR->getError( ) );
 
-        yR->getError( )->print( );
-
-        results << "test_dualContouring_constructor (test 2) & False\n";
-        return 1;
-
-    }
-
-   results << "test_dualContouring_constructor & True\n";
-   return 0;
 }
 
-int test_dualContouring_loadPoints( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_loadPoints ){
     /*!
      * Test for loading the points into the object
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 1, 2, 3, 4, 5, 6 };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_loadPoints & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     std::unique_ptr< errorNode > error;
     error.reset( dc.loadPoints( &points ) );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_dualContouring_loadPoints (test 1) & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( *dc.getPoints( ), points ) ){
-
-        results << "test_dualContouring_loadPoints (test 2) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( *dc.getPoints( ), points ) );
 
     floatVector points2 = { 1, 2, 3, 4, 5 };
 
 
     error.reset( dc.loadPoints( &points2 ) );
 
-    if ( !error ){
+    BOOST_CHECK( error );
 
-        error->print( );
-        results << "test_dualContouring_loadPoints (test 3) & False\n";
-        return 1;
-
-    }
-
-    results << "test_dualContouring_loadPoints & True\n";
-    return 0;
 }
 
-int test_dualContouring_loadFunction( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_loadFunction ){
     /*!
      * Test for loading the function into the object
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 1, 2, 3, 4, 5, 6 };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_loadFunction & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     std::unique_ptr< errorNode > error;
     error.reset( dc.loadPoints( &points ) );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_dualContouring_loadFunction & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     floatVector function = { -1, 10 };
 
     error.reset( dc.loadFunction( &function ) );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_dualContouring_loadFunction & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( *dc.getFunction( ), function ) ){
-
-        results << "test_dualContouring_loadFunction (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( *dc.getFunction( ), function ) );
 
     floatVector function2 = { 2 };
 
     error.reset( dc.loadFunction( &function2 ) );
-    if ( !error ){
+    BOOST_CHECK( error );
 
-        results << "test_dualContouring_loadFunction (test 2) & False\n";
-        return 1;
-
-    }
-
-    results << "test_dualContouring_loadFunction & True\n";
-    return 0;
 }
 
-int test_dualContouring_getFunctionValue( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_getFunctionValue ){
     /*!
      * Test for getting a particular value of the function
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 1, 2, 3, 4, 5, 6 };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_getFunctionValue & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_dualContouring_getFunctionValue & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     floatVector function = { -1, 10 };
 
     error = dc.loadFunction( &function );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_dualContouring_getFunctionValue & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     floatType result = 0;
     error = dc.getFunctionValue( 0, result );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_dualContouring_getFunctionValue & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( function [ 0 ], result ) ){
-
-        results << "test_dualContouring_getFunctionValue (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( function [ 0 ], result ) );
 
     volumeReconstruction::dualContouring dc2( yf );
 
-    if ( dc2.getError ( ) ){
-
-        dc2.getError( )->print( );
-
-        results << "test_dualContouring_getFunctionValue & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc2.getError( ) );
 
     error = dc2.loadPoints( &points );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_dualContouring_getFunctionValue & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     result = 0;
     error = dc2.getFunctionValue( 0, result );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_dualContouring_getFunctionValue & False\n";
-        return 1;
+    BOOST_CHECK( vectorTools::fuzzyEquals( 1., result ) );
 
-    }
-
-    if ( !vectorTools::fuzzyEquals( 1., result ) ){
-
-        results << "test_dualContouring_getFunctionValue (test 2) & False\n";
-        return 1;
-
-    }
-
-    results << "test_dualContouring_getFunctionValue & True\n";
-    return 0;
 }
 
-int test_KDNode_constructor( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testKDNode_constructor ){
     /*!
      * Test the KD tree creation
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 2, 3, 5, 4, 9, 6, 4, 7, 8, 1, 7, 2 };
@@ -291,15 +160,12 @@ int test_KDNode_constructor( std::ofstream &results ){
 
     volumeReconstruction::KDNode tree( &points, ownedIndices, 0, dim );
 
-    results << "test_KDNode_constructor & True\n";
-    return 0;
 }
 
-int test_KDNode_getIndex( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testKDNode_getIndex ){
     /*!
      * Test getting the index of the KDNode
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 2, 3, 5, 4, 9, 6, 4, 7, 8, 1, 7, 2 };
@@ -308,22 +174,14 @@ int test_KDNode_getIndex( std::ofstream &results ){
 
     volumeReconstruction::KDNode tree( &points, ownedIndices, 0, dim );
 
-    if ( !( tree.getIndex( ), 10 ) ){
-        
-        results << "test_KDNode_getIndex (test 1) & True\n";
-        return 1;
+    BOOST_CHECK( ( tree.getIndex( ), 10 ) );
 
-    }
-
-    results << "test_KDNode_getIndex & True\n";
-    return 0;
 }
 
-int test_KDNode_getMinimumValueDimension( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testKDNode_getMinimumValueDimension ){
     /*!
      * Test getting the minimum of a dimension of the KD tree
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 2, 3, 5, 4, 9, 6, 4, 7, 8, 1, 7, 2 };
@@ -337,17 +195,11 @@ int test_KDNode_getMinimumValueDimension( std::ofstream &results ){
 
     floatType result = tree.getMinimumValueDimension( 0 );
 
-    if ( !vectorTools::fuzzyEquals( result, answer1 ) ){
-        results << "test_KDNode_getMinimumValueDimension (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer1 ) );
 
     result = tree.getMinimumValueDimension( 1 );
 
-    if ( !vectorTools::fuzzyEquals( result, answer2 ) ){
-        results << "test_KDNode_getMinimumValueDimesnion (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer2 ) );
 
     floatVector points2 = { 1, 10, 50, 50, 10, 30, 35, 90, 55, 1, 60, 80, 25, 40, 70, 70, 51, 75 };
     uIntVector ownedIndices2 = { 0, 2, 4, 6, 8, 10, 12, 14, 16 };
@@ -359,17 +211,11 @@ int test_KDNode_getMinimumValueDimension( std::ofstream &results ){
 
     result = tree2.getMinimumValueDimension( 0 );
 
-    if ( !vectorTools::fuzzyEquals( result, answer3 ) ){
-        results << "test_KDNode_getMinimumValueDimension (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer3 ) );
 
     result = tree2.getMinimumValueDimension( 1 );
 
-    if ( !vectorTools::fuzzyEquals( result, answer4 ) ){
-        results << "test_KDNode_getMinimumValueDimension (test 4) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer4 ) );
 
     floatVector points3 =
         {
@@ -395,30 +241,18 @@ int test_KDNode_getMinimumValueDimension( std::ofstream &results ){
     floatType answer6 = -0.78823811;
     floatType answer7 = -0.99593042;
 
-    if ( !vectorTools::fuzzyEquals( tree3.getMinimumValueDimension( 0 ), answer5 ) ){
-        results << "test_KDNode_getMinimumValueDimension (test 5) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( tree3.getMinimumValueDimension( 0 ), answer5 ) );
 
-    if ( !vectorTools::fuzzyEquals( tree3.getMinimumValueDimension( 1 ), answer6 ) ){
-        results << "test_KDNode_getMinimumValueDimension (test 6) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( tree3.getMinimumValueDimension( 1 ), answer6 ) );
 
-    if ( !vectorTools::fuzzyEquals( tree3.getMinimumValueDimension( 2 ), answer7 ) ){
-        results << "test_KDNode_getMinimumValueDimension (test 7) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( tree3.getMinimumValueDimension( 2 ), answer7 ) );
 
-    results << "test_KDNode_getMinimumValueDimension & True\n";
-    return 0;
 }
 
-int test_KDNode_getMaximumValueDimension( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testKDNode_getMaximumValueDimension ){
     /*!
      * Test getting the maximum of a dimension of the KD tree
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 2, 3, 5, 4, 9, 6, 4, 7, 8, 1, 7, 2 };
@@ -432,19 +266,11 @@ int test_KDNode_getMaximumValueDimension( std::ofstream &results ){
 
     floatType result = tree.getMaximumValueDimension( 0 );
 
-    if ( !vectorTools::fuzzyEquals( result, answer1 ) ){
-        std::cout << "result: ";
-        std::cout << result << "\n";
-        results << "test_KDNode_getMaximumValueDimension (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer1 ) );
 
     result = tree.getMaximumValueDimension( 1 );
 
-    if ( !vectorTools::fuzzyEquals( result, answer2 ) ){
-        results << "test_KDNode_getMaximumValueDimesnion (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer2 ) );
 
     floatVector points2 = { 1, 10, 50, 50, 10, 30, 35, 90, 55, 1, 60, 80, 25, 40, 70, 70, 51, 75 };
     uIntVector ownedIndices2 = { 0, 2, 4, 6, 8, 10, 12, 14, 16 };
@@ -456,17 +282,11 @@ int test_KDNode_getMaximumValueDimension( std::ofstream &results ){
 
     result = tree2.getMaximumValueDimension( 0 );
 
-    if ( !vectorTools::fuzzyEquals( result, answer3 ) ){
-        results << "test_KDNode_getMaximumValueDimension (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer3 ) );
 
     result = tree2.getMaximumValueDimension( 1 );
 
-    if ( !vectorTools::fuzzyEquals( result, answer4 ) ){
-        results << "test_KDNode_getMaximumValueDimension (test 4) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer4 ) );
 
     floatVector points3 =
         {
@@ -492,30 +312,17 @@ int test_KDNode_getMaximumValueDimension( std::ofstream &results ){
     floatType answer6 = 0.83431932;
     floatType answer7 = 0.91994519;
 
-    if ( !vectorTools::fuzzyEquals( tree3.getMaximumValueDimension( 0 ), answer5 ) ){
-        results << "test_KDNode_getMaximumValueDimension (test 5) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( tree3.getMaximumValueDimension( 0 ), answer5 ) );
 
-    if ( !vectorTools::fuzzyEquals( tree3.getMaximumValueDimension( 1 ), answer6 ) ){
-        results << "test_KDNode_getMaximumValueDimension (test 6) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( tree3.getMaximumValueDimension( 1 ), answer6 ) );
 
-    if ( !vectorTools::fuzzyEquals( tree3.getMaximumValueDimension( 2 ), answer7 ) ){
-        results << "test_KDNode_getMaximumValueDimension (test 7) & False\n";
-        return 1;
-    }
-
-    results << "test_KDNode_getMaximumValueDimension & True\n";
-    return 0;
+    BOOST_CHECK( vectorTools::fuzzyEquals( tree3.getMaximumValueDimension( 2 ), answer7 ) );
 }
 
-int test_KDNode_getPointsInRange( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testKDNode_getPointsInRange ){
     /*!
      * Get all of the points in a range
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 2, 3, 5, 4, 9, 6, 4, 7, 8, 1, 7, 2 };
@@ -533,10 +340,7 @@ int test_KDNode_getPointsInRange( std::ofstream &results ){
 
     tree.getPointsInRange( upperBound, lowerBound, result );
 
-    if ( !vectorTools::fuzzyEquals( result, answer ) ){
-        results << "test_KDNode_getPointsInRange (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer ) );
 
     floatVector points2 = { 1, 10, 50, 50, 10, 30, 35, 90, 55, 1, 60, 80, 25, 40, 70, 70, 51, 75 };
     uIntVector ownedIndices2 = { 0, 2, 4, 6, 8, 10, 12, 14, 16 };
@@ -552,10 +356,7 @@ int test_KDNode_getPointsInRange( std::ofstream &results ){
 
     tree2.getPointsInRange( upperBound, lowerBound, result );
 
-    if ( !vectorTools::fuzzyEquals( result, answer ) ){
-        results << "test_KDNode_getPointsInRange (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer ) );
 
     floatVector points3 =
         {
@@ -588,25 +389,17 @@ int test_KDNode_getPointsInRange( std::ofstream &results ){
 
     for ( auto a = answer.begin( ); a != answer.end( ); a++ ){
 
-        if ( !std::any_of( result.begin( ), result.end( ),
-                           [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) ){
-            vectorTools::print( result );
-            vectorTools::print( answer );
-            results << "test_KDNode_getPointsInRange (test 3) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( std::any_of( result.begin( ), result.end( ),
+                     [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) );
 
     }
 
-    results << "test_KDNode_getPointsInRange & True\n";
-    return 0;
 }
 
-int test_KDNode_getPointsWithinRadiusOfOrigin( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testKDNode_getPointsWithinRadiusOfOrigin ){
     /*!
      * Get all of the points within a given radius of the origin
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = { 2, 3, 5, 4, 9, 6, 4, 7, 8, 1, 7, 2 };
@@ -625,13 +418,8 @@ int test_KDNode_getPointsWithinRadiusOfOrigin( std::ofstream &results ){
 
     for ( auto a = answer.begin( ); a != answer.end( ); a++ ){
 
-        if ( !std::any_of( result.begin( ), result.end( ),
-                           [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) ){
-            vectorTools::print( result );
-            vectorTools::print( answer );
-            results << "test_KDNode_getPointsWithinRadiusOfOrigin (test 1) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( std::any_of( result.begin( ), result.end( ),
+                           [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) );
 
     }
 
@@ -652,13 +440,8 @@ int test_KDNode_getPointsWithinRadiusOfOrigin( std::ofstream &results ){
 
     for ( auto a = answer.begin( ); a != answer.end( ); a++ ){
 
-        if ( !std::any_of( result.begin( ), result.end( ),
-                           [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) ){
-            vectorTools::print( result );
-            vectorTools::print( answer );
-            results << "test_KDNode_getPointsWithinRadiusOfOrigin (test 2) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( std::any_of( result.begin( ), result.end( ),
+                                  [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) );
 
     }
 
@@ -746,13 +529,8 @@ int test_KDNode_getPointsWithinRadiusOfOrigin( std::ofstream &results ){
 
     for ( auto a = answer.begin( ); a != answer.end( ); a++ ){
 
-        if ( !std::any_of( result.begin( ), result.end( ),
-                           [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) ){
-            vectorTools::print( result );
-            vectorTools::print( answer );
-            results << "test_KDNode_getPointsWithinRadiusOfOrigin (test 3) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( std::any_of( result.begin( ), result.end( ),
+                                  [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) );
 
     }
 
@@ -839,26 +617,18 @@ int test_KDNode_getPointsWithinRadiusOfOrigin( std::ofstream &results ){
 
     for ( auto a = answer.begin( ); a != answer.end( ); a++ ){
 
-        if ( !std::any_of( result.begin( ), result.end( ),
-                           [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) ){
-            vectorTools::print( result );
-            vectorTools::print( answer );
-            results << "test_KDNode_getPointsWithinRadiusOfOrigin (test 4) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( std::any_of( result.begin( ), result.end( ),
+                                  [&]( uIntType r ){ return vectorTools::fuzzyEquals( r, *a ); } ) );
 
     }
 
-    results << "test_KDNode_getPointsWithinRadiusOfOrigin & True\n";
-    return 0;
 }
 
-int test_dualContouring_evaluate( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_evaluate ){
     /*!
      * Test the dualContouring evaluate function. This prepares the 
      * volume reconstruction object to perform the other functions
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -925,33 +695,18 @@ int test_dualContouring_evaluate( std::ofstream &results ){
          0.57375785,  0.3679136 ,  0.65563202, -0.06865393, -0.59308587
         };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_evaluate & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_evaluate & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     error = dc.evaluate( );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_evaluate & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     const floatVector upperBoundsAnswer = { 0.98173517, 0.99606496, 0.99247162 };
 
@@ -963,33 +718,18 @@ int test_dualContouring_evaluate( std::ofstream &results ){
     const floatVector* lowerBoundsResult = dc.getLowerBounds( );
     const floatType*   medianNeighborhoodDistanceResult = dc.getMedianNeighborhoodDistance( );
 
-    if ( !vectorTools::fuzzyEquals( *upperBoundsResult, upperBoundsAnswer ) ){
-        vectorTools::print( *upperBoundsResult );
-        results << "test_dualContouring_evaluate (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( *upperBoundsResult, upperBoundsAnswer ) );
 
-    if ( !vectorTools::fuzzyEquals( *lowerBoundsResult, lowerBoundsAnswer ) ){
-        vectorTools::print( *lowerBoundsResult );
-        results << "test_dualContouring_evaluate (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( *lowerBoundsResult, lowerBoundsAnswer ) );
 
-    if ( !vectorTools::fuzzyEquals( *medianNeighborhoodDistanceResult, medianNeighborhoodDistanceAnswer ) ){
-        std::cout << *medianNeighborhoodDistanceResult << "\n";
-        results << "test__dualContouring_evaluate (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( *medianNeighborhoodDistanceResult, medianNeighborhoodDistanceAnswer ) );
 
-    results << "test_dualContouring_evaluate & True\n";
-    return 0;
 }
 
-int test_dualContouringInternalPointResidual( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouringInternalPointResidual ){
     /*!
      * Test the dual contouring internal point residual
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector X =
@@ -1080,33 +820,18 @@ int test_dualContouringInternalPointResidual( std::ofstream &results ){
     errorOut error = volumeReconstruction::dualContouringInternalPointResidual( X, floatArgs, intArgs, residualResult, jacobian,
                                                                                 floatOuts, intOuts );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_dualContouringInternalPointResidual & False\n";
-        return 1;
+    BOOST_CHECK( vectorTools::fuzzyEquals( residualResult, residualAnswer ) );
 
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( vectorTools::appendVectors( jacobian ), jacobianAnswerVec ) );
 
-    if ( !vectorTools::fuzzyEquals( residualResult, residualAnswer ) ){
-        results << "test_dualContouringInternalPointResidual (test 1) & False\n";
-        return 1;
-    }
-
-    if ( !vectorTools::fuzzyEquals( vectorTools::appendVectors( jacobian ), jacobianAnswerVec ) ){
-        results << "test_dualContouringInternalPointResidual (test 2) & False\n";
-        return 1;
-    }
-
-    results << "test_dualContouringInternalPointResidual & True\n";
-    return 0;
 }
 
-int test_dualContouring_performVolumeIntegration( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_performVolumeIntegration ){
     /*!
      * Test volume integration over the reconstructed domain
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -1173,25 +898,14 @@ int test_dualContouring_performVolumeIntegration( std::ofstream &results ){
              0.57375785,  0.3679136 ,  0.65563202, -0.06865393, -0.59308587
         };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_performVolumeIntegration & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performVolumeIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     floatVector functionValues( points.size( ) );
     for ( unsigned int i = 0; i < points.size( ); i+=3 ){
@@ -1207,30 +921,17 @@ int test_dualContouring_performVolumeIntegration( std::ofstream &results ){
 
     error = dc.performVolumeIntegration( functionValues, 3, integratedVolumeResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performVolumeIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( integratedVolumeResult, integratedVolumeAnswer ) ){
-        vectorTools::print( integratedVolumeResult );
-        vectorTools::print( integratedVolumeResult - integratedVolumeAnswer );
-        results << "test_dualContouring_performVolumeIntegration (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( integratedVolumeResult, integratedVolumeAnswer ) );
 
-    results << "test_dualContouring_performVolumeIntegration & True\n";
-    return 0;
-    
 }
 
-int test_dualContouring_performRelativePositionVolumeIntegration( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_performRelativePositionVolumeIntegration ){
     /*!
      * Test volume integration over the reconstructed domain utilizing the
      * relative position to compute a dyadic product.
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -1297,25 +998,14 @@ int test_dualContouring_performRelativePositionVolumeIntegration( std::ofstream 
              0.57375785,  0.3679136 ,  0.65563202, -0.06865393, -0.59308587
         };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_performRelativePositionVolumeIntegration & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performRelativePositionVolumeIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     floatVector functionValues( points.size( ) );
     for ( unsigned int i = 0; i < points.size( ); i+=3 ){
@@ -1335,29 +1025,16 @@ int test_dualContouring_performRelativePositionVolumeIntegration( std::ofstream 
 
     error = dc.performRelativePositionVolumeIntegration( functionValues, 3, origin, integratedVolumeResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performRelativePositionVolumeIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( integratedVolumeResult, integratedVolumeAnswer ) ){
-        vectorTools::print( integratedVolumeResult );
-        vectorTools::print( integratedVolumeResult - integratedVolumeAnswer );
-        results << "test_dualContouring_performRelativePositionVolumeIntegration (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( integratedVolumeResult, integratedVolumeAnswer ) );
 
-    results << "test_dualContouring_performRelativePositionVolumeIntegration & True\n";
-    return 0;
-    
 }
 
-int test_dualContouring_performSurfaceIntegration( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_performSurfaceIntegration ){
     /*!
      * Test surface integration over the reconstructed domain
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -1424,25 +1101,14 @@ int test_dualContouring_performSurfaceIntegration( std::ofstream &results ){
              0.57375785,  0.3679136 ,  0.65563202, -0.06865393, -0.59308587
         };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_performSurfaceIntegration & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performSurfaceIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     floatVector functionValues( points.size( ) );
     for ( unsigned int i = 0; i < points.size( ); i+=3 ){
@@ -1458,29 +1124,16 @@ int test_dualContouring_performSurfaceIntegration( std::ofstream &results ){
 
     error = dc.performSurfaceIntegration( functionValues, 3, integratedSurfaceResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performSurfaceIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( integratedSurfaceResult, integratedSurfaceAnswer ) ){
-        vectorTools::print( integratedSurfaceResult );
-        vectorTools::print( integratedSurfaceResult - integratedSurfaceAnswer );
-        results << "test_dualContouring_performSurfaceIntegration (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( integratedSurfaceResult, integratedSurfaceAnswer ) );
 
-    results << "test_dualContouring_performSurfaceIntegration & True\n";
-    return 0;
-    
 }
 
-int test_dualContouring_performPositionWeightedSurfaceIntegration( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_performPositionWeightedSurfaceIntegration ){
     /*!
      * Test position weighted surface integration over the reconstructed domain
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -1547,25 +1200,14 @@ int test_dualContouring_performPositionWeightedSurfaceIntegration( std::ofstream
              0.57375785,  0.3679136 ,  0.65563202, -0.06865393, -0.59308587
         };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_performPositionWeightedSurfaceIntegration & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performPositionWeightedSurfaceIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     floatVector functionValues( points.size( ) / 3 );
     for ( unsigned int i = 0; i < points.size( ) / 3; i++ ){
@@ -1579,31 +1221,17 @@ int test_dualContouring_performPositionWeightedSurfaceIntegration( std::ofstream
 
     error = dc.performPositionWeightedSurfaceIntegration( functionValues, 1, integratedSurfaceResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performPositionWeightedSurfaceIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( integratedSurfaceResult, integratedSurfaceAnswer ) ){
-        vectorTools::print( integratedSurfaceResult );
-        vectorTools::print( integratedSurfaceResult - integratedSurfaceAnswer );
-//        assert( 1 == 0 );
-        results << "test_dualContouring_performPositionWeightedSurfaceIntegration (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( integratedSurfaceResult, integratedSurfaceAnswer ) );
 
-    results << "test_dualContouring_performPositionWeightedSurfaceIntegration & True\n";
-    return 0;
-    
 }
 
 
-int test_dualContouring_performSurfaceFluxIntegration( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_performSurfaceFluxIntegration ){
     /*!
      * Test surface flux integration over the reconstructed domain
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -1670,25 +1298,14 @@ int test_dualContouring_performSurfaceFluxIntegration( std::ofstream &results ){
              0.57375785,  0.3679136 ,  0.65563202, -0.06865393, -0.59308587
         };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_performSurfaceFluxIntegration & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performSurfaceFluxIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     floatVector functionValues( 2 * points.size( ) );
     for ( unsigned int i = 0; i < 2 * points.size( ); i+=6 ){
@@ -1707,29 +1324,16 @@ int test_dualContouring_performSurfaceFluxIntegration( std::ofstream &results ){
 
     error = dc.performSurfaceFluxIntegration( functionValues, 6, integratedSurfaceResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performSurfaceFluxIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( integratedSurfaceResult, integratedSurfaceAnswer ) ){
-        vectorTools::print( integratedSurfaceResult );
-        vectorTools::print( integratedSurfaceResult - integratedSurfaceAnswer );
-        results << "test_dualContouring_performSurfaceFluxIntegration (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( integratedSurfaceResult, integratedSurfaceAnswer ) );
 
-    results << "test_dualContouring_performSurfaceFluxIntegration & True\n";
-    return 0;
-    
 }
 
-int test_dualContouring_performRelativePositionSurfaceFluxIntegration( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_performRelativePositionSurfaceFluxIntegration ){
     /*!
      * Test surface flux integration over the reconstructed domain
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -1796,25 +1400,14 @@ int test_dualContouring_performRelativePositionSurfaceFluxIntegration( std::ofst
              0.57375785,  0.3679136 ,  0.65563202, -0.06865393, -0.59308587
         };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_performRelativePositionSurfaceFluxIntegration & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performRelativePositionSurfaceFluxIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     floatVector functionValues( 2 * points.size( ) );
     for ( unsigned int i = 0; i < 2 * points.size( ); i+=6 ){
@@ -1834,68 +1427,34 @@ int test_dualContouring_performRelativePositionSurfaceFluxIntegration( std::ofst
 
     error = dc.performRelativePositionSurfaceFluxIntegration( functionValues, 6, origin, integratedSurfaceResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_performSurfaceFluxIntegration & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( integratedSurfaceResult, integratedSurfaceAnswer ) ){
-        vectorTools::print( integratedSurfaceResult );
-        vectorTools::print( integratedSurfaceResult - integratedSurfaceAnswer );
-        results << "test_dualContouring_performRelativePositionSurfaceFluxIntegration (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( integratedSurfaceResult, integratedSurfaceAnswer ) );
 
-    results << "test_dualContouring_performRelativePositionSurfaceFluxIntegration & True\n";
-    return 0;
-    
 }
 
-int test_dualContouring_exportConfiguration( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_exportConfiguration ){
     /*!
      * Test the export of the configuration file
      *
-     * :param std::ofstream &results: The output file
      */
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError( ) ){
-        
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_exportConfiguration & False\n";
-        return 1;
-    
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     YAML::Node config = dc.exportConfiguration( );
 
-    if ( !config[ "type" ] ){
+    BOOST_CHECK( config[ "type" ] );
+    BOOST_CHECK( config[ "type" ].as< std::string >( ).compare( "dual_contouring" ) == 0 );
 
-        results << "test_dualContouring_exportConfiguration (test 1) & False\n";
-        return 1;
-
-    }
-    else if ( config[ "type" ].as< std::string >( ).compare( "dual_contouring" ) != 0 ){
-
-        results << "test_dualContouring_exportConfiguration (test 2) & False\n";
-        return 1;
-
-    }
-
-    results << "test_dualContouring_exportConfiguration & True\n";
-    return 0;
-    
 }
 
-int test_dualContouring_getSurfaceSubdomains( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_getSurfaceSubdomains ){
     /*!
      * Test getting sub-domains on the surface of the body
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -1962,25 +1521,14 @@ int test_dualContouring_getSurfaceSubdomains( std::ofstream &results ){
              0.57375785,  0.3679136 ,  0.65563202, -0.06865393, -0.59308587
         };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_getSurfaceSubdomains & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_getSurfaceSubdomains & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     uIntVector subdomainNodeCountAnswer = { 31, 50, 26, 31, 33, 37, 22, 42, 24, 32 };
 
@@ -2020,38 +1568,18 @@ int test_dualContouring_getSurfaceSubdomains( std::ofstream &results ){
 
     error = dc.getSurfaceSubdomains( minDistance, subdomainNodeCountResult, subdomainNodesResult );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_getSurfaceSubdomains & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( subdomainNodeCountResult, subdomainNodeCountAnswer ) ){
+    BOOST_CHECK( vectorTools::fuzzyEquals( subdomainNodeCountResult, subdomainNodeCountAnswer ) );
 
-        std::cout << "subdomainNodeCountResult: "; vectorTools::print( subdomainNodeCountResult );
-        results << "test_dualContouring_getSurfaceSubdomains (test 1) & False\n";
-        return 1;
+    BOOST_CHECK( vectorTools::fuzzyEquals( subdomainNodesResult, subdomainNodesAnswer ) );
 
-    }
-
-    if ( !vectorTools::fuzzyEquals( subdomainNodesResult, subdomainNodesAnswer ) ){
-
-        std::cout << "subdomainNodesResult: "; vectorTools::print( subdomainNodesResult );
-        results << "test_dualContouring_getSurfaceSubdomains (test 2) & False\n";
-        return 1;
-
-    }
-
-    results << "test_dualContouring_getSurfaceSubdomains & True\n";
-    return 0;
-    
 }
 
-int test_dualContouring_getBoundaryInformation( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_getBoundaryInformation ){
     /*!
      * Check that the boundary points and cells can be extracted
      *
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points =
@@ -2118,33 +1646,18 @@ int test_dualContouring_getBoundaryInformation( std::ofstream &results ){
              0.57375785,  0.3679136 ,  0.65563202, -0.06865393, -0.59308587
         };
 
-    YAML::Node yf = YAML::LoadFile( "dualContouring.yaml" );
+    YAML::Node yf = YAML::LoadFile( "volumeReconstruction_dualContouring.yaml" );
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_getBoundaryInformation & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_getBoundaryInformation & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     error = dc.evaluate( );
 
-    if ( error ){
-        error->print( );
-        results << "test_dualContouring_getBoundaryInformation & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     const uIntVector boundaryCellsAnswer
         =
@@ -2418,41 +1931,20 @@ int test_dualContouring_getBoundaryInformation( std::ofstream &results ){
     const uIntVector *boundaryCellsResult = dc.getBoundaryIDs( );
     const floatVector *boundaryPointsResult = dc.getBoundaryPoints( );
 
-    if ( !boundaryCellsResult ){
-        results << "test_dualContouring_getBoundaryInformation (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( boundaryCellsResult );
 
-    if ( !boundaryPointsResult ){
-        results << "test_dualContouring_getBoundaryInformation (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( boundaryPointsResult );
 
-    if ( !vectorTools::fuzzyEquals( *boundaryCellsResult, boundaryCellsAnswer ) ){
-
-        std::cerr << "boundaryCellsAnswer: "; vectorTools::print( *boundaryCellsResult );
-        results << "test_dualContouring_getBoundaryInformation (test 3) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( *boundaryCellsResult, boundaryCellsAnswer ) );
     
-    if ( !vectorTools::fuzzyEquals( *boundaryPointsResult, boundaryPointsAnswer ) ){
+    BOOST_CHECK( vectorTools::fuzzyEquals( *boundaryPointsResult, boundaryPointsAnswer ) );
 
-        std::cerr << "boundaryPointsResult: "; vectorTools::print( *boundaryPointsResult );
-        results << "test_dualContouring_getBoundaryInformation (test 4) & False\n";
-        return 1;
-
-    }
-
-    results << "test_dualContouring_getBoundaryInformation & True\n";
-    return 0;
 }
 
-int test_dualContouring_planes( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_planes ){
     /*!
      * Test of adding planes to the dual-contouring reconstruction
      * 
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = {  3.2       , -0.5       ,  2.        ,  3.2817976 , -0.53832241,
@@ -2483,13 +1975,13 @@ int test_dualContouring_planes( std::ofstream &results ){
                                  {  0.46110124,  0.83651484,  0.29602124} };
 
     // Set the filename
-    std::string filename = "dualContouring.yaml";
+    std::string filename = "volumeReconstruction_dualContouring.yaml";
 
     YAML::Node yf = YAML::LoadFile( filename );
 
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
+    BOOST_CHECK( !dc.getError( ) );{
 
         dc.getError( )->print( );
 
@@ -2499,36 +1991,15 @@ int test_dualContouring_planes( std::ofstream &results ){
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-
-        error->print( );
-
-        results << "test_dualContouring_planes & False\n";
-
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     error = dc.addBoundingPlanes( planePoints, planeNormals );
 
-    if ( error ){
-
-        error->print( );
-
-        results << "test_dualContouring_planes & False\n";
-
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     error = dc.evaluate( );
 
-    if ( error ){
-
-        error->print( );
-
-        results << "test_dualContouring_planes & False\n";
-
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     floatVector boundaryPointAnswer = { 3.50504245, -0.33433854,  2.29253706,  3.50504243, -0.36811677,
                                         2.25480982,  3.50504244, -0.33823237,  2.18681146,  3.5050424 ,
@@ -2591,25 +2062,14 @@ int test_dualContouring_planes( std::ofstream &results ){
                                         2.13887276,  3.24915492, -0.56997995,  2.12491295,  3.30489391,
                                        -0.56965082,  1.96170809,  3.25650239, -0.54594498,  1.96170813 };
 
-    if ( !vectorTools::fuzzyEquals( *dc.getBoundaryPoints( ), boundaryPointAnswer ) ){
-
-        results << "test_dualContouring_planes (test 1) & False\n";
-
-        return 1;
-
-    }
-
-    results << "test_dualContouring_planes & True\n";
-
-    return 0;
+    BOOST_CHECK( vectorTools::fuzzyEquals( *dc.getBoundaryPoints( ), boundaryPointAnswer ) );
 
 }
 
-int test_dualContouring_localBoundary( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testDualContouring_localBoundary ){
     /*!
      * Test of adding the local boundary to the dual-contouring reconstruction
      * 
-     * :param std::ofstream &results: The output file
      */
 
     floatVector points = {  3.2       , -0.5       ,  2.        ,  3.2817976 , -0.53832241,
@@ -2659,53 +2119,25 @@ int test_dualContouring_localBoundary( std::ofstream &results ){
     element->reference_nodes = reference_nodes;
 
     // Set the filename
-    std::string filename = "dualContouring.yaml";
+    std::string filename = "volumeReconstruction_dualContouring.yaml";
 
     YAML::Node yf = YAML::LoadFile( filename );
 
     volumeReconstruction::dualContouring dc( yf );
 
-    if ( dc.getError ( ) ){
-
-        dc.getError( )->print( );
-
-        results << "test_dualContouring_localBoundary & False\n";
-
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
-    if ( error ){
-
-        error->print( );
-
-        results << "test_dualContouring_localBoundary & False\n";
-
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     error = dc.reconstructInLocalDomain( element );
 
-    if ( error ){
-
-        error->print( );
-
-        results << "test_dualContouring_localBoundary & False\n";
-
-    }
+    BOOST_CHECK( !error );
 
     error = dc.evaluate( );
 
-    if ( error ){
-
-        error->print( );
-
-        results << "test_dualContouring_localBoundary & False\n";
-
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     floatVector boundaryPointAnswer =
         {
@@ -2841,14 +2273,7 @@ int test_dualContouring_localBoundary( std::ofstream &results ){
             3.18956343, -0.49977917,  2.03026875
         };
 
-    if ( !vectorTools::fuzzyEquals( *dc.getBoundaryPoints( ), boundaryPointAnswer ) ){
-
-        std::cerr << "result:\n"; vectorTools::print( *dc.getBoundaryPoints( ) );
-        results << "test_dualContouring_localBoundary (test 1) & False\n";
-
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( *dc.getBoundaryPoints( ), boundaryPointAnswer ) );
 
     floatType volumeAnswer =  0.0184456;
 
@@ -2856,24 +2281,9 @@ int test_dualContouring_localBoundary( std::ofstream &results ){
 
     error = dc.performVolumeIntegration( floatVector( points.size( ) / 3, 1 ), 1, volumeResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        
-        results << "test_dualContouring_localBoundary & False\n";
-
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( volumeResult[ 0 ], volumeAnswer ) ){
-
-        std::cerr << "volumeResult: " << volumeResult[ 0 ] << "\n";
-        results << "test_dualContouring_localBoundary (test 2) & False\n";
-
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( volumeResult[ 0 ], volumeAnswer ) );
 
     floatType areaAnswer =  0.585814;
 
@@ -2881,68 +2291,8 @@ int test_dualContouring_localBoundary( std::ofstream &results ){
 
     error = dc.performSurfaceIntegration( floatVector( points.size( ) / 3, 1 ), 1, areaResult );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        
-        results << "test_dualContouring_localBoundary & False\n";
+    BOOST_CHECK( vectorTools::fuzzyEquals( areaResult[ 0 ], areaAnswer ) );
 
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( areaResult[ 0 ], areaAnswer ) ){
-
-        std::cerr << "areaResult: " << areaResult[ 0 ] << "\n";
-        results << "test_dualContouring_localBoundary (test 3) & False\n";
-
-        return 1;
-
-    }
-
-    results << "test_dualContouring_localBoundary & True\n";
-
-    return 0;
-
-}
-
-int main(){
-    /*!
-    The main loop which runs the tests defined in the 
-    accompanying functions. Each function should output
-    the function name followed by & followed by True or False 
-    if the test passes or fails respectively.
-    */
-
-    //Open the results file
-    std::ofstream results;
-    results.open("results.tex");
-
-    test_dualContouring_constructor( results );
-    test_dualContouring_loadPoints( results );
-    test_dualContouring_loadFunction( results );
-    test_dualContouring_getFunctionValue( results );
-    test_dualContouring_evaluate( results );
-    test_dualContouringInternalPointResidual( results );
-    test_dualContouring_performVolumeIntegration( results );
-    test_dualContouring_performRelativePositionVolumeIntegration( results );
-    test_dualContouring_performSurfaceIntegration( results );
-    test_dualContouring_performPositionWeightedSurfaceIntegration( results );
-    test_dualContouring_performSurfaceFluxIntegration( results );
-    test_dualContouring_performRelativePositionSurfaceFluxIntegration( results );
-    test_dualContouring_getSurfaceSubdomains( results );
-    test_dualContouring_exportConfiguration( results );
-    test_dualContouring_getBoundaryInformation( results );
-    test_dualContouring_planes( results );
-    test_dualContouring_localBoundary( results );
-
-    test_KDNode_constructor( results );
-    test_KDNode_getIndex( results );
-    test_KDNode_getMinimumValueDimension( results );
-    test_KDNode_getMaximumValueDimension( results );
-    test_KDNode_getPointsInRange( results );
-    test_KDNode_getPointsWithinRadiusOfOrigin( results );
-
-    //Close the results file
-    results.close();
 }
