@@ -2,6 +2,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(overlap_coupling)
 set(PROJECT_LIBRARY_NAME "overlap")
+set(PROJECT_SOURCE_NAME "overlapCoupling")
 
 # Set common project paths relative to project root directory
 set(CPP_SRC_PATH "src/cpp")
@@ -11,10 +12,11 @@ set(DOXYGEN_SRC_PATH "docs/doxygen")
 set(SPHINX_SRC_PATH "docs/sphinx")
 
 # Add the cmake folder to locate project CMake module(s)
-set(YAML-CPP_INSTALL_DIR "/path/to/yaml-cpp-config.cmake" CACHE PATH "The location of the yaml-cpp-config.cmake file")
-set(XDMF_INSTALL_DIR "/path/to/Xdmf-config.cmake" CACHE PATH "The location of the Xdmf-config.cmake file")
+set(YAML-CPP_INSTALL_DIR "/path/to/yaml-cpp-config.cmake" CACHE PATH "The location of the yaml-cpp-config.cmake or yamlConfig.cmake file")
+set(XDMF_INSTALL_DIR "/path/to/Xdmf-config.cmake" CACHE PATH "The location of the Xdmf-config.cmake or XdmfConfig.cmake file")
+#set(VORO_INSTALL_DIR "/path/to/voro-config.cmake" CACHE PATH "The location of the voro-config.cmake or VOROConfig.cmake file")
 
-set(ADDITIONAL_INSTALL_DIRECTORIES ${YAML-CPP_INSTALL_DIR} ${XDMF_INSTALL_DIR})
+set(ADDITIONAL_INSTALL_DIRECTORIES ${YAML-CPP_INSTALL_DIR} ${XDMF_INSTALL_DIR} ${VORO_INSTALL_DIR})
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${ADDITIONAL_INSTALL_DIRECTORIES})
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/${CMAKE_SRC_PATH}" ${CMAKE_MODULE_PATH})
@@ -70,6 +72,12 @@ if(LIBXML2_FOUND)
     message(STATUS "Found LibXml2: ${LIBXML2_INCLUDE_DIR}")
 endif()
 
+#find_package(VORO REQUIRED)
+#include_directories(${VORO_INCLUDE_DIR})
+#if(VORO_FOUND)
+#    message(STATUS "Found voro++: ${VORO_INCLUDE_DIR}")
+#endif()
+
 # Set build type checks
 string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type_lower)
 set(upstream_required "")
@@ -82,7 +90,7 @@ set(LOCAL_SUPPORT_MODULES "dataFileInterface" "generateXDMFData" "element" "asse
 
 # Find related, but external, projects in installed environment
 include(FetchContent)
-set(upstream_packages "error_tools" "vector_tools" "micromorphic_tools")
+set(upstream_packages "error_tools" "vector_tools" "solver_tools" "micromorphic_tools" "micromorphic_element")
 foreach(package ${upstream_packages})
     string(TOUPPER "${package}" package_upper)
     find_package(${package} ${upstream_required} CONFIG)
@@ -100,6 +108,16 @@ foreach(package ${upstream_packages})
         FetchContent_MakeAvailable(${package})
     endif()
 endforeach(package)
+
+## Fetch additional header files
+#FetchContent_Declare(
+#    quickhull
+#    GIT_REPOSITORY https://github.com/akuukka/quickhull.git
+#    GIT_TAG        origin/master
+#)
+#FetchContent_MakeAvailable(quickhull)
+#message("quickhull found: ${quickhull_SOURCE_DIR}")
+#include_directories(${quickhull_SOURCE_DIR})
 
 #=============================================================================================== ADD PROJECT TARGETS ===
 # MUST COME AFTER DEPENDENCY LOCATING
