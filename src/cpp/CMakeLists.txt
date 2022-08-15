@@ -17,7 +17,7 @@ endforeach(support_module)
 add_library (${PROJECT_LIBRARY_NAME} SHARED "${PROJECT_SOURCE_NAME}.cpp" "${PROJECT_SOURCE_NAME}.h")
 set_target_properties(${PROJECT_LIBRARY_NAME} PROPERTIES CXX_STANDARD 11
                                                          PUBLIC_HEADER ${PROJECT_NAME}.h)
-target_link_libraries(${PROJECT_LIBRARY_NAME} error_tools solver_tools micromorphic_tools ${LOCAL_SUPPORT_MODULES})
+target_link_libraries(${PROJECT_LIBRARY_NAME} error_tools solver_tools micromorphic_tools microbalance ${LOCAL_SUPPORT_MODULES})
 target_compile_options(${PROJECT_LIBRARY_NAME} PUBLIC)
 
 # Local builds of upstream projects require local include paths
@@ -31,6 +31,9 @@ if(NOT cmake_build_type_lower STREQUAL "release")
                                "${ADDITIONAL_SOURCE_DIRS}/${CPP_SRC_PATH}")
 endif()
 
+add_executable(${FILTER_NAME} "${FILTER_NAME}.cpp")
+set_target_properties(${FILTER_NAME} PROPERTIES CXX_STANDARD 11)
+target_link_libraries(${FILTER_NAME} error_tools ${PROJECT_LIBRARY_NAME})
 
 foreach(package ${PROJECT_LIBRARY_NAME} ${FILTER_NAME})
     install(TARGETS ${package}

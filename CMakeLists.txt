@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.14)
 project(overlap_coupling)
 set(PROJECT_LIBRARY_NAME "overlap")
 set(PROJECT_SOURCE_NAME "overlapCoupling")
+set(FILTER_NAME "filter")
 
 # Set common project paths relative to project root directory
 set(CPP_SRC_PATH "src/cpp")
@@ -136,7 +137,7 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 
 #==================================================================================== SETUP INSTALLATION CMAKE FILES ===
-foreach(package ${PROJECT_LIBRARY_NAME})
+foreach(package ${PROJECT_LIBRARY_NAME} ${FILTER_NAME})
     include(CMakePackageConfigHelpers)
     write_basic_package_version_file("${package}ConfigVersion.cmake"
                                      VERSION ${PROJECT_VERSION}
