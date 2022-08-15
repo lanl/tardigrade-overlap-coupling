@@ -5,11 +5,19 @@ file(GLOB YAML_TEST_FILES
     "./*.yaml"
 )
 file(COPY ${YAML_TEST_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 file(GLOB XDMF_TEST_FILES
     "./*.xdmf"
 )
 file(COPY ${XDMF_TEST_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+file(GLOB TXT_TEST_FILES
+    "./*.txt"
+)
+file(COPY ${TXT_TEST_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 file(COPY testFiles DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 foreach(support_module ${LOCAL_SUPPORT_MODULES}) 
     set(TEST_NAME "test_${support_module}")
     message("building ${TEST_NAME}")

@@ -78,7 +78,7 @@ if(cmake_build_type_lower STREQUAL "release")
 endif()
 
 # Set the related projects for the compile
-set(LOCAL_SUPPORT_MODULES "dataFileInterface" "generateXDMFData" "element")
+set(LOCAL_SUPPORT_MODULES "dataFileInterface" "generateXDMFData" "element" "assembly")
 
 # Find related, but external, projects in installed environment
 include(FetchContent)
