@@ -1981,13 +1981,7 @@ BOOST_AUTO_TEST_CASE( testDualContouring_planes ){
 
     volumeReconstruction::dualContouring dc( yf );
 
-    BOOST_CHECK( !dc.getError( ) );{
-
-        dc.getError( )->print( );
-
-        return 1;
-
-    }
+    BOOST_CHECK( !dc.getError( ) );
 
     errorOut error = dc.loadPoints( &points );
 
