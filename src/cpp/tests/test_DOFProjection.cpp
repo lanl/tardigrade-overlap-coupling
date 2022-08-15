@@ -7,6 +7,9 @@
 
 #include<DOFProjection.h>
 
+#define BOOST_TEST_MODULE test_DOFProjection
+#include <boost/test/included/unit_test.hpp>
+
 typedef DOFProjection::errorNode errorNode; //!Redefinition for the error node
 typedef DOFProjection::errorOut errorOut; //!Redefinition for a pointer to the error node
 typedef DOFProjection::floatType floatType; //!Define the float values type.
@@ -2035,12 +2038,11 @@ int _getTestFormMicroDomainToMacroProjectionMatrixAnswer( floatVector &answer ){
     return 0;
 }
 
-int test_addMacroDomainDisplacementToMicro( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testaddMacroDomainDisplacementToMicro ){
     /*!
      * Test the projection of the macro-domain's displacement to the 
      * micro-scale when u and phi at a given point are known.
      *
-     * :param std::ofstream &results: The output file.
      */
 
     const unsigned int dim = 3;
@@ -2136,63 +2138,36 @@ int test_addMacroDomainDisplacementToMicro( std::ofstream &results ){
     errorOut error = DOFProjection::addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, u, phi, domainReferenceXis,
                                                                        microWeights, result );
 
-    if ( error ){
-        error->print();
-        results << "test_addMacroDomainDisplacementToMicro & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( result, answer ) ){
-        results << "test_addMacroDomainDisplacementToMicro (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer ) );
 
     result.clear( );
     result.resize( dim * 27 );
     error = DOFProjection::addMacroDomainDisplacementToMicro( dim, domainMicroNodeIndices, u, phi, domainReferenceXis,
                                                               microWeights, result, &microNodeToLocalIndex );
 
-    if ( error ){
-        error->print( );
-        results << "test_addMacroDomainDisplacementToMicro & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto it = domainMicroNodeIndices.begin( ); it != domainMicroNodeIndices.end( ); it++ ){
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
                                                      answer.begin( ) + dim * ( ( *it ) + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
                                                      result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 )
                                                    )
                                       )
-           ){
-
-            vectorTools::print( floatVector( answer.begin( ) + dim * ( *it ),
-                                             answer.begin( ) + dim * ( ( *it ) + 1 )
-                                           )
-                              );
-            vectorTools::print( floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
-                                             result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
-                                           )
-                              );
-            results << "test_addMacroDomainDisplacementToMicro (test 2) & False\n";
-            return 1;
-
-        }
+           );
     }
 
-    results << "test_addMicroDomainDisplacementToMicro & True\n";
-    return 0;
 }
 
-int test_addMacroDomainDisplacementToMicro2( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testaddMacroDomainDisplacementToMicro2 ){
     /*!
      * Test the projection of the macro degrees of freedom to the micro-scale
      * where the values of the degrees of freedom at the macro-nodes, the interpolation
      * values for the center of mass, and the macro DOF vector are known.
      *
-     * :param std::ofstream &results: The output file.
      */
 
     const unsigned int dim = 3;
@@ -2294,16 +2269,9 @@ int test_addMacroDomainDisplacementToMicro2( std::ofstream &results ){
                                                                        domainReferenceXis, domainMacroInterpolationFunctionValues,
                                                                        nMacroDOF, macroDOFVector, microWeights, result );
 
-    if ( error ){
-        error->print();
-        results << "test_addMacroDomainDisplacementToMicro2 & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( result, answer ) ){
-        results << "test_addMacroDomainDisplacementToMicro2 (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer ) );
 
     result.clear( );
     result.resize( dim * 27 );
@@ -2311,46 +2279,26 @@ int test_addMacroDomainDisplacementToMicro2( std::ofstream &results ){
                                                               domainReferenceXis, domainMacroInterpolationFunctionValues,
                                                               nMacroDOF, macroDOFVector, microWeights, result, &microNodeToLocalIndex );
 
-    if ( error ){
-        error->print( );
-        results << "test_addMacroDomainDisplacementToMicro & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto it = domainMicroNodeIndices.begin( ); it != domainMicroNodeIndices.end( ); it++ ){
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
                                                      answer.begin( ) + dim * ( ( *it ) + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
                                                      result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 )
                                                    )
                                       )
-           ){
-
-            vectorTools::print( floatVector( answer.begin( ) + dim * ( *it ),
-                                             answer.begin( ) + dim * ( ( *it ) + 1 )
-                                           )
-                              );
-            vectorTools::print( floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
-                                             result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
-                                           )
-                              );
-            results << "test_addMacroDomainDisplacementToMicro (test 2) & False\n";
-            return 1;
-
-        }
+           );
     }
 
-    results << "test_addMicroDomainDisplacementToMicro2 & True\n";
-    return 0;
 }
 
-int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testformMacroDomainToMicroInterpolationMatrix ){
     /*!
      * Test the formation of the macro-to-micro interpolation matrix for a 
      * particular domain.
      *
-     * :std::ofstream &results: The output file
      */
 
 
@@ -2458,11 +2406,7 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
                                                                                domainMacroInterpolationFunctionValues,
                                                                                microWeights, domainN );
 
-    if ( error ){
-        error->print();
-        results << "test_formMacroDomainToMicroInterpolationMatrix & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     Eigen::Map < const Eigen::Matrix< floatType, -1, -1, Eigen::RowMajor > > MDOF( macroDOFVector.data(), macroDOFVector.size(), 1 );
 
@@ -2471,10 +2415,7 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
 
     RES = domainN * MDOF;
 
-    if ( !vectorTools::fuzzyEquals( result, answer ) ){
-        results << "test_formMacroDomainToMicroInterpolationMatrix (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer ) );
 
     //Test custom mapping of the local micro nodes
     error = DOFProjection::formMacroDomainToMicroInterpolationMatrix( dim, 27, nMacroNodes,
@@ -2484,11 +2425,7 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
                                                                       microWeights, domainN,
                                                                       &microNodeToLocalIndex );
 
-    if ( error ){
-        error->print();
-        results << "test_formMacroDomainToMicroInterpolationMatrix & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     result = floatVector( dim * 27 );
     new (&RES) Eigen::Map < Eigen::Matrix< floatType, -1, -1, Eigen::RowMajor > >( result.data(), result.size(), 1 );
@@ -2496,27 +2433,14 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
     RES = domainN * MDOF;
 
     for ( auto it = domainMicroNodeIndices.begin( ); it != domainMicroNodeIndices.end( ); it++ ){
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
                                                      answer.begin( ) + dim * ( ( *it ) + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
                                                      result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 )
                                                    )
                                       )
-           ){
-
-            vectorTools::print( floatVector( answer.begin( ) + dim * ( *it ),
-                                             answer.begin( ) + dim * ( ( *it ) + 1 )
-                                           )
-                              );
-            vectorTools::print( floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
-                                             result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
-                                           )
-                              );
-            results << "test_formMacroDomainToMicroInterpolationMatrix (test 2) & False\n";
-            return 1;
-
-        }
+           );
     }
 
     //Test custom mapping of the local micro and macro nodes
@@ -2545,36 +2469,19 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
                                                                       microWeights, domainN,
                                                                       &microNodeToLocalIndex, &macroNodeToLocalIndex );
 
-    if ( error ){
-        error->print();
-        results << "test_formMacroDomainToMicroInterpolationMatrix & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     RES = domainN * MDOF;
 
     for ( auto it = domainMicroNodeIndices.begin( ); it != domainMicroNodeIndices.end( ); it++ ){
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
                                                      answer.begin( ) + dim * ( ( *it ) + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
                                                      result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 )
                                                    )
                                       )
-           ){
-
-            vectorTools::print( floatVector( answer.begin( ) + dim * ( *it ),
-                                             answer.begin( ) + dim * ( ( *it ) + 1 )
-                                           )
-                              );
-            vectorTools::print( floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
-                                             result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
-                                           )
-                              );
-            results << "test_formMacroDomainToMicroInterpolationMatrix (test 3) & False\n";
-            return 1;
-
-        }
+           );
     }
 
     //Test micro weights as unordered_map
@@ -2596,48 +2503,28 @@ int test_formMacroDomainToMicroInterpolationMatrix( std::ofstream &results ){
                                                                       microWeightsMap, domainN,
                                                                       &microNodeToLocalIndex, &macroNodeToLocalIndex );
 
-    if ( error ){
-        error->print();
-        results << "test_formMacroDomainToMicroInterpolationMatrix & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     RES = domainN * MDOF;
 
     for ( auto it = domainMicroNodeIndices.begin( ); it != domainMicroNodeIndices.end( ); it++ ){
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * ( *it ),
                                                      answer.begin( ) + dim * ( ( *it ) + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
                                                      result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 )
                                                    )
                                       )
-           ){
-
-            vectorTools::print( floatVector( answer.begin( ) + dim * ( *it ),
-                                             answer.begin( ) + dim * ( ( *it ) + 1 )
-                                           )
-                              );
-            vectorTools::print( floatVector( result.begin( ) + dim * microNodeToLocalIndex[ *it ],
-                                             result.begin( ) + dim * ( microNodeToLocalIndex[ *it ] + 1 ) 
-                                           )
-                              );
-            results << "test_formMacroDomainToMicroInterpolationMatrix (test 4) & False\n";
-            return 1;
-
-        }
+           );
     }
 
 
-    results << "test_formMacroDomainToMicroInterpolationMatrix & True\n";
-    return 0;
 }
 
-int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testaddDomainMicroContributionToMacroMass ){
     /*!
      * Test the addition of the micro-nodes in a domain's contribution to the macro-node mass
      *
-     * :param std::ofstream &results: The output file.
      */
 
     const uIntVector domainMicroNodeIndices = { 53, 28, 63, 97, 93, 90,  8,  5,  0, 62 };
@@ -2719,54 +2606,31 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
     errorOut error = DOFProjection::addDomainMicroContributionToMacroMass( domainMicroNodeIndices, domainMacroNodeIndices, microMasses, 
                                                                            domainMicroShapeFunctions, microWeights, result );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroContributionToMacroMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        results << "test_addDomainMicroContributionToMacroMass (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( 200, 0 );
 
     error = DOFProjection::addDomainMicroContributionToMacroMass( domainMicroNodeIndices, domainMacroNodeIndices, microVolumes,
                                                                   microDensities, domainMicroShapeFunctions, microWeights, result );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroContributionToMacroMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        results << "test_addDomainMicroContributionToMacroMass (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( 200, 0 );
     error = DOFProjection::addDomainMicroContributionToMacroMass( domainMicroNodeIndices, domainMacroNodeIndices, microMasses, 
                                                                   domainMicroShapeFunctions, microWeights, result,
                                                                   &macroNodeToLocalIndex );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroContributionToMacroMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto it  = macroNodeToLocalIndex.begin( );
                it != macroNodeToLocalIndex.end( );
                it++ ){
 
-        if ( !vectorTools::fuzzyEquals( answer[ it->first ], result[ it->second ] ) ){
-
-            results << "test_addDomainMicroContributionToMacroMass (test 3) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( answer[ it->first ], result[ it->second ] ) );
 
     }
 
@@ -2776,34 +2640,22 @@ int test_addDomainMicroContributionToMacroMass( std::ofstream &results ){
                                                                   microDensities, domainMicroShapeFunctions, microWeights, result,
                                                                   &macroNodeToLocalIndex );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroContributionToMacroMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto it  = macroNodeToLocalIndex.begin( );
                it != macroNodeToLocalIndex.end( );
                it++ ){
 
-        if ( !vectorTools::fuzzyEquals( answer[ it->first ], result[ it->second ] ) ){
-
-            results << "test_addDomainMicroContributionToMacroMass (test 4) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( answer[ it->first ], result[ it->second ] ) );
 
     }
 
-    results << "test_addDomainMicroContributionToMacroMass & True\n";
-    return 0;
 }
 
-int test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testaddDomainMicroContributionToMacroMicroMassMomentOfInertia ){
     /*!
      * Test the addition of the micro-nodes in a domain's contribution to the macro-node micro inertia
      *
-     * :param std::ofstream &results: The output file.
      */
 
     const unsigned int dim = 3;
@@ -3060,16 +2912,9 @@ int test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( std::ofstrea
                                                                                                microWeights,
                                                                                                result );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( dim * dim * 200, 0 );
 
@@ -3082,16 +2927,9 @@ int test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( std::ofstrea
                                                                                       microWeights,
                                                                                       result );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( dim * dim * 137, 0 );
 
@@ -3105,27 +2943,20 @@ int test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( std::ofstrea
                                                                                       result,
                                                                                       &macroNodeToLocalIndex );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto indx  = macroNodeToLocalIndex.begin( );
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
                                                      answer.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * dim * indx->second,
                                                      result.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia (test 3) & False\n";
-            return 1;
-        }
+           );
 
     }
 
@@ -3141,39 +2972,29 @@ int test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( std::ofstrea
                                                                                       result,
                                                                                       &macroNodeToLocalIndex );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto indx  = macroNodeToLocalIndex.begin( );
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
                                                      answer.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * dim * indx->second,
                                                      result.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia (test 3) & False\n";
-            return 1;
-        }
+           );
 
     }
 
-    results << "test_addDomainMicroContributionToMacroMicroMassMomentOfInertia & True\n";
-    return 0;
 }
 
-int test_addDomainMassConstant( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testaddDomainMassConstant ){
     /*!
      * Test the addition of the micro-nodes in a domain's contribution to the mass constant
      *
-     * :param std::ofstream &results: The output file.
      */
 
     const unsigned int dim = 3;
@@ -3345,18 +3166,9 @@ int test_addDomainMassConstant( std::ofstream &results ){
                                                            domainReferenceXis, microMasses, domainMicroShapeFunctions,
                                                            microWeights, result );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMassConstant & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        vectorTools::print( answer );
-        vectorTools::print( result );
-        results << "test_addDomainMassConstant (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( dim * 200, 0 );
     error = DOFProjection::addDomainMassConstant( dim, domainMicroNodeIndices, domainMacroNodeIndices,
@@ -3364,18 +3176,9 @@ int test_addDomainMassConstant( std::ofstream &results ){
                                                   domainMicroShapeFunctions,
                                                   microWeights, result );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMassConstant & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        vectorTools::print( answer );
-        vectorTools::print( result );
-        results << "test_addDomainMassConstant (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( dim * 137, 0 );
 
@@ -3388,17 +3191,14 @@ int test_addDomainMassConstant( std::ofstream &results ){
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
                                                      answer.begin( ) + dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * indx->second,
                                                      result.begin( ) + dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMassConstant (test 3) & False\n";
-            return 1;
-        }
+           );
 
     }
 
@@ -3413,29 +3213,23 @@ int test_addDomainMassConstant( std::ofstream &results ){
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
                                                      answer.begin( ) + dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * indx->second,
                                                      result.begin( ) + dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMassConstant (test 4) & False\n";
-            return 1;
-        }
+           );
 
     }
 
-    results << "test_addDomainMassConstant & True\n";
-    return 0;
 }
 
-int test_addDomainMassDisplacement( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testaddDomainMassDisplacement ){
     /*!
      * Test the addition of the micro-nodes in a domain's contribution to the mass weighted displacement
      *
-     * :param std::ofstream &results: The output file.
      */
 
     const unsigned int dim = 3;
@@ -3612,18 +3406,9 @@ int test_addDomainMassDisplacement( std::ofstream &results ){
                                                                microWeights, microDisplacements,
                                                                result );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMassDisplacement & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        vectorTools::print( answer );
-        vectorTools::print( result );
-        results << "test_addDomainMassDisplacement (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( dim * 200, 0 );
     error = DOFProjection::addDomainMassDisplacement( dim,
@@ -3632,18 +3417,9 @@ int test_addDomainMassDisplacement( std::ofstream &results ){
                                                       microWeights, microDisplacements,
                                                       result );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMassDisplacement & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        vectorTools::print( answer );
-        vectorTools::print( result );
-        results << "test_addDomainMassDisplacement (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( dim * 137, 0 );
 
@@ -3657,17 +3433,14 @@ int test_addDomainMassDisplacement( std::ofstream &results ){
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
                                                      answer.begin( ) + dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * indx->second,
                                                      result.begin( ) + dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMassDisplacement (test 3) & False\n";
-            return 1;
-        }
+           );
 
     }
 
@@ -3683,30 +3456,24 @@ int test_addDomainMassDisplacement( std::ofstream &results ){
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * indx->first,
                                                      answer.begin( ) + dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * indx->second,
                                                      result.begin( ) + dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMassDisplacement (test 4) & False\n";
-            return 1;
-        }
+           );
 
     }
 
-    results << "test_addDomainMassDisplacement & True\n";
-    return 0;
 }
 
-int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testaddDomainMassMicroDisplacementPosition ){
     /*!
      * Test the addition of the micro-nodes in a domain's contribution to the dyadic product 
      * of the mass weighted micro displacement by the micro position.
      *
-     * :param std::ofstream &results: The output file.
      */
 
     const unsigned int dim = 3;
@@ -3989,18 +3756,9 @@ int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
                                                                         microWeights, microDisplacements,
                                                                         result ) );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMassMicroDisplacementPosition & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        vectorTools::print( answer );
-        vectorTools::print( result );
-        results << "test_addDomainMassMicroDisplacementPosition (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( dim * dim * 200, 0 );
 
@@ -4011,18 +3769,9 @@ int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
                                                                         microWeights, microDisplacements,
                                                                         result ) );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMassMicroDisplacementPosition & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answer, result ) ){
-        vectorTools::print( answer );
-        vectorTools::print( result );
-        results << "test_addDomainMassMicroDisplacementPosition (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer, result ) );
 
     result = floatVector( dim * dim * 148, 0 );
 
@@ -4032,27 +3781,20 @@ int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
                                                                         microWeights, microDisplacements,
                                                                         result, &macroNodeToLocalIndex ) );
 
-    if ( error ){
-        error->print( );
-        results << "test_addDomainMassMicroDisplacementPosition & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto indx  = macroNodeToLocalIndex.begin( );
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
                                                      answer.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * dim * indx->second,
                                                      result.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMassDisplacementPosition (test 3) & False\n";
-            return 1;
-        }
+           );
 
     }
 
@@ -4065,39 +3807,29 @@ int test_addDomainMassMicroDisplacementPosition( std::ofstream &results ){
                                                                         microWeights, microDisplacements,
                                                                         result, &macroNodeToLocalIndex ) );
 
-    if ( error ){
-        error->print( );
-        results << "test_addDomainMassMicroDisplacementPosition & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto indx  = macroNodeToLocalIndex.begin( );
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + dim * dim * indx->first,
                                                      answer.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( result.begin( ) + dim * dim * indx->second,
                                                      result.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMassDisplacementPosition (test 4) & False\n";
-            return 1;
-        }
+           );
 
     }
 
-    results << "test_addDomainMassMicroDisplacementPosition & True\n";
-    return 0;
 }
 
-int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testaddDomainMicroToMacroProjectionTerms ){
     /*!
      * Test the computation of the terms in the micro to macro projection.
      *
-     * :param std::ofstream &results: The output file.
      */
 
     const unsigned int dim = 3;
@@ -4839,31 +4571,15 @@ int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
                                                                           resultMassMomentOfInertia, resultMassConstant,
                                                                           resultMassDisplacements, resultMassDisplacementPosition );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroToMacroProjectionTerms & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answerMassMomentOfInertia, resultMassMomentOfInertia ) ){
-        results << "test_addDomainMicroToMacroProjectionTerms (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answerMassMomentOfInertia, resultMassMomentOfInertia ) );
 
-    if ( !vectorTools::fuzzyEquals( answerMassConstant, resultMassConstant ) ){
-        results << "test_addDomainMicroToMacroProjectionTerms (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answerMassConstant, resultMassConstant ) );
 
-    if ( !vectorTools::fuzzyEquals( answerMassDisplacements, resultMassDisplacements ) ){
-        results << "test_addDomainMicroToMacroProjectionTerms (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answerMassDisplacements, resultMassDisplacements ) );
 
-    if ( !vectorTools::fuzzyEquals( answerMassDisplacementPosition, resultMassDisplacementPosition ) ){
-        results << "test_addDomainMicroToMacroProjectionTerms (test 4) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answerMassDisplacementPosition, resultMassDisplacementPosition ) );
 
     resultMassMomentOfInertia      = floatVector( dim * dim * 137, 0 );
     resultMassConstant             = floatVector( dim * 137, 0 );
@@ -4880,69 +4596,47 @@ int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
                                                                  true, true, true, true,
                                                                  &macroNodeToLocalIndex );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroToMacroProjectionTerms & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto indx  = macroNodeToLocalIndex.begin( );
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answerMassMomentOfInertia.begin( ) + dim * dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answerMassMomentOfInertia.begin( ) + dim * dim * indx->first,
                                                      answerMassMomentOfInertia.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( resultMassMomentOfInertia.begin( ) + dim * dim * indx->second,
                                                      resultMassMomentOfInertia.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            vectorTools::print( floatVector( answerMassMomentOfInertia.begin( ) + dim * dim * indx->first,
-                                                     answerMassMomentOfInertia.begin( ) + dim * dim * ( indx->first + 1 )
-                                                   ) );
-            vectorTools::print( floatVector( resultMassMomentOfInertia.begin( ) + dim * dim * indx->second,
-                                                     resultMassMomentOfInertia.begin( ) + dim * dim * ( indx->second + 1 )
-                                                   ) );
-            results << "test_addDomainMicroToMacroProjectionTerms (test 5) & False\n";
-            return 1;
-        }
+           );
     
-        if ( !vectorTools::fuzzyEquals( floatVector( answerMassConstant.begin( ) + dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answerMassConstant.begin( ) + dim * indx->first,
                                                      answerMassConstant.begin( ) + dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( resultMassConstant.begin( ) + dim * indx->second,
                                                      resultMassConstant.begin( ) + dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMicroToMacroProjectionTerms (test 6) & False\n";
-            return 1;
-        }
+           );
     
-        if ( !vectorTools::fuzzyEquals( floatVector( answerMassDisplacements.begin( ) + dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answerMassDisplacements.begin( ) + dim * indx->first,
                                                      answerMassDisplacements.begin( ) + dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( resultMassDisplacements.begin( ) + dim * indx->second,
                                                      resultMassDisplacements.begin( ) + dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMicroToMacroProjectionTerms (test 7) & False\n";
-            return 1;
-        }
+           );
     
-        if ( !vectorTools::fuzzyEquals( floatVector( answerMassDisplacementPosition.begin( ) + dim * dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answerMassDisplacementPosition.begin( ) + dim * dim * indx->first,
                                                      answerMassDisplacementPosition.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( resultMassDisplacementPosition.begin( ) + dim * dim * indx->second,
                                                      resultMassDisplacementPosition.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMicroToMacroProjectionTerms (test 8) & False\n";
-            return 1;
-        }
+           );
 
     }
 
@@ -4959,31 +4653,15 @@ int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
                                                                  resultMassMomentOfInertia, resultMassConstant,
                                                                  resultMassDisplacements, resultMassDisplacementPosition );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroToMacroProjectionTerms & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( answerMassMomentOfInertia, resultMassMomentOfInertia ) ){
-        results << "test_addDomainMicroToMacroProjectionTerms (test 9) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answerMassMomentOfInertia, resultMassMomentOfInertia ) );
 
-    if ( !vectorTools::fuzzyEquals( answerMassConstant, resultMassConstant ) ){
-        results << "test_addDomainMicroToMacroProjectionTerms (test 10) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answerMassConstant, resultMassConstant ) );
 
-    if ( !vectorTools::fuzzyEquals( answerMassDisplacements, resultMassDisplacements ) ){
-        results << "test_addDomainMicroToMacroProjectionTerms (test 11) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answerMassDisplacements, resultMassDisplacements ) );
 
-    if ( !vectorTools::fuzzyEquals( answerMassDisplacementPosition, resultMassDisplacementPosition ) ){
-        results << "test_addDomainMicroToMacroProjectionTerms (test 12) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answerMassDisplacementPosition, resultMassDisplacementPosition ) );
 
     resultMassMomentOfInertia      = floatVector( dim * dim * 137, 0 );
     resultMassConstant             = floatVector( dim * 137, 0 );
@@ -5000,81 +4678,56 @@ int test_addDomainMicroToMacroProjectionTerms( std::ofstream &results ){
                                                                  true, true, true, true,
                                                                  &macroNodeToLocalIndex );
 
-    if ( error ){
-        error->print();
-        results << "test_addDomainMicroToMacroProjectionTerms & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto indx  = macroNodeToLocalIndex.begin( );
                indx != macroNodeToLocalIndex.end( );
                indx++ ){
 
-        if ( !vectorTools::fuzzyEquals( floatVector( answerMassMomentOfInertia.begin( ) + dim * dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answerMassMomentOfInertia.begin( ) + dim * dim * indx->first,
                                                      answerMassMomentOfInertia.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( resultMassMomentOfInertia.begin( ) + dim * dim * indx->second,
                                                      resultMassMomentOfInertia.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            vectorTools::print( floatVector( answerMassMomentOfInertia.begin( ) + dim * dim * indx->first,
-                                                     answerMassMomentOfInertia.begin( ) + dim * dim * ( indx->first + 1 )
-                                                   ) );
-            vectorTools::print( floatVector( resultMassMomentOfInertia.begin( ) + dim * dim * indx->second,
-                                                     resultMassMomentOfInertia.begin( ) + dim * dim * ( indx->second + 1 )
-                                                   ) );
-            results << "test_addDomainMicroToMacroProjectionTerms (test 13) & False\n";
-            return 1;
-        }
+           );
     
-        if ( !vectorTools::fuzzyEquals( floatVector( answerMassConstant.begin( ) + dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answerMassConstant.begin( ) + dim * indx->first,
                                                      answerMassConstant.begin( ) + dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( resultMassConstant.begin( ) + dim * indx->second,
                                                      resultMassConstant.begin( ) + dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMicroToMacroProjectionTerms (test 14) & False\n";
-            return 1;
-        }
+           );
     
-        if ( !vectorTools::fuzzyEquals( floatVector( answerMassDisplacements.begin( ) + dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answerMassDisplacements.begin( ) + dim * indx->first,
                                                      answerMassDisplacements.begin( ) + dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( resultMassDisplacements.begin( ) + dim * indx->second,
                                                      resultMassDisplacements.begin( ) + dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMicroToMacroProjectionTerms (test 15) & False\n";
-            return 1;
-        }
+           );
     
-        if ( !vectorTools::fuzzyEquals( floatVector( answerMassDisplacementPosition.begin( ) + dim * dim * indx->first,
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answerMassDisplacementPosition.begin( ) + dim * dim * indx->first,
                                                      answerMassDisplacementPosition.begin( ) + dim * dim * ( indx->first + 1 )
                                                    ),
                                         floatVector( resultMassDisplacementPosition.begin( ) + dim * dim * indx->second,
                                                      resultMassDisplacementPosition.begin( ) + dim * dim * ( indx->second + 1 )
                                                    )
                                       )
-           ){
-            results << "test_addDomainMicroToMacroProjectionTerms (test 16) & False\n";
-            return 1;
-        }
+           );
 
     }
 
-    results << "test_addDomainMicroToMacroProjectionTerms & True\n";
-    return 0;
 }
 
-int test_computeDomainCenterOfMass( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testcomputeDomainCenterOfMass ){
     /*!
      * Compute the center of mass of a domain
      *
-     * :param std::ofstream &results: The output file
      */
 
     const unsigned int dim = 3;
@@ -5111,109 +4764,58 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     errorOut error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, 
                                                                microWeights, domainCMResult );
 
-    if ( error ){
-        error->print();
-        results << "test_computeDomainCenterOfMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
-        results << "test_computeDomainCenterOfMass (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) );
 
     domainCMResult = floatVector( 0, 0 );
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities, microPositions, 
                                                       microWeights, domainCMResult );
 
-    if ( error ){
-        error->print();
-        results << "test_computeDomainCenterOfMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
-        results << "test_computeDomainCenterOfMass (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) );
 
     domainCMResult = floatVector( 0, 0 );
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microMasses, microPositions, microWeights,
                                                       domainMassResult, domainCMResult );
 
-    if ( error ){
-        error->print();
-        results << "test_computeDomainCenterOfMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
-        results << "test_computeDomainCenterOfMass (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) );
 
-    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
-        results << "test_computeDomainCenterOfMass (test 4) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) );
 
     domainMassResult = 0;
     domainCMResult = floatVector( 0, 0 );
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities, microPositions,
                                                       microWeights, domainMassResult, domainCMResult );
 
-    if ( error ){
-        error->print();
-        results << "test_computeDomainCenterOfMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
-        results << "test_computeDomainCenterOfMass (test 5) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) );
 
-    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
-        results << "test_computeDomainCenterOfMass (test 6) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) );
 
     domainCMResult = floatVector( 0, 0 );
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities,
                                                       microReferencePositions, microDisplacements,
                                                       microWeights, domainCMResult );
 
-    if ( error ){
-        error->print();
-        results << "test_computeDomainCenterOfMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
-        results << "test_computeDomainCenterOfMass (test 7) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) );
 
     domainMassResult = 0;
     domainCMResult = floatVector( 0, 0 );
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumes, microDensities,
                                                       microReferencePositions, microDisplacements,
                                                       microWeights, domainMassResult, domainCMResult );
-    if ( error ){
-        error->print();
-        results << "test_computeDomainCenterOfMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
-        results << "test_computeDomainCenterOfMass (test 8) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) );
 
-    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
-        results << "test_computeDomainCenterOfMass (test 9) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) );
 
     std::unordered_map< uIntType, floatType > microVolumesMap;
     std::unordered_map< uIntType, floatType > microDensitiesMap;
@@ -5239,32 +4841,19 @@ int test_computeDomainCenterOfMass( std::ofstream &results ){
     error = DOFProjection::computeDomainCenterOfMass( dim, domainMicroNodeIndices, microVolumesMap, microDensitiesMap,
                                                       microReferencePositionsMap, microDisplacementsMap,
                                                       microWeightsMap, domainMassResult, domainCMResult );
-    if ( error ){
-        error->print();
-        results << "test_computeDomainCenterOfMass & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) ){
-        results << "test_computeDomainCenterOfMass (test 10) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainCMAnswer, domainCMResult ) );
 
-    if ( !vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) ){
-        results << "test_computeDomainCenterOfMass (test 11) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainMassResult, domainMassAnswer ) );
 
 
-    results << "test_computeDomainCenterOfMass & True\n";
-    return 0;
 }
 
-int test_computeDomainXis( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testcomputeDomainXis ){
     /*!
      * Compute the relative position of the micro points
      *
-     * :param std::ofstream &results: The output file
      */
 
     const unsigned int dim = 3;
@@ -5312,20 +4901,11 @@ int test_computeDomainXis( std::ofstream &results ){
                                                       microVolumes, microDensities, microWeights,
                                                       domainCM, domainXiResult, domainMomentOfInertiaResult );
 
-    if ( error ){
-        error->print();
-        results << "test_computeDomainXis & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainXiAnswer, domainXiResult ) ){
-        results << "test_computeDomainXis (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainXiAnswer, domainXiResult ) );
 
-    if ( !vectorTools::fuzzyEquals( domainMomentOfInertiaAnswer, domainMomentOfInertiaResult ) ){
-        results << "test_computeDomainXis (test 2) & False\n";
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainMomentOfInertiaAnswer, domainMomentOfInertiaResult ) );
 
     domainXiResult.clear( );
     domainMomentOfInertiaResult.clear( );
@@ -5335,19 +4915,11 @@ int test_computeDomainXis( std::ofstream &results ){
                                              microVolumes, microDensities, microWeights,
                                              domainCM, domainXiResult, domainMomentOfInertiaResult );
 
-    if ( error ){
-        error->print();
-        results << "test_computeDomainXis & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( domainXiAnswer, domainXiResult ) ){
-        results << "test_computeDomainXis (test 3) & False\n";
-        return 1;
-    }
-    if ( !vectorTools::fuzzyEquals( domainMomentOfInertiaAnswer, domainMomentOfInertiaResult ) ){
-        results << "test_computeDomainXis (test 4) & False\n";
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainXiAnswer, domainXiResult ) );
+
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainMomentOfInertiaAnswer, domainMomentOfInertiaResult ) );
 
     std::unordered_map< uIntType, floatVector > microReferencePositionsMap, microDisplacementsMap, domainXiAnswerMap, domainXiResultMap;
     std::unordered_map< uIntType, floatType > microVolumesMap, microDensitiesMap, microWeightsMap;
@@ -5377,41 +4949,21 @@ int test_computeDomainXis( std::ofstream &results ){
                                              microDisplacementsMap, microVolumesMap, microDensitiesMap,
                                              microWeightsMap, domainCM, domainXiResultMap, domainMomentOfInertiaResult );
 
-    if ( error ){
-        error->print();
-        results << "test_computeDomainXis & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     for ( auto n = domainXiAnswerMap.begin( ); n != domainXiAnswerMap.end( ); n++ ){
 
         auto m = domainXiResultMap.find( n->first );
 
-        if ( m == domainXiResultMap.end( ) ){
-
-            results << "test_computeDomainXis (test 5) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( n->second, m->second ) ){
-
-            vectorTools::print( n->second );
-            vectorTools::print( m->second );
-            results << "test_computeDomainXis (test 6) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( m != domainXiResultMap.end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( n->second, m->second ) );
 
     }
-    if ( !vectorTools::fuzzyEquals( domainMomentOfInertiaAnswer, domainMomentOfInertiaResult ) ){
-        results << "test_computeDomainXis (test 7) & False\n";
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( domainMomentOfInertiaAnswer, domainMomentOfInertiaResult ) );
 
-    results << "test_computeDomainXis & True\n";
-    return 0;
 }
 
-int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testformMicroDomainToMacroProjectionMatrix ){
     /*!
      * Test the formation of the micro-domain to macro projection matrix
      */
@@ -5520,13 +5072,7 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
                                                                             domainMacroNodeProjectedMassMomentOfInertia,
                                                                             domainMacroNodeMassRelativePositionConstant, projector );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_formMicroDomainToMacroProjectionMatrix & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     Eigen::Map < const Eigen::Matrix< floatType, -1, -1, Eigen::RowMajor > > MDOF( microDOFVector.data(), microDOFVector.size(), 1 );
 
@@ -5536,10 +5082,7 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
     RES = projector * MDOF;
 
     for ( unsigned int i = 0; i < result.size( ); i++ ){
-        if ( !vectorTools::fuzzyEquals( result[ i ], answer[ i ], 1e-5, 1e-5 ) ){
-            results << "test_formMicroDomainToMacroProjectionMatrix (test 1) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( result[ i ], answer[ i ], 1e-5, 1e-5 ) );
     }
 
     error = DOFProjection::formMicroDomainToMacroProjectionMatrix( dim, 27, nMacroNodes, domainMicroNodeIndices,
@@ -5551,13 +5094,7 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
                                                                    domainMacroNodeMassRelativePositionConstant, projector,
                                                                    &microNodeToLocalIndex );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_formMicroDomainToMacroProjectionMatrix & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     result = floatVector( ( dim + dim * dim ) * nMacroNodes );
     new (&RES) Eigen::Map < Eigen::Matrix< floatType, -1, -1, Eigen::RowMajor > >( result.data(), result.size(), 1 );
@@ -5582,10 +5119,7 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
 
     RES = projector * MDOF;
 
-    if ( !vectorTools::fuzzyEquals( result, answer, 1e-5, 1e-5 ) ){
-        results << "test_formMicroDomainToMacroProjectionMatrix (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer, 1e-5, 1e-5 ) );
 
     error = DOFProjection::formMicroDomainToMacroProjectionMatrix( dim, 27, 137, domainMicroNodeIndices,
                                                                    domainMacroNodeIndices, microVolumes, microDensities,
@@ -5596,13 +5130,7 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
                                                                    domainMacroNodeMassRelativePositionConstant, projector,
                                                                    &microNodeToLocalIndex, &macroNodeToLocalIndex );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_formMicroDomainToMacroProjectionMatrix & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     result = floatVector( ( dim + dim * dim ) * 137 );
     new (&RES) Eigen::Map < Eigen::Matrix< floatType, -1, -1, Eigen::RowMajor > >( result.data(), result.size(), 1 );
@@ -5612,27 +5140,14 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
     unsigned int nMacroDOF = 12;
 
     for ( auto it = domainMacroNodeIndices.begin( ); it != domainMacroNodeIndices.end( ); it++ ){
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + nMacroDOF * ( *it ),
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + nMacroDOF * ( *it ),
                                                      answer.begin( ) + nMacroDOF * ( ( *it ) + 1 )
                                                    ),
                                         floatVector( result.begin( ) + nMacroDOF * macroNodeToLocalIndex[ *it ],
                                                      result.begin( ) + nMacroDOF * ( macroNodeToLocalIndex[ *it ] + 1 )
                                                    ),
                                         1e-5, 1e-5 )
-           ){
-
-            vectorTools::print( floatVector( answer.begin( ) + nMacroDOF * ( *it ),
-                                             answer.begin( ) + nMacroDOF * ( ( *it ) + 1 )
-                                           )
-                              );
-            vectorTools::print( floatVector( result.begin( ) + nMacroDOF * macroNodeToLocalIndex[ *it ],
-                                             result.begin( ) + nMacroDOF * ( macroNodeToLocalIndex[ *it ] + 1 ) 
-                                           )
-                              );
-            results << "test_formMicroDomainToMacroProjectionMatrix (test 3) & False\n";
-            return 1;
-
-        }
+           );
     }
 
     //Test map version
@@ -5677,13 +5192,7 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
                                                                    domainMacroNodeMassRelativePositionConstantMap, projector,
                                                                    &microNodeToLocalIndex, &macroNodeToLocalIndex );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_formMicroDomainToMacroProjectionMatrix & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     result = floatVector( ( dim + dim * dim ) * 137 );
     new (&RES) Eigen::Map < Eigen::Matrix< floatType, -1, -1, Eigen::RowMajor > >( result.data(), result.size(), 1 );
@@ -5691,38 +5200,22 @@ int test_formMicroDomainToMacroProjectionMatrix( std::ofstream &results ){
     RES = projector * MDOF;
 
     for ( auto it = domainMacroNodeIndices.begin( ); it != domainMacroNodeIndices.end( ); it++ ){
-        if ( !vectorTools::fuzzyEquals( floatVector( answer.begin( ) + nMacroDOF * ( *it ),
+        BOOST_CHECK( vectorTools::fuzzyEquals( floatVector( answer.begin( ) + nMacroDOF * ( *it ),
                                                      answer.begin( ) + nMacroDOF * ( ( *it ) + 1 )
                                                    ),
                                         floatVector( result.begin( ) + nMacroDOF * macroNodeToLocalIndex[ *it ],
                                                      result.begin( ) + nMacroDOF * ( macroNodeToLocalIndex[ *it ] + 1 )
                                                    ),
                                         1e-5, 1e-5 )
-           ){
-
-            vectorTools::print( floatVector( answer.begin( ) + nMacroDOF * ( *it ),
-                                             answer.begin( ) + nMacroDOF * ( ( *it ) + 1 )
-                                           )
-                              );
-            vectorTools::print( floatVector( result.begin( ) + nMacroDOF * macroNodeToLocalIndex[ *it ],
-                                             result.begin( ) + nMacroDOF * ( macroNodeToLocalIndex[ *it ] + 1 ) 
-                                           )
-                              );
-            results << "test_formMicroDomainToMacroProjectionMatrix (test 4) & False\n";
-            return 1;
-
-        }
+           );
     }
 
-    results << "test_formMicroDomainToMacroProjectionMatrix & True\n";
-    return 0;
 }
 
-int test_constructCellCenterOfMassInterpolationMatrixContribution( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testconstructCellCenterOfMassInterpolationMatrixContribution ){
     /*!
      * Test the construction of the cell center of mass interpolation matrix
      *
-     * :param std::ofstream &results: The output file
      */
 
     uIntType nDOF = 12;
@@ -5953,13 +5446,7 @@ int test_constructCellCenterOfMassInterpolationMatrixContribution( std::ofstream
                                                                                          macroGlobalToLocalNodeMap,
                                                                                          microDomainIDMap, domainCOMN );
 
-        if ( error ){
-
-            error->print( );
-            results << "test_constructCellCenterOfMassInterpolationMatrixContribution & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( !error );
 
         if ( count == 0 ){
 
@@ -5976,23 +5463,14 @@ int test_constructCellCenterOfMassInterpolationMatrixContribution( std::ofstream
 
     Eigen::MatrixXd R = N * D;
 
-    if ( ( R - A ).norm( ) > ( 1e-6 * ( A.norm( ) + 1 ) ) ){
-
-        results << "test_constructCellCenterOfMassInterpolationMatrixContribution (test 1) & False\n";
-        return 1;
-
-    }
-
-    results << "test_constructCellCenterOfMassInterpolationMatrixContribution & True\n";
-    return 0;
+    BOOST_CHECK( ( R - A ).norm( ) <= ( 1e-6 * ( A.norm( ) + 1 ) ) );
 
 }
 
-int test_formMoorePenrosePseudoInverse( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testformMoorePenrosePseudoInverse ){
     /*!
      * Test the formation of the Moore-Penrose pseudo inverse matrix
      *
-     * :param std::ofstream &results: The output file
      */
 
     Eigen::MatrixXd answer( 4, 10 );
@@ -6023,38 +5501,16 @@ int test_formMoorePenrosePseudoInverse( std::ofstream &results ){
     std::string method = "jacobi";
     errorOut error = DOFProjection::formMoorePenrosePseudoInverse( A, result, atol, rtol, method );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_formMoorePenrosePseudoInverse & False\n";
-        return 1;
-
-    }
-
-    if ( ( result - answer ).norm( ) > 1e-6 * ( answer.norm( ) + 1 ) ){
-
-        results << "test_formMoorePenrosePseudoInverse (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( ( result - answer ).norm( ) <= 1e-6 * ( answer.norm( ) + 1 ) );
 
     method = "bdc";
     error = DOFProjection::formMoorePenrosePseudoInverse( A, result, atol, rtol, method );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_formMoorePenrosePseudoInverse & False\n";
-        return 1;
-
-    }
-
-    if ( ( result - answer ).norm( ) > 1e-6 * ( answer.norm( ) + 1 ) ){
-
-        results << "test_formMoorePenrosePseudoInverse (test 2) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( ( result - answer ).norm( ) <= 1e-6 * ( answer.norm( ) + 1 ) );
 
     Eigen::MatrixXd answer2( 10, 4 );
     answer2 << -0.07175128, -0.20861016, -0.2582096 ,  0.09774222, -0.09129542,
@@ -6069,38 +5525,16 @@ int test_formMoorePenrosePseudoInverse( std::ofstream &results ){
     method = "jacobi";
     error = DOFProjection::formMoorePenrosePseudoInverse( A.transpose( ), result, atol, rtol, method );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_formMoorePenrosePseudoInverse & False\n";
-        return 1;
-
-    }
-
-    if ( ( result - answer2 ).norm( ) > 1e-6 * ( answer2.norm( ) + 1 ) ){
-
-        results << "test_formMoorePenrosePseudoInverse (test 3) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( ( result - answer2 ).norm( ) <= 1e-6 * ( answer2.norm( ) + 1 ) );
 
     method = "bdc";
     error = DOFProjection::formMoorePenrosePseudoInverse( A.transpose( ), result, atol, rtol, method );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_formMoorePenrosePseudoInverse & False\n";
-        return 1;
-
-    }
-
-    if ( ( result - answer2 ).norm( ) > 1e-6 * ( answer2.norm( ) + 1 ) ){
-
-        results << "test_formMoorePenrosePseudoInverse (test 4) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( ( result - answer2 ).norm( ) <= 1e-6 * ( answer2.norm( ) + 1 ) );
 
     Eigen::MatrixXd A2( 10, 3 );
     A2 << 0.32709633, 0.69660129, 0.65419265, 0.34613872, 0.19087922,
@@ -6121,49 +5555,23 @@ int test_formMoorePenrosePseudoInverse( std::ofstream &results ){
     method = "jacobi";
     error = DOFProjection::formMoorePenrosePseudoInverse( A2, result, atol, rtol, method );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_formMoorePenrosePseudoInverse & False\n";
-        return 1;
-
-    }
-
-    if ( ( result - answer3 ).norm( ) > 1e-6 * ( answer3.norm( ) + 1 ) ){
-
-        results << "test_formMoorePenrosePseudoInverse (test 3) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( ( result - answer3 ).norm( ) <= 1e-6 * ( answer3.norm( ) + 1 ) );
 
     method = "bdc";
     error = DOFProjection::formMoorePenrosePseudoInverse( A2, result, atol, rtol, method );
 
-    if ( error ){
+    BOOST_CHECK( !error );
 
-        error->print( );
-        results << "test_formMoorePenrosePseudoInverse & False\n";
-        return 1;
-
-    }
-
-    if ( ( result - answer3 ).norm( ) > 1e-6 * ( answer3.norm( ) + 1 ) ){
-
-        results << "test_formMoorePenrosePseudoInverse (test 4) & False\n";
-        return 1;
-
-    }
-
-    results << "test_formMoorePenrosePseudoInverse & True\n";
-    return 0;
+    BOOST_CHECK( ( result - answer3 ).norm( ) <= 1e-6 * ( answer3.norm( ) + 1 ) );
 
 }
 
-int test_assembleMicroDomainHomogenizationMatrixContribution( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testassembleMicroDomainHomogenizationMatrixContribution ){
     /*!
      * Test the assembly of the micro domain homogenization matrix contribution
      *
-     * :param std::ofstream &results: The output file
      */
 
     std::unordered_map< std::string, uIntVector > domainNodeIds
@@ -6679,13 +6087,7 @@ int test_assembleMicroDomainHomogenizationMatrixContribution( std::ofstream &res
                                                                                              domainInertias, microDomainIDMap,
                                                                                              domainE );
 
-        if ( error ){
-
-            error->print( );
-            results << "test_assembleMicroDomainHomogenizationMatrixContribution & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( !error );
 
         if ( index == 0 ){
 
@@ -6772,22 +6174,14 @@ int test_assembleMicroDomainHomogenizationMatrixContribution( std::ofstream &res
 
     Eigen::MatrixXd result = E * X;
 
-    if ( ( result - answer ).norm( ) > 1e-5 * ( answer.norm( ) + 1 ) ){
+    BOOST_CHECK( ( result - answer ).norm( ) <= 1e-5 * ( answer.norm( ) + 1 ) );
 
-        results << "test_assembleMicroDomainHomogenizationMatrixContribution (test 1) & False\n";
-        return 1;
-
-    }
-
-    results << "test_assembleMicroDomainHomogenizationMatrixContribution & True\n";
-    return 0;
 }
 
-int test_formDomainSelectionMatrix( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testformDomainSelectionMatrix ){
     /*!
      * Test the formation of the domain selection matrix
      *
-     * :param std::ofstream &results: The output file
      */
 
     std::unordered_map< std::string, uIntType > domainToLocalIndex
@@ -6818,13 +6212,7 @@ int test_formDomainSelectionMatrix( std::ofstream &results ){
 
     error = DOFProjection::formDomainSelectionMatrix( DOFIndex, nDOF, domainToLocalIndex, S );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_formDomainSelectionMatrix & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     Eigen::MatrixXd X( 192, 1 );
     X <<   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,
@@ -6849,24 +6237,14 @@ int test_formDomainSelectionMatrix( std::ofstream &results ){
 
     Eigen::MatrixXd result = S * X;
 
-    if ( ( result - answer ).norm( ) > 1e-5 * ( answer.norm( ) + 1 ) ){
-
-        results << "test_formDomainSelectionMatrix (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( ( result - answer ).norm( ) <= 1e-5 * ( answer.norm( ) + 1 ) );
      
-
-    results << "test_formDomainSelectionMatrix & True\n";
-    return 0;
-
 }
 
-int test_formMacroNodeExpansionMatrix( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testformMacroNodeExpansionMatrix ){
     /*!
      * Test the formation of the macro node expansion matrix
      *
-     * :param std::ofstream &results: The output file
      */
 
     std::unordered_map< uIntType, uIntType > macroNodeToLocalIndex
@@ -6893,13 +6271,7 @@ int test_formMacroNodeExpansionMatrix( std::ofstream &results ){
 
     error = DOFProjection::formMacroNodeExpansionMatrix( DOFIndex, nDOF, macroNodeToLocalIndex, E );
 
-    if ( error ){
-
-        error->print( );
-        results << "test_formMacroNodeExpansionMatrix & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !error );
 
     Eigen::MatrixXd X( 12, 1 );
     X << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12;
@@ -6921,49 +6293,6 @@ int test_formMacroNodeExpansionMatrix( std::ofstream &results ){
 
     Eigen::MatrixXd result = E * X;
 
-    if ( ( result - answer ).norm( ) > 1e-5 * ( answer.norm( ) + 1 ) ){
-
-        results << "test_formMacroNodeExpansionMatrix (test 1) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( ( result - answer ).norm( ) <= 1e-5 * ( answer.norm( ) + 1 ) );
      
-
-    results << "test_formMacroNodeExpansionMatrix & True\n";
-    return 0;
-
-}
-
-int main(){
-    /*!
-    The main loop which runs the tests defined in the 
-    accompanying functions. Each function should output
-    the function name followed by & followed by True or False 
-    if the test passes or fails respectively.
-    */
-
-    //Open the results file
-    std::ofstream results;
-    results.open("results.tex");
-
-    test_addMacroDomainDisplacementToMicro( results );
-    test_addMacroDomainDisplacementToMicro2( results );
-    test_formMacroDomainToMicroInterpolationMatrix( results );
-    test_addDomainMicroContributionToMacroMass( results );
-    test_addDomainMicroContributionToMacroMicroMassMomentOfInertia( results );
-    test_addDomainMassConstant( results );
-    test_addDomainMassDisplacement( results );
-    test_addDomainMassMicroDisplacementPosition( results ); 
-    test_addDomainMicroToMacroProjectionTerms( results );
-    test_computeDomainCenterOfMass( results );
-    test_computeDomainXis( results );
-    test_formMicroDomainToMacroProjectionMatrix( results );
-    test_constructCellCenterOfMassInterpolationMatrixContribution( results );
-    test_formMoorePenrosePseudoInverse( results );
-    test_assembleMicroDomainHomogenizationMatrixContribution( results );
-    test_formDomainSelectionMatrix( results );
-    test_formMacroNodeExpansionMatrix( results );
-
-    //Close the results file
-    results.close();
 }
