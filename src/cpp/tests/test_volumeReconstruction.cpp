@@ -9,7 +9,7 @@
 
 #include<volumeReconstruction.h>
 
-#define BOOST_TEST_MODULE test_element
+#define BOOST_TEST_MODULE test_volumeReconstruction
 #include <boost/test/included/unit_test.hpp>
 
 typedef volumeReconstruction::errorNode errorNode; //!Redefinition for the error node

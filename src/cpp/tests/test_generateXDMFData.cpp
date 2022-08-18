@@ -1,4 +1,4 @@
-//!The test file for dataFileInterface.cpp
+//!The test file for generateXDMFData.cpp
 
 #include<iostream>
 #include<vector>
@@ -9,17 +9,17 @@
 
 #include<generateXDMFData.h>
 
-#define BOOST_TEST_MODULE test_dataFileInterface
+#define BOOST_TEST_MODULE test_generateXDMFData
 #include <boost/test/included/unit_test.hpp>
 
-typedef dataFileInterface::errorNode errorNode; //!Redefinition for the error node
-typedef dataFileInterface::errorOut errorOut; //!Redefinition for a pointer to the error node
-typedef dataFileInterface::floatType floatType; //!Define the float values type.
-typedef dataFileInterface::floatVector floatVector; //! Define a vector of floats
-typedef dataFileInterface::floatMatrix floatMatrix; //!Define a matrix of floats
-typedef dataFileInterface::uIntType uIntType; //!Define the unsigned int type
-typedef dataFileInterface::uIntVector uIntVector; //!Define a vector of unsigned ints
-typedef dataFileInterface::stringVector stringVector; //!Define a vector of strings
+typedef fileGenerator::errorNode errorNode; //!Redefinition for the error node
+typedef fileGenerator::errorOut errorOut; //!Redefinition for a pointer to the error node
+typedef fileGenerator::floatType floatType; //!Define the float values type.
+typedef fileGenerator::floatVector floatVector; //! Define a vector of floats
+typedef fileGenerator::floatMatrix floatMatrix; //!Define a matrix of floats
+typedef fileGenerator::uIntType uIntType; //!Define the unsigned int type
+typedef fileGenerator::uIntVector uIntVector; //!Define a vector of unsigned ints
+typedef fileGenerator::stringVector stringVector; //!Define a vector of strings
 
 bool compareFiles( const std::string &fn1, const std::string &fn2 ){
     /*!
