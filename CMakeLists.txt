@@ -5,6 +5,9 @@ set(PROJECT_LIBRARY_NAME "overlap")
 set(PROJECT_SOURCE_NAME "overlapCoupling")
 set(FILTER_NAME "filter")
 
+# Set flag for building the python bindings
+set(OVERLAP_COUPLING_BUILD_PYTHON_BINDINGS ON CACHE BOOL "Flag for whether to build the python bindings or not")
+
 # Set common project paths relative to project root directory
 set(CPP_SRC_PATH "src/cpp")
 set(CPP_TEST_PATH "${CPP_SRC_PATH}/tests")
@@ -58,20 +61,22 @@ if(YAML-CPP_FOUND)
 endif()
 
 # Find Xdmf
-find_package(xdmf REQUIRED
-                  NAMES "Xdmf" "xdmf")
+find_package(xdmf CONFIG REQUIRED
+                         NAMES "Xdmf" "xdmf")
 include_directories(${XDMF_INCLUDE_DIRS})
-link_directories(${XDMF_CMAKE_INSTALL_FULL_LIBDIR})
-link_directories("${XDMF_CMAKE_INSTALL_FULL_LIBDIR}/../lib") #XDMF seems to be installing files into lib and lib64
+set(XDMF_LIBRARY_DIRS ${XDMF_CMAKE_INSTALL_FULL_LIBDIR} "${XDMF_CMAKE_INSTALL_FULL_LIBDIR}/../lib")
+link_directories(${XDMF_LIBRARY_DIRS})
 if(xdmf_FOUND)
     message(STATUS "Found Xdmf: ${XDMF_INCLUDE_DIRS}")
 endif()
+set(XDMF_LIBRARIES "Xdmf" "XdmfCore" "XdmfUtils")
 
 find_package(LibXml2 REQUIRED)
 include_directories(${LIBXML2_INCLUDE_DIR})
 if(LIBXML2_FOUND)
     message(STATUS "Found LibXml2: ${LIBXML2_INCLUDE_DIR}")
 endif()
+
 
 #find_package(VORO REQUIRED)
 #include_directories(${VORO_INCLUDE_DIR})
@@ -89,11 +94,31 @@ endif()
 # Set the related projects for the compile
 set(LOCAL_SUPPORT_MODULES "dataFileInterface" "generateXDMFData" "element" "assembly" "DOFProjection" "geometry_decomposition" "inputFileProcessor" "volumeReconstruction")
 
+# Set the required libraries for each of the support modules
+set(dataFileInterface_SUPPORT_LIBS "yaml-cpp" ${XDMF_LIBRARIES} "xml2")
+set(generateXDMFData_SUPPORT_LIBS "dataFileInterface")
+set(element_SUPPORT_LIBS "error_tools")
+set(assembly_SUPPORT_LIBS "")
+set(DOFProjection_SUPPORT_LIBS "")
+set(geometry_decomposition_SUPPORT_LIBS "")
+set(inputFileProcessor_SUPPORT_LIBS "dataFileInterface")
+set(volumeReconstruction_SUPPORT_LIBS "element" "yaml-cpp" ${XDMF_LIBRARIES}  "xml2")
+
+set(test_dataFileInterface_SUPPORT_LIBS "")
+set(test_generateXDMFData_SUPPORT_LIBS "")
+set(test_element_SUPPORT_LIBS "")
+set(test_assembly_SUPPORT_LIBS "")
+set(test_DOFProjection_SUPPORT_LIBS "")
+set(test_geometry_decomposition_SUPPORT_LIBS "")
+set(test_inputFileProcessor_SUPPORT_LIBS "generateXDMFData")
+set(test_volumeReconstruction_SUPPORT_LIBS "")
+
 # Find related, but external, projects in installed environment
 include(FetchContent)
 set(upstream_packages "error_tools" "vector_tools" "solver_tools" "micromorphic_tools" "micromorphic_element")
 foreach(package ${upstream_packages})
     string(TOUPPER "${package}" package_upper)
+    set(${package_upper}_BUILD_PYTHON_BINDINGS ${OVERLAP_COUPLING_BUILD_PYTHON_BINDINGS})
     find_package(${package} ${upstream_required} CONFIG)
     if(${package}_FOUND)
         message(STATUS "Found ${package}: ${${package}_DIR}")

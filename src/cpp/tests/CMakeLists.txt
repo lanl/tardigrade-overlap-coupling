@@ -24,8 +24,9 @@ foreach(support_module ${LOCAL_SUPPORT_MODULES})
     add_executable(${TEST_NAME} "${TEST_NAME}.cpp")
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
     set_target_properties(${TEST_NAME} PROPERTIES CXX_STANDARD 11)
-    target_compile_options(${TEST_NAME} PRIVATE "-lrt")
-    target_link_libraries(${TEST_NAME} PUBLIC ${support_module})
+#    target_compile_options(${TEST_NAME} PRIVATE "-lrt")
+    target_link_libraries(${TEST_NAME} PRIVATE ${support_module} ${${TEST_NAME}_SUPPORT_LIBS})
+    get_target_property(OUT "test_${support_module}" LINK_LIBRARIES)
 
     if(NOT cmake_build_type_lower STREQUAL "release")
         target_include_directories(${TEST_NAME} PUBLIC

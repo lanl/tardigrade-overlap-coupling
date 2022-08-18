@@ -7,8 +7,18 @@ foreach(support_module ${LOCAL_SUPPORT_MODULES})
     add_library (${support_module} SHARED "${support_module}.cpp" "${support_module}.h")
     set_target_properties(${support_module} PROPERTIES CXX_STANDARD 11
                                                      PUBLIC_HEADER ${support_module}.h)
-    target_link_libraries(${support_module} error_tools micromorphic_tools yaml-cpp Xdmf XdmfCore XdmfUtils xml2 ${PREVIOUS_MODULES})
-    target_compile_options(${support_module} PUBLIC)
+    target_link_libraries(${support_module} PUBLIC error_tools solver_tools micromorphic_tools ${${support_module}_SUPPORT_LIBS})
+
+    if(NOT cmake_build_type_lower STREQUAL "release")
+        target_include_directories(${support_module} PUBLIC
+                                   "${vector_tools_SOURCE_DIR}/${CPP_SRC_PATH}"
+                                   "${error_tools_SOURCE_DIR}/${CPP_SRC_PATH}"
+                                   "${solver_tools_SOURCE_DIR}/${CPP_SRC_PATH}"
+                                   "${micromorphic_tools_SOURCE_DIR}/${CPP_SRC_PATH}"
+                                   "${micromorphic_element_SOURCE_DIR}/${CPP_SRC_PATH}"
+                                   "${ADDITIONAL_SOURCE_DIRS}/${CPP_SRC_PATH}")
+    endif()
+
     set(PREVIOUS_MODULES ${PREVIOUS_MODULES} ${support_module})
     set(ADDITIONAL_SOURCE_DIRS ${ADDITIONAL_SOURCE_DIRS} "${${support_module}_SOURCE_DIR}")
 endforeach(support_module)
