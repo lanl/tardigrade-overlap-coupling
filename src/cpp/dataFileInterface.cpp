@@ -640,6 +640,27 @@ namespace dataFileInterface{
         return;
     }
 
+    XDMFDataFile::~XDMFDataFile( ){
+        /*!
+         * The XDMFDataFile destructor
+         */
+
+        if ( ( _mode.compare( "write" ) == 0 ) && ( _domain != nullptr ) ){
+
+            //Form the writer
+            shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
+            heavyWriter->setReleaseData( true );
+            shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+    
+            //Write the data to file
+            _domain->accept( writer );
+
+        }
+
+        return;
+
+    }
+
     XDMFDataFile::XDMFDataFile( const YAML::Node &configuration ) : dataFileBase( configuration ){
         /*!
          * The XDMFDataFile constructor with a YAML node
@@ -1339,13 +1360,13 @@ namespace dataFileInterface{
         shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber ); //TODO: This should be verified to be general enough
         collection->insert( grid );
 
-        //Form the writer
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
-        heavyWriter->setReleaseData( true );
-        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
-
-        //Write the data to file
-        _domain->accept( writer );
+//        //Form the writer
+//        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
+//        heavyWriter->setReleaseData( true );
+//        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+//
+//        //Write the data to file
+//        _domain->accept( writer );
 
         //Set the reference increment
         _increment_reference_grids.push_back( reference_increment );
@@ -1418,14 +1439,14 @@ namespace dataFileInterface{
                 grid->insert( reference_grid->getSet( i ) );
             }
 
-            //Build the writer
-            shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
-            heavyWriter->setReleaseData( true );
-            shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
-
-            //Write the grid to the file
-            shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber ); //TODO: This should be verified to be general enough
-            _domain->accept( writer );
+//            //Build the writer
+//            shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
+//            heavyWriter->setReleaseData( true );
+//            shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+//
+//            //Write the grid to the file
+//            shared_ptr< XdmfGridCollection > collection = _domain->getGridCollection( collectionNumber ); //TODO: This should be verified to be general enough
+//            _domain->accept( writer );
 
             return NULL;
 
@@ -1504,13 +1525,13 @@ namespace dataFileInterface{
 
         }
 
-        //Build the writer
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
-        heavyWriter->setReleaseData( true );
-        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
-
-        //Write to the output file
-        _domain->accept( writer );
+//        //Build the writer
+//        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
+//        heavyWriter->setReleaseData( true );
+//        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+//
+//        //Write to the output file
+//        _domain->accept( writer );
 
         return NULL;
 
@@ -1534,12 +1555,12 @@ namespace dataFileInterface{
         _gridHolder->insert( _holderInfo );
         _domain->insert( _gridHolder );
 
-        //Build the writer
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
-        heavyWriter->setReleaseData( true );
-        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
-
-        _domain->accept( writer );
+//        //Build the writer
+//        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
+//        heavyWriter->setReleaseData( true );
+//        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+//
+//        _domain->accept( writer );
 
         collectionNumber = _domain->getNumberGridCollections( ) - 1;
 
@@ -1696,12 +1717,12 @@ namespace dataFileInterface{
 
         grid->insert( solutionVector );
 
-        //Build the writer
-        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
-        heavyWriter->setReleaseData( true );
-        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
-
-        _domain->accept( writer );
+//        //Build the writer
+//        shared_ptr< XdmfHDF5Writer > heavyWriter = XdmfHDF5Writer::New( _filename + ".h5", false );
+//        heavyWriter->setReleaseData( true );
+//        shared_ptr< XdmfWriter > writer = XdmfWriter::New( _filename + ".xdmf", heavyWriter );
+//
+//        _domain->accept( writer );
 
         return NULL;
 

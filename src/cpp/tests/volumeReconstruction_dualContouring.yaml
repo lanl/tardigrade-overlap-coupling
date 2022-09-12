@@ -2,6 +2,7 @@ type: dual_contouring
 interpolation: #Configuration for the interpolation of the points to the background grid
         function_type: constant #Other options are "from_vector"
         isosurface_cutoff: 0.5
+        grid_factor: 1
 baseOutputFilename: dual_contouring_output
 write_config: #Write the configuration file to disk
 write_xdmf_output:

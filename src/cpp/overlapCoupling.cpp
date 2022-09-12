@@ -292,7 +292,8 @@ namespace overlapCoupling{
 
                         }
 
-                        domainAMatrix += vectorTools::appendVectors( vectorTools::dyadic( microDisplacement->second, microReferencePosition->second - domain->second ) )
+                        domainAMatrix += vectorTools::appendVectors( vectorTools::dyadic( microDisplacement->second - centerOfMassDisplacements[domain->first],
+                                                                                          microReferencePosition->second - domain->second ) )
                                        * microVolume->second * microDensity->second * microWeight->second / domainMass->second;
 
                     }
@@ -4989,6 +4990,7 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
+            std::cerr << "COMPUTING THE HOMOGENIZED STRESSES\n";
             error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
@@ -5143,6 +5145,7 @@ namespace overlapCoupling{
             }
 
             //Compute the approximate stresses
+            std::cerr << "COMPUTING THE HOMOGENIZED STRESSES\n";
             error = computeHomogenizedStresses( *macroCell );
 
             if ( error ){
@@ -5274,6 +5277,7 @@ namespace overlapCoupling{
                                              "Error in creating the volume reconstruction object for " + microDomainName );
 
             result->addNext( reconstructedVolume->getError( ) );
+
             return result;
 
         }
@@ -5286,9 +5290,13 @@ namespace overlapCoupling{
             errorOut result = new errorNode( __func__,
                                              "Error in loading the micro-scale points for " + microDomainName );
             result->addNext( error );
+
             return result;
 
         }
+
+        //Add the filter's domain
+        error = reconstructedVolume->reconstructInLocalDomain( element );
 
         //Reconstruct the volume
         error = reconstructedVolume->evaluate( );
@@ -5763,11 +5771,9 @@ namespace overlapCoupling{
         =====================================================================*/
 
         //Get the boundary points from the reconstructed domain
-        const uIntVector *boundaryIDs = reconstructedVolume->getBoundaryIDs( );
         const floatVector *boundaryPoints = reconstructedVolume->getBoundaryPoints( );
 
         //Determine which element surface each point belongs to ( if any )
-        uIntType bpIndex = 0;
         floatType tol = volumeReconstructionConfig[ "element_contain_tolerance" ].as< floatType >( );
         bool useMacroNormals = volumeReconstructionConfig[ "use_macro_normals" ].as< bool >( );
 
@@ -5780,12 +5786,12 @@ namespace overlapCoupling{
         auto sIndex = 0;
         for ( auto s = subdomainNodeIDs.begin( ); s != subdomainNodeIDs.end( ); s++, sIndex++ ){
 
-            ( *s ).reserve( boundaryIDs->size( ) / subdomainNodeIDs.size( ) );
-            subdomainNodeNormals[ sIndex ].reserve( _dim * boundaryIDs->size( ) / subdomainNodeIDs.size( ) );
+            ( *s ).reserve( boundaryPoints->size( ) / ( _dim * subdomainNodeIDs.size( ) ) );
+            subdomainNodeNormals[ sIndex ].reserve( boundaryPoints->size( ) / subdomainNodeIDs.size( ) );
 
         }
 
-        for ( auto id = boundaryIDs->begin( ); id != boundaryIDs->end( ); id++, bpIndex++ ){
+        for ( uIntType bpIndex = 0; bpIndex != ( boundaryPoints->size( ) / _dim ); bpIndex++ ){
 
             floatVector p( boundaryPoints->begin( ) + _dim * bpIndex,
                            boundaryPoints->begin( ) + _dim * ( bpIndex + 1 ) );
@@ -5807,10 +5813,19 @@ namespace overlapCoupling{
 
                 for ( auto s = surf.begin( ); s != surf.end( ); s++ ){
 
-                    subdomainNodeIDs[ *s ].push_back( *id );
+                    subdomainNodeIDs[ *s ].push_back( bpIndex );
 
                     floatVector n;
-                    element->transform_local_vector( xi, element->local_surface_normals[ *s ], n );
+
+                    floatMatrix dxdxi;
+
+                    floatVector dxidx;
+
+                    element->get_local_gradient( element->nodes, xi, dxdxi );
+
+                    dxidx = vectorTools::inverse( vectorTools::appendVectors( dxdxi ), _dim, _dim );
+
+                    n = vectorTools::matrixMultiply( dxidx, element->local_surface_normals[ *s ], _dim, _dim, _dim, 1, true, false );
 
                     n /= vectorTools::l2norm( n );
 
@@ -5902,7 +5917,8 @@ namespace overlapCoupling{
                 error = reconstructedVolume->performSurfaceIntegration( dataAtMicroPoints, dataCountAtPoint,
                                                                         integratedValue, nodesOnSurface,
                                                                         NULL,
-                                                                        &subdomainNodeNormals[ index ] );
+                                                                        &subdomainNodeNormals[ index ],
+                                                                        useMacroNormals );
     
                 if ( error ){
     
@@ -5922,7 +5938,8 @@ namespace overlapCoupling{
                 error = reconstructedVolume->performPositionWeightedSurfaceIntegration( dataAtMicroPoints, dataCountAtPoint,
                                                                                         integratedValue, nodesOnSurface,
                                                                                         NULL,
-                                                                                        &subdomainNodeNormals[ index ] );
+                                                                                        &subdomainNodeNormals[ index ],
+                                                                                        useMacroNormals );
 
                 if ( error ){
     
@@ -6022,6 +6039,7 @@ namespace overlapCoupling{
 
                 //Compute the tractions
                 uIntVector *nodesOnSurface = &( *sN );
+
                 error = reconstructedVolume->performSurfaceFluxIntegration( dataAtMicroPoints, dataCountAtPoint,
                                                                             integratedValue, nodesOnSurface,
                                                                             NULL,
@@ -6437,7 +6455,7 @@ namespace overlapCoupling{
             microInertiaAtNodes[ n ]         /= ( densityAtNodes[ n ] * volume );
             bodyCoupleAtNodes[ n ]           /= ( densityAtNodes[ n ] * volume );
             microSpinInertiaAtNodes[ n ]     /= ( densityAtNodes[ n ] * volume );
-            symmetricMicroStressAtNodes[ n ] /= volumeAtNodes[ n ];
+            symmetricMicroStressAtNodes[ n ] /= volume;
 
             for ( unsigned int face = 0; face < element->local_surface_normals.size( ); face++ ){
 
@@ -10362,7 +10380,18 @@ namespace overlapCoupling{
 
         }
 
-        const floatType *time = _inputProcessor.getMacroTime( );
+        const floatType *time;
+
+        if ( _inputProcessor.isFiltering( ) ){
+
+            time = _inputProcessor.getMicroTime( );
+
+        }
+        else{
+
+            time = _inputProcessor.getMacroTime( );
+
+        }
 
         uIntType increment;
         errorOut error = writer->initializeIncrement( *time, _currentReferenceOutputIncrement, collectionNumber, increment );
@@ -10416,6 +10445,25 @@ namespace overlapCoupling{
 
             projectedMacroDisplacement =
                 vectorTools::appendVectors( { _updatedFreeMacroDispDOFValues, _projected_ghost_macro_displacement } );
+
+        }
+
+        //Loop over the macro displacement degrees of freedom
+        stringVector node_dof_names( _dim + _dim * _dim );
+        for ( unsigned int dof_i = 0; dof_i < ( _dim + _dim * _dim ); dof_i++ ){
+
+            node_dof_names[ dof_i ] = "NODE_DOF_" + std::to_string( dof_i + 1 );
+
+        }
+
+        
+        error = writer->writeSolutionData( increment, collectionNumber, node_dof_names, "Node", projectedMacroDisplacement );
+
+        if ( error ){
+
+            errorOut result = new errorNode( __func__, "Error in writing the nodal DOF solution data" );
+            result->addNext( error );
+            return result;
 
         }
 
