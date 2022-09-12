@@ -1,11 +1,13 @@
-# Micromorphic filter, a variationally based filter for DNS
+# geometry_decomposition, tools for decomposition geometry ( largely depreciated )
 # 
 # Author: Nathan A. Miller (LANL / CU Boulder)
 # Email:  nathanm@lanl.gov
 # Date:   July 13, 2018
 #
-# This is the makefile for processDNS.cpp. It generates the 
-# micromorphic filter
+# This is the makefile for test_geometry_decomposition.cpp. It generates the 
+# tests for the geometry_decomposition
+#
+# NOTE: This isn't actually used but we will maintain these tests for now.
 
 include ../../../../config.mk
 
@@ -33,7 +35,7 @@ test_geometry_decomposition: $(OBJECTS)
 test_geometry_decomposition.o: test_geometry_decomposition.cpp ../../geometry_decomposition.h
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
 
-geometry_decomposition.o: ../../geometry_decomposition.cpp ../../geometry_decomposition.h ../../vector_tools.h ../../vector_tools.cpp
+geometry_decomposition.o: ../../geometry_decomposition.cpp ../../geometry_decomposition.h $(VECTORTOOLSHEADER) $(VECTORTOOLSSOURCE)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
 
 clean:

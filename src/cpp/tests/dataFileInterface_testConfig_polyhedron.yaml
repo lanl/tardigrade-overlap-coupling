@@ -1,0 +1,10 @@
+filetest1:
+        filename: ../testFiles/macroscale_xdmf_polyhedron.xdmf
+        mode: reaD
+        filetype: XDMF
+        node_id_variable_name: NODEID
+        cell_id_variable_name: ELEMID
+
+filetest2:
+        filename_: path_to_file
+        mode: some_other_mode

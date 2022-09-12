@@ -1,0 +1,11 @@
+Notes:
+
+Requires python libraries ( xml2, hdf5 )
+Change LD_LIBRARY_PATH to include python installs of these libraries
+
+Requires yaml-cpp and xdmf. These libraries must be compiled as shared libraries and installed on the system.
+If they are not installed in a usual location, the path must be set when building with cmake.
+
+Note: If using MOOSE the anaconda environment should be activated ( `conda activate moose` )
+      before compiling any libraries. Using the same compiler as expected for MOOSE can help
+      avoid any conflicts between library versions.

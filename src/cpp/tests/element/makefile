@@ -1,43 +1,53 @@
-# Micromorphic filter, a variationally based filter for DNS
+# element, FEA elements
 # 
 # Author: Nathan A. Miller (LANL / CU Boulder)
 # Email:  nathanm@lanl.gov
 # Date:   July 13, 2018
 #
-# This is the makefile for processDNS.cpp. It generates the 
-# micromorphic filter
+# This is the makefile for test_element.cpp. It generates tests
+# for FEA elements
 
 include ../../../../config.mk
 
 # List of executables
-EXECUTABLES=test_element
-OBJECTS=element.o test_element.o
+TESTSOURCE=test_element.cpp
+
+EXECUTABLE=test_element
+
+ERROROBJECT=error.o
+TESTOBJECT=test_element.o
+OBJECT=element.o
+
+OBJECTS=$(ERROROBJECT) $(TESTOBJECT) $(OBJECT)
 INC+=-I../..
 LOCAL_CFLAGS=-ggdb
 
 #Set the mode due to the method variable
 DBG =
 ifeq ($(METHOD),dbg)
-  DBG = -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -g
+  DBG = -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -g -fsanitize=address
 endif
 ifeq ($(METHOD),oprof)
   DBG = -pg
 endif
 
 # Makefile rules
-all: $(EXECUTABLES)
+all: $(EXECUTABLE)
 
-test_element: $(OBJECTS)
+$(EXECUTABLE): $(OBJECTS)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) $^ -o $@ $(CFLAGS) -lstdc++ -std=gnu++11
 
-test_element.o: test_element.cpp ../../element.h
+$(TESTOBJECT): $(TESTSOURCE) $(ERRORHEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
 
-element.o: ../../element.cpp ../../element.h
+$(OBJECT): $(ELEMENTSOURCE) $(ELEMENTHEADER) $(ERRORHEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
+
+$(ERROROBJECT): $(ERRORSOURCE) $(ERRORHEADER)
+	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=c++11
 
 clean:
-	rm -f $(EXECUTABLES)
-	rm $(OBJECTS)
+	rm -f $(EXECUTABLE)
+	rm -f $(OBJECTS)
 
 .PHONY: all clean

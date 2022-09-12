@@ -1,0 +1,3 @@
+source clean_files
+/projects/nathanm/tardigrade/tardigrade/tardigrade-opt -i macroscale.i
+# source send_output

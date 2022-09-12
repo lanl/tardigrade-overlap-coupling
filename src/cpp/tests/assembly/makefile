@@ -1,17 +1,24 @@
-# Micromorphic filter, a variationally based filter for DNS
+# assembly, routines to assemble FEA systems
 # 
 # Author: Nathan A. Miller (LANL / CU Boulder)
 # Email:  nathanm@lanl.gov
 # Date:   July 13, 2018
 #
-# This is the makefile for processDNS.cpp. It generates the 
-# micromorphic filter
+# This is the makefile for test_assembly.cpp. It generates the 
+# test functions for the assembly routines
+#
+# NOTE: This file is not used in the current overlap coupling framework
+#       but we will continue to track it for now.
 
 include ../../../../config.mk
 
 # List of executables
 EXECUTABLES=test_assembly
-OBJECTS=element.o assembly.o test_assembly.o
+
+ASSEMBLYOBJECT=assembly.o
+ELEMENTOBJECT=element.o
+ERROROBJECT=error_tools.o
+OBJECTS=$(ELEMENTOBJECT) assembly.o test_assembly.o $(ERROROBJECT)
 INC+=-I../..
 LOCAL_CFLAGS=-ggdb
 
@@ -30,14 +37,17 @@ all: $(EXECUTABLES)
 test_assembly: $(OBJECTS)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) $^ -o $@ $(CFLAGS) -lstdc++ -std=gnu++11
 
-test_assembly.o: test_assembly.cpp ../../assembly.h ../../element.h
+test_assembly.o: test_assembly.cpp ../../assembly.h $(ELEMENTHEADER) $(ERRORHEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
 
-assembly.o: ../../assembly.cpp ../../assembly.h
+$(ASSEMBLYOBJECT): ../../assembly.cpp ../../assembly.h
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
 
-element.o: ../../element.cpp ../../element.h
+$(ELEMENTOBJECT): $(ELEMENTSOURCE) $(ELEMENTHEADER)
 	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=gnu++11
+
+$(ERROROBJECT): $(ERRORSOURCE) $(ERRORHEADER)
+	$(CXX) $(LOCAL_CFLAGS) $(EIGEN) $(INC) $(LIB) $(DBG) -c -o $@ $< $(CFLAGS) -lstdc++ -std=c++11
 
 clean:
 	rm -f $(EXECUTABLES)

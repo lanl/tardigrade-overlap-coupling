@@ -10,6 +10,15 @@ Tests for element.h and element.cpp
 
 #include<element.h>
 
+#define BOOST_TEST_MODULE test_element
+#include <boost/test/included/unit_test.hpp>
+
+typedef elib::uitype uitype;
+typedef elib::uivec uivec;
+typedef elib::vecOfuivec uimat;
+typedef elib::errorNode errorNode;
+typedef elib::errorOut errorOut;
+
 bool fuzzy_equals(double a, double b, double tolr=1e-6, double tola=1e-6){
     /*!
     Compare two doubles to determine if they are equal.
@@ -29,10 +38,8 @@ bool fuzzy_equals(elib::vec a, elib::vec b, double tolr=1e-6, double tola=1e-6){
         assert(1==0);
     }
 
-    for (unsigned int i=0; i<a.size(); i++){
-        if (!fuzzy_equals(a[i], b[i], tolr, tola)){
-            return false;
-        }
+    for (uitype i=0; i<a.size(); i++){
+        BOOST_CHECK( fuzzy_equals( a[i], b[i], tolr, tola ) );
     }
     return true;
 }
@@ -47,10 +54,8 @@ bool fuzzy_equals(elib::vecOfvec A, elib::vecOfvec B, double tolr=1e-6, double t
         assert(1==0);
     }
 
-    for (unsigned int i=0; i<A.size(); i++){
-        if (!fuzzy_equals(A[i], B[i], tolr, tola)){
-            return false;
-        }
+    for (uitype i=0; i<A.size(); i++){
+        BOOST_CHECK( fuzzy_equals( A[i], B[i], tolr, tola ) );
     }
     return true;
 }
@@ -60,7 +65,7 @@ void print(elib::vec a){
     Print the vector to the terminal
     */
 
-    for (unsigned int i=0; i<a.size(); i++){
+    for (uitype i=0; i<a.size(); i++){
         std::cout << a[i] << " ";
     }
     std::cout << "\n";
@@ -71,7 +76,7 @@ void print(elib::vecOfvec A){
     Print the matrix to the terminal
     */
 
-    for (unsigned int i=0; i<A.size(); i++){
+    for (uitype i=0; i<A.size(); i++){
         print(A[i]);
     }
 }
@@ -115,7 +120,7 @@ double scalar_field(const elib::vec &x){
     get_scalar_field_definition(a);
 
     double value = 0;
-    for (unsigned int i=0; i<x.size(); i++){
+    for (uitype i=0; i<x.size(); i++){
         value += a[i]*x[i];
     }
     return value;
@@ -134,9 +139,9 @@ elib::vec vector_field(const elib::vec &x){
 
     elib::vec out(A.size(), 0);
 
-    for (unsigned int i=0; i<A.size(); i++){
+    for (uitype i=0; i<A.size(); i++){
         out[i] = b[i];
-        for (unsigned int j=0; j<x.size(); j++){
+        for (uitype j=0; j<x.size(); j++){
             out[i] += A[i][j]*x[j];
         }
     }
@@ -170,9 +175,9 @@ void linear_transform(const elib::vec &v, elib::vec &w){
     get_linear_transformation_definition(A, b);
 
     w.resize(v.size());
-    for (unsigned int i=0; i<w.size(); i++){
+    for (uitype i=0; i<w.size(); i++){
         w[i] = b[i];
-        for (unsigned int j=0; j<v.size(); j++){
+        for (uitype j=0; j<v.size(); j++){
             w[i] += A[i][j]*v[j];
         }
     }
@@ -197,19 +202,19 @@ void define_hex8_fully_integrated_quadrature(elib::quadrature_rule &qrule){
     elib::vec quadrature_weights = {1, 1, 1, 1, 1, 1, 1, 1};
 
     qrule.resize(8);
-    for (unsigned int i=0; i<8; i++){
+    for (uitype i=0; i<8; i++){
         qrule[i] = {quadrature_points[i], quadrature_weights[i]};
     }
     return;
 }
 
-int test_Hex8_get_shape_functions(std::ofstream &results){
+BOOST_AUTO_TEST_CASE( testHex8_get_shape_functions ){
     /*!
     Test the computation of the shape functions for a Hex8 Element
     */
 
     // Define the element's nodes
-    std::vector< unsigned int > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector< uitype > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
 
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
@@ -234,41 +239,30 @@ int test_Hex8_get_shape_functions(std::ofstream &results){
     element.get_shape_functions({0, 0, 0}, shape_functions);
     elib::vec answer = {0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125};
     
-    if (!fuzzy_equals(answer, shape_functions)){
-        results << "test_Hex8_get_shape_functions (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( answer, shape_functions ) );
 
     // Check the shape function values at the nodes
-    for (unsigned int n=0; n<element.local_node_coordinates.size(); n++){
+    for (uitype n=0; n<element.local_node_coordinates.size(); n++){
         element.get_shape_functions(element.local_node_coordinates[n], shape_functions);
-        for (unsigned int m=0; m<element.local_node_coordinates.size(); m++){
+        for (uitype m=0; m<element.local_node_coordinates.size(); m++){
             if (m==n){
-                if (!fuzzy_equals(shape_functions[m], 1)){
-                    results << "test_Hex8_get_shape_functions (test 2a) & False\n";
-                    return 1;
-                }
+                BOOST_CHECK( fuzzy_equals( shape_functions[m], 1 ) );
             }
             else{
-                if (!fuzzy_equals(shape_functions[m], 0)){
-                    results << "test_Hex8_get_shape_functions (test 2b) & False\n";
-                    return 1;
-                }
+                BOOST_CHECK( fuzzy_equals( shape_functions[m], 0 ) );
             }
         }
     }
 
-    results << "test_Hex8_get_shape_functions & True\n";
-    return 0;
 }
 
-int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
+BOOST_AUTO_TEST_CASE( testHex8_get_local_grad_shape_functions ){
     /*!
     Test the computation of the local gradients of the shape functions for a Hex8 Element
     */
 
     // Define the element's nodes
-    std::vector< unsigned int > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector< uitype > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
 
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
@@ -296,7 +290,7 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
 
     elib::vecOfvec answer;
     answer.resize(8);
-    for (unsigned int i=0; i<8; i++){
+    for (uitype i=0; i<8; i++){
         answer[i].resize(3);
         answer[i][0] = (sfpx[i] - sf0[i])/eps;
         answer[i][1] = (sfpy[i] - sf0[i])/eps;
@@ -306,10 +300,7 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
     elib::vecOfvec local_grad_shape_functions;
     element.get_local_grad_shape_functions({0.1, -0.2, 0.3}, local_grad_shape_functions);
 
-    if (!fuzzy_equals(answer, local_grad_shape_functions)){
-        results << "test_Hex8_get_local_grad_shape_functions (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( answer, local_grad_shape_functions ) );
 
     //Test for a distorted element
     nodes = {{3.13443, -0.61357,  1.90472},
@@ -327,7 +318,7 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
     element.get_shape_functions({    0.1, -0.2+eps,     0.3}, sfpy);
     element.get_shape_functions({    0.1,     -0.2, 0.3+eps}, sfpz);
 
-    for (unsigned int i=0; i<8; i++){
+    for (uitype i=0; i<8; i++){
         answer[i][0] = (sfpx[i] - sf0[i])/eps;
         answer[i][1] = (sfpy[i] - sf0[i])/eps;
         answer[i][2] = (sfpz[i] - sf0[i])/eps;
@@ -335,22 +326,17 @@ int test_Hex8_get_local_grad_shape_functions(std::ofstream &results){
 
     element.get_local_grad_shape_functions({0.1, -0.2, 0.3}, local_grad_shape_functions);
 
-    if (!fuzzy_equals(answer, local_grad_shape_functions)){
-        results << "test_Hex8_get_local_grad_shape_functions (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( answer, local_grad_shape_functions ) );
 
-    results << "test_Hex8_get_local_grad_shape_functions & True\n";
-    return 0;
 }
 
-int test_Hex8_local_point_inside(std::ofstream &results){
+BOOST_AUTO_TEST_CASE( testHex8_local_point_inside ){
     /*!
     Test the determination of a point in local coordinates is inside the Hex8 element.
     */
 
     // Define the element's nodes
-    std::vector< unsigned int > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector< uitype > node_ids  = {1, 2, 3, 4, 5, 6, 7, 8};
 
     elib::vecOfvec nodes = {{0, 0, 0},
                             {1, 0, 0},
@@ -370,62 +356,44 @@ int test_Hex8_local_point_inside(std::ofstream &results){
 
     // Set the xi value
     elib::vec xi(3, 0);
-    if (!element.local_point_inside(xi)){
-        results << "test_Hex8_local_point_inside (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( element.local_point_inside( xi ) );
 
-    for (unsigned int i=0; i<xi.size(); i++){
+    for (uitype i=0; i<xi.size(); i++){
         xi[i] = 2;
-        if (element.local_point_inside(xi)){
-            results << "test_Hex8_local_point_inside (test 2) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( !element.local_point_inside( xi ) );
         xi[i] = -2;
-        if (element.local_point_inside(xi)){
-            results << "test_Hex8_local_point_inside (test 3) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( !element.local_point_inside( xi ) );
         xi[i] = 0;
     }
 
-    results << "test_Hex8_local_point_inside & True\n";
-    return 0;
 }
 
-int test_interpolate(elib::Element &element, std::ofstream &results){
+int test_interpolate( elib::Element &element ){
     /*!
     Test whether interpolation is performed correctly on the element.
 
     TODO: Generalize to non-3D in local coordinates elements.
 
     :param elib::Element element: The element to be tested
-    :param std::ofstream &results: The output file to write the results to
     */
 
     //Compute the global coordinates of the nodes via interpolation
     elib::vec value;
-    for (unsigned int n=0; n<element.local_node_coordinates.size(); n++){
+    for (uitype n=0; n<element.local_node_coordinates.size(); n++){
         element.interpolate(element.nodes, element.local_node_coordinates[n], value);
-        if (!fuzzy_equals(value, element.nodes[n])){
-            results << element.name.c_str() << "_test_interpolate (test 1) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( fuzzy_equals( value, element.nodes[n] ) );
     }
 
     //Interpolate a constant scalar
     elib::vec scalar(element.nodes.size(), 1);
     double scalar_result;
     element.interpolate(scalar, {-.2, .8, .5}, scalar_result);
-    if (!fuzzy_equals(scalar_result, 1)){
-        results << element.name.c_str() << "_test_interpolate (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( scalar_result, 1 ) );
 
     //Interpolate a variable linear scalar field
     double scalar_answer;
     elib::vec scalar_nodal_values(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         scalar_nodal_values[n] = scalar_field(element.nodes[n]);
     }
 
@@ -435,14 +403,11 @@ int test_interpolate(elib::Element &element, std::ofstream &results){
 
     element.interpolate(scalar_nodal_values, xi, scalar_result);
     scalar_answer = scalar_field(x);
-    if (!fuzzy_equals(scalar_result, scalar_answer)){
-        results << element.name.c_str() << "_test_interpolate (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( scalar_result, scalar_answer ) );
 
     //Interpolate a variable vector field
     elib::vecOfvec vector_nodal_values(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         vector_nodal_values[n] = vector_field(element.nodes[n]);
     }
 
@@ -450,22 +415,18 @@ int test_interpolate(elib::Element &element, std::ofstream &results){
     element.interpolate(vector_nodal_values, xi, vector_result);
     vector_answer = vector_field(x);
 
-    if (!fuzzy_equals(vector_result, vector_answer)){
-        results << element.name.c_str() << "_test_interpolate (test 4) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( vector_result, vector_answer ) );
 
-    results << element.name.c_str() << "_test_interpolate & True\n";
     return 0;
+
 }
 
-int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &local_test_point, std::ofstream &results){
+int test_get_global_shapefunction_gradients( elib::Element &element, elib::vec &local_test_point ){
     /*!
      * Test the computation of the gradient of the shape functions w.r.t. the global coordinates.
      * 
      * :param elib::Element element: The element to be tested
      * :param elib::vec local_test_point: A point in local coordinates to use as the test point.
-     * :param std::ofstream &results: The output file to write the results to
      */
     
     double eps = 1e-6;
@@ -476,7 +437,7 @@ int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &l
     elib::vec delta = global_test_point;
     elib::vec xtmp, xi, xip, xim, N0, Ntmpp, Ntmpm;
     elib::vecOfvec dNdx_num(element.nodes.size());
-    for (unsigned int n=0; n<dNdx_num.size(); n++){
+    for (uitype n=0; n<dNdx_num.size(); n++){
         dNdx_num[n] = elib::vec(element.nodes[n].size(), 0);
     }
 
@@ -486,7 +447,7 @@ int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &l
     //Compute the initial values of the shape functions
     element.get_shape_functions(xi, N0);
 
-    for (unsigned int i=0; i<element.nodes[0].size(); i++){
+    for (uitype i=0; i<element.nodes[0].size(); i++){
 
         //Perturb the global coordinates positively
         delta[i] *= 1+eps;
@@ -510,7 +471,7 @@ int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &l
         element.get_shape_functions(xim, Ntmpm);
 
         //Set the values of the estimated gradient
-        for (unsigned int n=0; n<Ntmpp.size(); n++){dNdx_num[n][i] = (Ntmpp[n] - Ntmpm[n])/(2*global_test_point[i]*eps);}
+        for (uitype n=0; n<Ntmpp.size(); n++){dNdx_num[n][i] = (Ntmpp[n] - Ntmpm[n])/(2*global_test_point[i]*eps);}
 
         //Remove the negative perturbation
         delta[i] /= 1-eps;
@@ -519,23 +480,19 @@ int test_get_global_shapefunction_gradients(elib::Element &element, elib::vec &l
     elib::vecOfvec dNdx;
     element.get_global_shapefunction_gradients(local_test_point, dNdx);
 
-    if (!fuzzy_equals(dNdx_num, dNdx)){
-        results << element.name.c_str() << "_test_get_global_shapefunction_gradients & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( dNdx_num, dNdx ) );
 
-    results << element.name.c_str() << "_test_get_global_shapefunction_gradients & True\n";
     return 0;
+
 }
 
-int test_get_local_gradient(elib::Element &element, std::ofstream &results){
+int test_get_local_gradient( elib::Element &element ){
     /*!
     Test the computation of the gradient with respect to the local coordinates
 
     TODO: Generalize to non-3D in local coordinates elements
 
     :param elib::Element element: The element to be tested
-    :param std::ofstream &results: The output file to write the results to
     */
 
     double eps = 1e-6;
@@ -544,7 +501,7 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
 
     //Form the scalar field at the nodes
     elib::vec scalar_nodal_values(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         scalar_nodal_values[n] = scalar_field(element.nodes[n]);
     }
 
@@ -565,18 +522,13 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     //Compute the element result
     element.get_local_gradient(scalar_nodal_values, {-0.2, 0.4, 0.64}, scalar_result);
 
-    if (!fuzzy_equals(scalar_answer, scalar_result)){
-        std::cerr << "scalar_answer: "; print(scalar_answer);
-        std::cerr << "scalar_result: "; print(scalar_result);
-        results << element.name.c_str() << "_test_get_local_gradient (test 1) & False\n";
-	return 1;
-    } 
+    BOOST_CHECK( fuzzy_equals( scalar_answer, scalar_result ) ); 
 
     elib::vecOfvec vector_answer, vector_result;
     elib::vecOfvec vector_nodal_values(element.nodes.size());
     elib::vec vg0, vgpx, vgpy, vgpz;
 
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         vector_nodal_values[n] = vector_field(element.nodes[n]);
     }
 
@@ -589,8 +541,8 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
     element.interpolate(vector_nodal_values, local_coordinates, perturbation_matrix[0]);
 
     //Perturb the local coordinates and interpolate
-    for (unsigned int i=0; i<perturbation_matrix.size()-1; i++){
-        for (unsigned int j=0; j<perturbation_matrix.size()-1; j++){
+    for (uitype i=0; i<perturbation_matrix.size()-1; i++){
+        for (uitype j=0; j<perturbation_matrix.size()-1; j++){
             if (i == j){
                 perturbed_coordinates[j] = local_coordinates[j] + eps;
     	    }
@@ -603,36 +555,31 @@ int test_get_local_gradient(elib::Element &element, std::ofstream &results){
 
     //Approximate the derivative using finite differences
     vector_answer.resize(vector_nodal_values[0].size());
-    for (unsigned int i=0; i<vector_answer.size(); i++){
+    for (uitype i=0; i<vector_answer.size(); i++){
 	vector_answer[i].resize(perturbation_matrix.size()-1);
-        for (unsigned int j=1; j<perturbation_matrix.size(); j++){
+        for (uitype j=1; j<perturbation_matrix.size(); j++){
             vector_answer[i][j-1] = (perturbation_matrix[j][i] - perturbation_matrix[0][i])/eps;
 	}
     }
     element.get_local_gradient(vector_nodal_values, local_coordinates, vector_result);
 
-    if (!fuzzy_equals(vector_answer, vector_result)){
-        results << element.name.c_str() << "_test_get_local_gradient (test 2) & False\n";
-	return 1;
-    }
+    BOOST_CHECK( fuzzy_equals(vector_answer, vector_result ) );
 
-    results << element.name.c_str() << "_test_get_local_gradient & True\n";
     return 0;
 }
 
-int test_get_global_gradient(elib::Element &element, std::ofstream &results){
+int test_get_global_gradient( elib::Element &element ){
     /*!
     Test the computation of the global gradient.
 
     TODO: Generalize to non-3D elements.
 
     :param elib::Element element: The element to be tested
-    :param std::ofstream &results: The output file to write the results to
     */
 
     //Compute a set of reference coordinates using a linear transformation
     elib::vecOfvec reference_coordinates(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         reference_coordinates[n].resize(element.nodes.size());
         linear_transform(element.nodes[n], reference_coordinates[n]);
     }
@@ -641,7 +588,7 @@ int test_get_global_gradient(elib::Element &element, std::ofstream &results){
     elib::vec scalar_nodal_current_values(element.nodes.size());
     elib::vec scalar_nodal_reference_values(element.nodes.size());
 
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         scalar_nodal_current_values[n] = scalar_field(element.nodes[n]);
         scalar_nodal_reference_values[n] = scalar_field(reference_coordinates[n]);
     }
@@ -655,16 +602,13 @@ int test_get_global_gradient(elib::Element &element, std::ofstream &results){
     elib::vec scalar_answer;
     get_scalar_field_definition(scalar_answer);
 
-    if (!fuzzy_equals(grad_scalar_current, grad_scalar_reference) || !fuzzy_equals(grad_scalar_current, scalar_answer)){
-        results << element.name.c_str() << "_test_get_global_gradient (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( grad_scalar_current, grad_scalar_reference ) && fuzzy_equals( grad_scalar_current, scalar_answer ) );
 
     //Evaluate the vector field
     elib::vecOfvec vector_nodal_current_values(element.nodes.size());
     elib::vecOfvec vector_nodal_reference_values(element.nodes.size());
 
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         vector_nodal_current_values[n] = vector_field(element.nodes[n]);
         vector_nodal_reference_values[n] = vector_field(reference_coordinates[n]);
     }
@@ -679,60 +623,49 @@ int test_get_global_gradient(elib::Element &element, std::ofstream &results){
     elib::vec b;
     get_vector_field_definition(vector_answer, b);
 
-    if (!fuzzy_equals(grad_vector_current, grad_vector_reference) || !fuzzy_equals(grad_vector_current, vector_answer)){
-        results << element.name.c_str() << "_test_get_global_gradient (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( grad_vector_current, grad_vector_reference ) && fuzzy_equals( grad_vector_current, vector_answer ) );
 
-
-    results << element.name.c_str() << "_test_get_global_gradient & True\n";
     return 0;
 }
 
-int test_compute_local_coordinates(elib::Element &element, elib::vec xtest, bool isoutside, std::ofstream &results){
+int test_compute_local_coordinates(elib::Element &element, elib::vec xtest, bool isoutside ){
     /*!
     Test for the computation of an element's local coordinates given it's global coordinates.
 
     TODO: Generalize to non-3D elements.
 
     :param elib::Element element: The element to be tested
-    :param std::ofstream &results: The output file to write the results to
     */
 
     elib::vec xi, result;
 
-    int clc_result = element.compute_local_coordinates(xtest, xi);
+    std::unique_ptr< errorNode > clc_result;
+    clc_result.reset( element.compute_local_coordinates(xtest, xi) );
 
-    if ((clc_result > 0) && (isoutside)){
-        results << element.name.c_str() << "_test_compute_local_coordinates & True\n";
-
+    if ( clc_result ){
+        BOOST_CHECK( isoutside );
         return 0;
     }
 
-    element.interpolate(element.nodes, xi, result);
+    element.interpolate( element.nodes, xi, result );
 
-    if (!fuzzy_equals(result, xtest)){
-        results << element.name.c_str() << "_test_compute_local_coordinates & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( result, xtest ) );
 
-    results << element.name.c_str() << "_test_compute_local_coordinates & True\n";
     return 0;
 }
 
-int test_get_jacobian(elib::Element &element, std::ofstream &results){
+int test_get_jacobian( elib::Element &element ){
     /*!
     Test the computation of the element's jacobian of transformation.
 
     TODO: Generalize to non-3D elements.
 
     :param elib::Element element: The element to be tested
-    :param std::ofstream &results: The output file to write the results to
     */
 
     //Compute a set of reference coordinates using a linear transformation
     elib::vecOfvec reference_coordinates(element.nodes.size());
-    for (unsigned int n=0; n<element.nodes.size(); n++){
+    for (uitype n=0; n<element.nodes.size(); n++){
         reference_coordinates[n].resize(element.nodes.size());
         linear_transform(element.nodes[n], reference_coordinates[n]);
     }
@@ -745,87 +678,63 @@ int test_get_jacobian(elib::Element &element, std::ofstream &results){
     get_linear_transformation_definition(A, b);
     elib::invert(A, answer);
 
-    if (!fuzzy_equals(answer, result)){
-        results << element.name.c_str() << "_test_get_jacobian & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( answer, result ) );
 
-    results << element.name.c_str() << "_test_get_jacobian & True\n";
     return 0;
 }
 
-int test_bounding_box_contains_point(elib::Element &element, std::ofstream &results){
+int test_bounding_box_contains_point( elib::Element &element ){
     /*!
     Test if the bounding box point detection works correctly.
 
     :param elib::Element element: The element to be tested
-    :param std::ofstream &results: The output file to write the results to
     */
 
     double delta = 0.1;
     elib::vec x;
 
     x = element.bounding_box[0];
-    if (!element.bounding_box_contains_point(x)){
-        results << element.name.c_str() << "_test_bounding_box_contains_point (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( element.bounding_box_contains_point( x ) );
 
     //Check if points smaller than the bounds will be detected as being outside of the element
-    for (unsigned int i=0; i<element.bounding_box[0].size(); i++){
+    for (uitype i=0; i<element.bounding_box[0].size(); i++){
         x = element.bounding_box[0];
         x[i] -= delta;
-        if (element.bounding_box_contains_point(x)){
-            results << element.name.c_str() << "_test_bounding_box_contains_point (test 2) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( !element.bounding_box_contains_point( x ) );
     } 
 
     x = element.bounding_box[1];
-    if (!element.bounding_box_contains_point(x)){
-        results << element.name.c_str() << "_test_bounding_box_contains_point (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( element.bounding_box_contains_point( x ) );
 
     //Check if points larger than the bounds will be detected as being outside of the element
-    for (unsigned int i=0; i<element.bounding_box[1].size(); i++){
+    for (uitype i=0; i<element.bounding_box[1].size(); i++){
         x = element.bounding_box[1];
         x[i] += delta;
-        if (element.bounding_box_contains_point(x)){
-            results << element.name.c_str() << "_test_bounding_box_contains_point (test 4) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( !element.bounding_box_contains_point( x ) );
     }
 
-    results << element.name.c_str() << "_test_bounding_box_contains_point & True\n";
     return 0;
 }
 
-int test_contains_point(elib::Element &element, std::ofstream &results){
+int test_contains_point( elib::Element &element ){
     /*!
     Test if the element can identify if a global point is contained inside.
 
     :param elib::Element element: The element to be tested
-    :param std::ofstream &results: The output file to write the results to
     */
 
-    for (unsigned int n=0; n<element.nodes.size(); n++){
-        if (!element.contains_point(element.nodes[n])){
-            results << element.name.c_str() << "_test_contains_point (test 1) & False\n";
-            return 1;
-        }
+    for (uitype n=0; n<element.nodes.size(); n++){
+        BOOST_CHECK( element.contains_point( element.nodes[ n ] ) );
     }
 
-    results << element.name.c_str() << "_test_contains_point & True\n";
     return 0;
 }
 
-int test_build_element_from_string(elib::Element &element, std::ofstream &results){
+int test_build_element_from_string( elib::Element &element ){
     /*!
     Test if the build element from string function is working correctly.
 
     :param elib::Element element: The element to be tested
-    :param std::ofstream &results: The output file to write the results to
     */
 
     std::unique_ptr<elib::Element> new_element = elib::build_element_from_string(element.name, element.global_node_ids, element.nodes, element.qrule);
@@ -833,46 +742,43 @@ int test_build_element_from_string(elib::Element &element, std::ofstream &result
     std::string result = typeid(*new_element).name();
     std::string answer = typeid(element).name();
 
-    if (std::strcmp(result.c_str(), answer.c_str()) != 0){
-        results << element.name.c_str() << "_test_build_element_from_string & False\n";
-        return 1;
-    }
+    BOOST_CHECK( std::strcmp( result.c_str( ), answer.c_str( ) ) == 0);
 
-    results << element.name.c_str() << "_test_build_element_from_string & True\n";
     return 0;
 }
 
-int test_element_functionality(elib::Element &element, elib::vec &global_test_point, bool isoutside, std::ofstream &results){
+int test_element_functionality( elib::Element &element, elib::vec &global_test_point, bool isoutside ){
     /*!
     Test the provided element's functionality
 
     :param elib::Element element: The element to be tested
-    :param std::ofstream &results: The output file to write the results to
+    :param elib::vec &global_test_point: A point in global space to use for testing
+    :param bool isoutside: Flag indicating if the test point is truly outside the element or not.
 
     */
 
-    test_interpolate(element, results);
+    test_interpolate(element);
     if (!isoutside){
-        test_get_local_gradient(element, results);
+        test_get_local_gradient(element);
     }
-    test_get_global_gradient(element, results);
-    test_compute_local_coordinates(element, global_test_point, isoutside, results);
-    test_get_jacobian(element, results);
-    test_bounding_box_contains_point(element, results);
-    test_contains_point(element, results);
-    test_build_element_from_string(element, results);
-    if (!isoutside){
+    test_get_global_gradient( element );
+    test_compute_local_coordinates( element, global_test_point, isoutside );
+    test_get_jacobian( element );
+    test_bounding_box_contains_point( element );
+    test_contains_point( element );
+    test_build_element_from_string( element );
+    if ( !isoutside ){
         elib::vec local_test_point;
-        int clc_result = element.compute_local_coordinates(global_test_point, local_test_point);
-        if (clc_result == 0){
-            test_get_global_shapefunction_gradients(element, local_test_point, results);
+        errorOut clc_result = element.compute_local_coordinates( global_test_point, local_test_point );
+        if ( clc_result ){
+            test_get_global_shapefunction_gradients( element, local_test_point );
         }
     }
 
     return 0;
 }
 
-int test_Hex8_functionality(std::ofstream &results){
+BOOST_AUTO_TEST_CASE( testHex8_functionality ){
     /*!
     Test the Hex8 element's functionality
     */
@@ -890,7 +796,7 @@ int test_Hex8_functionality(std::ofstream &results){
                             {0, 1, 1}};
 
     // Define the element's node ids
-    std::vector< unsigned int > node_ids = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::vector< uitype > node_ids = {1, 2, 3, 4, 5, 6, 7, 8};
 
     // Define the element's quadrature rule
     elib::quadrature_rule qrule;
@@ -903,10 +809,7 @@ int test_Hex8_functionality(std::ofstream &results){
     elib::vec xtest = {0.25, 0.75, .14};
     bool isoutside = false;
 
-    int tef_return = test_element_functionality(element, xtest, isoutside, results);
-    if (tef_return > 0){
-        return tef_return;
-    }
+    int tef_return = test_element_functionality( element, xtest, isoutside );
 
     // Test a distorted element
     nodes = {{0.516905, 0.391528, 0.293894 },
@@ -923,12 +826,7 @@ int test_Hex8_functionality(std::ofstream &results){
     xtest = {0.672, 0.636, 0.368};
     isoutside = true;
 
-    tef_return = test_element_functionality(element, xtest, isoutside, results);
-
-    if (tef_return > 0){
-        return tef_return;
-    }
-
+    tef_return = test_element_functionality( element, xtest, isoutside );
 
     // Test another distorted element
     nodes = {{3.13443, -0.61357,  1.90472},
@@ -945,15 +843,64 @@ int test_Hex8_functionality(std::ofstream &results){
     xtest = {4.38002, 0.56885, 3.65742};
     isoutside = false;
 
-    tef_return = test_element_functionality(element, xtest, isoutside, results);
-    if (tef_return > 0){
-        return tef_return;
-    }
+    tef_return = test_element_functionality( element, xtest, isoutside );
 
-    return 0;
 }
 
-int test_invert(std::ofstream &results){
+BOOST_AUTO_TEST_CASE( testHex8_point_on_surface ){
+    /*!
+     * Test if a point is on the surface of the Hex8 element
+     */
+    // Define the element's nodes
+    elib::vecOfvec nodes = {{0, 0, 0},
+                            {1, 0, 0},
+                            {1, 1, 0},
+                            {0, 1, 0},
+                            {0, 0, 1},
+                            {1, 0, 1},
+                            {1, 1, 1},
+                            {0, 1, 1}};
+
+    // Define the element's node ids
+    std::vector< uitype > node_ids = {1, 2, 3, 4, 5, 6, 7, 8};
+
+    // Define the element's quadrature rule
+    elib::quadrature_rule qrule;
+    define_hex8_fully_integrated_quadrature(qrule);
+
+    // Construct the element
+    elib::Hex8 element(node_ids, nodes, qrule);
+
+    //Define the point
+    elib::vec point = { 0, 0, 0 };
+
+    std::vector< elib::uitype > answer1 = { 0, 2, 4 };
+
+    std::vector< elib::uitype > result;
+
+    BOOST_CHECK( element.point_on_surface( point, result, 1e-9 ) );
+
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer1 ) );
+
+    point = { -0.1, 0, 0 };
+
+    BOOST_CHECK( !element.point_on_surface( point, result, 1e-9 ) );
+
+    BOOST_CHECK( element.point_on_surface( point, result, 3e-1 ) );
+
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer1 ) );
+
+    point = { -0.1, 0.5, 0.5 };
+
+    BOOST_CHECK( element.point_on_surface( point, result, 3e-1 ) );
+
+    std::vector< elib::uitype > answer2 = { 0 };
+
+    BOOST_CHECK( vectorTools::fuzzyEquals( result, answer2 ) );
+
+}
+
+BOOST_AUTO_TEST_CASE( testInvert ){
     /*!
     Test the computation of the matrix inverse
     */
@@ -971,26 +918,21 @@ int test_invert(std::ofstream &results){
     elib::vecOfvec result;
 
     result.resize(A.size());
-    for (unsigned int i=0; i<A.size(); i++){
+    for (uitype i=0; i<A.size(); i++){
         result[i].resize(A[i].size());
-        for (unsigned int j=0; j<A[i].size(); j++){
+        for (uitype j=0; j<A[i].size(); j++){
             result[i][j] = 0;
-            for (unsigned int k=0; k<A[i].size(); k++){
+            for (uitype k=0; k<A[i].size(); k++){
                 result[i][j] += A[i][k]*Ainv[k][j];
             }
         }
     }
 
-    if (!fuzzy_equals(result, answer)){
-        results << "test_invert & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( result, answer ) );
 
-    results << "test_invert & True\n";
-    return 0;
 }
 
-int test_solve(std::ofstream &results){
+BOOST_AUTO_TEST_CASE( testSolve ){
     /*!
     Test the computation of the matrix solve
     */
@@ -1003,8 +945,8 @@ int test_solve(std::ofstream &results){
 
     elib::vec b(A.size(), 0);
 
-    for (unsigned int i=0; i<A.size(); i++){
-        for (unsigned int j=0; j<A[i].size(); j++){
+    for (uitype i=0; i<A.size(); i++){
+        for (uitype j=0; j<A[i].size(); j++){
             b[i] += A[i][j]*answer[j];
         }
     }
@@ -1012,40 +954,74 @@ int test_solve(std::ofstream &results){
     elib::vec result;
     elib::solve(A, b, result);
 
-    if (!fuzzy_equals(answer, result)){
-        results << "test_solve & False\n";
-        return 1;
-    }
+    BOOST_CHECK( fuzzy_equals( answer, result ) );
 
-    results << "test_solve & True\n";
-    return 0;
 }
 
-int main(){
+BOOST_AUTO_TEST_CASE( testHex8_transform_local_vector ){
     /*!
-    The main loop which runs the tests defined in the 
-    accompanying functions. Each function should output
-    the function name followed by & followed by True or False 
-    if the test passes or fails respectively.
-    */
+     * Test the transformation of a local vector to the global reference frame
+     *
+     */
 
-    //Open the results file
-    std::ofstream results;
-    results.open("results.tex");
+    elib::vecOfvec referenceNodes = { { 0, 0, 0 },
+                                      { 1, 0, 0 },
+                                      { 1, 1, 0 },
+                                      { 0, 1, 0 },
+                                      { 0, 0, 1 },
+                                      { 1, 0, 1 },
+                                      { 1, 1, 1 },
+                                      { 0, 1, 1 } };
 
-    //Hex8 tests
-    test_Hex8_get_shape_functions(results);
-    test_Hex8_get_local_grad_shape_functions(results);
-    test_Hex8_local_point_inside(results);
-    test_Hex8_functionality(results);
+    elib::vecOfvec displacements = { { 0.        ,  0.        ,  0.        },
+                                     {-0.81824397,  0.33884637, -1.0510223 },
+                                     {-0.71099902,  0.2144174 , -0.81869947},
+                                     { 0.10724495, -0.12442897,  0.23232284},
+                                     { 0.9034876 ,  0.03718896, -0.43120554},
+                                     { 0.08524363,  0.37603533, -1.48222784},
+                                     { 0.19248858,  0.25160636, -1.24990501},
+                                     { 1.01073255, -0.08724002, -0.1988827 } };
 
-    //Eigen tool tests
-    test_invert(results);
-    test_solve(results);
+    // Define the element's node ids
+    std::vector< uitype > node_ids = {1, 2, 3, 4, 5, 6, 7, 8};
 
-    //Close the results file
-    results.close();
+    // Define the element's quadrature rule
+    elib::quadrature_rule qrule;
+    define_hex8_fully_integrated_quadrature(qrule);
 
-    return 0;
+    // Construct the element
+    elib::Hex8 element(node_ids, referenceNodes, qrule);
+
+    element.update_node_positions( displacements );
+
+    // local vector 1
+    elib::vec local_vector_1 = { 2, 0, 0 };
+
+    elib::vec answer1 = { 1, 0, 0 };
+
+    elib::vec result1;
+    element.transform_local_vector( element.local_node_coordinates[ 0 ], local_vector_1, result1, false );
+
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer1, result1 ) );
+
+    elib::vec local_vector_2 = { 2, 2, 2 };
+    elib::vec answer2 = { 1, 1, 1 };
+    elib::vec result2;
+
+    element.transform_local_vector( element.local_node_coordinates[ 1 ], local_vector_2, result2, false );
+
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer2, result2 ) );
+
+    elib::vec answer3 = referenceNodes[ 1 ] + displacements[ 1 ];
+    elib::vec result3;
+    element.transform_local_vector( element.local_node_coordinates[ 0 ], local_vector_1, result3, true );
+
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer1, result1 ) );
+
+    elib::vec answer4 = referenceNodes[ 6 ] + displacements[ 6 ];
+    elib::vec result4;
+
+    element.transform_local_vector( element.local_node_coordinates[ 0 ], local_vector_2, result4, true );
+
+    BOOST_CHECK( vectorTools::fuzzyEquals( answer4, result4 ) );
 }
-

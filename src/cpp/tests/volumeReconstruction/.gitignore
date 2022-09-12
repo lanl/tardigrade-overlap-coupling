@@ -1,0 +1,6 @@
+*.o
+results.tex
+test_volumeReconstruction
+*.as_evaluated
+*.h5
+*.xdmf
