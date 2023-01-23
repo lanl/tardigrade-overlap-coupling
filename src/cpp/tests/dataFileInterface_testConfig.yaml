@@ -1,5 +1,5 @@
 filetest1:
-        filename: ../testFiles/macroscale_xdmf.xdmf
+        filename: testFiles/macroscale_xdmf.xdmf
         mode: reaD
         filetype: XDMF
         node_id_variable_name: NODEID

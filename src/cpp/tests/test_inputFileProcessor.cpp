@@ -8,6 +8,9 @@
 #include<inputFileProcessor.h>
 #include<generateXDMFData.h>
 
+#define BOOST_TEST_MODULE test_inputFileProcessor
+#include <boost/test/included/unit_test.hpp>
+
 typedef inputFileProcessor::errorNode errorNode; //!Redefinition for the error node
 typedef inputFileProcessor::errorOut errorOut; //!Redefinition for a pointer to the error node
 typedef inputFileProcessor::floatType floatType; //!Define the float values type.
@@ -20,7 +23,7 @@ typedef inputFileProcessor::DOFMap DOFMap; //!Define the map between DOF values
 
 errorOut _createXDMFDatafiles( ){
 
-    fileGenerator::fileGenerator fg( "macroscale.yaml" );
+    fileGenerator::fileGenerator fg( "inputFileProcessor_macroscale.yaml" );
     if ( fg.build( ) ){
 
         fg.getError( )->print( );
@@ -29,7 +32,7 @@ errorOut _createXDMFDatafiles( ){
 
     }
 
-    fg = fileGenerator::fileGenerator( "microscale.yaml" );
+    fg = fileGenerator::fileGenerator( "inputFileProcessor_microscale.yaml" );
     if ( fg.build( ) ){
 
         fg.getError( )->print( );
@@ -42,159 +45,99 @@ errorOut _createXDMFDatafiles( ){
 
 }
 
-int test_openConfigurationFile( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( initialize ){
+
+    //Run the setup
+    std::unique_ptr< errorNode > error;
+    error.reset( _createXDMFDatafiles( ) );
+    BOOST_CHECK( !error );
+
+}
+
+BOOST_AUTO_TEST_CASE( testOpenConfigurationFile ){
     /*!
      * Test opening the YAML configuration file.
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print();
-        results << "test_openConfigurationFile (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     reader = inputFileProcessor::inputFileProcessor( );
     std::unique_ptr< errorNode > error;
     error.reset( reader.setConfigurationFilename( "" ) );
-    if ( !error ){
-        results << "test_openConfigurationFile (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( error );
 
     error.reset( reader.setConfigurationFilename( filename ) );
-    if ( error ){
-        error->print();
-        results << "test_openConfigurationFile (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     //Check the variable configuration
     const uIntVector *result = reader.getFreeMacroCellIds( );
 
-    if ( result->size( ) == 0 ){
+    BOOST_CHECK( result->size( ) != 0 );
 
-        results << "test_openConfigurationFile (test 4) & False\n";
-        return 1;
-
-    }
-
-    if ( ( *result )[ 0 ] != 1 ){
-
-        results << "test_openConfigurationFile (test 5) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( ( *result )[ 0 ] == 1 );
 
     result = reader.getGhostMacroCellIds( );
 
-    if ( result->size( ) == 0 ){
+    BOOST_CHECK( result->size( ) != 0 );
 
-        results << "test_openConfigurationFile (test 6) & False\n";
-        return 1;
-
-    }
-
-    if ( ( *result )[ 0 ] != 2 ){
-
-        results << "test_openConfigurationFile (test 7) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( ( *result )[ 0 ] == 2 );
 
 //    result = reader.getFreeMacroCellMicroDomainCounts( );
 //
-//    if ( result->size( ) == 0 ){
-//
-//        results << "test_openConfigurationFile (test 8) & False\n";
-//        return 1;
-//
-//    }
+//    BOOST_CHECK( result->size( ) != 0 );
 //
 //    for ( auto v = result->begin( ); v != result->end( ); v++ ){
 //
-//        if ( *v != 8 ){
-//
-//            results << "test_openConfigurationFile (test 9) & False\n";
-//            return 1;
-//
-//        }
+//        BOOST_CHECK( *v == 8 );
 //
 //    }
 //
 //    result = reader.getGhostMacroCellMicroDomainCounts( );
 //
-//    if ( result->size( ) == 0 ){
-//
-//        results << "test_openConfigurationFile (test 10) & False\n";
-//        return 1;
-//
-//    }
+//    BOOST_CHECK( result->size( ) != 0 );
 //
 //    for ( auto v = result->begin( ); v != result->end( ); v++ ){
 //
-//        if ( *v != 8 ){
-//
-//            results << "test_openConfigurationFile (test 11) & False\n";
-//            return 1;
-//
-//        }
+//        BOOST_CHECK( *v == 8 );
 //
 //    }
 
-    results << "test_openConfigurationFile & True\n";
-    return 0;
 }
 
-int test_setConfigurationFile( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testSetConfigurationFile ){
     /*!
      * Test setting the YAML configuration file.
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader;
 
     std::unique_ptr< errorNode > error;
     error.reset( reader.setConfigurationFilename( "" ) );
 
-    if ( !error ){
-        results << "test_setConfigurationFile & False\n";
-        return 1;
-    }
+    BOOST_CHECK( error );
 
     error.reset( reader.setConfigurationFilename( filename ) );
 
-    if ( error ){
-        error->print();
-        results << "test_setConfigurationFile (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    results << "test_setConfigurationFile & True\n";
-    return 0;
 }
 
-int test_initializeFileInterfaces( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testInitializeFileInterfaces ){
     /*!
      * Test the initialization of the file readers
      *
-     * :param std::ofstream &results: The output file.
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print();
-        results << "test_initializeFileInterfaces & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     floatVector answerMacroNodes =
         {
@@ -207,11 +150,7 @@ int test_initializeFileInterfaces( std::ofstream &results ){
 
     errorOut error = reader._macroscale->readMesh( 1, resultMacroNodes );
 
-    if ( error ){
-        error->print();
-        results << "test_initializeFileInterfaces & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     floatVector answerMicroNodes =
         {
@@ -232,50 +171,29 @@ int test_initializeFileInterfaces( std::ofstream &results ){
             2. , 1. , 1. , 2.5, 1. , 1. , 3.
         };
 
-    if ( !vectorTools::fuzzyEquals( answerMacroNodes, resultMacroNodes ) ){
-        results << "test_initializeFileInterfaces (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( answerMacroNodes, resultMacroNodes ) );
 
     error = reader._microscale->readMesh( 1, resultMicroNodes );
 
-    if ( error ){
-        error->print();
-        results << "test_initializeFileInterfaces & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
-    if ( !vectorTools::fuzzyEquals( resultMicroNodes, answerMicroNodes ) ){
-        results << "test_initializeFileInterfaces (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( resultMicroNodes, answerMicroNodes ) );
 
-    results << "test_initializeFileInterfaces & True\n";
-    return 0;
 }
 
-int test_initializeIncrement( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testInitializeIncrement ){
     /*!
      * Test the initialization of the processor for the current increment
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_initializeIncrement & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     errorOut error = reader.initializeIncrement( 1, 1 );
-    if ( error ){
-        error->print( );
-        results << "test_initializeIncrement & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     //Check that the unique micro-scale nodes have been identified
     const DOFMap microGlobalToLocalMapAnswer
@@ -334,20 +252,9 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microGlobalToLocalResult->find( it->first );
 
-        if ( r == microGlobalToLocalResult->end( ) ){
+        BOOST_CHECK( r != microGlobalToLocalResult->end( ) );
 
-            results << "test_initializeIncrement (test 1) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement (test 2) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -375,20 +282,9 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroGlobalToLocalResult->find( it->first );
 
-        if ( r == macroGlobalToLocalResult->end( ) ){
+        BOOST_CHECK( r != macroGlobalToLocalResult->end( ) );
 
-            results << "test_initializeIncrement (test 3) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement (test 4) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -449,20 +345,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microNodeWeightsResult->find( it->first );
 
-        if ( r == microNodeWeightsResult->end( ) ){
-
-            results << "test_initializeIncrement (test 5) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement (test 6) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microNodeWeightsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -523,20 +407,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microGlobalNodeToOutputMapResult->find( it->first );
 
-        if ( r == microGlobalNodeToOutputMapResult->end( ) ){
-
-            results << "test_initializeIncrement (test 7) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement (test 8) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microGlobalNodeToOutputMapResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -564,20 +436,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroGlobalNodeToOutputMapResult->find( it->first );
 
-        if ( r == macroGlobalNodeToOutputMapResult->end( ) ){
-
-            results << "test_initializeIncrement (test 9) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement (test 10) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroGlobalNodeToOutputMapResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -586,12 +446,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
     const floatType *timeResult = reader.getMicroTime( );
 
-    if ( !vectorTools::fuzzyEquals( timeAnswer, *timeResult ) ){
-
-        results << "test_initializeIncrement (test 11) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( timeAnswer, *timeResult ) );
 
     const std::unordered_map< uIntType, floatType > densityAnswer
         =
@@ -649,20 +504,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = densityResult->find( it->first );
 
-        if ( r == densityResult->end( ) ){
-
-            results << "test_initializeIncrement (test 12) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement (test 13) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != densityResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -722,20 +565,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = volumeResult->find( it->first );
 
-        if ( r == volumeResult->end( ) ){
-
-            results << "test_initializeIncrement (test 14) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement (test 15) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != volumeResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -795,20 +626,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microNodeReferencePositionResult->find( it->first );
 
-        if ( r == microNodeReferencePositionResult->end( ) ){
-
-            results << "test_initializeIncrement (test 16) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 17) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microNodeReferencePositionResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -835,20 +654,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroNodeReferencePositionsResult->find( it->first );
 
-        if ( r == macroNodeReferencePositionsResult->end( ) ){
-
-            results << "test_initializeIncrement (test 18) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 19) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroNodeReferencePositionsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -865,20 +672,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroNodeReferenceConnectivityResult->find( it->first );
 
-        if ( r == macroNodeReferenceConnectivityResult->end( ) ){
-
-            results << "test_initializeIncrement (test 21) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 22) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroNodeReferenceConnectivityResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -939,20 +734,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microDisplacementResult->find( it->first );
 
-        if ( r == microDisplacementResult->end( ) ){
-
-            results << "test_initializeIncrement (test 22) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 23) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microDisplacementResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -963,15 +746,9 @@ int test_initializeIncrement( std::ofstream &results ){
     const uIntVector *freeMacroCellIdsResult = reader.getFreeMacroCellIds( );
     const uIntVector *ghostMacroCellIdsResult = reader.getGhostMacroCellIds( );
 
-    if ( !vectorTools::fuzzyEquals( freeMacroCellIdsAnswer, *freeMacroCellIdsResult ) ){
-        results << "test_initializeIncrement (test 24) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( freeMacroCellIdsAnswer, *freeMacroCellIdsResult ) );
 
-    if ( !vectorTools::fuzzyEquals( ghostMacroCellIdsAnswer, *ghostMacroCellIdsResult ) ){
-        results << "test_initializeIncrement (test 25) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( ghostMacroCellIdsAnswer, *ghostMacroCellIdsResult ) );
 
 //    const uIntVector freeMacroCellMicroDomainCountsAnswer = { 8 };
 //    const uIntVector ghostMacroCellMicroDomainCountsAnswer = { 8 };
@@ -979,15 +756,9 @@ int test_initializeIncrement( std::ofstream &results ){
 //    const uIntVector *freeMacroCellMicroDomainCountsResult = reader.getFreeMacroCellMicroDomainCounts( );
 //    const uIntVector *ghostMacroCellMicroDomainCountsResult = reader.getGhostMacroCellMicroDomainCounts( );
 //
-//    if ( !vectorTools::fuzzyEquals( freeMacroCellMicroDomainCountsAnswer, *freeMacroCellMicroDomainCountsResult ) ){
-//        results << "test_initializeIncrement (test 26) & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( vectorTools::fuzzyEquals( freeMacroCellMicroDomainCountsAnswer, *freeMacroCellMicroDomainCountsResult ) );
 //
-//    if ( !vectorTools::fuzzyEquals( ghostMacroCellMicroDomainCountsAnswer, *ghostMacroCellMicroDomainCountsResult ) ){
-//        results << "test_initializeIncrement (test 27) & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( vectorTools::fuzzyEquals( ghostMacroCellMicroDomainCountsAnswer, *ghostMacroCellMicroDomainCountsResult ) );
 
     const std::unordered_map< uIntType, floatVector > microBodyForcesAnswer
         =
@@ -1045,20 +816,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microBodyForcesResult->find( it->first );
 
-        if ( r == microBodyForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 28) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 29) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microBodyForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1118,20 +877,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microSurfaceForcesResult->find( it->first );
 
-        if ( r == microSurfaceForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 30) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 31) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microSurfaceForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1191,20 +938,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microExternalForcesResult->find( it->first );
 
-        if ( r == microExternalForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 32) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 33) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microExternalForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1264,20 +999,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microVelocitiesResult->find( it->first );
 
-        if ( r == microVelocitiesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 34) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 35) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microVelocitiesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1337,32 +1060,15 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microAccelerationsResult->find( it->first );
 
-        if ( r == microAccelerationsResult->end( ) ){
-
-            results << "test_initializeIncrement (test 36) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 37) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microAccelerationsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
     const floatType previousTimeAnswer = 0.;
     const floatType *previousTimeResult = reader.getPreviousMicroTime( );
 
-    if ( !vectorTools::fuzzyEquals( previousTimeAnswer, *previousTimeResult ) ){
-
-        results << "test_initializeIncrement (test 38) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( previousTimeAnswer, *previousTimeResult ) );
 
     const std::unordered_map< uIntType, floatVector > previousMicroDisplacementAnswer
         =
@@ -1420,20 +1126,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = previousMicroDisplacementResult->find( it->first );
 
-        if ( r == previousMicroDisplacementResult->end( ) ){
-
-            results << "test_initializeIncrement (test 39) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 40) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMicroDisplacementResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1493,20 +1187,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = previousMicroVelocitiesResult->find( it->first );
 
-        if ( r == previousMicroVelocitiesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 41) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 42) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMicroVelocitiesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1566,20 +1248,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = previousMicroAccelerationsResult->find( it->first );
 
-        if ( r == previousMicroAccelerationsResult->end( ) ){
-
-            results << "test_initializeIncrement (test 43) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 44) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMicroAccelerationsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1639,20 +1309,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microStressesResult->find( it->first );
 
-        if ( r == microStressesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 45) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 46) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microStressesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1712,20 +1370,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microInternalForcesResult->find( it->first );
 
-        if ( r == microInternalForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 47) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 48) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microInternalForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1785,32 +1431,15 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microInertialForcesResult->find( it->first );
 
-        if ( r == microInertialForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 49) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 50) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microInertialForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
     const floatType macroTimeAnswer = 1.;
     const floatType* macroTimeResult = reader.getMacroTime( );
 
-    if ( !vectorTools::fuzzyEquals( macroTimeAnswer, *macroTimeResult ) ){
-
-        results << "test_initializeIncrement (test 51) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( macroTimeAnswer, *macroTimeResult ) );
 
     const std::unordered_map< uIntType, floatVector > macroDisplacementsAnswer
         =
@@ -1835,20 +1464,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroDisplacementsResult->find( it->first );
 
-        if ( r == macroDisplacementsResult->end( ) ){
-
-            results << "test_initializeIncrement (test 51) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 52) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroDisplacementsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1874,20 +1491,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroDispDOFVectorResult->find( it->first );
 
-        if ( r == macroDispDOFVectorResult->end( ) ){
-
-            results << "test_initializeIncrement (test 53) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 54) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroDispDOFVectorResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1914,20 +1519,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroVelocitiesResult->find( it->first );
 
-        if ( r == macroVelocitiesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 55) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 56) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroVelocitiesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1954,20 +1547,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroAccelerationsResult->find( it->first );
 
-        if ( r == macroAccelerationsResult->end( ) ){
-
-            results << "test_initializeIncrement (test 57) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 58) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroAccelerationsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -1994,20 +1575,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = previousMacroDispDOFVectorResult->find( it->first );
 
-        if ( r == previousMacroDispDOFVectorResult->end( ) ){
-
-            results << "test_initializeIncrement (test 59) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 60) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMacroDispDOFVectorResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -2034,20 +1603,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = previousMacroVelocitiesResult->find( it->first );
 
-        if ( r == previousMacroVelocitiesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 61) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 62) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMacroVelocitiesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -2074,20 +1631,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = previousMacroAccelerationsResult->find( it->first );
 
-        if ( r == previousMacroAccelerationsResult->end( ) ){
-
-            results << "test_initializeIncrement (test 63) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 64) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMacroAccelerationsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -2114,20 +1659,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroInternalForcesResult->find( it->first );
 
-        if ( r == macroInternalForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 65) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 66) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroInternalForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -2154,20 +1687,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroInertialForcesResult->find( it->first );
 
-        if ( r == macroInertialForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 67) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 68) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroInertialForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -2194,20 +1715,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroBodyForcesResult->find( it->first );
 
-        if ( r == macroBodyForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 69) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 70) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroBodyForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -2234,20 +1743,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroSurfaceForcesResult->find( it->first );
 
-        if ( r == macroSurfaceForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 71) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 72) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroSurfaceForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -2274,20 +1771,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroExternalForcesResult->find( it->first );
 
-        if ( r == macroExternalForcesResult->end( ) ){
-
-            results << "test_initializeIncrement (test 73) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement (test 74) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroExternalForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -2298,11 +1783,7 @@ int test_initializeIncrement( std::ofstream &results ){
                n != ghostMicroNodeIds->end( );
                n++ ){
 
-        if ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) != freeMicroNodeIds->end( ) ){
-            std::cout << "*n: " << *n << "\n";
-            results << "test_initializeIncrement (test 75) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( !( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) != freeMicroNodeIds->end( ) ) );
 
     }
 
@@ -2316,12 +1797,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ){
-
-                results << "test_initializeIncrement (test 76) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( !( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) );
 
         }
 
@@ -2337,13 +1813,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
-                 ( std::find( ghostMicroNodeIds->begin( ), ghostMicroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) ){
-
-                results << "test_initializeIncrement (test 77) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( !( ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
+                            ( std::find( ghostMicroNodeIds->begin( ), ghostMicroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) ) );
 
         }
 
@@ -2361,12 +1832,7 @@ int test_initializeIncrement( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) ){
-
-                results << "test_initializeIncrement (test 78) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( !( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) ) );
 
         }
 
@@ -2381,13 +1847,8 @@ int test_initializeIncrement( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) &&
-                 ( std::find( freeMacroNodeIds->begin( ), freeMacroNodeIds->end( ), *n ) == freeMacroNodeIds->end( ) ) ){
-
-                results << "test_initializeIncrement (test 79) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( !( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) &&
+                            ( std::find( freeMacroNodeIds->begin( ), freeMacroNodeIds->end( ), *n ) == freeMacroNodeIds->end( ) ) ) );
 
         }
 
@@ -2395,23 +1856,13 @@ int test_initializeIncrement( std::ofstream &results ){
 
     const DOFMap *microGlobalToLocalDOFMap = reader.getMicroGlobalToLocalDOFMap( );
 
-    if ( microGlobalToLocalDOFMap->size( ) != ( freeMicroNodeIds->size( ) + ghostMicroNodeIds->size( ) ) ){
-
-        results << "test_initializeIncrement (test 80) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !( microGlobalToLocalDOFMap->size( ) != ( freeMicroNodeIds->size( ) + ghostMicroNodeIds->size( ) ) ) );
 
     for ( auto n  = freeMicroNodeIds->begin( );
                n != freeMicroNodeIds->end( );
                n++ ){
 
-        if ( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ){
-
-            results << "test_initializeIncrement (test 81) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( !( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ) );
 
     }
 
@@ -2419,34 +1870,19 @@ int test_initializeIncrement( std::ofstream &results ){
                n != ghostMicroNodeIds->end( );
                n++ ){
 
-        if ( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ){
-
-            results << "test_initializeIncrement (test 82) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( !( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ) );
 
     }
 
     const DOFMap *macroGlobalToLocalDOFMap = reader.getMacroGlobalToLocalDOFMap( );
 
-    if ( macroGlobalToLocalDOFMap->size( ) != ( freeMacroNodeIds->size( ) + ghostMacroNodeIds->size( ) ) ){
-
-        results << "test_initializeIncrement (test 83) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( !( macroGlobalToLocalDOFMap->size( ) != ( freeMacroNodeIds->size( ) + ghostMacroNodeIds->size( ) ) ) );
 
     for ( auto n  = freeMacroNodeIds->begin( );
                n != freeMacroNodeIds->end( );
                n++ ){
 
-        if ( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ){
-
-            results << "test_initializeIncrement (test 84) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( !( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ) );
 
     }
 
@@ -2454,92 +1890,32 @@ int test_initializeIncrement( std::ofstream &results ){
                n != ghostMacroNodeIds->end( );
                n++ ){
 
-        if ( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ){
-
-            results << "test_initializeIncrement (test 85) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( !( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ) );
 
     }
 
-    if ( !reader.microBodyForceDefined( ) ){
+    BOOST_CHECK( reader.microBodyForceDefined( ) );
 
-        results << "test_initializeIncrement (test 86) & False\n";
-        return 1;
+    BOOST_CHECK( reader.microSurfaceForceDefined( ) );
 
-    }
+    BOOST_CHECK( reader.microAccelerationDefined( ) );
 
-    if ( !reader.microSurfaceForceDefined( ) ){
+    BOOST_CHECK( !reader.useReconstructedMassCenters( ) );
 
-        results << "test_initializeIncrement (test 87) & False\n";
-        return 1;
+    BOOST_CHECK( reader.microVelocitiesDefined( ) );
 
-    }
+    BOOST_CHECK( reader.macroAccelerationDefined( ) );
 
-    if ( !reader.microAccelerationDefined( ) ){
-
-        results << "test_initializeIncrement (test 88) & False\n";
-        return 1;
-
-    }
-
-    if ( reader.useReconstructedMassCenters( ) ){
-
-        results << "test_initializeIncrement (test 89) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.microVelocitiesDefined( ) ){
-
-        results << "test_initializeIncrement (test 90) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.macroAccelerationDefined( ) ){
-
-        results << "test_initializeIncrement (test 91) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.macroVelocitiesDefined( ) ){
-
-        results << "test_initializeIncrement (test 92) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( reader.macroVelocitiesDefined( ) );
 
 
-    if ( !reader.microInternalForceDefined( ) ){
+    BOOST_CHECK( reader.microInternalForceDefined( ) );
 
-        results << "test_initializeIncrement (test 93) & False\n";
-        return 1;
+    BOOST_CHECK( reader.macroInternalForceDefined( ) );
 
-    }
+    BOOST_CHECK( reader.macroInertialForceDefined( ) );
 
-    if ( !reader.macroInternalForceDefined( ) ){
-
-        results << "test_initializeIncrement (test 94) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.macroInertialForceDefined( ) ){
-
-        results << "test_initializeIncrement (test 95) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.macroExternalForceDefined( ) ){
-
-        results << "test_initializeIncrement (test 96) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( reader.macroExternalForceDefined( ) );
 
     const std::string macroReferenceDensityTypesAnswer = "constant";
     const floatVector macroReferenceDensitiesAnswer = { 2. };
@@ -2548,23 +1924,13 @@ int test_initializeIncrement( std::ofstream &results ){
 
     for ( auto mRDR = macroReferenceDensitiesResult->begin( ); mRDR != macroReferenceDensitiesResult->end( ); mRDR++ ){
 
-        if ( !vectorTools::fuzzyEquals( macroReferenceDensitiesAnswer, mRDR->second ) ){
-
-            results << "test_initializeIncrement (test 97) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( macroReferenceDensitiesAnswer, mRDR->second ) );
 
     }
 
     for ( auto mRDTR = macroReferenceDensityTypesResult->begin( ); mRDTR != macroReferenceDensityTypesResult->end( ); mRDTR++ ){
 
-        if ( macroReferenceDensityTypesAnswer.compare( mRDTR->second ) != 0 ){
-
-            results << "test_initializeIncrement (test 98) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( macroReferenceDensityTypesAnswer.compare( mRDTR->second ) == 0 );
 
     }
 
@@ -2581,74 +1947,34 @@ int test_initializeIncrement( std::ofstream &results ){
                mRMIR != macroReferenceMomentsOfInertiaResult->end( );
                mRMIR++ ){
 
-        if ( !vectorTools::fuzzyEquals( macroReferenceMomentsOfInertiaAnswer, mRMIR->second ) ){
-
-            results << "test_initializeIncrement (test 99) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( macroReferenceMomentsOfInertiaAnswer, mRMIR->second ) );
 
     }
 
     for ( auto mRMITR  = macroReferenceMomentOfInertiaTypesResult->begin( );
                mRMITR != macroReferenceMomentOfInertiaTypesResult->end( ); mRMITR++ ){
 
-        if ( macroReferenceMomentOfInertiaTypesAnswer.compare( mRMITR->second ) != 0 ){
-
-            results << "test_initializeIncrement (test 100) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( macroReferenceMomentOfInertiaTypesAnswer.compare( mRMITR->second ) == 0 );
 
     }
 
-    if ( !reader.microSurfaceForceDefined( ) ){
+    BOOST_CHECK( reader.microSurfaceForceDefined( ) );
 
-        results << "test_initializeIncrement (test 101) & False\n";
-        return 1;
+    BOOST_CHECK( reader.microExternalForceDefined( ) );
 
-    }
-
-    if ( !reader.microExternalForceDefined( ) ){
-
-        results << "test_initializeIncrement (test 102) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.extractPreviousDOFValues( ) ){
-
-        results << "test_initializeIncrement (test 103) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( reader.extractPreviousDOFValues( ) );
 
     const floatType DtAnswer = 1.;
     const floatType* DtResult = reader.getDt( );
 
-    if ( !vectorTools::fuzzyEquals( DtAnswer, *DtResult ) ){
-
-        results << "test_initializeIncrement (test 104) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( DtAnswer, *DtResult ) );
 
     const floatType newmarkGammaAnswer = 0.50;
     const floatType newmarkBetaAnswer  = 0.25;
 
-    if ( !vectorTools::fuzzyEquals( newmarkGammaAnswer, *reader.getNewmarkGamma( ) ) ){
+    BOOST_CHECK( vectorTools::fuzzyEquals( newmarkGammaAnswer, *reader.getNewmarkGamma( ) ) );
 
-        results << "test_initializeIncrement (test 105) & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( newmarkBetaAnswer, *reader.getNewmarkBeta( ) ) ){
-
-        results << "test_initializeIncrement (test 106) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( newmarkBetaAnswer, *reader.getNewmarkBeta( ) ) );
 
     const std::unordered_map< uIntType, stringVector > macroCellToDomainMapAnswer
         =
@@ -2665,28 +1991,13 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = macroCellToDomainMapResult->find( a->first );
 
-        if ( r == macroCellToDomainMapResult->end( ) ){
+        BOOST_CHECK( r != macroCellToDomainMapResult->end( ) );
 
-            results << "test_initializeIncrement (test 107) & False\n";
-            return 1;
-
-        }
-
-        if ( a->second.size( ) != r->second.size( ) ){
-
-            results << "test_initializeIncrement (test 108) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( a->second.size( ) == r->second.size( ) );
 
         for ( unsigned int i = 0; i < a->second.size( ); i++ ){
 
-            if ( a->second[ i ].compare( r->second[ i ] ) != 0 ){
-
-                results << "test_initializeIncrement (test 109) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( a->second[ i ].compare( r->second[ i ] ) == 0 );
 
         }        
 
@@ -2719,32 +2030,15 @@ int test_initializeIncrement( std::ofstream &results ){
 
         auto r = microDomainIDMapResult->find( a->first );
 
-        if ( r == microDomainIDMapResult->end( ) ){
+        BOOST_CHECK( r != microDomainIDMapResult->end( ) );
 
-            results << "test_initializeIncrement (test 110) & False\n";
-            return 1;
-
-        }
-
-        if ( r->second != a->second ){
-
-            results << "test_initializeIncrement (test 111) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r->second == a->second );
 
     }
 
-    if ( reader.isFiltering( ) ){
+    BOOST_CHECK( !reader.isFiltering( ) );
 
-        results << "test_initializeIncrement (test 112) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.assumeVoidlessBody( ) ){
-        results << "test_initializeIncrement (test 112a) & False\n";
-    }
+    BOOST_CHECK( reader.assumeVoidlessBody( ) );
 
     const std::unordered_map< uIntType, floatVector > macroLumpedMassMatrixAnswer =
         {
@@ -2768,68 +2062,34 @@ int test_initializeIncrement( std::ofstream &results ){
 
     const std::unordered_map< uIntType, floatVector > *macroLumpedMassMatrixResult = reader.getMacroLumpedMassMatrix( );
 
-    if ( !reader.macroLumpedMassMatrixDefined( ) ){
-
-        results << "test_initializeIncrement (test 112) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( reader.macroLumpedMassMatrixDefined( ) );
 
     for ( auto answer = macroLumpedMassMatrixAnswer.begin( ); answer != macroLumpedMassMatrixAnswer.end( ); answer++ ){
 
         auto result = macroLumpedMassMatrixResult->find( answer->first );
 
-        if ( result == macroLumpedMassMatrixResult->end( ) ){
+        BOOST_CHECK( result != macroLumpedMassMatrixResult->end( ) );
 
-            std::cout << "113 failure\n";
-            std::cout << "answer: " << answer->first << "\n";
-
-            results << "test_initializeIncrement (test 113) & False\n";
-            return 1;
-
-        }
-
-        if ( !vectorTools::fuzzyEquals( result->second, answer->second ) ){
-
-            std::cout << "114 failure\n";
-            std::cout << "node: " << answer->first << "\n";
-            std::cout << "result: "; vectorTools::print( result->second );
-            std::cout << "answer: "; vectorTools::print( answer->second );
-
-            results << "test_initializeIncrement (test 114) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( result->second, answer->second ) );
 
     }
 
-    results << "test_initializeIncrement & True\n";
-    return 0;
 }
 
-int test_initializeIncrement_Arlequin( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testInitializeIncrement_Arlequin ){
     /*!
      * Test the initialization of the processor for the current increment
      * if Arlequin mode is defined
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig_Arlequin.yaml";
+    std::string filename = "inputFileProcessor_testConfig_Arlequin.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_initializeIncrement_Arlequin & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     errorOut error = reader.initializeIncrement( 1, 1 );
-    if ( error ){
-        error->print( );
-        results << "test_initializeIncrement_Arlequin & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !error );
 
     //Check that the unique micro-scale nodes have been identified
     const DOFMap microGlobalToLocalMapAnswer
@@ -2888,20 +2148,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microGlobalToLocalResult->find( it->first );
 
-        if ( r == microGlobalToLocalResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 1) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement_Arlequin (test 2) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microGlobalToLocalResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -2929,20 +2177,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroGlobalToLocalResult->find( it->first );
 
-        if ( r == macroGlobalToLocalResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 3) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement_Arlequin (test 4) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroGlobalToLocalResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3003,20 +2239,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microNodeWeightsResult->find( it->first );
 
-        if ( r == microNodeWeightsResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 5) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement_Arlequin (test 6) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microNodeWeightsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3077,20 +2301,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microGlobalNodeToOutputMapResult->find( it->first );
 
-        if ( r == microGlobalNodeToOutputMapResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 7) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement_Arlequin (test 8) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microGlobalNodeToOutputMapResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3118,20 +2330,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroGlobalNodeToOutputMapResult->find( it->first );
 
-        if ( r == macroGlobalNodeToOutputMapResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 9) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement_Arlequin (test 10) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroGlobalNodeToOutputMapResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3140,12 +2340,7 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
     const floatType *timeResult = reader.getMicroTime( );
 
-    if ( !vectorTools::fuzzyEquals( timeAnswer, *timeResult ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 11) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( timeAnswer, *timeResult ) );
 
     const std::unordered_map< uIntType, floatType > densityAnswer
         =
@@ -3203,20 +2398,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = densityResult->find( it->first );
 
-        if ( r == densityResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 12) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement_Arlequin (test 13) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != densityResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3276,20 +2459,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = volumeResult->find( it->first );
 
-        if ( r == volumeResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 14) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": " << r->second << "\n";
-            std::cout << it->first << ": " << it->second << "\n";
-            results << "test_initializeIncrement_Arlequin (test 15) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != volumeResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3349,20 +2520,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microNodeReferencePositionResult->find( it->first );
 
-        if ( r == microNodeReferencePositionResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 16) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 17) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microNodeReferencePositionResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3389,20 +2548,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroNodeReferencePositionsResult->find( it->first );
 
-        if ( r == macroNodeReferencePositionsResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 18) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 19) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroNodeReferencePositionsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3419,20 +2566,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroNodeReferenceConnectivityResult->find( it->first );
 
-        if ( r == macroNodeReferenceConnectivityResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 21) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 22) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroNodeReferenceConnectivityResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3493,20 +2628,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microDisplacementResult->find( it->first );
 
-        if ( r == microDisplacementResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 22) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 23) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microDisplacementResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3517,15 +2640,9 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
     const uIntVector *freeMacroCellIdsResult = reader.getFreeMacroCellIds( );
     const uIntVector *ghostMacroCellIdsResult = reader.getGhostMacroCellIds( );
 
-    if ( !vectorTools::fuzzyEquals( freeMacroCellIdsAnswer, *freeMacroCellIdsResult ) ){
-        results << "test_initializeIncrement_Arlequin (test 24) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( freeMacroCellIdsAnswer, *freeMacroCellIdsResult ) );
 
-    if ( !vectorTools::fuzzyEquals( ghostMacroCellIdsAnswer, *ghostMacroCellIdsResult ) ){
-        results << "test_initializeIncrement_Arlequin (test 25) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( ghostMacroCellIdsAnswer, *ghostMacroCellIdsResult ) );
 
 //    const uIntVector freeMacroCellMicroDomainCountsAnswer = { 8 };
 //    const uIntVector ghostMacroCellMicroDomainCountsAnswer = { 8 };
@@ -3533,15 +2650,9 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 //    const uIntVector *freeMacroCellMicroDomainCountsResult = reader.getFreeMacroCellMicroDomainCounts( );
 //    const uIntVector *ghostMacroCellMicroDomainCountsResult = reader.getGhostMacroCellMicroDomainCounts( );
 //
-//    if ( !vectorTools::fuzzyEquals( freeMacroCellMicroDomainCountsAnswer, *freeMacroCellMicroDomainCountsResult ) ){
-//        results << "test_initializeIncrement_Arlequin (test 26) & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( vectorTools::fuzzyEquals( freeMacroCellMicroDomainCountsAnswer, *freeMacroCellMicroDomainCountsResult ) );
 //
-//    if ( !vectorTools::fuzzyEquals( ghostMacroCellMicroDomainCountsAnswer, *ghostMacroCellMicroDomainCountsResult ) ){
-//        results << "test_initializeIncrement_Arlequin (test 27) & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( vectorTools::fuzzyEquals( ghostMacroCellMicroDomainCountsAnswer, *ghostMacroCellMicroDomainCountsResult ) );
 
     const std::unordered_map< uIntType, floatVector > microBodyForcesAnswer
         =
@@ -3599,20 +2710,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microBodyForcesResult->find( it->first );
 
-        if ( r == microBodyForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 28) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 29) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microBodyForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3672,20 +2771,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microSurfaceForcesResult->find( it->first );
 
-        if ( r == microSurfaceForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 30) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 31) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microSurfaceForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3745,20 +2832,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microExternalForcesResult->find( it->first );
 
-        if ( r == microExternalForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 32) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 33) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microExternalForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3818,20 +2893,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microVelocitiesResult->find( it->first );
 
-        if ( r == microVelocitiesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 34) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 35) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microVelocitiesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -3891,32 +2954,15 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microAccelerationsResult->find( it->first );
 
-        if ( r == microAccelerationsResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 36) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 37) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microAccelerationsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
     const floatType previousTimeAnswer = 0.;
     const floatType *previousTimeResult = reader.getPreviousMicroTime( );
 
-    if ( !vectorTools::fuzzyEquals( previousTimeAnswer, *previousTimeResult ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 38) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( previousTimeAnswer, *previousTimeResult ) );
 
     const std::unordered_map< uIntType, floatVector > previousMicroDisplacementAnswer
         =
@@ -3974,20 +3020,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = previousMicroDisplacementResult->find( it->first );
 
-        if ( r == previousMicroDisplacementResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 39) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 40) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMicroDisplacementResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4047,20 +3081,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = previousMicroVelocitiesResult->find( it->first );
 
-        if ( r == previousMicroVelocitiesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 41) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 42) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMicroVelocitiesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4120,20 +3142,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = previousMicroAccelerationsResult->find( it->first );
 
-        if ( r == previousMicroAccelerationsResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 43) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 44) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMicroAccelerationsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4193,20 +3203,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microStressesResult->find( it->first );
 
-        if ( r == microStressesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 45) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 46) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microStressesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4266,20 +3264,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microInternalForcesResult->find( it->first );
 
-        if ( r == microInternalForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 47) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 48) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microInternalForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4339,32 +3325,15 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microInertialForcesResult->find( it->first );
 
-        if ( r == microInertialForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 49) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 50) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != microInertialForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
     const floatType macroTimeAnswer = 1.;
     const floatType* macroTimeResult = reader.getMacroTime( );
 
-    if ( !vectorTools::fuzzyEquals( macroTimeAnswer, *macroTimeResult ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 51) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( macroTimeAnswer, *macroTimeResult ) );
 
     const std::unordered_map< uIntType, floatVector > macroDisplacementsAnswer
         =
@@ -4389,20 +3358,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroDisplacementsResult->find( it->first );
 
-        if ( r == macroDisplacementsResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 51) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 52) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroDisplacementsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4428,20 +3385,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroDispDOFVectorResult->find( it->first );
 
-        if ( r == macroDispDOFVectorResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 53) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 54) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroDispDOFVectorResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4468,20 +3413,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroVelocitiesResult->find( it->first );
 
-        if ( r == macroVelocitiesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 55) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 56) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroVelocitiesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4508,20 +3441,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroAccelerationsResult->find( it->first );
 
-        if ( r == macroAccelerationsResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 57) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 58) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroAccelerationsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4548,20 +3469,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = previousMacroDispDOFVectorResult->find( it->first );
 
-        if ( r == previousMacroDispDOFVectorResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 59) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 60) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMacroDispDOFVectorResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4588,20 +3497,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = previousMacroVelocitiesResult->find( it->first );
 
-        if ( r == previousMacroVelocitiesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 61) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 62) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMacroVelocitiesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4628,20 +3525,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = previousMacroAccelerationsResult->find( it->first );
 
-        if ( r == previousMacroAccelerationsResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 63) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 64) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != previousMacroAccelerationsResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4668,20 +3553,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroInternalForcesResult->find( it->first );
 
-        if ( r == macroInternalForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 65) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 66) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroInternalForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4708,20 +3581,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroInertialForcesResult->find( it->first );
 
-        if ( r == macroInertialForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 67) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 68) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroInertialForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4748,20 +3609,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroBodyForcesResult->find( it->first );
 
-        if ( r == macroBodyForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 69) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 70) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroBodyForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4788,20 +3637,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroSurfaceForcesResult->find( it->first );
 
-        if ( r == macroSurfaceForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 71) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 72) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroSurfaceForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4828,20 +3665,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroExternalForcesResult->find( it->first );
 
-        if ( r == macroExternalForcesResult->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 73) & False\n";
-            return 1;
-
-        }
-        else if ( !vectorTools::fuzzyEquals( r->second, it->second ) ){
-
-            std::cout << r->first << ": "; vectorTools::print( r->second );
-            std::cout << it->first << ": "; vectorTools::print( it->second );
-            results << "test_initializeIncrement_Arlequin (test 74) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r != macroExternalForcesResult->end( ) );
+        BOOST_CHECK( vectorTools::fuzzyEquals( r->second, it->second ) );
 
     }
 
@@ -4852,11 +3677,7 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
                n != ghostMicroNodeIds->end( );
                n++ ){
 
-        if ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) != freeMicroNodeIds->end( ) ){
-            std::cout << "*n: " << *n << "\n";
-            results << "test_initializeIncrement_Arlequin (test 75) & False\n";
-            return 1;
-        }
+        BOOST_CHECK( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) );
 
     }
 
@@ -4870,12 +3691,7 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ){
-
-                results << "test_initializeIncrement_Arlequin (test 76) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) != freeMicroNodeIds->end( ) );
 
         }
 
@@ -4891,13 +3707,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
-                 ( std::find( ghostMicroNodeIds->begin( ), ghostMicroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) ){
-
-                results << "test_initializeIncrement_Arlequin (test 77) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( !( ( std::find( freeMicroNodeIds->begin( ), freeMicroNodeIds->end( ), *n ) == freeMicroNodeIds->end( ) ) &&
+                            ( std::find( ghostMicroNodeIds->begin( ), ghostMicroNodeIds->end( ), *n ) == ghostMicroNodeIds->end( ) ) ) );
 
         }
 
@@ -4915,12 +3726,7 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) ){
-
-                results << "test_initializeIncrement_Arlequin (test 78) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) != ghostMacroNodeIds->end( ) ) );
 
         }
 
@@ -4935,13 +3741,8 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         for ( auto n = nodes.begin( ); n != nodes.end( ); n++ ){
 
-            if ( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) &&
-                 ( std::find( freeMacroNodeIds->begin( ), freeMacroNodeIds->end( ), *n ) == freeMacroNodeIds->end( ) ) ){
-
-                results << "test_initializeIncrement_Arlequin (test 79) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( !( ( std::find( ghostMacroNodeIds->begin( ), ghostMacroNodeIds->end( ), *n ) == ghostMacroNodeIds->end( ) ) &&
+                            ( std::find( freeMacroNodeIds->begin( ), freeMacroNodeIds->end( ), *n ) == freeMacroNodeIds->end( ) ) ) );
 
         }
 
@@ -4949,23 +3750,13 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
     const DOFMap *microGlobalToLocalDOFMap = reader.getMicroGlobalToLocalDOFMap( );
 
-    if ( microGlobalToLocalDOFMap->size( ) != ( freeMicroNodeIds->size( ) + ghostMicroNodeIds->size( ) ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 80) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( microGlobalToLocalDOFMap->size( ) == ( freeMicroNodeIds->size( ) + ghostMicroNodeIds->size( ) ) );
 
     for ( auto n  = freeMicroNodeIds->begin( );
                n != freeMicroNodeIds->end( );
                n++ ){
 
-        if ( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 81) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( microGlobalToLocalDOFMap->find( *n ) != microGlobalToLocalDOFMap->end( ) );
 
     }
 
@@ -4973,34 +3764,19 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
                n != ghostMicroNodeIds->end( );
                n++ ){
 
-        if ( microGlobalToLocalDOFMap->find( *n ) == microGlobalToLocalDOFMap->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 82) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( microGlobalToLocalDOFMap->find( *n ) != microGlobalToLocalDOFMap->end( ) );
 
     }
 
     const DOFMap *macroGlobalToLocalDOFMap = reader.getMacroGlobalToLocalDOFMap( );
 
-    if ( macroGlobalToLocalDOFMap->size( ) != ( freeMacroNodeIds->size( ) + ghostMacroNodeIds->size( ) ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 83) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( macroGlobalToLocalDOFMap->size( ) == ( freeMacroNodeIds->size( ) + ghostMacroNodeIds->size( ) ) );
 
     for ( auto n  = freeMacroNodeIds->begin( );
                n != freeMacroNodeIds->end( );
                n++ ){
 
-        if ( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 84) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( macroGlobalToLocalDOFMap->find( *n ) != macroGlobalToLocalDOFMap->end( ) );
 
     }
 
@@ -5008,92 +3784,31 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
                n != ghostMacroNodeIds->end( );
                n++ ){
 
-        if ( macroGlobalToLocalDOFMap->find( *n ) == macroGlobalToLocalDOFMap->end( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 85) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( macroGlobalToLocalDOFMap->find( *n ) != macroGlobalToLocalDOFMap->end( ) );
 
     }
 
-    if ( !reader.microBodyForceDefined( ) ){
+    BOOST_CHECK( reader.microBodyForceDefined( ) );
 
-        results << "test_initializeIncrement_Arlequin (test 86) & False\n";
-        return 1;
+    BOOST_CHECK( reader.microSurfaceForceDefined( ) );
 
-    }
+    BOOST_CHECK( reader.microAccelerationDefined( ) );
 
-    if ( !reader.microSurfaceForceDefined( ) ){
+    BOOST_CHECK( !reader.useReconstructedMassCenters( ) );
 
-        results << "test_initializeIncrement_Arlequin (test 87) & False\n";
-        return 1;
+    BOOST_CHECK( reader.microVelocitiesDefined( ) );
 
-    }
+    BOOST_CHECK( reader.macroAccelerationDefined( ) );
 
-    if ( !reader.microAccelerationDefined( ) ){
+    BOOST_CHECK( reader.macroVelocitiesDefined( ) );
 
-        results << "test_initializeIncrement_Arlequin (test 88) & False\n";
-        return 1;
+    BOOST_CHECK( reader.microInternalForceDefined( ) );
 
-    }
+    BOOST_CHECK( reader.macroInternalForceDefined( ) );
 
-    if ( reader.useReconstructedMassCenters( ) ){
+    BOOST_CHECK( reader.macroInertialForceDefined( ) );
 
-        results << "test_initializeIncrement_Arlequin (test 89) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.microVelocitiesDefined( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 90) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.macroAccelerationDefined( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 91) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.macroVelocitiesDefined( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 92) & False\n";
-        return 1;
-
-    }
-
-
-    if ( !reader.microInternalForceDefined( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 93) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.macroInternalForceDefined( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 94) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.macroInertialForceDefined( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 95) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.macroExternalForceDefined( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 96) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( reader.macroExternalForceDefined( ) );
 
     const std::string macroReferenceDensityTypesAnswer = "constant";
     const floatVector macroReferenceDensitiesAnswer = { 2. };
@@ -5102,23 +3817,13 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
     for ( auto mRDR = macroReferenceDensitiesResult->begin( ); mRDR != macroReferenceDensitiesResult->end( ); mRDR++ ){
 
-        if ( !vectorTools::fuzzyEquals( macroReferenceDensitiesAnswer, mRDR->second ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 97) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( macroReferenceDensitiesAnswer, mRDR->second ) );
 
     }
 
     for ( auto mRDTR = macroReferenceDensityTypesResult->begin( ); mRDTR != macroReferenceDensityTypesResult->end( ); mRDTR++ ){
 
-        if ( macroReferenceDensityTypesAnswer.compare( mRDTR->second ) != 0 ){
-
-            results << "test_initializeIncrement_Arlequin (test 98) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( macroReferenceDensityTypesAnswer.compare( mRDTR->second ) == 0 );
 
     }
 
@@ -5135,74 +3840,34 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
                mRMIR != macroReferenceMomentsOfInertiaResult->end( );
                mRMIR++ ){
 
-        if ( !vectorTools::fuzzyEquals( macroReferenceMomentsOfInertiaAnswer, mRMIR->second ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 99) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( macroReferenceMomentsOfInertiaAnswer, mRMIR->second ) );
 
     }
 
     for ( auto mRMITR  = macroReferenceMomentOfInertiaTypesResult->begin( );
                mRMITR != macroReferenceMomentOfInertiaTypesResult->end( ); mRMITR++ ){
 
-        if ( macroReferenceMomentOfInertiaTypesAnswer.compare( mRMITR->second ) != 0 ){
-
-            results << "test_initializeIncrement_Arlequin (test 100) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( macroReferenceMomentOfInertiaTypesAnswer.compare( mRMITR->second ) == 0 );
 
     }
 
-    if ( !reader.microSurfaceForceDefined( ) ){
+    BOOST_CHECK( reader.microSurfaceForceDefined( ) );
 
-        results << "test_initializeIncrement_Arlequin (test 101) & False\n";
-        return 1;
+    BOOST_CHECK( reader.microExternalForceDefined( ) );
 
-    }
-
-    if ( !reader.microExternalForceDefined( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 102) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.extractPreviousDOFValues( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 103) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( reader.extractPreviousDOFValues( ) );
 
     const floatType DtAnswer = 1.;
     const floatType* DtResult = reader.getDt( );
 
-    if ( !vectorTools::fuzzyEquals( DtAnswer, *DtResult ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 104) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( DtAnswer, *DtResult ) );
 
     const floatType newmarkGammaAnswer = 0.50;
     const floatType newmarkBetaAnswer  = 0.25;
 
-    if ( !vectorTools::fuzzyEquals( newmarkGammaAnswer, *reader.getNewmarkGamma( ) ) ){
+    BOOST_CHECK( vectorTools::fuzzyEquals( newmarkGammaAnswer, *reader.getNewmarkGamma( ) ) );
 
-        results << "test_initializeIncrement_Arlequin (test 105) & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( newmarkBetaAnswer, *reader.getNewmarkBeta( ) ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 106) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( newmarkBetaAnswer, *reader.getNewmarkBeta( ) ) );
 
     const std::unordered_map< uIntType, stringVector > macroCellToDomainMapAnswer
         =
@@ -5219,28 +3884,13 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = macroCellToDomainMapResult->find( a->first );
 
-        if ( r == macroCellToDomainMapResult->end( ) ){
+        BOOST_CHECK( r != macroCellToDomainMapResult->end( ) );
 
-            results << "test_initializeIncrement_Arlequin (test 107) & False\n";
-            return 1;
-
-        }
-
-        if ( a->second.size( ) != r->second.size( ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 108) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( a->second.size( ) == r->second.size( ) );
 
         for ( unsigned int i = 0; i < a->second.size( ); i++ ){
 
-            if ( a->second[ i ].compare( r->second[ i ] ) != 0 ){
-
-                results << "test_initializeIncrement_Arlequin (test 109) & False\n";
-                return 1;
-
-            }
+            BOOST_CHECK( a->second[ i ].compare( r->second[ i ] ) == 0 );
 
         }        
 
@@ -5273,19 +3923,9 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = microDomainIDMapResult->find( a->first );
 
-        if ( r == microDomainIDMapResult->end( ) ){
+        BOOST_CHECK( r != microDomainIDMapResult->end( ) );
 
-            results << "test_initializeIncrement_Arlequin (test 110) & False\n";
-            return 1;
-
-        }
-
-        if ( r->second != a->second ){
-
-            results << "test_initializeIncrement_Arlequin (test 111) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r->second == a->second );
 
     }
 
@@ -5307,12 +3947,7 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
             { 14, 1.000 },
         };
 
-    if ( !reader.useArlequinCoupling( ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 112) & False\n";
-        return 1;
-
-    }
+    BOOST_CHECK( reader.useArlequinCoupling( ) );
 
     const std::unordered_map< uIntType, floatType > *arlequinWeightsResult = reader.getMacroArlequinWeights( );
 
@@ -5320,56 +3955,29 @@ int test_initializeIncrement_Arlequin( std::ofstream &results ){
 
         auto r = arlequinWeightsResult->find( a->first );
 
-        if ( r == arlequinWeightsResult->end( ) ){
+        BOOST_CHECK( r != arlequinWeightsResult->end( ) );
 
-            results << "test_initializeIncrement_Arlequin (test 113) & False\n";
-            return 1;
-
-        }
-
-        if ( !vectorTools::fuzzyEquals( a->second, r->second ) ){
-
-            results << "test_initializeIncrement_Arlequin (test 114) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( vectorTools::fuzzyEquals( a->second, r->second ) );
 
     }
 
-    if ( !vectorTools::fuzzyEquals( *reader.getArlequinPenaltyParameter( ), 1. ) ){
+    BOOST_CHECK( vectorTools::fuzzyEquals( *reader.getArlequinPenaltyParameter( ), 1. ) );
 
-        results << "test_initializeIncrement_Arlequin (test 115) & False\n";
-        return 1;
+    BOOST_CHECK( vectorTools::fuzzyEquals( *reader.getArlequinUpdatePenaltyParameter( ), 1. ) );
 
-    }
-
-    if ( !vectorTools::fuzzyEquals( *reader.getArlequinUpdatePenaltyParameter( ), 1. ) ){
-
-        results << "test_initializeIncrement_Arlequin (test 116) & False\n";
-        return 1;
-
-    }
-
-    results << "test_initializeIncrement_Arlequin & True\n";
-    return 0;
 }
 
 
-int test_getFreeMicroDomainNames( std::ostream &results ){
+BOOST_AUTO_TEST_CASE( testGetFreeMicroDomainNames ){
     /*!
      * Test getting a pointer to the free micro domain names
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getFreeMicroDomainNames & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     stringVector answer = { "free_nodeset_volume_1",
                             "free_nodeset_volume_2",
@@ -5385,36 +3993,24 @@ int test_getFreeMicroDomainNames( std::ostream &results ){
     unsigned int indx = 0;
     for ( auto it = result->begin( ); it != result->end( ); it++ ){
 
-        if ( it->compare( answer[ indx ] ) != 0 ){
-
-            results << "test_getFreeMicroDomainNames (test 1) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( it->compare( answer[ indx ] ) == 0 );
 
         indx++;
 
     }
 
-    results << "test_getFreeMicroDomainNames & True\n";
-    return 0;
 }
 
-int test_getGhostMicroDomainNames( std::ostream &results ){
+BOOST_AUTO_TEST_CASE( testGetGhostMicroDomainNames ){
     /*!
      * Test getting a pointer to the ghost micro domain names
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getGhostMicroDomainNames & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     stringVector answer = { "ghost_nodeset_volume_1",
                             "ghost_nodeset_volume_2",
@@ -5430,49 +4026,31 @@ int test_getGhostMicroDomainNames( std::ostream &results ){
     unsigned int indx = 0;
     for ( auto it = result->begin( ); it != result->end( ); it++ ){
 
-        if ( it->compare( answer[ indx ] ) != 0 ){
-
-            results << "test_getGhostMicroDomainNames (test 1) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( it->compare( answer[ indx ] ) == 0 );
 
         indx++;
 
     }
 
-    results << "test_getGhostMicroDomainNames & True\n";
-    return 0;
 }
 
-int test_getCouplingInitialization( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testGetCouplingInitialization ){
     /*!
      * Test getting the coupling initialization from the configuration file
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getCouplingInitialization & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     YAML::Node couplingInitialization = reader.getCouplingInitialization( );
 
-    if ( !couplingInitialization ){
-        results << "test_getCouplingInitialization (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( couplingInitialization );
 
     std::string typeAnswer = "use_first_increment";
-    if ( couplingInitialization[ "type" ].as<std::string>( ).compare( typeAnswer ) ){
-        results << "test_getCouplingInitialization (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( couplingInitialization[ "type" ].as<std::string>( ).compare( typeAnswer ) == 0 );
 
     std::string projectionTypeAnswer = "averaged_l2_projection";
     bool useReconstructedMassCentersAnswer = false;
@@ -5481,511 +4059,142 @@ int test_getCouplingInitialization( std::ofstream &results ){
     std::string potentialPartitioningTypeAnswer = "volume_fraction";
     std::string kineticPartitioningTypeAnswer = "volume_fraction";
 
-    if ( couplingInitialization[ "projection_type" ] ){
+    BOOST_CHECK( couplingInitialization[ "projection_type" ] );
 
-        if( couplingInitialization[ "projection_type" ].as< std::string >( ).compare( projectionTypeAnswer ) != 0 ){
+    BOOST_CHECK( couplingInitialization[ "projection_type" ].as< std::string >( ).compare( projectionTypeAnswer ) == 0 );
 
-            results << "test_getCouplingInitialization (test 3) & False\n";
-            return 1;
+    BOOST_CHECK( couplingInitialization[ "use_reconstructed_mass_centers" ] );
 
-        }
+    BOOST_CHECK( couplingInitialization[ "use_reconstructed_mass_centers" ].as< bool >( ) == useReconstructedMassCentersAnswer );
 
-    }
-    else{
+    BOOST_CHECK( couplingInitialization[ "potential_energy_weighting_factor" ] );
 
-        results << "test_getCouplingInitialization (test 4) & False\n";
-        return 1;
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "potential_energy_weighting_factor" ].as< floatType >( ),
+                                           potentialWeightingFactorAnswer ) );
 
-    }
+    BOOST_CHECK( couplingInitialization[ "kinetic_energy_weighting_factor" ] );
 
-    if ( couplingInitialization[ "use_reconstructed_mass_centers" ] ){
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "kinetic_energy_weighting_factor" ].as< floatType >( ),
+                                           kineticWeightingFactorAnswer ) );
 
-        if ( couplingInitialization[ "use_reconstructed_mass_centers" ].as< bool >( ) != useReconstructedMassCentersAnswer ){
+    BOOST_CHECK( couplingInitialization[ "potential_energy_partitioning_coefficient" ][ "type" ] );
 
-            results << "test_getCouplingInitialization (test 5) & False\n";
-            return 1;
+    BOOST_CHECK( couplingInitialization[ "potential_energy_partitioning_coefficient" ][ "type" ].as< std::string >( ).compare( potentialPartitioningTypeAnswer ) == 0 );
 
-        }
+    BOOST_CHECK( couplingInitialization[ "kinetic_energy_partitioning_coefficient" ][ "type" ] );
 
-    }
-    else{
+    BOOST_CHECK( couplingInitialization[ "kinetic_energy_partitioning_coefficient" ][ "type" ].as< std::string >( ).compare( kineticPartitioningTypeAnswer ) == 0 );
 
-        results << "test_getCouplingInitialization (test 6) & False\n";
-        return 1;
+    BOOST_CHECK( couplingInitialization[ "macro_proportionality_coefficient" ] );
 
-    }
+    BOOST_CHECK( couplingInitialization[ "micro_proportionality_coefficient" ] );
 
-    if ( couplingInitialization[ "potential_energy_weighting_factor" ] ){
+    BOOST_CHECK( couplingInitialization[ "macro_internal_force_sign" ] );
 
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "potential_energy_weighting_factor" ].as< floatType >( ),
-                                        potentialWeightingFactorAnswer ) ){
-    
-            results << "test_getCouplingInitialization (test 7) & False\n";
-            return 1;
-    
-        }
+    BOOST_CHECK( couplingInitialization[ "macro_external_force_sign" ] );
 
-    }
-    else{
+    BOOST_CHECK( couplingInitialization[ "micro_internal_force_sign" ] );
 
-        results << "test_getCouplingInitialization (test 8) & False\n";
-        return 1;
+    BOOST_CHECK( couplingInitialization[ "micro_external_force_sign" ] );
 
-    }
+    BOOST_CHECK( couplingInitialization[ "extract_previous_dof_values" ].as< bool >( ) );
 
-    if ( couplingInitialization[ "kinetic_energy_weighting_factor" ] ){
+    BOOST_CHECK( couplingInitialization[ "previous_micro_increment" ].as< uIntType >( ) == 0 );
 
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "kinetic_energy_weighting_factor" ].as< floatType >( ),
-                                        kineticWeightingFactorAnswer ) ){
-    
-            results << "test_getCouplingInitialization (test 9) & False\n";
-            return 1;
-    
-        }
+    BOOST_CHECK( couplingInitialization[ "previous_macro_increment" ].as< uIntType >( ) == 0 );
 
-    }
-    else{
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "update_displacement" ][ "Newmark-beta_parameters" ][ "beta" ].as< floatType >( ), 0.25 ) );
 
-        results << "test_getCouplingInitialization (test 10) & False\n";
-        return 1;
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "update_displacement" ][ "Newmark-beta_parameters" ][ "gamma" ].as< floatType >( ), 0.5 ) );
 
-    }
+    BOOST_CHECK( couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( ).compare( "reference_information" ) == 0 );
 
-    if ( couplingInitialization[ "potential_energy_partitioning_coefficient" ][ "type" ] ){
+    BOOST_CHECK( couplingInitialization[ "output_homogenized_response" ][ "filename" ].as< std::string >( ).compare( "homogenized_response" ) == 0 );
 
-        if ( couplingInitialization[ "potential_energy_partitioning_coefficient" ][ "type" ].as< std::string >( ).compare( potentialPartitioningTypeAnswer ) != 0 ){
-    
-            results << "test_getCouplingInitialization (test 11) & False\n";
-            return 1;
-    
-        }
+    BOOST_CHECK( ( couplingInitialization[ "output_updated_dof" ] ) && ( !couplingInitialization[ "output_updated_dof" ].IsScalar( ) ) );
 
-    }
-    else{
+    BOOST_CHECK( couplingInitialization[ "output_updated_dof" ][ "macroscale_filename" ].as< std::string >( ).compare( "macroscale_dof" ) == 0 );
 
-        results << "test_getCouplingInitialization (test 12) & False\n";
-        return 1;
+    BOOST_CHECK( couplingInitialization[ "output_updated_dof" ][ "microscale_filename" ].as< std::string >( ).compare( "microscale_dof" ) == 0 );
 
-    }
+    BOOST_CHECK( couplingInitialization[ "reference_filename" ].as< std::string >( ).compare( "reference_information.xdmf" ) == 0 );
 
-    if ( couplingInitialization[ "kinetic_energy_partitioning_coefficient" ][ "type" ] ){
+    BOOST_CHECK( couplingInitialization[ "output_homogenized_response" ][ "filetype" ].as< std::string >( ).compare( "XDMF" ) == 0 );
 
-        if ( couplingInitialization[ "kinetic_energy_partitioning_coefficient" ][ "type" ].as< std::string >( ).compare( kineticPartitioningTypeAnswer ) != 0 ){
-    
-            results << "test_getCouplingInitialization (test 13) & False\n";
-            return 1;
-    
-        }
+    BOOST_CHECK( couplingInitialization[ "output_homogenized_response" ][ "mode" ].as< std::string >( ).compare( "write" ) == 0 );
 
-    }
-    else{
+    BOOST_CHECK( couplingInitialization[ "output_updated_dof" ][ "macroscale_filetype" ].as< std::string >( ).compare( "XDMF" ) == 0 );
 
-        results << "test_getCouplingInitialization (test 14) & False\n";
-        return 1;
+    BOOST_CHECK( couplingInitialization[ "output_updated_dof" ][ "microscale_filetype" ].as< std::string >( ).compare( "XDMF" ) == 0 );
 
-    }
+    BOOST_CHECK( couplingInitialization[ "macro_inertial_force_sign" ] );
 
-    if ( couplingInitialization[ "macro_proportionality_coefficient" ] ){
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "macro_inertial_force_sign" ].as< floatType >( ), 1. ) );
 
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "macro_proportionality_coefficient" ].as< floatType >( ),
-                                        1e-3 ) ){
+    BOOST_CHECK( couplingInitialization[ "macro_body_force_sign" ] );
 
-            results << "test_getCouplingInitialization (test 15) & False\n";
-            return 1;
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "macro_body_force_sign" ].as< floatType >( ), 1. ) );
 
-        }
+    BOOST_CHECK( couplingInitialization[ "macro_surface_force_sign" ] );
 
-    }
-    else{
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "macro_surface_force_sign" ].as< floatType >( ), 1. ) );
 
-        results << "test_getCouplingInitialization (test 16) & False\n";
-        return 1;
+    BOOST_CHECK( couplingInitialization[ "micro_inertial_force_sign" ] );
 
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "micro_inertial_force_sign" ].as< floatType >( ), 1. ) );
 
-    if ( couplingInitialization[ "micro_proportionality_coefficient" ] ){
+    BOOST_CHECK( couplingInitialization[ "micro_body_force_sign" ] );
 
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "micro_proportionality_coefficient" ].as< floatType >( ),
-                                        1e-3 ) ){
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "micro_body_force_sign" ].as< floatType >( ), 1. ) );
 
-            results << "test_getCouplingInitialization (test 17) & False\n";
-            return 1;
+    BOOST_CHECK( couplingInitialization[ "micro_surface_force_sign" ] );
 
-        }
+    BOOST_CHECK( vectorTools::fuzzyEquals( couplingInitialization[ "micro_surface_force_sign" ].as< floatType >( ), 1. ) );
 
-    }
-    else{
+    BOOST_CHECK( !couplingInitialization[ "solve_coupling_odes_at_microdomains" ].as< bool >( ) );
 
-        results << "test_getCouplingInitialization (test 18) & False\n";
-        return 1;
+    BOOST_CHECK( !reader.solveCouplingODEsAtMicroDomains( ) );
 
-    }
-
-    if ( couplingInitialization[ "macro_internal_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "macro_internal_force_sign" ].as< floatType >( ), -1. ) ){
-
-            results << "test_getCouplingInitialization (test 19) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 20) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "macro_external_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "macro_external_force_sign" ].as< floatType >( ), 1. ) ){
-
-            results << "test_getCouplingInitialization (test 21) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 22) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "micro_internal_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "micro_internal_force_sign" ].as< floatType >( ), 1. ) ){
-
-            results << "test_getCouplingInitialization (test 23) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 24) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "micro_external_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "micro_external_force_sign" ].as< floatType >( ), 1. ) ){
-
-            results << "test_getCouplingInitialization (test 25) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 26) & False\n";
-        return 1;
-
-    }
-
-    if ( !couplingInitialization[ "extract_previous_dof_values" ].as< bool >( ) ){
-
-        results << "test_getCouplingInitialization (test 27) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "previous_micro_increment" ].as< uIntType >( ) != 0 ){
-
-        results << "test_getCouplingInitialization (test 28) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "previous_macro_increment" ].as< uIntType >( ) != 0 ){
-
-        results << "test_getCouplingInitialization (test 29) & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( couplingInitialization[ "update_displacement" ][ "Newmark-beta_parameters" ][ "beta" ].as< floatType >( ), 0.25 ) ){
-
-        results << "test_getCouplingInitialization (test 30) & False\n";
-        return 1;
-
-    }
-
-    if ( !vectorTools::fuzzyEquals( couplingInitialization[ "update_displacement" ][ "Newmark-beta_parameters" ][ "gamma" ].as< floatType >( ), 0.5 ) ){
-
-        results << "test_getCouplingInitialization (test 31) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "output_reference_information" ][ "filename" ].as< std::string >( ).compare( "reference_information" ) != 0 ){
-
-        results << "test_getCouplingInitialization (test 32) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "output_homogenized_response" ][ "filename" ].as< std::string >( ).compare( "homogenized_response" ) != 0 ){
-
-        results << "test_getCouplingInitialization (test 33) & False\n";
-        return 1;
-
-    }
-
-    if ( ( couplingInitialization[ "output_updated_dof" ] ) && ( !couplingInitialization[ "output_updated_dof" ].IsScalar( ) ) ){
-
-        if ( couplingInitialization[ "output_updated_dof" ][ "macroscale_filename" ].as< std::string >( ).compare( "macroscale_dof" ) != 0 ){
-    
-            results << "test_getCouplingInitialization (test 34) & False\n";
-            return 1;
-    
-        }
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 34) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "output_updated_dof" ][ "microscale_filename" ].as< std::string >( ).compare( "microscale_dof" ) != 0 ){
-
-        results << "test_getCouplingInitialization (test 35) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "reference_filename" ].as< std::string >( ).compare( "reference_information.xdmf" ) != 0 ){
-
-        std::cout << couplingInitialization[ "reference_filename" ].as< std::string >( ) << "\n";
-        results << "test_getCouplingInitialization (test 36) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "output_homogenized_response" ][ "filetype" ].as< std::string >( ).compare( "XDMF" ) != 0 ){
-
-        results << "test_getCouplingInitialization (test 37) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "output_homogenized_response" ][ "mode" ].as< std::string >( ).compare( "write" ) != 0 ){
-
-        results << "test_getCouplingInitialization (test 38) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "output_updated_dof" ][ "macroscale_filetype" ].as< std::string >( ).compare( "XDMF" ) != 0 ){
-
-        results << "test_getCouplingInitialization (test 39) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "output_updated_dof" ][ "microscale_filetype" ].as< std::string >( ).compare( "XDMF" ) != 0 ){
-
-        results << "test_getCouplingInitialization (test 40) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "macro_inertial_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "macro_inertial_force_sign" ].as< floatType >( ), 1. ) ){
-
-            results << "test_getCouplingInitialization (test 41) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 42) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "macro_body_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "macro_body_force_sign" ].as< floatType >( ), 1. ) ){
-
-            results << "test_getCouplingInitialization (test 43) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 44) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "macro_surface_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "macro_surface_force_sign" ].as< floatType >( ), 1. ) ){
-
-            results << "test_getCouplingInitialization (test 45) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 46) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "micro_inertial_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "micro_inertial_force_sign" ].as< floatType >( ), 1. ) ){
-
-            results << "test_getCouplingInitialization (test 47) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 48) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "micro_body_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "micro_body_force_sign" ].as< floatType >( ), 1. ) ){
-
-            results << "test_getCouplingInitialization (test 49) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 50) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "micro_surface_force_sign" ] ){
-
-        if ( !vectorTools::fuzzyEquals( couplingInitialization[ "micro_surface_force_sign" ].as< floatType >( ), 1. ) ){
-
-            results << "test_getCouplingInitialization (test 51) & False\n";
-            return 1;
-
-        }
-
-    }
-    else{
-
-        results << "test_getCouplingInitialization (test 52) & False\n";
-        return 1;
-
-    }
-
-    if ( couplingInitialization[ "solve_coupling_odes_at_microdomains" ].as< bool >( ) ){
-
-        results << "test_getCouplingInitialization (test 53) & False\n";
-        return 1;
-
-    }
-
-    if ( reader.solveCouplingODEsAtMicroDomains( ) ){
-
-        results << "test_getCouplingInitialization (test 54) & False\n";
-        return 1;
-
-    }
-
-    if ( !reader.useReconstructedVolumeForMassMatrix( ) ){
-
-        results << "test_getCouplingInitialization (test 55) & False\n";
-        return 1;
-
-    }
-
-    results << "test_getCouplingInitialization & True\n";
-    return 0;
+    BOOST_CHECK( reader.useReconstructedVolumeForMassMatrix( ) );
 
 }
 
-int test_getVolumeReconstructionConfig( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testGetVolumeReconstructionConfig ){
     /*!
      * Test getting the volume reconstruction configuration from the configuration file
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getVolumeReconstructionConfig & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     const YAML::Node vRInitialization = reader.getVolumeReconstructionConfig( );
 
-    if ( !vRInitialization ){
-        results << "test_getVolumeReconstructionConfig (test 1) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vRInitialization );
 
     std::string typeAnswer = "dual_contouring";
-    if ( vRInitialization[ "type" ].as<std::string>( ).compare( typeAnswer ) ){
-        results << "test_getVolumeReconstructionConfig (test 2) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vRInitialization[ "type" ].as<std::string>( ).compare( typeAnswer ) == 0 );
 
     floatType toleranceAnswer = 1e-2;
-    if ( !vectorTools::fuzzyEquals( vRInitialization[ "element_contain_tolerance" ].as< floatType >( ), toleranceAnswer ) ){
-        results << "test_getVolumeReconstructionConfig (test 3) & False\n";
-        return 1;
-    }
+    BOOST_CHECK( vectorTools::fuzzyEquals( vRInitialization[ "element_contain_tolerance" ].as< floatType >( ), toleranceAnswer ) );
 
     floatType useMacroNormalsAnswer = true;
-    if ( !( vRInitialization[ "use_macro_normals" ].as< bool >( ) == useMacroNormalsAnswer ) ){
-        results << "test_getVolumeReconstruction (test 4) & False\n";
-        return 1;
-    }
-
-    results << "test_getVolumeReconstructionConfig & True\n";
-    return 0;
+    BOOST_CHECK( ( vRInitialization[ "use_macro_normals" ].as< bool >( ) == useMacroNormalsAnswer ) );
 
 }
 
-int test_getFreeMacroDomainNames( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testGetFreeMacroDomainNames ){
     /*!
      * Test getting the free macro volume sets from the configuration file
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getFreeMacroDomainNames & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     stringVector answer = { "free_nodes" };
 
@@ -5994,37 +4203,24 @@ int test_getFreeMacroDomainNames( std::ofstream &results ){
     unsigned int indx = 0;
     for ( auto it = result->begin( ); it != result->end( ); it++ ){
 
-        if ( it->compare( answer[ indx ] ) != 0 ){
-
-            results << "test_getFreeMacroDomainNames (test 1) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( it->compare( answer[ indx ] ) == 0 );
 
         indx++;
 
     }
 
-    results << "test_getFreeMacroDomainNames & True\n";
-    return 0;
-
 }
 
-int test_getGhostMacroDomainNames( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testGetGhostMacroDomainNames ){
     /*!
      * Test getting the ghost macro volume sets from the configuration file
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getGhostMacroDomainNames & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     stringVector answer = { "ghost_nodes" };
 
@@ -6033,38 +4229,25 @@ int test_getGhostMacroDomainNames( std::ofstream &results ){
     unsigned int indx = 0;
     for ( auto it = result->begin( ); it != result->end( ); it++ ){
 
-        if ( it->compare( answer[ indx ] ) != 0 ){
-
-            results << "test_getGhostMacroDomainNames (test 1) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( it->compare( answer[ indx ] ) == 0 );
 
         indx++;
 
     }
 
-    results << "test_getGhostMacroDomainNames & True\n";
-    return 0;
-
 }
 
-int test_getMicroDomainSurfaceApproximateSplitCount( std::ostream &results ){
+BOOST_AUTO_TEST_CASE( testGetMicroDomainSurfaceApproximateSplitCount ){
     /*!
      * Test getting a pointer to the approximate number of surfaces to split the micro
      * domains into
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_getMicroDomainSurfaceApproximateSplitCount & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
     std::unordered_map< std::string, uIntType > answer
         =
@@ -6093,43 +4276,25 @@ int test_getMicroDomainSurfaceApproximateSplitCount( std::ostream &results ){
 
         auto r = result->find( a->first );
 
-        if ( r == result->end( ) ){
+        BOOST_CHECK( r != result->end( ) );
 
-            results << "test_getMicroDomainSurfaceApproximateSplitCount (test 1) & False\n";
-            return 1;
-
-        }
-
-        if ( r->second != a->second ){
-
-            results << "test_getMicroDomainSurfaceApproximateSplitCount (test 2) & False\n";
-            return 1;
-
-        }
+        BOOST_CHECK( r->second == a->second );
 
     }
 
-    results << "test_getMicroDomainSurfaceApproximateSplitCount & True\n";
-    return 0;
-
 }
 
-//int test_getFreeMicroSurfaceApproximateSplitCount( std::ostream &results ){
+//BOOST_AUTO_TEST_CASE( testGetFreeMicroSurfaceApproximateSplitCount ){
 //    /*!
 //     * Test getting a pointer to the approximate number of surfaces to split a micro
 //     * domain into.
 //     *
-//     * :param std::ofstream &results: The output file
 //     */
 //
-//    std::string filename = "testConfig.yaml";
+//    std::string filename = "inputFileProcessor_testConfig.yaml";
 //    inputFileProcessor::inputFileProcessor reader( filename );
 //
-//    if ( reader.getError( ) ){
-//        reader.getError( )->print( );
-//        results << "test_getFreeMicroSurfaceApproximateSplitCount & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( !reader.getError( ) );
 //
 //    uIntVector answer( 8, 6 );
 //
@@ -6138,37 +4303,25 @@ int test_getMicroDomainSurfaceApproximateSplitCount( std::ostream &results ){
 //    unsigned int indx = 0;
 //    for ( auto it = result->begin( ); it != result->end( ); it++ ){
 //
-//        if ( !vectorTools::fuzzyEquals( *it, answer[ indx ] ) ){
-//
-//            results << "test_getFreeMicroSurfaceApproximateSplitCount (test 1) & False\n";
-//            return 1;
-//
-//        }
+//        BOOST_CHECK( vectorTools::fuzzyEquals( *it, answer[ indx ] ) );
 //
 //        indx++;
 //
 //    }
 //
-//    results << "test_getFreeMicroSurfaceApproximateSplitCount & True\n";
-//    return 0;
 //}
 //
-//int test_getGhostMicroSurfaceApproximateSplitCount( std::ostream &results ){
+//BOOST_AUTO_TEST_CASE( testGetGhostMicroSurfaceApproximateSplitCount ){
 //    /*!
 //     * Test getting a pointer to the approximate number of surfaces to split a micro
 //     * domain into.
 //     *
-//     * :param std::ofstream &results: The output file
 //     */
 //
-//    std::string filename = "testConfig.yaml";
+//    std::string filename = "inputFileProcessor_testConfig.yaml";
 //    inputFileProcessor::inputFileProcessor reader( filename );
 //
-//    if ( reader.getError( ) ){
-//        reader.getError( )->print( );
-//        results << "test_getGhostMicroSurfaceApproximateSplitCount & False\n";
-//        return 1;
-//    }
+//    BOOST_CHECK( !reader.getError( ) );
 //
 //    uIntVector answer( 8, 6 );
 //
@@ -6177,144 +4330,55 @@ int test_getMicroDomainSurfaceApproximateSplitCount( std::ostream &results ){
 //    unsigned int indx = 0;
 //    for ( auto it = result->begin( ); it != result->end( ); it++ ){
 //
-//        if ( !vectorTools::fuzzyEquals( *it, answer[ indx ] ) ){
-//
-//            results << "test_getGhostMicroSurfaceApproximateSplitCount (test 1) & False\n";
-//            return 1;
-//
-//        }
+//        BOOST_CHECK( vectorTools::fuzzyEquals( *it, answer[ indx ] ) );
 //
 //        indx++;
 //
 //    }
 //
-//    results << "test_getGhostMicroSurfaceApproximateSplitCount & True\n";
-//    return 0;
 //}
 
-int test_outputReferenceInformation( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testOutputReferenceInformation ){
     /*!
      * Test whether the reference information should be output
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_outputReferenceInformation & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
-    if ( !reader.outputReferenceInformation( ) ){
-
-        results << "test_outputReferenceInformation (test 1) & False\n";
-        return 1;
-
-    }
-
-    results << "test_outputReferenceInformation & True\n";
-    return 1;
+    BOOST_CHECK( reader.outputReferenceInformation( ) );
 
 }
 
-int test_outputHomogenizedInformation( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testOutputHomogenizedInformation ){
     /*!
      * Test whether the homogenized information should be output
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_outputHomogenizedInformation & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
-    if ( !reader.outputHomogenizedInformation( ) ){
-
-        results << "test_outputHomogenizedInformation (test 1) & False\n";
-        return 1;
-
-    }
-
-    results << "test_outputHomogenizedInformation & True\n";
-    return 1;
+    BOOST_CHECK( reader.outputHomogenizedInformation( ) );
 
 }
 
-int test_outputUpdatedDOF( std::ofstream &results ){
+BOOST_AUTO_TEST_CASE( testOutputUpdatedDOF ){
     /*!
      * Test whether the updated degree of freedom information should be output
      *
-     * :param std::ofstream &results: The output file
      */
 
-    std::string filename = "testConfig.yaml";
+    std::string filename = "inputFileProcessor_testConfig.yaml";
     inputFileProcessor::inputFileProcessor reader( filename );
 
-    if ( reader.getError( ) ){
-        reader.getError( )->print( );
-        results << "test_outputUpdatedDOF & False\n";
-        return 1;
-    }
+    BOOST_CHECK( !reader.getError( ) );
 
-    if ( !reader.outputUpdatedDOF( ) ){
-
-        results << "test_outputUpdatedDOF (test 1) & False\n";
-        return 1;
-
-    }
-
-    results << "test_outputUpdatedDOF & True\n";
-    return 1;
-
-}
-
-int main(){
-    /*!
-    The main loop which runs the tests defined in the 
-    accompanying functions. Each function should output
-    the function name followed by & followed by True or False 
-    if the test passes or fails respectively.
-    */
-
-    //Run the setup
-    std::unique_ptr< errorNode > error;
-    error.reset( _createXDMFDatafiles( ) );
-    if ( error ){
-
-        error->print( );
-        return 1;
-
-    }
-
-    //Open the results file
-    std::ofstream results;
-    results.open("results.tex");
-
-    test_openConfigurationFile( results );
-    test_setConfigurationFile( results );
-    test_initializeFileInterfaces( results );
-    test_initializeIncrement( results );
-    test_initializeIncrement_Arlequin( results );
-    test_getFreeMicroDomainNames( results );
-    test_getGhostMicroDomainNames( results );
-    test_getFreeMacroDomainNames( results );
-    test_getGhostMacroDomainNames( results );
-    test_getCouplingInitialization( results );
-    test_getVolumeReconstructionConfig( results );
-    test_getMicroDomainSurfaceApproximateSplitCount( results );
-    test_outputReferenceInformation( results );
-    test_outputHomogenizedInformation( results );
-    test_outputUpdatedDOF( results );
-
-    //Close the results file
-    results.close();
+    BOOST_CHECK( reader.outputUpdatedDOF( ) );
 
 }
